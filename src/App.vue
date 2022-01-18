@@ -8,6 +8,7 @@
 
 <script>
 import HelloWorld from './components/HelloWorld.vue'
+import {Masterboard} from "@/models/masterboard";
 
 export default {
   name: 'App',
@@ -17,6 +18,7 @@ export default {
   },
 
   data: () => ({
+    masterboard: new Masterboard(),
   }),
 }
 </script>
