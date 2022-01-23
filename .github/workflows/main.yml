@@ -38,6 +38,7 @@ jobs:
         run: |
           COMMIT_MESSAGE="$(git show --summary)"
           cd dist
+          echo warlord-latest.aolkin.me > CNAME
           git init
           git add -A
           git config --local user.email "action@github.com"
