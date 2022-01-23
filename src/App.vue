@@ -1,24 +1,21 @@
 <template>
   <v-app>
     <v-main>
-      <HelloWorld/>
+      <Masterboard />
     </v-main>
   </v-app>
 </template>
 
 <script>
-import HelloWorld from './components/HelloWorld.vue'
-import {Masterboard} from "@/models/masterboard";
+import Masterboard from "~/components/game/masterboard/Masterboard"
 
 export default {
-  name: 'App',
+  name: "App",
 
   components: {
-    HelloWorld,
+    Masterboard
   },
 
-  data: () => ({
-    masterboard: new Masterboard(),
-  }),
+  data: () => ({})
 }
 </script>

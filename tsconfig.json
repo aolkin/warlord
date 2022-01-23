@@ -1,4 +1,19 @@
 {
   // https://v3.nuxtjs.org/concepts/typescript
-  "extends": "./.nuxt/tsconfig.json"
+  "extends": "./.nuxt/tsconfig.json",
+  "compilerOptions": {
+    "target": "esnext",
+    "module": "esnext",
+    "strict": true,
+    "jsx": "preserve",
+    "baseUrl": ".",
+    "paths": {
+      "~/components/*": ["./src/components/*"],
+      "~/store/*": ["./src/store/*"],
+      "~/models/*": ["./src/models/*"],
+      "~/plugins/*": ["./src/plugins/*"],
+      "~/utils/*": ["./src/utils/*"],
+      "@/*": ["./src/*"],
+    }
+  }
 }
