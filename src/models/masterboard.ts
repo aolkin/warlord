@@ -249,16 +249,9 @@ export class Masterboard {
         this.hexes.get(baseId + 5)!.addEdge(this.hexes.get(baseId + 5 - 101)!, HexEdge.SECOND, MovementRule.CIRCLE)
       }
     }
-
-    const nodes = Array.from(this.hexes.values()).map(hex => ({ id: hex.id, name: Terrain[hex.terrain] }))
-    const links = Array.from(this.hexes.values()).map(hex => hex.edges.map((edge: MasterboardEdge) => ({
-      source_id: hex.id,
-      target_id: edge.hex.id
-    }))).flat()
-    // console.log(JSON.stringify({ nodes, links }, undefined, 4))
   }
 
-  getHexIds () {
+  getHexIds (): number[] {
     return Array.from(this.hexes.keys())
   }
 

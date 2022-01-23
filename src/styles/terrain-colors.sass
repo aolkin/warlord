@@ -1,0 +1,56 @@
+$plains-color: gold
+$marsh-color: saddlebrown
+$woods-color: #dce3b5
+$hills-color: brown
+$desert-color: orange
+$swamp-color: dodgerblue
+$mountains-color: red
+$tundra-color: aliceblue
+$brush-color: yellowgreen
+$jungle-color: darkgreen
+$tower-color: lightgray
+
+@mixin terrain-colors($subtarget, $property)
+  .plains
+    #{$subtarget}
+      #{$property}: $plains-color
+
+  .marsh
+    #{$subtarget}
+      #{$property}: $marsh-color
+
+  .woods
+    #{$subtarget}
+      #{$property}: $woods-color
+
+  .hills
+    #{$subtarget}
+      #{$property}: $hills-color
+
+  .desert
+    #{$subtarget}
+      #{$property}: $desert-color
+
+  .swamp
+    #{$subtarget}
+      #{$property}: $swamp-color
+
+  .mountains
+    #{$subtarget}
+      #{$property}: $mountains-color
+
+  .tundra
+    #{$subtarget}
+      #{$property}: $tundra-color
+
+  .brush
+    #{$subtarget}
+      #{$property}: $brush-color
+
+  .jungle
+    #{$subtarget}
+      #{$property}: $jungle-color
+
+  .tower
+    #{$subtarget}
+      #{$property}: $tower-color

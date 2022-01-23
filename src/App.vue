@@ -8,8 +8,9 @@
 
 <script>
 import Masterboard from "~/components/game/masterboard/Masterboard"
+import { defineComponent } from "@vue/runtime-core"
 
-export default {
+export default defineComponent({
   name: "App",
 
   components: {
@@ -17,5 +18,5 @@ export default {
   },
 
   data: () => ({})
-}
+})
 </script>
