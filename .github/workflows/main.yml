@@ -27,6 +27,7 @@ jobs:
         uses: actions/setup-node@v2
         with:
           node-version: '16'
+      - run: mv tsconfig.json tsconfig.unused
       - uses: borales/actions-yarn@v2.3.0
         with:
           cmd: install # will run `yarn install` command
