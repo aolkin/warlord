@@ -10,7 +10,6 @@ export function hexTransform (hex: MasterboardHex): string {
   const rotation = hex.getSide() * -60
   let x = 0
   let y = TRIANGLE_HEIGHT / 2
-  console.log(hex.id, hex.getSideIndex())
   switch (hex.getArea()) {
     case BoardArea.MIDDLE:
       if (hex.getSideIndex() < 2 || hex.getSideIndex() > 4) {

@@ -15,6 +15,15 @@
       :edge="item[1]"
       :hex="item[0]"
     />
+    <g v-if="shadows">
+      <HexEdge
+        v-for="item in edges"
+        :key="item[0].id + '-' + item[1].hexEdge"
+        :edge="item[1]"
+        :hex="item[0]"
+        :shadow="true"
+      />
+    </g>
   </svg>
 </template>
 
@@ -37,6 +46,9 @@ export default defineComponent({
     edges (): [MasterboardHex, MasterboardEdge][] {
       return Array.from(this.board.hexes.values()).flatMap(
         hex => hex.edges.map((edge): [MasterboardHex, MasterboardEdge] => [hex, edge]))
+    },
+    shadows (): boolean {
+      return this.$store.state.ui.preferences.fancyGraphics
     }
   }
 })

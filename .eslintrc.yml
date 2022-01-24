@@ -31,10 +31,11 @@ rules:
   vue/singleline-html-element-content-newline: off
   vue/multi-word-component-names: off
   vue/no-unused-components: warn
+  vue/no-unused-vars: warn
   vue/max-attributes-per-line:
     - warn
     - singleline:
-        max: 5
+        max: 6
       multiline:
         max: 1
   # General ECMAScript rules

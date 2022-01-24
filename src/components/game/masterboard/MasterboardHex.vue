@@ -5,9 +5,22 @@
     class="parent"
   >
     <polygon
+      :class="{ fancy: shadows }"
       :points="points.join(' ')"
       :transform="inverted ? 'rotate(180)' : ''"
       class="hex"
+    />
+    <clipPath v-if="shadows" :id="`hex-${hex.id}-clip`">
+      <polygon
+        :points="points.join(' ')"
+      />
+    </clipPath>
+    <polygon
+      v-if="shadows"
+      :clip-path="`url(#hex-${hex.id}-clip)`"
+      :points="points.join(' ')"
+      :transform="inverted ? 'rotate(180) scale(0.99)' : 'scale(0.99)'"
+      class="outline"
     />
     <text :y="inverted ? 15 : -10" class="id" text-anchor="middle">{{ hex.id }}</text>
     <text :y="inverted ? -25 : 35" class="label" text-anchor="middle">{{ terrain }}</text>
@@ -56,6 +69,9 @@ export default defineComponent({
     },
     inverted () {
       return isHexInverted(this.hex)
+    },
+    shadows (): boolean {
+      return this.$store.state.ui.preferences.fancyGraphics
     }
   }
 })
@@ -77,9 +93,19 @@ export default defineComponent({
   stroke: white
   stroke-width: 2px
 
+.hex.fancy
+  stroke: black
+  stroke-width: 1px
+
+.outline
+  stroke: white
+  stroke-width: 3px
+  fill: transparent
+  filter: drop-shadow(0px 0px 3px #000000bb)
+
 .mountains
   .label
-    font-size: 0.95em
+    font-size: 0.9em
     letter-spacing: -0.075em
     baseline-shift: 0.25em
 
