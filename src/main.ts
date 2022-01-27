@@ -6,7 +6,10 @@ import { loadFonts } from "~/plugins/webfontloader"
 
 void loadFonts()
 
-createApp(App)
+const app = createApp(App)
   .use(vuetify)
   .use(vuex)
-  .mount("#app")
+
+app.config.unwrapInjectedRef = true
+
+app.mount("#app")

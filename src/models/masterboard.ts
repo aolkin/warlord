@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 
-import { assert } from "@/utils"
+import { assert } from "~/utils/assert"
 
 const div = (a: number, b: number): number => Math.floor(a / b)
 const mod = (a: number, b: number): number => ((a % b) + b) % b
@@ -39,7 +39,7 @@ export enum BoardArea {
   LOWER,
 }
 
-function getTerrainPair (terrain: Terrain): Terrain {
+function getTerrainPair(terrain: Terrain): Terrain {
   if (terrain >= Terrain.BRUSH) {
     return terrain
   }
@@ -49,7 +49,7 @@ function getTerrainPair (terrain: Terrain): Terrain {
 /**
  * Return the paired terrain if the number % 2 == 1.
  */
-function maybeGetPair (terrain: Terrain, maybe: number): Terrain {
+function maybeGetPair(terrain: Terrain, maybe: number): Terrain {
   return maybe % 2 === 1 ? getTerrainPair(terrain) : terrain
 }
 
@@ -64,13 +64,13 @@ export class MasterboardHex {
   readonly terrain: Terrain;
   readonly edges: MasterboardEdge[];
 
-  constructor (id: number, terrain: Terrain) {
+  constructor(id: number, terrain: Terrain) {
     this.id = id
     this.terrain = terrain
     this.edges = []
   }
 
-  getArea (): BoardArea {
+  getArea(): BoardArea {
     if (this.id <= 42) {
       return BoardArea.MIDDLE
     } else if (this.id > 100 && this.id <= 142) {
@@ -82,7 +82,7 @@ export class MasterboardHex {
     }
   }
 
-  getSide (): number {
+  getSide(): number {
     switch (this.getArea()) {
       case BoardArea.TOWER:
         return this.id / 100 - 1
@@ -95,7 +95,7 @@ export class MasterboardHex {
     }
   }
 
-  getSideIndex (): number {
+  getSideIndex(): number {
     switch (this.getArea()) {
       case BoardArea.TOWER:
         return 0
@@ -108,7 +108,7 @@ export class MasterboardHex {
     }
   }
 
-  getMovement (initial?: boolean): MasterboardEdge[] {
+  getMovement(initial?: boolean): MasterboardEdge[] {
     const options = this.edges.filter(edge => edge.rule === MovementRule.ARROW)
     if (initial ?? false) {
       if (this.edges.some(edge => edge.rule === MovementRule.SQUARE)) {
@@ -120,7 +120,7 @@ export class MasterboardHex {
     return options
   }
 
-  addEdge (hex: MasterboardHex, hexEdge: HexEdge, rule: MovementRule): void {
+  addEdge(hex: MasterboardHex, hexEdge: HexEdge, rule: MovementRule): void {
     assert(this.edges.length < 3, "Cannot add edge to hex with 3 edges")
     this.edges.push({ hex, rule, hexEdge })
   }
@@ -129,7 +129,7 @@ export class MasterboardHex {
 export class Masterboard {
   hexes: Map<number, MasterboardHex>;
 
-  constructor () {
+  constructor() {
     this.hexes = new Map()
 
     // Construct nodes
@@ -251,11 +251,11 @@ export class Masterboard {
     }
   }
 
-  getHexIds (): number[] {
+  getHexIds(): number[] {
     return Array.from(this.hexes.keys())
   }
 
-  getHex (id: number): MasterboardHex {
+  getHex(id: number): MasterboardHex {
     const hex = this.hexes.get(id)
     if (hex === undefined) {
       throw new RangeError(`No hex ${id}`)
@@ -263,3 +263,5 @@ export class Masterboard {
     return hex
   }
 }
+
+export default new Masterboard()

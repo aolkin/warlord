@@ -1,15 +1,22 @@
 import { createStore, Store } from "vuex"
-import game, { GameState } from "~/store/game"
+import { TitanGame } from "~/models/game"
+import game from "~/store/game"
 import ui, { UiState } from "~/store/ui"
 
 interface State {
-  game: GameState
+  game: TitanGame
   ui: UiState
 }
 
 export default createStore({
   modules: {
     game, ui
+  },
+  actions: {
+    reset({ commit }) {
+      commit("game/reset")
+      commit("ui/reset")
+    }
   }
 })
 

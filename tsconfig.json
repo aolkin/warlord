@@ -8,12 +8,24 @@
     "jsx": "preserve",
     "baseUrl": ".",
     "paths": {
-      "~/components/*": ["./src/components/*"],
-      "~/store/*": ["./src/store/*"],
-      "~/models/*": ["./src/models/*"],
-      "~/plugins/*": ["./src/plugins/*"],
-      "~/utils/*": ["./src/utils/*"],
-      "@/*": ["./src/*"],
+      "~/components/*": [
+        "./src/components/*.vue"
+      ],
+      "~/store/*": [
+        "./src/store/*"
+      ],
+      "~/models/*": [
+        "./src/models/*"
+      ],
+      "~/plugins/*": [
+        "./src/plugins/*"
+      ],
+      "~/utils/*": [
+        "./src/utils/*"
+      ],
+      "@/*": [
+        "./src/*"
+      ]
     }
   }
 }

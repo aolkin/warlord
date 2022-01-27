@@ -48,13 +48,13 @@ export default defineComponent({
     }
   },
   computed: {
-    terrain () {
+    terrain() {
       return Terrain[this.hex?.terrain].toLowerCase()
     },
-    viewBox () {
+    viewBox() {
       return `-${TRIANGLE_SIDE / 2} -${TRIANGLE_HEIGHT / 2} ${TRIANGLE_SIDE} ${TRIANGLE_HEIGHT}`
     },
-    points () {
+    points() {
       return [
         [-CLIP_TRIANGLE_SIDE / 2, CLIP_TRIANGLE_HEIGHT - TRIANGLE_HEIGHT / 2],
         [CLIP_TRIANGLE_SIDE / 2, CLIP_TRIANGLE_HEIGHT - TRIANGLE_HEIGHT / 2],
@@ -64,13 +64,13 @@ export default defineComponent({
         [CLIP_TRIANGLE_SIDE / 2 - TRIANGLE_SIDE / 2, TRIANGLE_HEIGHT / 2 - CLIP_TRIANGLE_HEIGHT]
       ].map(([x, y]) => `${x},${y}`)
     },
-    transform () {
-      return hexTransform(this.hex)
+    transform() {
+      return hexTransform(this.hex.id)
     },
-    inverted () {
-      return isHexInverted(this.hex)
+    inverted() {
+      return isHexInverted(this.hex.id)
     },
-    shadows (): boolean {
+    shadows(): boolean {
       return this.$store.state.ui.preferences.fancyGraphics
     }
   }

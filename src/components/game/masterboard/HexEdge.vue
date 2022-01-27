@@ -20,13 +20,13 @@
       <polyline points="-24,-3.25 -20,3 -16,-3.25" />
       <polyline points="-14,-3.25 -10,3  -6,-3.25" />
       <polyline points=" -4,-3.25   0,3   4,-3.25" />
-      <polyline class="no-shadow" points="-16.5,-3.25, -13.5,-3.25" />
-      <polyline class="no-shadow" points="-26.5,-3.25, -23.5,-3.25" />
+      <polyline v-if="shadows" class="no-shadow" points="-16.5,-3.25, -13.5,-3.25" />
+      <polyline v-if="shadows" class="no-shadow" points="-26.5,-3.25, -23.5,-3.25" />
     </g>
     <g v-else :transform="transform">
       <polyline points="-4,-4 0,3 4,-4" />
     </g>
-    <g :transform="transform">
+    <g v-if="shadows" :transform="transform">
       <polyline class="no-shadow" points="-6.5,-3.25, -3.5,-3.25" />
       <polyline class="no-shadow" points="3.5,-3.25, 6.5,-3.25" />
     </g>
@@ -53,27 +53,27 @@ export default defineComponent({
       default: false
     }
   },
-  data () {
+  data() {
     return {
       MovementRule
     }
   },
   computed: {
-    multiArrow (): boolean {
+    multiArrow(): boolean {
       return this.edge.rule === MovementRule.ARROW &&
         !this.edge.hex.edges.some(edge => edge.hex.id === this.hex.id)
     },
-    hexTransform () {
-      return hexTransform(this.hex)
+    hexTransform() {
+      return hexTransform(this.hex.id)
     },
-    transform () {
-      return `rotate(${isHexInverted(this.hex) ? 180 : 0})
+    transform() {
+      return `rotate(${isHexInverted(this.hex.id) ? 180 : 0})
               translate(0 10)
               rotate(${(this.edge.hexEdge - 1) * 120})
               translate(${this.edge.hexEdge === 1 ? 10 : (this.edge.hexEdge === 0 ? 6 : 14)} 0)
               translate(0 ${TRIANGLE_HEIGHT / 4 + (this.edge.hexEdge === 1 ? 13.75 : 7.25)})`
     },
-    classes () {
+    classes() {
       return {
         [Terrain[this.hex.terrain].toLowerCase()]: true,
         ["to-" + Terrain[this.edge.hex.terrain].toLowerCase()]: true,
@@ -81,8 +81,11 @@ export default defineComponent({
         shadow: this.shadow
       }
     },
-    shadowMaskXs () {
+    shadowMaskXs() {
       return this.shadow ? (this.multiArrow ? [-4, -14, -24] : [-4]) : []
+    },
+    shadows(): boolean {
+      return this.$store.state.ui.preferences.fancyGraphics
     }
   }
 })
