@@ -1,5 +1,13 @@
+export enum CreatureColorMode {
+  STANDARD,
+  PLAYER,
+  STANDARD_UNIFORM_TEXT,
+  PLAYER_UNIFORM_TEXT
+}
+
 export interface Preferences {
   fancyGraphics: boolean
+  creatureColorMode: CreatureColorMode
 }
 
 let savedPreferences: Preferences
@@ -14,12 +22,17 @@ const savePreferences = (state: Preferences): void => {
 
 export default {
   namespaced: true,
-  state: () => savedPreferences ?? {
-    fancyGraphics: true
-  },
+  state: () => Object.assign({
+    fancyGraphics: true,
+    creatureColorMode: CreatureColorMode.STANDARD
+  }, savedPreferences ?? {}),
   mutations: {
     setFancyGraphics(state: Preferences, payload: boolean) {
       state.fancyGraphics = payload
+      savePreferences(state)
+    },
+    setCreatureColorMode(state: Preferences, payload: CreatureColorMode) {
+      state.creatureColorMode = payload
       savePreferences(state)
     }
   }

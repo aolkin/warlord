@@ -26,21 +26,4 @@ export class Player {
     ]
     this.score = 0
   }
-
-  getColor(): string {
-    switch (this.color) {
-      case PlayerColor.RED:
-        return "rgb(223,39,31)"
-      case PlayerColor.BLUE:
-        return "rgb(7,126,198)"
-      case PlayerColor.GREEN:
-        return "rgb(45,158,84)"
-      case PlayerColor.YELLOW:
-        return "rgb(223,207,6)"
-      case PlayerColor.BLACK:
-        return "rgb(31,30,32)"
-      case PlayerColor.BROWN:
-        return "brown"
-    }
-  }
 }

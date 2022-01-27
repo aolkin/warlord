@@ -1,5 +1,5 @@
 <template>
-  <v-card class="widget mb-3 mr-3" absolute bottom right width="240">
+  <v-card class="ma-3" absolute bottom right width="300">
     <v-card-header>
       <v-card-header-text>{{ activePlayer.name }}'s Turn</v-card-header-text>
       <v-card-avatar>
@@ -20,7 +20,6 @@
         block
         :disabled="mustSplit"
         variant="outlined"
-        color="primary"
         @click="roll"
       >
         Finish Splits and Roll

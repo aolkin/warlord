@@ -30,6 +30,7 @@
         <MasterboardStack v-for="(stack, index) in stacks" :key="index" :stack="stack" />
       </g>
     </svg>
+    <StackStatus />
     <TurnStatus />
   </div>
 </template>
@@ -38,6 +39,7 @@
 import { defineComponent } from "@vue/runtime-core"
 import { mapGetters, mapMutations } from "vuex"
 import MASTERBOARD, { Masterboard, MasterboardEdge, MasterboardHex } from "~/models/masterboard"
+import StackStatus from "../../ui/game/StackStatus.vue"
 import TurnStatus from "../../ui/game/TurnStatus.vue"
 import HexEdge from "./HexEdge.vue"
 import MasterboardHexComponent from "./MasterboardHex.vue"
@@ -45,7 +47,7 @@ import MasterboardStack from "./MasterboardStack.vue"
 
 export default defineComponent({
   name: "Masterboard",
-  components: { TurnStatus, MasterboardStack, HexEdge, MasterboardHex: MasterboardHexComponent },
+  components: { StackStatus, TurnStatus, MasterboardStack, HexEdge, MasterboardHex: MasterboardHexComponent },
   computed: {
     ...mapGetters("game", ["stacks"]),
     board(): Masterboard {
@@ -76,4 +78,5 @@ export default defineComponent({
   height: calc(100vh - 30px)
   margin: auto
   display: flex
+  user-select: none
 </style>

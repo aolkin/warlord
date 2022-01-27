@@ -11,10 +11,11 @@ export async function loadFonts() {
     google: {
       families: [
         "Roboto:100,300,400,500,700,900",
-        "Fanwood Text:400", // Simpler
+        "Fanwood Text:400", // Simple Serifs
         "Fondamento:400",
         "Pirata One:400", // Fancy but harder to read
-        "Quintessential:400", // Primary
+        "Quintessential:400", // Primary for Masterboard
+        "Frank Ruhl Libre:400,500,700,900", // Primary for creatures
         "Redressed:400&display=swap" // &display=swap must be included on only the last family
       ]
     }

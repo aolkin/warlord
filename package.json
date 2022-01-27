@@ -11,9 +11,9 @@
   "dependencies": {
     "@3d-dice/dice-box": "^0.4.19",
     "@mdi/font": "^6.5.95",
+    "vuetify": "npm:@vuetify/nightly@3",
     "lodash": "^4.17.21",
     "roboto-fontface": "*",
-    "vuetify": "^3.0.0-alpha.12",
     "vuex": "^4.0.2",
     "webfontloader": "^1.0.0"
   },

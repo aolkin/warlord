@@ -29,7 +29,9 @@ export default {
       state.stack = undefined
     },
     enterStack(state: Selections, entering: Stack) {
-      state.focusedStacks.push(entering)
+      if (!state.focusedStacks.includes(entering)) {
+        state.focusedStacks.push(entering)
+      }
     },
     leaveStack(state: Selections, leaving: Stack) {
       const index = state.focusedStacks.indexOf(leaving)

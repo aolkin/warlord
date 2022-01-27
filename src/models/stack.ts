@@ -57,7 +57,7 @@ export class Stack {
     return _.sum(this.creatures.map(creature => CREATURE_DATA[creature].getValue()))
   }
 
-  muster(creature: CreatureType) {
+  muster(creature: CreatureType): void {
     this.creatures.push(creature)
   }
 }

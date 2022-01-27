@@ -3,8 +3,7 @@
     <v-card
       v-for="(player, index) in players"
       :key="index"
-      :style="{ backgroundColor: player.getColor() }"
-      :class="{ 'active': activePlayer === player }"
+      :class="{ 'active': activePlayer === player, [`bg-player-${player.color}`]: true }"
       class="player-card ml-2 mr-1 py-1 my-2"
       elevation="4"
     >

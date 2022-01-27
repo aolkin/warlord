@@ -13,9 +13,9 @@ export default createStore({
     game, ui
   },
   actions: {
-    reset({ commit }) {
+    reset({ commit, dispatch }) {
       commit("game/reset")
-      commit("ui/reset")
+      void dispatch("ui/reset")
     }
   }
 })

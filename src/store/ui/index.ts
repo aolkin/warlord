@@ -26,5 +26,10 @@ export default {
     setPlayer(state: UiState, player: number) {
       state.activePlayer = player
     }
+  },
+  actions: {
+    reset({ commit }) {
+      commit("selections/reset")
+    }
   }
 }

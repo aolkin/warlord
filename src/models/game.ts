@@ -1,5 +1,5 @@
 import _ from "lodash"
-import { CREATURE_LIST, CreatureType } from "./creature"
+import { CREATURE_DATA, CREATURE_LIST, CreatureType } from "./creature"
 import { Player } from "./player"
 import { Stack } from "./stack"
 
@@ -24,9 +24,14 @@ interface Getters {
   readonly stacksForHex: Stack[]
 }
 
+interface MusterPayload {
+  stack: Stack
+  creature: CreatureType
+}
+
 export class TitanGame {
   readonly players: Player[]
-  readonly creaturePool: Partial<Record<CreatureType, number>>
+  readonly creaturePool: Record<CreatureType, number>
 
   firstRound: boolean
   activeRoll?: number
@@ -41,8 +46,10 @@ export class TitanGame {
     this.players = _.range(0, numPlayers).map(
       i => new Player(colors[i], INITIAL_HEXES[numPlayers][i], `Player ${i + 1}`))
     this.creaturePool = Object.fromEntries(CREATURE_LIST
-      .filter(creature => creature.initialQuantity !== undefined)
-      .map(creature => [creature.type, creature.initialQuantity])) as Partial<Record<CreatureType, number>>
+      .map(creature => [creature.type, creature.initialQuantity])) as Record<CreatureType, number>
+    this.players.flatMap(
+      player => player.stacks.flatMap(
+        stack => stack.creatures)).forEach(creature => this.creaturePool[creature]--)
   }
 
   getStacks(): Stack[] {
@@ -79,5 +86,13 @@ export class TitanGame {
   mSetRoll(payload: number): void {
     this.activeRoll = payload
     this.activePhase = MasterboardPhase.MOVE
+  }
+
+  mMuster({ stack, creature }: MusterPayload): void {
+    if (this.creaturePool[creature] < 1 && !CREATURE_DATA[creature].lord) {
+      throw new Error("No more of the requested creature remaining")
+    }
+    stack.creatures.push(creature)
+    this.creaturePool[creature]--
   }
 }

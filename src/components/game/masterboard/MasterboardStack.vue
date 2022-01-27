@@ -5,6 +5,7 @@
     :transform="transform"
     class="marker"
     :class="classes"
+    in-svg
     @click.stop="select"
     @mouseenter="enter"
     @mouseleave="leave"
@@ -35,7 +36,8 @@ export default defineComponent({
     ...mapState("game", ["activePhase"]),
     ...mapGetters("game", ["activePlayer"]),
     transform() {
-      return hexTransform(this.stack.hex) + (this.selected ? "translate(4 -10)" : "")
+      return `${hexTransform(this.stack.hex)} translate(0, 12)` +
+        (this.selected ? " translate(4 -10)" : "") + " scale(0.48)"
     },
     selected() {
       return this.stack === this.selectedStack
@@ -53,7 +55,7 @@ export default defineComponent({
   methods: {
     ...mapMutations("ui/selections", ["selectStack", "deselectStack", "enterStack", "leaveStack"]),
     select() {
-      if (!(this.isActivePlayer && this.activePhase === MasterboardPhase.MOVE)) {
+      if (!(this.isActivePlayer)) {
         return
       }
       if (this.selected) {
@@ -63,10 +65,10 @@ export default defineComponent({
       }
     },
     enter() {
-      this.enterStack(this)
+      this.enterStack(this.stack)
     },
     leave() {
-      this.leaveStack(this)
+      this.leaveStack(this.stack)
     }
   }
 })
@@ -81,5 +83,5 @@ export default defineComponent({
   filter: drop-shadow(0 0 2px #fedcba)
 
 .selected
-  filter: drop-shadow(4px 4px 4px black)
+  filter: drop-shadow(-4px 4px 4px #333333bb)
 </style>

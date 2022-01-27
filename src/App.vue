@@ -35,6 +35,7 @@
     <v-navigation-drawer
       v-model="prefsPaneVisible"
       color="grey-darken-2"
+      width="400"
       temporary
     >
       <SystemMenu />
@@ -46,18 +47,6 @@
       <div v-show="view === Views.BATTLEBOARD" />
       <DiceRoller ref="diceRoller" />
     </v-main>
-    <v-navigation-drawer
-      color="grey-darken-3"
-      permanent
-      position="right"
-    >
-      <v-card height="400px">
-        Stacks
-      </v-card>
-      <v-card>
-        Log
-      </v-card>
-    </v-navigation-drawer>
     <v-app-bar color="grey-darken-3" height="30" position="bottom">Status</v-app-bar>
   </v-app>
 </template>
@@ -106,7 +95,7 @@ export default defineComponent({
 </script>
 
 <style lang="sass" scoped>
-.menu-drawer > :deep(div)
+:deep(.menu-drawer) > div.v-navigation-drawer__content
   display: flex
   flex-direction: column
   justify-content: space-between
