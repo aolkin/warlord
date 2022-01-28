@@ -1,0 +1,122 @@
+<template>
+  <v-card class="ma-3" absolute bottom right width="300">
+    <v-card-header>
+      <v-card-header-text>{{ activePlayer.name }}'s Turn</v-card-header-text>
+      <v-card-avatar>
+        <v-icon :icon="icon" size="x-large" />
+      </v-card-avatar>
+    </v-card-header>
+    <v-card-text v-if="activePhase === MasterboardPhase.SPLIT">
+      <span v-if="mayProceed">
+        Split stacks if desired, or proceed to roll.
+      </span>
+      <span v-else>
+        You must adjust your stack splits before rolling.
+      </span>
+    </v-card-text>
+    <v-card-text v-if="activePhase === MasterboardPhase.MOVE">
+      Moved {{ movedCount }} of {{ activePlayer.stacks.length }} stacks.
+      <span v-if="movedCount < 1">
+        You must move at least one stack!
+      </span>
+      <span v-else-if="!mayProceed">
+        You must move at least one stack from each split if possible.
+      </span>
+    </v-card-text>
+    <v-fade-transition leave-absolute>
+      <v-card-actions v-if="activePhase === MasterboardPhase.SPLIT">
+        <v-btn
+          block
+          :disabled="!mayProceed"
+          variant="outlined"
+          @click="proceedToRoll"
+        >
+          Finish Splits and Roll
+        </v-btn>
+      </v-card-actions>
+      <v-card-actions v-else-if="activePhase === MasterboardPhase.MOVE">
+        <v-btn
+          v-if="mulliganAvailable"
+          block
+          variant="outlined"
+          title="On the first round only, you may opt to re-roll your die once."
+          @click="roll"
+        >
+          Mulligan (Roll Again)
+        </v-btn>
+        <v-btn
+          v-else
+          block
+          :variant="movedCount === activePlayer.stacks.length ? 'outlined' : 'contained' "
+          :disabled="!mayProceed"
+          @click="nextPhase"
+        >
+          {{ engagedStacks.length > 0 ? "Proceed to Battle" : "Proceed to Muster" }}
+        </v-btn>
+      </v-card-actions>
+      <v-card-actions v-else-if="activePhase === MasterboardPhase.MUSTER">
+        <v-btn
+          block
+          variant="outlined"
+          :disabled="!mayProceed"
+          @click="nextPhase"
+        >
+          End Turn
+        </v-btn>
+      </v-card-actions>
+    </v-fade-transition>
+  </v-card>
+</template>
+
+<script lang="ts">
+import { defineComponent } from "@vue/runtime-core"
+import _ from "lodash"
+import { mapActions, mapGetters, mapMutations, mapState } from "vuex"
+import { MasterboardPhase } from "~/models/game"
+import { Stack } from "~/models/stack"
+
+export default defineComponent({
+  name: "TurnPanel",
+  inject: ["diceRoller"],
+  data: () => ({
+    MasterboardPhase
+  }),
+  computed: {
+    ...mapState("game", ["activeRoll", "activePhase", "firstRound"]),
+    ...mapGetters("game", ["activePlayer", "mayProceed", "mulliganAvailable", "engagedStacks"]),
+    icon(): string {
+      switch (this.activePhase) {
+        case MasterboardPhase.SPLIT:
+          return "mdi-call-split"
+        case MasterboardPhase.MOVE:
+          return `mdi-dice-${this.activeRoll ?? "multiple"}`
+        default:
+          return "mdi-dice-multiple"
+      }
+    },
+    movedCount(): number {
+      return _.sum(this.activePlayer.stacks.map((stack: Stack) => stack.hasMoved()))
+    }
+  },
+  methods: {
+    ...mapMutations("game", ["setRoll", "mulligan"]),
+    ...mapActions("game", ["nextPhase"]),
+    ...mapMutations("ui/selections", ["deselectStack"]),
+    roll() {
+      if (this.activeRoll !== undefined) {
+        this.mulligan()
+      }
+      this.diceRoller.roll().then(async(roll: number[]) => await this.setRoll(roll[0]))
+    },
+    proceedToRoll() {
+      this.deselectStack()
+      this.nextPhase()
+      this.roll()
+    }
+  }
+})
+</script>
+
+<style scoped lang="sass">
+
+</style>

@@ -1,4 +1,5 @@
 // Taken from https://codepen.io/sosuke/pen/Pjoqqp
+// and https://stackoverflow.com/questions/42966641/how-to-transform-black-into-any-given-color-using-only-css-filters/43960991#43960991
 "use strict"
 
 class Color {

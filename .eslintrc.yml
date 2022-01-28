@@ -27,6 +27,8 @@ overrides:
       '@typescript-eslint/explicit-function-return-type': warn
       '@typescript-eslint/quotes': [ warn, double, avoid-escape ]
       '@typescript-eslint/space-before-function-paren': [ warn, never ]
+      '@typescript-eslint/no-non-null-assertion': warn
+      '@typescript-eslint/no-unused-vars': warn
 rules:
   # Vue-related rules
   vue/singleline-html-element-content-newline: off

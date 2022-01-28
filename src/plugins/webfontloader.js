@@ -13,6 +13,9 @@ export async function loadFonts() {
         "Roboto:100,300,400,500,700,900",
         "Fanwood Text:400", // Simple Serifs
         "Fondamento:400",
+        "Eczar:400,500,600,700,800",
+        "Merriweather:400,700,900",
+        "Neuton:400,700,800",
         "Pirata One:400", // Fancy but harder to read
         "Quintessential:400", // Primary for Masterboard
         "Frank Ruhl Libre:400,500,700,900", // Primary for creatures

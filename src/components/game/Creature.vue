@@ -58,12 +58,6 @@ const STANDARD_CREATURE_COLORS: Record<CreatureType, TitanColor> = {
   [CreatureType.WYVERN]: TitanColor.PURPLE
 }
 
-const INVERT_ICON_COLORS: CreatureType[] = [
-  CreatureType.ANGEL,
-  CreatureType.ARCHANGEL,
-  CreatureType.WARLOCK
-]
-
 export default defineComponent({
   name: "Creature",
   props: {
@@ -117,8 +111,7 @@ export default defineComponent({
       const classMap = {
         [this.creature.name.toLowerCase()]: true,
         "uniform-text": [CreatureColorMode.PLAYER_UNIFORM_TEXT,
-          CreatureColorMode.STANDARD_UNIFORM_TEXT].includes(this.creatureColorMode),
-        "invert-icons": INVERT_ICON_COLORS.includes(this.creature.type)
+          CreatureColorMode.STANDARD_UNIFORM_TEXT].includes(this.creatureColorMode)
       }
       if ([CreatureColorMode.STANDARD, CreatureColorMode.STANDARD_UNIFORM_TEXT]
         .includes(this.creatureColorMode) && !this.creature.lord) {
@@ -181,7 +174,8 @@ export default defineComponent({
   .annotation, .icon
     fill: black
 
-.invert-icons
+// These creatures need white icons on top of their colored image
+.angel, .archangel, .warlock
   .icon
     fill: rgb(var(--v-theme-titan-white))
 

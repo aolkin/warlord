@@ -4,6 +4,23 @@ import vuetify from "~/plugins/vuetify"
 import vuex from "~/plugins/vuex"
 import { loadFonts } from "~/plugins/webfontloader"
 
+(() => {
+  let idCounter = 1
+  // eslint-disable-next-line no-extend-native
+  Object.defineProperty(Object.prototype, "__guid", {
+    writable: true
+  })
+  // eslint-disable-next-line no-extend-native
+  Object.defineProperty(Object.prototype, "guid", {
+    get: function() {
+      if (this.__guid === undefined) {
+        this.__guid = idCounter++
+      }
+      return this.__guid
+    }
+  })
+})()
+
 void loadFonts()
 
 const app = createApp(App)

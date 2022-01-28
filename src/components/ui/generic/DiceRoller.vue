@@ -1,5 +1,7 @@
 <template>
-  <div id="dicebox-container" :class="{ rolling }" />
+  <div id="dicebox-container" :class="{ rolling }">
+    <div class="bg">&nbsp;</div>
+  </div>
 </template>
 
 <script lang="ts">
@@ -26,7 +28,16 @@ export default defineComponent({
   },
   mounted() {
     const diceBox = new DiceBox("#dicebox-container", {
-      assetPath: "/assets/dice-box/"
+      assetPath: "/assets/dice-box/",
+      theme: "diceOfRolling",
+      zoomLevel: 2,
+      restitution: 0.6,
+      friction: 0.9,
+      linearDamping: 0.5,
+      angularDamping: 0.5,
+      throwForce: 6,
+      spinForce: 2,
+      startingHeight: 30
     })
     diceBox.init().then(() => {
       this.ready = true
@@ -34,7 +45,7 @@ export default defineComponent({
     diceBox.onRollComplete = (): void => {
       const result = diceBox.rollData.flatMap(
         (i: any) => i.rolls.map((roll: any) => roll.result)) as number[]
-      console.log("Complete", diceBox.rollData, result)
+      console.log("Dice roll complete", diceBox.rollData, result)
       this.resolve?.(result)
       this.reject = undefined
       this.resolve = undefined
@@ -66,21 +77,34 @@ export default defineComponent({
 </script>
 
 <style scoped lang="sass">
-#dicebox-container, #dicebox-container>canvas
+#dicebox-container, #dicebox-container :deep(canvas), .bg
   width: 100%
   height: 100%
+  position: absolute
 
 #dicebox-container
-  position: absolute
+  z-index: -100
+
+#dicebox-container, .bg
   left: 0
   top: 0
-  background: #88888801
-  z-index: -100
   opacity: 0
   transition: opacity 1s 1s, z-index 0s 2s
+
+.bg
+  background: linear-gradient(27deg, #151515 5px, transparent 5px) 0 5px, linear-gradient(207deg, #151515 5px, transparent 5px) 10px 0px, linear-gradient(27deg, #222 5px, transparent 5px) 0px 10px, linear-gradient(207deg, #222 5px, transparent 5px) 10px 5px, linear-gradient(90deg, #1b1b1b 10px, transparent 10px), linear-gradient(#1d1d1d 25%, #1a1a1a 25%, #1a1a1a 50%, transparent 50%, transparent 75%, #242424 75%, #242424)
+  background-color: #131313
+  background-size: 20px 20px
+  background-repeat: repeat
+  opacity: 0
+  transition: opacity 0s 3s
+
+.rolling .bg
+  opacity: 0.8
+  transition: opacity 1s
 
 #dicebox-container.rolling
   opacity: 1
   z-index: 1
-  transition: opacity 1s
+  transition: opacity 0s
 </style>

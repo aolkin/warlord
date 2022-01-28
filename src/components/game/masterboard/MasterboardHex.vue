@@ -1,6 +1,6 @@
 <template>
   <g
-    :class="terrain"
+    :class="rootClass"
     :transform="transform"
     class="parent"
   >
@@ -22,13 +22,15 @@
       :transform="inverted ? 'rotate(180) scale(0.99)' : 'scale(0.99)'"
       class="outline"
     />
-    <text :y="inverted ? 15 : -10" class="id" text-anchor="middle">{{ hex.id }}</text>
-    <text :y="inverted ? -25 : 35" class="label" text-anchor="middle">{{ terrain }}</text>
+    <text v-if="!path" :y="inverted ? 15 : -10" class="id" text-anchor="middle" v-text="hex.id" />
+    <text v-if="!path" :y="inverted ? -25 : 35" class="label" text-anchor="middle" v-text="terrain" />
+    <text v-if="path" :y="inverted ? -10 : 20" class="label" text-anchor="middle" v-text="pathCount" />
   </g>
 </template>
 
 <script lang="ts">
 import { defineComponent } from "@vue/runtime-core"
+import { mapState } from "vuex"
 import { MasterboardHex, Terrain } from "~/models/masterboard"
 import {
   CLIP_TRIANGLE_HEIGHT,
@@ -45,9 +47,35 @@ export default defineComponent({
     hex: {
       type: MasterboardHex,
       required: true
+    },
+    distanceToDest: {
+      type: Number,
+      required: false,
+      default: undefined
+    },
+    pathIndex: {
+      type: Number,
+      required: false,
+      default: 0
     }
   },
   computed: {
+    ...mapState("game", ["activeRoll"]),
+    rootClass() {
+      if (this.path) {
+        return {
+          path: true,
+          [`distance-${this.distanceToDest}`]: true,
+          [`path-${this.pathIndex}`]: true,
+          destination: this.distanceToDest === 1
+        }
+      } else {
+        return {
+          board: true,
+          [this.terrain]: true
+        }
+      }
+    },
     terrain() {
       return Terrain[this.hex?.terrain].toLowerCase()
     },
@@ -71,7 +99,13 @@ export default defineComponent({
       return isHexInverted(this.hex.id)
     },
     shadows(): boolean {
-      return this.$store.state.ui.preferences.fancyGraphics
+      return !this.path && this.$store.state.ui.preferences.fancyGraphics
+    },
+    path(): boolean {
+      return this.distanceToDest !== undefined
+    },
+    pathCount(): number {
+      return this.activeRoll - this.distanceToDest + 1
     }
   }
 })
@@ -86,28 +120,59 @@ export default defineComponent({
   font-size: 0.75em
   text-transform: uppercase
 
-.id
-  font-size: 0.6em
+.parent.board
+  .id
+    font-size: 0.6em
+  .hex
+    stroke: white
+    stroke-width: 2px
 
-.hex
-  stroke: white
-  stroke-width: 2px
+  .hex.fancy
+    stroke: black
+    stroke-width: 1px
 
-.hex.fancy
-  stroke: black
-  stroke-width: 1px
+  .outline
+    stroke: white
+    stroke-width: 3px
+    fill: transparent
+    filter: drop-shadow(0px 0px 3px #000000bb)
 
-.outline
-  stroke: white
-  stroke-width: 3px
-  fill: transparent
-  filter: drop-shadow(0px 0px 3px #000000bb)
-
-.mountains
-  .label
-    font-size: 0.9em
-    letter-spacing: -0.075em
-    baseline-shift: 0.25em
+  &.mountains
+    .label
+      font-size: 0.9em
+      letter-spacing: -0.075em
+      baseline-shift: 0.25em
 
 @include terrain-colors(".hex", fill)
+
+.path .hex
+  stroke-width: 0
+  transition: 0.25s ease-out
+
+.distance-1
+  cursor: pointer
+
+  &:hover .hex
+    stroke-width: 8px
+
+.path .label
+  font-size: 20pt
+
+@for $path from 0 through 2
+  $path-color: adjust-hue(#ff43ab, $path * 120deg)
+
+  @for $dist from 1 through 6
+    $dist-opacity: 1 - $dist / 6 * 0.5
+
+    .path-#{$path}.distance-#{$dist}
+      .hex
+        fill: rgba($path-color, $dist-opacity)
+        stroke: darken($path-color, 25%)
+
+      .label
+        fill: rgba(darken($path-color, 50%), $dist-opacity)
+
+      &:hover .hex
+        fill: rgba($path-color, 0.25)
+
 </style>

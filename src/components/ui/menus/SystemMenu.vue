@@ -15,6 +15,13 @@
       <v-slider v-model="localPlayer" min="1" :max="players.length" step="1" />
     </v-list-item>
     <v-list-item>
+      <v-list-item-header>Dice to Roll</v-list-item-header>
+      <v-slider v-model="diceQuantity" min="1" :max="18" step="1" />
+    </v-list-item>
+    <v-list-item>
+      <v-btn block @click="roll">Roll Dice</v-btn>
+    </v-list-item>
+    <v-list-item>
       <v-list-item-header>Creature Color Mode</v-list-item-header>
       <v-radio-group v-model="creatureColorMode">
         <v-radio v-for="(label, id) in colorModes" :key="id" :label="label" :value="id" />
@@ -37,8 +44,10 @@ import { CREATURE_LIST } from "~/models/creature"
 
 export default defineComponent({
   name: "SystemMenu",
+  inject: ["diceRoller"],
   data: () => ({
-    CREATURE_LIST
+    CREATURE_LIST,
+    diceQuantity: 1
   }),
   computed: {
     ...mapState("ui", {
@@ -93,6 +102,9 @@ export default defineComponent({
           creature: creature.type
         })
       }
+    },
+    roll() {
+      this.diceRoller.roll(this.diceQuantity)
     }
   }
 })

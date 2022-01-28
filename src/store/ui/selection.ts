@@ -1,3 +1,5 @@
+import { Path } from "~/models/game"
+import masterboard from "~/models/masterboard"
 import { Stack } from "~/models/stack"
 
 export interface Selections {
@@ -11,10 +13,20 @@ export default {
     focusedStacks: []
   }),
   getters: {
+    selectedStack(state: Selections): Stack | undefined {
+      return state.stack
+    },
     focusedStack(state: Selections): Stack | undefined {
       return (state.focusedStacks.length > 0)
         ? state.focusedStacks[state.focusedStacks.length - 1]
         : state.stack
+    },
+    paths(state: Selections, getters: any, rootState: any, rootGetters: any): Path[] {
+      if (state.stack?.hex === undefined || masterboard.getHex(state.stack.hex) === undefined ||
+        rootState.game.activeRoll === undefined) {
+        return []
+      }
+      return rootGetters["game/pathsForHex"](state.stack.hex)
     }
   },
   mutations: {

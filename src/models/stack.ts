@@ -6,11 +6,11 @@ import { Player } from "./player"
 export class Stack {
   readonly player: Player
   readonly creatures: CreatureType[]
-  readonly hex: number
   readonly marker: number
+  readonly split: boolean[]
 
-  private splitFrom?: Stack
-  private pendingSplit?: Stack
+  origin: number
+  hex: number
 
   /**
      * Initialize a stack for a player at the start of the game with a single creature (Titan or Angel)
@@ -25,32 +25,51 @@ export class Stack {
       CreatureType.CENTAUR, CreatureType.CENTAUR,
       CreatureType.OGRE, CreatureType.OGRE,
       CreatureType.GARGOYLE, CreatureType.GARGOYLE]
+    this.split = _.range(8).map(i => false)
     this.hex = start
-    assert(marker >= 0 && marker <= 11, "Invalid initial marker")
+    this.origin = start
     this.marker = marker
   }
 
-  /**
-     * Removes the specified creatures from the current stack and returns a new stack with the
-     * specified marker.
-     * @param creatures creature to split off
-     * @param marker marker for the new stack
-     */
-  split(creatures: CreatureType[], marker: number): Stack {
-    assert(creatures.length >= 2 && creatures.length <= 5, "Invalid stack split")
-    creatures.forEach(type => {
-      this.creatures.splice(this.creatures.indexOf(type), 1)
-    })
-    assert(marker >= 0, "Invalid marker")
-    const splitStack = new Stack(this.player, this.hex, marker, creatures)
-    splitStack.splitFrom = this
-    this.pendingSplit = splitStack
-    return splitStack
+  setPendingSplit(index: number, pending: boolean): void {
+    this.split[index] = pending
   }
 
-  finalizeSplit(): void {
-    this.splitFrom = undefined
-    this.pendingSplit = undefined
+  numSplitting(): number {
+    return _.sum(this.split.map(i => i ? 1 : 0))
+  }
+
+  hasMoved(): boolean {
+    return this.hex !== this.origin
+  }
+
+  isValidSplit(firstRound?: boolean): boolean {
+    const numSplitting = this.numSplitting()
+    if (firstRound ?? false) {
+      if (numSplitting !== 4) {
+        return false
+      }
+      const splitLords: number = _.sum(this.creatures.map((creature, index) =>
+        this.split[index] && CREATURE_DATA[creature].lord))
+      if (splitLords !== 1) {
+        return false
+      }
+    }
+    const remaining = this.creatures.length - numSplitting
+    return numSplitting === 0 || (numSplitting >= 2 && remaining >= 2)
+  }
+
+  getCreatureSplit(split: boolean) {
+    return this.creatures.filter((_, index) => this.split[index] === split)
+  }
+
+  finalizeSplit(marker: number): Stack {
+    assert(this.isValidSplit(), "Invalid split")
+    assert(marker >= 0, "Invalid marker")
+    const creatures = this.getCreatureSplit(true)
+    _.remove(this.creatures, (creature, index) => this.split[index])
+    this.split.fill(false)
+    return new Stack(this.player, this.hex, marker, creatures)
   }
 
   getValue(): number {
