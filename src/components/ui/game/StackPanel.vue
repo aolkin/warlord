@@ -8,22 +8,25 @@
     <v-card v-else class="ma-3" absolute top right width="340">
       <v-card-header>
         <v-card-avatar>
-          <Marker :color="focusedStack.player.color" :marker="focusedStack.marker" width="50" height="50" />
+          <Marker :color="focusedStack.owner" :marker="focusedStack.marker" width="50" height="50" />
         </v-card-avatar>
-        <v-card-header-text>{{ focusedStack.player.name }}</v-card-header-text>
+        <v-card-header-text>
+          {{ stackPlayer.name }}
+          ({{ focusedStack.creatures.length }} creatures)
+        </v-card-header-text>
       </v-card-header>
       <div class="px-2 pb-1">
         <Creature
           v-for="(creature, index) in focusedStack.creatures"
           :key="index"
           :type="creature"
-          :player="focusedStack.player"
+          :player="stackPlayer"
           :class="{ splitting: focusedStack.split[index], interactive: owned }"
           class="ma-1"
           @click="toggleSplit(index)"
         />
       </div>
-      <div v-if="activePlayer === focusedStack.player">
+      <div v-if="activePlayerId === focusedStack.owner">
         <v-card-actions v-if="activePhase === MasterboardPhase.SPLIT" class="split-guide">
           <v-card-text v-if="firstRound">
             You must split your starting creatures. Please select four creatures (including one lord) above
@@ -40,8 +43,8 @@
             You may select at least 2 and at most {{ focusedStack.creatures.length - 2 }} creatures to split
             into a new stack.
             <v-card-text class="text-left">
-              <p>Remaining: {{ focusedStack.getCreatureSplit(false).map(c => CREATURES[c].name).join(", ") }}</p>
-              <p>Splitting: {{ focusedStack.getCreatureSplit(true).map(c => CREATURES[c].name).join(", ") }}</p>
+              <p>Remaining: {{ focusedStack.getCreaturesSplit(false).map(c => CREATURES[c].name).join(", ") }}</p>
+              <p>Splitting: {{ focusedStack.getCreaturesSplit(true).map(c => CREATURES[c].name).join(", ") }}</p>
             </v-card-text>
           </v-card-text>
         </v-card-actions>
@@ -55,6 +58,7 @@ import { defineComponent } from "@vue/runtime-core"
 import { mapGetters, mapState } from "vuex"
 import { CREATURE_DATA } from "~/models/creature"
 import { MasterboardPhase } from "~/models/game"
+import { Player } from "~/models/player"
 import Creature from "../../game/Creature.vue"
 import Marker from "../../game/Marker.vue"
 
@@ -67,10 +71,13 @@ export default defineComponent({
   }),
   computed: {
     ...mapState("game", ["activePhase", "firstRound"]),
-    ...mapGetters("game", ["activePlayer"]),
+    ...mapGetters("game", ["activePlayerId", "playerById"]),
     ...mapGetters("ui/selections", ["focusedStack"]),
     owned(): boolean {
-      return this.activePlayer === this.focusedStack?.player
+      return this.activePlayerId === this.focusedStack?.owner
+    },
+    stackPlayer(): Player | undefined {
+      return this.playerById(this.focusedStack?.owner)
     }
   },
   methods: {

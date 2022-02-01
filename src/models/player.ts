@@ -1,7 +1,4 @@
-import _ from "lodash"
-import { Stack } from "./stack"
-
-export enum PlayerColor {
+export enum PlayerId {
   BLUE,
   GREEN,
   RED,
@@ -11,19 +8,17 @@ export enum PlayerColor {
 }
 
 export class Player {
-  readonly color: PlayerColor
-  readonly markers: number[]
-  readonly stacks: Stack[]
-  readonly score: number
-  name: string
+  readonly id: PlayerId
+  readonly name: string
+  score: number
 
-  constructor(color: PlayerColor, hex: number, name: string) {
-    this.color = color
+  constructor(id: PlayerId, name: string) {
+    this.id = id
     this.name = name
-    this.markers = _.range(2, 12)
-    this.stacks = [
-      new Stack(this, hex, 0)
-    ]
     this.score = 0
+  }
+
+  addPoints(points: number): void {
+    this.score += points
   }
 }

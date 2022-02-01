@@ -117,7 +117,7 @@ export default defineComponent({
         .includes(this.creatureColorMode) && !this.creature.lord) {
         classMap.standard = true
       } else {
-        classMap[`text-player-${this.player?.color ?? 0}`] = true
+        classMap[`text-player-${this.player?.id ?? 0}`] = true
       }
       return classMap
     },
@@ -129,7 +129,7 @@ export default defineComponent({
       if (this.player !== undefined) {
         if (this.creature.lord || [CreatureColorMode.PLAYER_UNIFORM_TEXT,
           CreatureColorMode.PLAYER].includes(this.creatureColorMode)) {
-          color = this.currentTheme.colors[`player-${this.player.color}`]
+          color = this.currentTheme.colors[`player-${this.player.id}`]
         }
       }
       return FilterCache.getForHex(color).filter

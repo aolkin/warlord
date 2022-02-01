@@ -217,18 +217,18 @@ export class Masterboard {
       HexEdge.FIRST
     ]
     const bottomHexEdges = [
-      HexEdge.THIRD,
       HexEdge.FIRST,
       HexEdge.THIRD,
       HexEdge.FIRST,
-      HexEdge.FIRST,
       HexEdge.THIRD,
-      HexEdge.FIRST
+      HexEdge.THIRD,
+      HexEdge.FIRST,
+      HexEdge.THIRD
     ]
     for (let id = 1; id <= 42; ++id) {
       const localIndex = (id - 1) % 7
       this.hexes.get(id)!.addEdge(this.hexes.get(id % 42 + 1)!, middleHexEdges[localIndex], MovementRule.ARROW)
-      this.hexes.get(id + 100)!.addEdge(this.hexes.get(id % 42 + 101)!, bottomHexEdges[localIndex], MovementRule.ARROW)
+      this.hexes.get(id + 100)!.addEdge(this.hexes.get(mod(id - 2, 42) + 101)!, bottomHexEdges[localIndex], MovementRule.ARROW)
     }
 
     for (let sector = 1; sector <= 6; sector++) {

@@ -7,6 +7,7 @@ export enum CreatureColorMode {
 
 export interface Preferences {
   fancyGraphics: boolean
+  freeMovement: boolean
   creatureColorMode: CreatureColorMode
 }
 
@@ -24,6 +25,7 @@ export default {
   namespaced: true,
   state: () => Object.assign({
     fancyGraphics: true,
+    freeMovement: false,
     creatureColorMode: CreatureColorMode.STANDARD
   }, savedPreferences ?? {}),
   mutations: {
@@ -33,6 +35,10 @@ export default {
     },
     setCreatureColorMode(state: Preferences, payload: CreatureColorMode) {
       state.creatureColorMode = payload
+      savePreferences(state)
+    },
+    setFreeMovement(state: Preferences, payload: boolean) {
+      state.freeMovement = payload
       savePreferences(state)
     }
   }

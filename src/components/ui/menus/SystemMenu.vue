@@ -8,6 +8,13 @@
       />
     </v-list-item>
     <v-list-item>
+      <v-list-item-header>Free Teleportation</v-list-item-header>
+      <v-switch
+        v-model="freeMovement"
+        inset
+      />
+    </v-list-item>
+    <v-list-item>
       <v-btn block @click="reset">Reset Game</v-btn>
     </v-list-item>
     <v-list-item>
@@ -38,7 +45,7 @@
 
 <script>
 import { defineComponent } from "@vue/runtime-core"
-import { mapActions, mapMutations, mapState } from "vuex"
+import { mapActions, mapGetters, mapMutations, mapState } from "vuex"
 import { CreatureColorMode } from "~/store/ui/preferences"
 import { CREATURE_LIST } from "~/models/creature"
 
@@ -50,14 +57,8 @@ export default defineComponent({
     diceQuantity: 1
   }),
   computed: {
-    ...mapState("ui", {
-      preferences: state => state.preferences,
-      selections: state => state.selections,
-      activePlayer: state => state.activePlayer
-    }),
-    ...mapState("game", {
-      players: state => state.players
-    }),
+    ...mapState("ui", ["preferences", "selections", "activePlayer"]),
+    ...mapGetters("game", ["players"]),
     colorModes() {
       return {
         [CreatureColorMode.STANDARD]: "Standard",
@@ -72,6 +73,14 @@ export default defineComponent({
       },
       set(value) {
         this.setFancyGraphics(value)
+      }
+    },
+    freeMovement: {
+      get() {
+        return this.preferences.freeMovement
+      },
+      set(value) {
+        this.setFreeMovement(value)
       }
     },
     creatureColorMode: {
@@ -93,7 +102,7 @@ export default defineComponent({
   },
   methods: {
     ...mapMutations("ui", ["setPlayer"]),
-    ...mapMutations("ui/preferences", ["setFancyGraphics", "setCreatureColorMode"]),
+    ...mapMutations("ui/preferences", ["setFancyGraphics", "setCreatureColorMode", "setFreeMovement"]),
     ...mapActions(["reset"]),
     summon(creature) {
       if (this.selections.stack !== undefined) {

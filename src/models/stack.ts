@@ -1,10 +1,12 @@
 import _ from "lodash"
 import { assert } from "~/utils/assert"
 import { CREATURE_DATA, CreatureType } from "./creature"
-import { Player } from "./player"
+import { PlayerId } from "./player"
+
+export type StackRef = number
 
 export class Stack {
-  readonly player: Player
+  readonly owner: PlayerId
   readonly creatures: CreatureType[]
   readonly marker: number
   readonly split: boolean[]
@@ -12,15 +14,8 @@ export class Stack {
   origin: number
   hex: number
 
-  /**
-     * Initialize a stack for a player at the start of the game with a single creature (Titan or Angel)
-     * @param player
-     * @param start the stack's starting hex
-     * @param initial the first creature in the stack
-     * @param marker the stack marker to use, must be an integer 0-11 inclusive
-     */
-  constructor(player: Player, start: number, marker: number, initial?: CreatureType[]) {
-    this.player = player
+  constructor(owner: PlayerId, start: number, marker: number, initial?: CreatureType[]) {
+    this.owner = owner
     this.creatures = initial ?? [CreatureType.TITAN, CreatureType.ANGEL,
       CreatureType.CENTAUR, CreatureType.CENTAUR,
       CreatureType.OGRE, CreatureType.OGRE,
@@ -29,10 +24,6 @@ export class Stack {
     this.hex = start
     this.origin = start
     this.marker = marker
-  }
-
-  setPendingSplit(index: number, pending: boolean): void {
-    this.split[index] = pending
   }
 
   numSplitting(): number {
@@ -59,21 +50,27 @@ export class Stack {
     return numSplitting === 0 || (numSplitting >= 2 && remaining >= 2)
   }
 
-  getCreatureSplit(split: boolean) {
+  getCreaturesSplit(split: boolean): CreatureType[] {
     return this.creatures.filter((_, index) => this.split[index] === split)
+  }
+
+  getValue(): number {
+    return _.sum(this.creatures.map(creature => CREATURE_DATA[creature].getValue()))
+  }
+
+  // MUTATING METHODS - todo, change this
+
+  setPendingSplit(index: number, pending: boolean): void {
+    this.split[index] = pending
   }
 
   finalizeSplit(marker: number): Stack {
     assert(this.isValidSplit(), "Invalid split")
     assert(marker >= 0, "Invalid marker")
-    const creatures = this.getCreatureSplit(true)
+    const creatures = this.getCreaturesSplit(true)
     _.remove(this.creatures, (creature, index) => this.split[index])
     this.split.fill(false)
-    return new Stack(this.player, this.hex, marker, creatures)
-  }
-
-  getValue(): number {
-    return _.sum(this.creatures.map(creature => CREATURE_DATA[creature].getValue()))
+    return new Stack(this.owner, this.hex, marker, creatures)
   }
 
   muster(creature: CreatureType): void {

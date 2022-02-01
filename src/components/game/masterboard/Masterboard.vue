@@ -6,34 +6,30 @@
       xmlns="http://www.w3.org/2000/svg"
       @click="deselectStack"
     >
-      <g class="board">
+      <g class="masterboard">
         <g class="hexes">
           <MasterboardHex
             v-for="id in hexes"
             :key="id"
             :hex="board.getHex(id)"
+            @click="canFreeMove && move({ stack: focusedStack, hex: id })"
           />
         </g>
         <MasterboardEdges />
       </g>
-    </svg>
-    <svg
-      class="interactive"
-      viewBox="-400 -350 800 700"
-      xmlns="http://www.w3.org/2000/svg"
-      @click="deselectStack"
-    >
       <v-fade-transition>
         <g v-if="paths.length > 0" :key="selectedStack.hex" class="paths">
           <g v-for="(step, distance) in interleavedPaths" :key="distance">
-            <MasterboardHex
-              v-for="([foe, hex], index) in step"
-              :key="index"
-              :path-index="index"
-              :distance-to-dest="paths[0].length - distance"
-              :hex="hex"
-              @click="distance === paths[0].length - 1 && move({ stack: focusedStack, hex })"
-            />
+            <template v-for="([foe, hex], index) in step" :key="index">
+              <MasterboardHex
+                v-if="hex"
+                :path-index="index"
+                :distance-to-dest="paths[index].length - distance"
+                :hex="hex"
+                :contains-enemy="foe"
+                @click="distance === paths[index].length - 1 && move({ stack: focusedStack, hex })"
+              />
+            </template>
           </g>
         </g>
       </v-fade-transition>
@@ -49,7 +45,8 @@
 <script lang="ts">
 import { defineComponent } from "@vue/runtime-core"
 import _ from "lodash"
-import { mapGetters, mapMutations } from "vuex"
+import { mapActions, mapGetters, mapMutations, mapState } from "vuex"
+import { MasterboardPhase } from "~/models/game"
 import board, { Masterboard, MasterboardHex } from "~/models/masterboard"
 import { Stack } from "~/models/stack"
 import StackPanel from "../../ui/game/StackPanel.vue"
@@ -64,7 +61,8 @@ export default defineComponent({
   name: "Masterboard",
   components: { MasterboardEdges, StackPanel, TurnPanel, MasterboardStack, MasterboardHex: MasterboardHexComponent },
   computed: {
-    ...mapGetters("game", ["stacks"]),
+    ...mapState("ui/preferences", ["freeMovement"]),
+    ...mapState("game", ["activePhase", "stacks"]),
     ...mapGetters("ui/selections", ["paths", "focusedStack", "selectedStack"]),
     board(): Masterboard {
       return board
@@ -78,13 +76,18 @@ export default defineComponent({
       return lastSortedStacks
     },
     interleavedPaths(): [boolean, MasterboardHex][][] {
-      return this.paths[0].map((i: any, colIndex: number) =>
-        this.paths.map((row: MasterboardHex[]) => row[colIndex]))
+      const pathsByLength = _.sortBy(this.paths, paths => -paths.length)
+      return pathsByLength[0].map((i: any, colIndex: number) =>
+        this.paths.map((row: MasterboardHex[]) => row[colIndex] ?? [true, undefined]))
+    },
+    canFreeMove(): boolean {
+      return this.activePhase === MasterboardPhase.MOVE &&
+        this.focusedStack !== undefined && this.freeMovement
     }
   },
   methods: {
     ...mapMutations("ui/selections", ["deselectStack"]),
-    ...mapMutations("game", ["move"])
+    ...mapActions("game", ["move"])
   }
 })
 </script>

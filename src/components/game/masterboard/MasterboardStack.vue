@@ -8,7 +8,7 @@
     @mouseleave="leave"
   >
     <Marker
-      :color="stack.player.color"
+      :color="stack.owner"
       :marker="stack.marker"
       in-svg
     />
@@ -21,7 +21,7 @@
 
 <script lang="ts">
 import { defineComponent } from "@vue/runtime-core"
-import { mapGetters, mapMutations, mapState } from "vuex"
+import { mapActions, mapGetters, mapMutations, mapState } from "vuex"
 import { MasterboardPhase } from "~/models/game"
 import { Stack } from "~/models/stack"
 import Marker from "../Marker.vue"
@@ -41,7 +41,7 @@ export default defineComponent({
       selectedStack: "stack"
     }),
     ...mapState("game", ["activePhase", "firstRound"]),
-    ...mapGetters("game", ["activePlayer", "mandatoryMoves", "stacksForHex"]),
+    ...mapGetters("game", ["activePlayerId", "mandatoryMoves", "stacksForHex"]),
     transform() {
       const transform = hexTransform(this.stack.hex)
       transform.push(new Transformation(TransformationType.TRANSLATE,
@@ -59,7 +59,7 @@ export default defineComponent({
       return this.stack === this.selectedStack
     },
     isActivePlayer() {
-      return this.activePlayer === this.stack.player
+      return this.activePlayerId === this.stack.owner
     },
     isMandatory() {
       if (!this.isActivePlayer) {
@@ -91,7 +91,7 @@ export default defineComponent({
         owned: this.isActivePlayer,
         mandatory: this.isMandatory,
         disabled: this.isDisabled,
-        [`player-${this.stack.player.color}`]: true,
+        [`player-${this.stack.owner}`]: true,
         "multiple-stacks": this.stacksOnHex.length > 1,
         [`stack-on-hex-${this.stacksOnHexIndex}`]: true,
         [`phase-${MasterboardPhase[this.activePhase].toLowerCase()}`]: true
@@ -112,7 +112,7 @@ export default defineComponent({
   },
   methods: {
     ...mapMutations("ui/selections", ["selectStack", "deselectStack", "enterStack", "leaveStack"]),
-    ...mapMutations("game", ["move"]),
+    ...mapActions("game", ["move"]),
     select() {
       if (!(this.isActivePlayer)) {
         return

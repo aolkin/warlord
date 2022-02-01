@@ -10,21 +10,25 @@
       :transform="inverted ? 'rotate(180)' : ''"
       class="hex"
     />
-    <clipPath v-if="shadows" :id="`hex-${hex.id}-clip`">
+    <template v-if="!path">
+      <clipPath v-if="shadows" :id="`hex-${hex.id}-clip`">
+        <polygon
+          :points="points.join(' ')"
+        />
+      </clipPath>
       <polygon
+        v-if="shadows"
+        :clip-path="`url(#hex-${hex.id}-clip)`"
         :points="points.join(' ')"
+        :transform="inverted ? 'rotate(180) scale(0.99)' : 'scale(0.99)'"
+        class="outline"
       />
-    </clipPath>
-    <polygon
-      v-if="shadows"
-      :clip-path="`url(#hex-${hex.id}-clip)`"
-      :points="points.join(' ')"
-      :transform="inverted ? 'rotate(180) scale(0.99)' : 'scale(0.99)'"
-      class="outline"
-    />
-    <text v-if="!path" :y="inverted ? 15 : -10" class="id" text-anchor="middle" v-text="hex.id" />
-    <text v-if="!path" :y="inverted ? -25 : 35" class="label" text-anchor="middle" v-text="terrain" />
-    <text v-if="path" :y="inverted ? -10 : 20" class="label" text-anchor="middle" v-text="pathCount" />
+      <text :y="inverted ? 15 : -10" class="id" text-anchor="middle" v-text="hex.id" />
+      <text :y="inverted ? -25 : 35" class="label" text-anchor="middle" v-text="terrain" />
+    </template>
+    <template v-else>
+      <text :y="inverted ? -10 : 20" class="label" text-anchor="middle" v-text="pathCount" />
+    </template>
   </g>
 </template>
 
@@ -57,10 +61,18 @@ export default defineComponent({
       type: Number,
       required: false,
       default: 0
+    },
+    containsEnemy: {
+      type: Boolean,
+      required: false,
+      default: false
     }
   },
   computed: {
     ...mapState("game", ["activeRoll"]),
+    ...mapState("ui/preferences", {
+      shadows: state => state.fancyGraphics
+    }),
     rootClass() {
       if (this.path) {
         return {
@@ -97,9 +109,6 @@ export default defineComponent({
     },
     inverted() {
       return isHexInverted(this.hex.id)
-    },
-    shadows(): boolean {
-      return !this.path && this.$store.state.ui.preferences.fancyGraphics
     },
     path(): boolean {
       return this.distanceToDest !== undefined
@@ -149,12 +158,6 @@ export default defineComponent({
   stroke-width: 0
   transition: 0.25s ease-out
 
-.distance-1
-  cursor: pointer
-
-  &:hover .hex
-    stroke-width: 8px
-
 .path .label
   font-size: 20pt
 
@@ -162,7 +165,7 @@ export default defineComponent({
   $path-color: adjust-hue(#ff43ab, $path * 120deg)
 
   @for $dist from 1 through 6
-    $dist-opacity: 1 - $dist / 6 * 0.5
+    $dist-opacity: calc(1 - $dist / 6 * 0.5)
 
     .path-#{$path}.distance-#{$dist}
       .hex
@@ -170,9 +173,29 @@ export default defineComponent({
         stroke: darken($path-color, 25%)
 
       .label
-        fill: rgba(darken($path-color, 50%), $dist-opacity)
+        fill: darken($path-color, 35%)
 
       &:hover .hex
         fill: rgba($path-color, 0.25)
+
+g.paths:hover .path
+  .label
+    opacity: 0.2
+
+  .hex
+    fill: transparent
+
+  &:hover
+    .label
+      opacity: 1
+
+    .hex
+      stroke-width: 2px
+
+.path.distance-1
+  cursor: pointer
+
+  &:hover .hex
+    stroke-width: 8px !important
 
 </style>

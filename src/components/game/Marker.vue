@@ -15,13 +15,13 @@
 <script lang="ts">
 import { defineComponent, PropType } from "@vue/runtime-core"
 import _ from "lodash"
-import { PlayerColor } from "~/models/player"
+import { PlayerId } from "~/models/player"
 
 export default defineComponent({
   name: "Marker",
   props: {
     color: {
-      type: Number as PropType<PlayerColor>,
+      type: Number as PropType<PlayerId>,
       required: true
     },
     marker: {

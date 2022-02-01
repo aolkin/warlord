@@ -15,7 +15,7 @@
       </span>
     </v-card-text>
     <v-card-text v-if="activePhase === MasterboardPhase.MOVE">
-      Moved {{ movedCount }} of {{ activePlayer.stacks.length }} stacks.
+      Moved {{ movedCount }} of {{ activeStacks.length }} stacks.
       <span v-if="movedCount < 1">
         You must move at least one stack!
       </span>
@@ -47,7 +47,7 @@
         <v-btn
           v-else
           block
-          :variant="movedCount === activePlayer.stacks.length ? 'outlined' : 'contained' "
+          :variant="movedCount === activeStacks.length ? 'outlined' : 'contained' "
           :disabled="!mayProceed"
           @click="nextPhase"
         >
@@ -83,7 +83,9 @@ export default defineComponent({
   }),
   computed: {
     ...mapState("game", ["activeRoll", "activePhase", "firstRound"]),
-    ...mapGetters("game", ["activePlayer", "mayProceed", "mulliganAvailable", "engagedStacks"]),
+    ...mapGetters("game", [
+      "activePlayer", "activeStacks", "mayProceed", "mulliganAvailable", "engagedStacks"
+    ]),
     icon(): string {
       switch (this.activePhase) {
         case MasterboardPhase.SPLIT:
@@ -95,16 +97,15 @@ export default defineComponent({
       }
     },
     movedCount(): number {
-      return _.sum(this.activePlayer.stacks.map((stack: Stack) => stack.hasMoved()))
+      return _.sum(this.activeStacks.map((stack: Stack) => stack.hasMoved()))
     }
   },
   methods: {
-    ...mapMutations("game", ["setRoll", "mulligan"]),
-    ...mapActions("game", ["nextPhase"]),
+    ...mapActions("game", ["setRoll", "nextPhase"]),
     ...mapMutations("ui/selections", ["deselectStack"]),
     roll() {
       if (this.activeRoll !== undefined) {
-        this.mulligan()
+        this.setRoll(undefined)
       }
       this.diceRoller.roll().then(async(roll: number[]) => await this.setRoll(roll[0]))
     },

@@ -5,7 +5,7 @@ import _ from "lodash"
 // Vuetify
 import { createVuetify } from "vuetify"
 import "vuetify/styles"
-import { PlayerColor } from "~/models/player"
+import { PlayerId } from "~/models/player"
 
 const titanColors = {
   "titan-white": "#fcfcfc",
@@ -21,7 +21,7 @@ const titanColors = {
 
 const playerColors = Object.fromEntries(_.map(titanColors,
   // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
-  (color, name) => [`player-${PlayerColor[name.split("-")[1].toUpperCase()]}`, color])
+  (color, name) => [`player-${PlayerId[name.split("-")[1].toUpperCase()]}`, color])
   .filter(entry => entry[0] !== "player-undefined"))
 
 // https://vuetifyjs.com/en/introduction/why-vuetify/#feature-guides
