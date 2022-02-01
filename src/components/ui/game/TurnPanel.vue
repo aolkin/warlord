@@ -15,7 +15,7 @@
       </span>
     </v-card-text>
     <v-card-text v-if="activePhase === MasterboardPhase.MOVE">
-      Moved {{ movedCount }} of {{ activeStacks.length }} stacks.
+      Moved {{ movedCount }} of {{ activeStacks.length }} stacks. {{ engagementsMessage }}
       <span v-if="movedCount < 1">
         You must move at least one stack!
       </span>
@@ -98,6 +98,15 @@ export default defineComponent({
     },
     movedCount(): number {
       return _.sum(this.activeStacks.map((stack: Stack) => stack.hasMoved()))
+    },
+    engagementsMessage(): string {
+      if (this.engagedStacks.length < 1) {
+        return ""
+      } else if (this.engagedStacks.length === 1) {
+        return "1 pending battle."
+      } else {
+        return `${this.engagedStacks.length} pending battles.`
+      }
     }
   },
   methods: {

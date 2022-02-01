@@ -77,6 +77,7 @@ export default defineComponent({
       if (this.path) {
         return {
           path: true,
+          foe: this.containsEnemy,
           [`distance-${this.distanceToDest}`]: true,
           [`path-${this.pathIndex}`]: true,
           destination: this.distanceToDest === 1
@@ -192,7 +193,7 @@ g.paths:hover .path
     .hex
       stroke-width: 2px
 
-.path.distance-1
+.path.distance-1:not(.foe)
   cursor: pointer
 
   &:hover .hex

@@ -21,7 +21,7 @@ export enum MasterboardPhase {
   END
 }
 
-export type Path = Array<[boolean, MasterboardHex]>
+export type Path = [boolean, MasterboardHex[]]
 
 interface Getters {
   readonly players: Player[]
@@ -109,21 +109,23 @@ export class TitanGame {
       }
       const initialHex = masterboard.getHex(hexNum)
       const paths: Path[] = []
-      type pathing = [Array<[boolean, MasterboardHex]>, MasterboardHex]
-      const stack: pathing[] = initialHex.getMovement(true).map(edge => [[[false, initialHex]], edge.hex])
+      type pathing = [MasterboardHex[], MasterboardHex | undefined, MasterboardHex]
+      const stack: pathing[] = initialHex.getMovement(true).map(edge => [[initialHex], undefined, edge.hex])
       while (stack.length > 0) {
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        const [path, hex] = stack.pop()!
+        let [path, foe, hex] = stack.pop()!
         const occupants: Stack[] = getters.stacksForHex(hex.id)
-        const foe = occupants.some((stack: Stack) => stack.owner !== getters.activePlayerId)
-        if (foe || path.length === this.activeRoll) {
+        if (occupants.some((stack: Stack) => stack.owner !== getters.activePlayerId)) {
+          foe = hex
+        }
+        if (path.length === this.activeRoll) {
           if (!occupants.some((stack: Stack) => stack.owner === getters.activePlayerId)) {
-            paths.push([...path.splice(1), [foe, hex]])
+            paths.push([foe !== undefined, [...path.splice(1), hex]])
           }
         } else {
           stack.push(...hex.getMovement(false)
-            .filter(edge => path[path.length - 1][1] !== edge.hex)
-            .map(edge => [[...path, [foe, hex]], edge.hex] as pathing))
+            .filter(edge => path[path.length - 1] !== edge.hex)
+            .map(edge => [[...path, hex], foe, edge.hex] as pathing))
         }
       }
       return paths
@@ -214,7 +216,6 @@ export class TitanGame {
   }
 
   mMove({ stack, hex }: MovePayload): void {
-    console.log(stack, hex)
     if (hex instanceof MasterboardHex) {
       stack.hex = hex.id
     } else {
@@ -281,7 +282,7 @@ export class TitanGame {
       hydration.players = hydration.players.map((player: Player) =>
         _.assign(new Player(player.id, player.name), player))
       hydration.stacks = hydration.stacks.map((stack: Stack) =>
-        new Stack(stack.owner, stack.hex, stack.marker, stack.creatures))
+        _.assign(new Stack(stack.owner, stack.hex, stack.marker, stack.creatures), stack))
       _.assign(game, hydration)
     }
     return game
