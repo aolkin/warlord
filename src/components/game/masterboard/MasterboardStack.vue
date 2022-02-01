@@ -28,8 +28,6 @@
 <script lang="ts">
 import { defineComponent } from "@vue/runtime-core"
 import { mapActions, mapGetters, mapMutations, mapState } from "vuex"
-
-import engageImageUrl from "~/assets/graphics/sword-cross.svg"
 import { CreatureType } from "~/models/creature"
 import { MasterboardPhase, Path } from "~/models/game"
 import { MasterboardHex } from "~/models/masterboard"
@@ -46,9 +44,6 @@ export default defineComponent({
       required: true
     }
   },
-  data: () => ({
-    engageImageUrl
-  }),
   computed: {
     ...mapState("ui/selections", {
       selectedStack: "stack"
