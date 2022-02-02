@@ -3,6 +3,8 @@
     :class="rootClass"
     :transform="transform"
     class="parent"
+    @mouseenter="enter"
+    @mouseleave="leave"
   >
     <polygon
       :class="{ fancy: shadows }"
@@ -34,7 +36,7 @@
 
 <script lang="ts">
 import { defineComponent } from "@vue/runtime-core"
-import { mapState } from "vuex"
+import { mapMutations, mapState } from "vuex"
 import { MasterboardHex, Terrain } from "~/models/masterboard"
 import {
   CLIP_TRIANGLE_HEIGHT,
@@ -116,6 +118,15 @@ export default defineComponent({
     },
     pathCount(): number {
       return this.activeRoll - this.distanceToDest + 1
+    }
+  },
+  methods: {
+    ...mapMutations("ui/selections", ["enterHex", "leaveHex"]),
+    enter() {
+      this.enterHex(this.hex)
+    },
+    leave() {
+      this.leaveHex(this.hex)
     }
   }
 })

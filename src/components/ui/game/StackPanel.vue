@@ -26,7 +26,7 @@
           @click="toggleSplit(index)"
         />
       </div>
-      <div v-if="activePlayerId === focusedStack.owner">
+      <template v-if="activePlayerId === focusedStack.owner">
         <v-card-actions v-if="activePhase === MasterboardPhase.SPLIT" class="split-guide">
           <v-card-text v-if="firstRound">
             You must split your starting creatures. Please select four creatures (including one lord) above
@@ -48,7 +48,39 @@
             </v-card-text>
           </v-card-text>
         </v-card-actions>
-      </div>
+        <template v-else-if="activePhase === MasterboardPhase.MUSTER">
+          <v-card-title>Muster Options</v-card-title>
+          <div class="px-2 pb-1">
+            <template v-for="[creature, musterBasis] in musterable" :key="creature">
+              <v-dialog>
+                <template #activator="{ props }">
+                  <Creature
+                    :type="creature"
+                    :player="stackPlayer"
+                    :class="{ interactive: musterBasis.length > 0, unavailable: musterBasis.length < 1 }"
+                    class="ma-1"
+                    v-bind="musterBasis.length > 0 ? props : {}"
+                  />
+                </template>
+                <v-card>
+                  <v-card-title>Muster a {{ CREATURES[creature].name }} with...</v-card-title>
+                  <v-card-actions>
+                    <svg
+                      v-for="([basisCreature, count], index) in musterBasis"
+                      :key="index"
+                      viewBox="-50 -50 100 100"
+                      class="muster-basis-choice pa-2"
+                    >
+                      <Creature :type="basisCreature" :player="stackPlayer" :in-svg="true" />
+                      <text x="0" y="0" class="req-count">x{{ count }}</text>
+                    </svg>
+                  </v-card-actions>
+                </v-card>
+              </v-dialog>
+            </template>
+          </div>
+        </template>
+      </template>
     </v-card>
   </v-expand-transition>
 </template>
@@ -56,8 +88,9 @@
 <script lang="ts">
 import { defineComponent } from "@vue/runtime-core"
 import { mapGetters, mapState } from "vuex"
-import { CREATURE_DATA } from "~/models/creature"
+import { CREATURE_DATA, CreatureType } from "~/models/creature"
 import { MasterboardPhase } from "~/models/game"
+import masterboard from "~/models/masterboard"
 import { Player } from "~/models/player"
 import Creature from "../../game/Creature.vue"
 import Marker from "../../game/Marker.vue"
@@ -78,6 +111,9 @@ export default defineComponent({
     },
     stackPlayer(): Player | undefined {
       return this.playerById(this.focusedStack?.owner)
+    },
+    musterable(): CreatureType[] {
+      return this.focusedStack?.musterable(masterboard.getHex(this.focusedStack?.hex).terrain)
     }
   },
   methods: {
@@ -105,4 +141,21 @@ export default defineComponent({
     font-size: 1.1em
     margin-top: 1em
     color: rgb(var(--v-theme-secondary))
+
+.unavailable
+  cursor: not-allowed
+  filter: saturate(0.5) brightness(0.5)
+
+.muster-basis-choice
+  //max-width: 160px
+  //margin: auto
+
+  .req-count
+    font-family: "Eczar", serif
+    font-weight: 600
+    font-size: 36pt
+    fill: rgb(var(--v-theme-secondary))
+    text-shadow: 2px 2px black
+    text-anchor: middle
+    dominant-baseline: central
 </style>

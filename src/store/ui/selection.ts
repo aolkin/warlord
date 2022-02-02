@@ -1,16 +1,18 @@
 import { Path } from "~/models/game"
-import masterboard from "~/models/masterboard"
+import masterboard, { MasterboardHex } from "~/models/masterboard"
 import { Stack } from "~/models/stack"
 
 export interface Selections {
   stack?: Stack
   focusedStacks: Stack[]
+  focusedHexes: MasterboardHex[]
 }
 
 export default {
   namespaced: true,
   state: () => ({
-    focusedStacks: []
+    focusedStacks: [],
+    focusedHexes: []
   }),
   getters: {
     selectedStack(state: Selections): Stack | undefined {
@@ -20,6 +22,11 @@ export default {
       return (state.focusedStacks.length > 0)
         ? state.focusedStacks[state.focusedStacks.length - 1]
         : state.stack
+    },
+    focusedHex(state: Selections): MasterboardHex | undefined {
+      return (state.focusedHexes.length > 0)
+        ? state.focusedHexes[state.focusedHexes.length - 1]
+        : undefined
     },
     paths(state: Selections, getters: any, rootState: any, rootGetters: any): Path[] {
       if (state.stack?.hex === undefined || masterboard.getHex(state.stack.hex) === undefined ||
@@ -49,6 +56,17 @@ export default {
       const index = state.focusedStacks.indexOf(leaving)
       if (index !== -1) {
         state.focusedStacks.splice(index)
+      }
+    },
+    enterHex(state: Selections, entering: MasterboardHex) {
+      if (!state.focusedHexes.includes(entering)) {
+        state.focusedHexes.push(entering)
+      }
+    },
+    leaveHex(state: Selections, leaving: MasterboardHex) {
+      const index = state.focusedHexes.indexOf(leaving)
+      if (index !== -1) {
+        state.focusedHexes.splice(index)
       }
     }
   }

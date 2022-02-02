@@ -92,6 +92,10 @@ export default defineComponent({
           return "mdi-call-split"
         case MasterboardPhase.MOVE:
           return `mdi-dice-${this.activeRoll ?? "multiple"}`
+        case MasterboardPhase.BATTLE:
+          return "mdi-sword-cross"
+        case MasterboardPhase.MUSTER:
+          return "mdi-account-multiple-plus"
         default:
           return "mdi-dice-multiple"
       }

@@ -30,7 +30,7 @@ import { defineComponent } from "@vue/runtime-core"
 import { mapActions, mapGetters, mapMutations, mapState } from "vuex"
 import { CreatureType } from "~/models/creature"
 import { MasterboardPhase, Path } from "~/models/game"
-import { MasterboardHex } from "~/models/masterboard"
+import masterboard, { MasterboardHex } from "~/models/masterboard"
 import { Stack } from "~/models/stack"
 import Marker from "../Marker.vue"
 import { hexTransform, isHexInverted, Transformation, TransformationType } from "./utils"
@@ -140,7 +140,10 @@ export default defineComponent({
     }
   },
   methods: {
-    ...mapMutations("ui/selections", ["selectStack", "deselectStack", "enterStack", "leaveStack"]),
+    ...mapMutations("ui/selections", [
+      "selectStack", "deselectStack", "enterStack", "leaveStack",
+      "enterHex", "leaveHex"
+    ]),
     ...mapActions("game", ["move"]),
     select() {
       if (!(this.isActivePlayer)) {
@@ -165,9 +168,11 @@ export default defineComponent({
     },
     enter() {
       this.enterStack(this.stack)
+      this.enterHex(masterboard.getHex(this.stack.hex))
     },
     leave() {
       this.leaveStack(this.stack)
+      this.leaveHex(masterboard.getHex(this.stack.hex))
     }
   }
 })
@@ -195,7 +200,7 @@ export default defineComponent({
 .annotation
   font-family: "Eczar", serif
   font-weight: 800
-  font-size: 16pt
+  font-size: 30pt
   fill: rgb(var(--v-theme-primary))
   text-shadow: 2px 2px black
 

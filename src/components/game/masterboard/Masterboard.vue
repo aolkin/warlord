@@ -105,7 +105,6 @@ export default defineComponent({
 
 .board, .interactive
   max-width: 1600px
-  margin: auto
   display: flex
   height: 100%
 

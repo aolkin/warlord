@@ -1,5 +1,6 @@
 import _ from "lodash"
 import { assert } from "~/utils/assert"
+import { Terrain } from "./masterboard"
 
 export enum CreatureType {
   ANGEL,
@@ -87,3 +88,64 @@ export const CREATURE_LIST = [
 export const CREATURE_DATA: Record<CreatureType, Creature> = Object.fromEntries(CREATURE_LIST.map(
   item => [item.type, item]
 )) as Record<CreatureType, Creature>
+
+export const MUSTER_DATA: Record<Terrain, Array<[number | null, CreatureType]>> = {
+  [Terrain.BRUSH]: [
+    [null, CreatureType.GARGOYLE],
+    [2, CreatureType.CYCLOPS],
+    [2, CreatureType.GORGON]
+  ],
+  [Terrain.JUNGLE]: [
+    [null, CreatureType.GARGOYLE],
+    [2, CreatureType.CYCLOPS],
+    [3, CreatureType.BEHEMOTH],
+    [2, CreatureType.SERPENT]
+  ],
+  [Terrain.PLAINS]: [
+    [null, CreatureType.CENTAUR],
+    [2, CreatureType.LION],
+    [2, CreatureType.RANGER]
+  ],
+  [Terrain.WOODS]: [
+    [null, CreatureType.CENTAUR],
+    [3, CreatureType.WARBEAR],
+    [2, CreatureType.UNICORN]
+  ],
+  [Terrain.DESERT]: [
+    [null, CreatureType.LION],
+    [3, CreatureType.GRIFFON],
+    [2, CreatureType.HYDRA]
+  ],
+  [Terrain.MOUNTAINS]: [
+    [null, CreatureType.LION],
+    [2, CreatureType.MINOTAUR],
+    [2, CreatureType.DRAGON],
+    [2, CreatureType.COLOSSUS]
+  ],
+  [Terrain.MARSH]: [
+    [null, CreatureType.OGRE],
+    [2, CreatureType.TROLL],
+    [2, CreatureType.RANGER]
+  ],
+  [Terrain.HILLS]: [
+    [null, CreatureType.OGRE],
+    [3, CreatureType.MINOTAUR],
+    [2, CreatureType.UNICORN]
+  ],
+  [Terrain.SWAMP]: [
+    [null, CreatureType.TROLL],
+    [3, CreatureType.WYVERN],
+    [2, CreatureType.HYDRA]
+  ],
+  [Terrain.TUNDRA]: [
+    [null, CreatureType.TROLL],
+    [2, CreatureType.WARBEAR],
+    [2, CreatureType.GIANT],
+    [2, CreatureType.COLOSSUS]
+  ],
+  [Terrain.TOWER]: [
+    [0, CreatureType.CENTAUR],
+    [0, CreatureType.OGRE],
+    [0, CreatureType.GARGOYLE]
+  ]
+}
