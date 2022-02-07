@@ -7,6 +7,7 @@ export enum CreatureColorMode {
 
 export interface Preferences {
   fancyGraphics: boolean
+  quickDice: boolean
   freeMovement: boolean
   creatureColorMode: CreatureColorMode
 }
@@ -25,12 +26,17 @@ export default {
   namespaced: true,
   state: () => Object.assign({
     fancyGraphics: true,
+    quickDice: false,
     freeMovement: false,
     creatureColorMode: CreatureColorMode.STANDARD
   }, savedPreferences ?? {}),
   mutations: {
     setFancyGraphics(state: Preferences, payload: boolean) {
       state.fancyGraphics = payload
+      savePreferences(state)
+    },
+    setQuickDice(state: Preferences, payload: boolean) {
+      state.quickDice = payload
       savePreferences(state)
     },
     setCreatureColorMode(state: Preferences, payload: CreatureColorMode) {

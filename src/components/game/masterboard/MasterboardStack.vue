@@ -7,6 +7,17 @@
     @mouseenter="enter"
     @mouseleave="leave"
   >
+    <rect
+      v-for="i in stack.creatures.length"
+      :key="i"
+      width="100"
+      height="100"
+      x="-50"
+      :y="-50"
+      :transform="selected ? '' : `translate(0 ${4 * (stack.creatures.length - i)})`"
+      :filter="`brightness(${100 - 5 * (stack.creatures.length - i)}%)`"
+      class="creature"
+    />
     <Marker
       :color="stack.owner"
       :marker="stack.marker"
@@ -22,6 +33,15 @@
       class="engage-graphic"
       d="M6.2,2.44L18.1,14.34L20.22,12.22L21.63,13.63L19.16,16.1L22.34,19.28C22.73,19.67 22.73,20.3 22.34,20.69L21.63,21.4C21.24,21.79 20.61,21.79 20.22,21.4L17,18.23L14.56,20.7L13.15,19.29L15.27,17.17L3.37,5.27V2.44H6.2M15.89,10L20.63,5.26V2.44H17.8L13.06,7.18L15.89,10M10.94,15L8.11,12.13L5.9,14.34L3.78,12.22L2.37,13.63L4.84,16.1L1.66,19.29C1.27,19.68 1.27,20.31 1.66,20.7L2.37,21.41C2.76,21.8 3.39,21.8 3.78,21.41L7,18.23L9.44,20.7L10.85,19.29L8.73,17.17L10.94,15Z"
     />
+    <transition name="muster">
+      <g v-if="stack.currentMuster !== undefined" class="recruited-creature">
+        <Creature
+          :type="stack.currentMuster[0]"
+          :player="stackPlayer"
+          in-svg
+        />
+      </g>
+    </transition>
   </g>
 </template>
 
@@ -31,13 +51,15 @@ import { mapActions, mapGetters, mapMutations, mapState } from "vuex"
 import { CreatureType } from "~/models/creature"
 import { MasterboardPhase, Path } from "~/models/game"
 import masterboard, { MasterboardHex } from "~/models/masterboard"
+import { Player } from "~/models/player"
 import { Stack } from "~/models/stack"
+import Creature from "../Creature.vue"
 import Marker from "../Marker.vue"
 import { hexTransform, isHexInverted, Transformation, TransformationType } from "./utils"
 
 export default defineComponent({
   name: "MasterboardStack",
-  components: { Marker },
+  components: { Creature, Marker },
   props: {
     stack: {
       type: Stack,
@@ -49,8 +71,10 @@ export default defineComponent({
       selectedStack: "stack"
     }),
     ...mapGetters("ui/selections", ["paths"]),
-    ...mapState("game", ["activePhase", "activeRoll", "firstRound"]),
-    ...mapGetters("game", ["activePlayerId", "activePlayer", "mandatoryMoves", "stacksForHex"]),
+    ...mapState("game", ["activePhase", "activeRoll"]),
+    ...mapGetters("game", [
+      "activePlayerId", "activePlayer", "mandatoryMoves", "stacksForHex", "firstRound", "playerById"
+    ]),
     transform() {
       const transform = hexTransform(this.stack.hex)
       transform.push(new Transformation(TransformationType.TRANSLATE,
@@ -60,6 +84,8 @@ export default defineComponent({
       }
       if (this.selected) {
         transform.push(new Transformation(TransformationType.TRANSLATE, [2, -4]))
+      } else {
+        transform.push(new Transformation(TransformationType.TRANSLATE, [0, -1 * this.stack.creatures.length]))
       }
       transform.push(new Transformation(TransformationType.SCALE, [0.48]))
       return transform.toString()
@@ -69,6 +95,9 @@ export default defineComponent({
     },
     isActivePlayer() {
       return this.activePlayerId === this.stack.owner
+    },
+    stackPlayer(): Player {
+      return this.playerById(this.stack.owner)
     },
     engageable(): boolean {
       if (this.selectedStack === undefined) {
@@ -109,6 +138,8 @@ export default defineComponent({
           return this.stack.creatures.length < 4
         case MasterboardPhase.MOVE:
           return this.stack.hasMoved()
+        case MasterboardPhase.MUSTER:
+          return !this.stack.canMuster()
       }
       return false
     },
@@ -179,6 +210,12 @@ export default defineComponent({
 </script>
 
 <style lang="sass" scoped>
+.creature
+  fill: rgb(var(--v-theme-titan-white))
+  stroke-width: 0.5px
+  stroke: #353535
+  transition: 0.2s ease-out
+
 .marker
   transition: 0.2s ease-out
 
@@ -190,6 +227,9 @@ export default defineComponent({
 
 .selected
   filter: drop-shadow(-4px 4px 6px #222222)
+
+.owned.selected
+  cursor: grabbing
 
 .disabled
   filter: brightness(50%)
@@ -222,5 +262,20 @@ export default defineComponent({
 
 .marker:hover:not(.engaged) .engage-graphic
   transform: scale(4) translate(-12px, -12px)
+
+.recruited-creature
+  transform: rotate(25deg) scale(0.85)
+  opacity: 1
+  transition: transform 0.25s ease-out, opacity 0.2s
+
+  &:hover
+    opacity: 0.25
+
+.muster-enter-active, .muster-leave-active
+  transform: rotate(25deg) scale(0.85)
+
+.muster-enter-from, .muster-leave-to
+  opacity: 0
+  transform: rotate(0) scale(1)
 
 </style>

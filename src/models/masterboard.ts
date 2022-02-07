@@ -1,9 +1,7 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 
 import { assert } from "~/utils/assert"
-
-const div = (a: number, b: number): number => Math.floor(a / b)
-const mod = (a: number, b: number): number => ((a % b) + b) % b
+import { div, mod } from "~/utils/math"
 
 export enum MovementRule {
   ARROW,

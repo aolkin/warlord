@@ -1,5 +1,5 @@
 <template>
-  <div id="dicebox-container" :class="{ rolling }">
+  <div id="dicebox-container" :class="{ rolling, quickDice }">
     <div class="bg">&nbsp;</div>
   </div>
 </template>
@@ -8,6 +8,7 @@
 import DiceBox from "@3d-dice/dice-box"
 import { defineComponent } from "@vue/runtime-core"
 import _ from "lodash"
+import { mapState } from "vuex"
 
 interface ComponentData {
   ready: boolean,
@@ -53,6 +54,9 @@ export default defineComponent({
     }
     _.set(this, "diceBox", diceBox)
   },
+  computed: {
+    ...mapState("ui/preferences", ["quickDice"])
+  },
   methods: {
     async roll(quantity?: number) {
       return new Promise((resolve, reject) => {
@@ -67,6 +71,14 @@ export default defineComponent({
           this.rolling = true
           this.$forceUpdate()
           this.diceBox.roll(`${quantity ?? 1}d6`)
+          if (this.quickDice) {
+            setTimeout(() => {
+              this.resolve?.(_.range(quantity ?? 1).map(i => _.random(1, 6)))
+              this.reject = undefined
+              this.resolve = undefined
+              this.rolling = false
+            }, 0)
+          }
         } catch (e) {
           reject(e)
         }
@@ -107,4 +119,11 @@ export default defineComponent({
   opacity: 1
   z-index: 1
   transition: opacity 0s
+
+.quickDice
+  pointer-events: none
+  transition: opacity 1s 0.5s, z-index 0s 2s
+
+  .bg
+    display: none
 </style>

@@ -9,16 +9,21 @@
     :class="classes"
   >
     <rect width="100" height="100" x="0" y="0" class="background" />
-    <image :href="imageUrl" width="98" height="98" x="1" y="1" :filter="filter" />
-    <text x="50" y="18" class="name annotation" v-text="creature.name" />
-    <text x="10" y="93" class="strength annotation" v-text="strength" />
-    <text v-if="type === CreatureType.TITAN" x="50" y="83" class="annotation">&ndash;</text>
-    <text x="90" y="93" class="skill annotation" v-text="creature.skill" />
-    <g transform="translate(50 82) scale(1.1)" :class="{ 'both-present': creature.canFly && creature.canRangestrike }">
-      <!-- icons copied directly from Adobe Illustrator -->
-      <path v-if="creature.canRangestrike" class="icon rangestrike" d="M15,.966A50.386,50.386,0,0,1,6.37,7.9c-.513-1.114,1.262-3.18-1.041-2.533C3.69,5.823-1.16,7.7.394,6.878c-1.229.651.765-1.4,1.281-1.8C3.534,3.625,5.419,2.2,7.39.907c3.288-2.156,1.485.14,1.3.663C8.029,3.462,9.78,3.022,10.9,2.554,12.253,1.99,13.632,1.492,15,.966Z" />
-      <path v-if="creature.canFly" class="icon flight" d="M4.893,0c.213.135.579.238.615.41C5.961,2.6,7.332,3.376,9.462,3.089c.163-.022.363.233.538.354-.2,1.354-1.769,1.507-2.223,2.6-.488,1.18.949,2.191.311,3.4C4.805,9,7.021,6.624,2.054,9.671c-.7-1.337.533-2.388.218-3.51C1.946,5,.328,4.837.013,3.43c-.059-.186.079-.3.445-.333C3.374,2.853,3.373,2.848,4.893,0Z" />
-    </g>
+    <template v-if="type === undefined">
+      <text x="50" y="50" class="name annotation">NONE</text>
+    </template>
+    <template v-else>
+      <image :href="imageUrl" width="98" height="98" x="1" y="1" :filter="filter" />
+      <text x="50" y="18" class="name annotation" v-text="creature.name" />
+      <text x="10" y="93" class="strength annotation" v-text="strength" />
+      <text v-if="type === CreatureType.TITAN" x="50" y="83" class="annotation">&ndash;</text>
+      <text x="90" y="93" class="skill annotation" v-text="creature.skill" />
+      <g transform="translate(50 82) scale(1.1)" :class="{ 'both-present': creature.canFly && creature.canRangestrike }">
+        <!-- icons copied directly from Adobe Illustrator -->
+        <path v-if="creature.canRangestrike" class="icon rangestrike" d="M15,.966A50.386,50.386,0,0,1,6.37,7.9c-.513-1.114,1.262-3.18-1.041-2.533C3.69,5.823-1.16,7.7.394,6.878c-1.229.651.765-1.4,1.281-1.8C3.534,3.625,5.419,2.2,7.39.907c3.288-2.156,1.485.14,1.3.663C8.029,3.462,9.78,3.022,10.9,2.554,12.253,1.99,13.632,1.492,15,.966Z" />
+        <path v-if="creature.canFly" class="icon flight" d="M4.893,0c.213.135.579.238.615.41C5.961,2.6,7.332,3.376,9.462,3.089c.163-.022.363.233.538.354-.2,1.354-1.769,1.507-2.223,2.6-.488,1.18.949,2.191.311,3.4C4.805,9,7.021,6.624,2.054,9.671c-.7-1.337.533-2.388.218-3.51C1.946,5,.328,4.837.013,3.43c-.059-.186.079-.3.445-.333C3.374,2.853,3.373,2.848,4.893,0Z" />
+      </g>
+    </template>
   </component>
 </template>
 
@@ -63,7 +68,8 @@ export default defineComponent({
   props: {
     type: {
       type: Number as PropType<CreatureType>,
-      required: true
+      required: false,
+      default: undefined
     },
     player: {
       type: Player,
@@ -90,11 +96,11 @@ export default defineComponent({
   }),
   computed: {
     ...mapState("ui/preferences", ["creatureColorMode"]),
-    creature(): Creature {
-      return CREATURE_DATA[this.type]
+    creature(): Creature | undefined {
+      return this.type !== undefined ? CREATURE_DATA[this.type] : undefined
     },
     imageUrl() {
-      return new URL(`../../assets/creatures/${CreatureType[this.creature.type]}.svg`,
+      return new URL(`../../assets/creatures/${CreatureType[this.type ?? 0]}.svg`,
         import.meta.url).href
     },
     fullTransform() {
@@ -102,19 +108,19 @@ export default defineComponent({
     },
     strength() {
       if (this.type === CreatureType.TITAN) {
-        return Math.floor((this.player?.score ?? 0) / 100) + this.creature.strength
+        return Math.floor((this.player?.score ?? 0) / 100) + this.creature?.strength ?? 0
       } else {
-        return this.creature.strength
+        return this.creature?.strength
       }
     },
     classes() {
       const classMap = {
-        [this.creature.name.toLowerCase()]: true,
+        [this.creature?.name.toLowerCase() ?? "none"]: true,
         "uniform-text": [CreatureColorMode.PLAYER_UNIFORM_TEXT,
           CreatureColorMode.STANDARD_UNIFORM_TEXT].includes(this.creatureColorMode)
       }
       if ([CreatureColorMode.STANDARD, CreatureColorMode.STANDARD_UNIFORM_TEXT]
-        .includes(this.creatureColorMode) && !this.creature.lord) {
+        .includes(this.creatureColorMode) && !this.creature?.lord) {
         classMap.standard = true
       } else {
         classMap[`text-player-${this.player?.id ?? 0}`] = true
@@ -125,9 +131,9 @@ export default defineComponent({
       return this.$vuetify.theme.getTheme(this.$vuetify.theme.current)
     },
     filter() {
-      let color = this.currentTheme.colors[STANDARD_CREATURE_COLORS[this.type]]
+      let color = this.currentTheme.colors[STANDARD_CREATURE_COLORS[this.type ?? 0]]
       if (this.player !== undefined) {
-        if (this.creature.lord || [CreatureColorMode.PLAYER_UNIFORM_TEXT,
+        if (this.creature?.lord || [CreatureColorMode.PLAYER_UNIFORM_TEXT,
           CreatureColorMode.PLAYER].includes(this.creatureColorMode)) {
           color = this.currentTheme.colors[`player-${this.player.id}`]
         }
@@ -213,4 +219,10 @@ export default defineComponent({
   &.ranger, &.wyvern, &.colossus, &.guardian
     color: rgb(var(--v-theme-titan-purple))
 
+.standard.none
+  color: rgb(var(--v-theme-titan-red))
+
+  .name
+    font-size: 2em
+    dominant-baseline: central
 </style>

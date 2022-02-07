@@ -8,6 +8,13 @@
       />
     </v-list-item>
     <v-list-item>
+      <v-list-item-header>Quick Dice</v-list-item-header>
+      <v-switch
+        v-model="quickDice"
+        inset
+      />
+    </v-list-item>
+    <v-list-item>
       <v-list-item-header>Free Teleportation</v-list-item-header>
       <v-switch
         v-model="freeMovement"
@@ -75,6 +82,14 @@ export default defineComponent({
         this.setFancyGraphics(value)
       }
     },
+    quickDice: {
+      get() {
+        return this.preferences.quickDice
+      },
+      set(value) {
+        this.setQuickDice(value)
+      }
+    },
     freeMovement: {
       get() {
         return this.preferences.freeMovement
@@ -102,7 +117,9 @@ export default defineComponent({
   },
   methods: {
     ...mapMutations("ui", ["setPlayer"]),
-    ...mapMutations("ui/preferences", ["setFancyGraphics", "setCreatureColorMode", "setFreeMovement"]),
+    ...mapMutations("ui/preferences", [
+      "setFancyGraphics", "setQuickDice", "setCreatureColorMode", "setFreeMovement"
+    ]),
     ...mapActions(["reset"]),
     summon(creature) {
       if (this.selections.stack !== undefined) {

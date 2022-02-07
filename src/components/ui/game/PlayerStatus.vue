@@ -1,5 +1,7 @@
 <template>
-  <div :style="{ height: players.length * 60 }" class="d-flex flex-column justify-space-between">
+  <div :style="{ height: players.length * 60 + 40 }" class="d-flex flex-column justify-space-between">
+    <div class="text-center round-label">Round</div>
+    <div class="text-center round-counter" v-text="round" />
     <v-card
       v-for="player in players"
       :key="player.id"
@@ -28,7 +30,7 @@ import { mapGetters } from "vuex"
 export default defineComponent({
   name: "PlayerStatus",
   computed: {
-    ...mapGetters("game", ["players", "activePlayer", "stacksForPlayer"])
+    ...mapGetters("game", ["players", "activePlayer", "stacksForPlayer", "round"])
   }
 })
 </script>
@@ -36,4 +38,15 @@ export default defineComponent({
 <style lang="sass" scoped>
 .player-card:not(.active)
   filter: brightness(0.6)
+
+.round-label, .round-counter
+  font-family: "Pirata One", Serif
+
+.round-label
+  font-size: 1.25em
+  text-transform: uppercase
+  margin-bottom: -0.25em
+
+.round-counter
+  font-size: 1.5em
 </style>

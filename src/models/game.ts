@@ -3,7 +3,7 @@ import { assert } from "~/utils/assert"
 import { CREATURE_DATA, CREATURE_LIST, CreatureType } from "./creature"
 import masterboard, { MasterboardHex } from "./masterboard"
 import { Player, PlayerId } from "./player"
-import { Stack } from "./stack"
+import { MusterPossibility, Stack } from "./stack"
 
 const INITIAL_HEXES: Record<number, number[]> = {
   2: [100, 400],
@@ -24,6 +24,8 @@ export enum MasterboardPhase {
 export type Path = [boolean, MasterboardHex[]]
 
 interface Getters {
+  readonly round: number // 1-indexed
+  readonly firstRound: boolean
   readonly players: Player[]
   readonly activeStacks: Stack[]
   readonly playerById: (player: PlayerId) => Player | undefined
@@ -39,7 +41,7 @@ interface Getters {
   readonly mandatoryMoves: Stack[]
 }
 
-interface MusterPayload { stack: Stack, creature: CreatureType }
+interface MusterPayload { stack: Stack, recruit: MusterPossibility }
 interface MovePayload { stack: Stack, hex: number | MasterboardHex }
 
 interface ActionContext {
@@ -56,14 +58,14 @@ export class TitanGame {
   readonly stacks: Stack[]
   readonly creaturePool: Record<CreatureType, number>
 
-  firstRound: boolean
+  round: number // 0-indexed
   mulliganTaken: boolean
   activeRoll?: number
   activePlayer: number
   activePhase: MasterboardPhase
 
   constructor(numPlayers: number) {
-    this.firstRound = true
+    this.round = 0
     this.mulliganTaken = false
     this.activePlayer = 0
     this.activePhase = MasterboardPhase.SPLIT
@@ -75,6 +77,14 @@ export class TitanGame {
     this.creaturePool = Object.fromEntries(CREATURE_LIST
       .map(creature => [creature.type, creature.initialQuantity])) as Record<CreatureType, number>
     this.stacks.flatMap(stack => stack.creatures).forEach(creature => this.creaturePool[creature]--)
+  }
+
+  getRound() {
+    return this.round + 1
+  }
+
+  getFirstRound() {
+    return this.round === 0
   }
 
   getPlayers() {
@@ -149,7 +159,7 @@ export class TitanGame {
   getMayProceed(getters: Getters): boolean {
     switch (this.activePhase) {
       case MasterboardPhase.SPLIT:
-        return getters.activeStacks.every(stack => stack.isValidSplit(this.firstRound))
+        return getters.activeStacks.every(stack => stack.isValidSplit(this.round === 0))
       case MasterboardPhase.MOVE:
         return getters.mandatoryMoves.length === 0 &&
           getters.activeStacks.some(stack => stack.hasMoved())
@@ -163,7 +173,7 @@ export class TitanGame {
   }
 
   getMulliganAvailable(getters: Getters): boolean {
-    return this.firstRound && !this.mulliganTaken &&
+    return this.round === 0 && !this.mulliganTaken &&
       !getters.activeStacks.some(stack => stack.hasMoved())
   }
 
@@ -193,17 +203,31 @@ export class TitanGame {
     // TODO: recombine splits that failed to move
   }
 
+  mPhaseEnterMuster(getters: Getters): void {
+  }
+
+  mPhaseExitMuster(getters: Getters): void {
+    getters.activeStacks.forEach(stack => {
+      if (stack.currentMuster !== undefined) {
+        stack.recruits[this.round] = stack.currentMuster
+        stack.creatures.push(stack.currentMuster[0])
+        this.creaturePool[stack.currentMuster[0]]--
+      }
+    })
+  }
+
   // End Phase Entry/Exit Mutations
 
-  mNextPhase(): void {
+  mNextPhase(getters: Getters): void {
     this.activePhase += 1
     if (this.activePhase === MasterboardPhase.END) {
       this.activePlayer += 1
       if (this.activePlayer >= this.players.length) {
         this.activePlayer = 0
-        this.firstRound = false
+        this.round++
       }
       this.activePhase = MasterboardPhase.SPLIT
+      getters.activeStacks.forEach(stack => stack.currentMuster = undefined)
     }
   }
 
@@ -216,6 +240,7 @@ export class TitanGame {
   }
 
   mMove({ stack, hex }: MovePayload): void {
+    assert(this.activePhase === MasterboardPhase.MOVE, "Innappropriate phase")
     if (hex instanceof MasterboardHex) {
       stack.hex = hex.id
     } else {
@@ -223,12 +248,9 @@ export class TitanGame {
     }
   }
 
-  mMuster({ stack, creature }: MusterPayload): void {
-    if (this.creaturePool[creature] < 1 && !CREATURE_DATA[creature].lord) {
-      throw new Error("No more of the requested creature remaining")
-    }
-    stack.creatures.push(creature)
-    this.creaturePool[creature]--
+  mMuster({ stack, recruit }: MusterPayload): void {
+    assert(this.activePhase === MasterboardPhase.MUSTER, "Innappropriate phase")
+    stack.currentMuster = recruit
   }
 
   // Actions
@@ -242,13 +264,17 @@ export class TitanGame {
       case MasterboardPhase.MOVE:
         commit("phaseExitMove", getters)
         if (getters.engagedStacks.length === 0) {
-          commit("nextPhase")
+          commit("nextPhase", getters)
+          commit("phaseEnterMuster", getters)
         }
         break
       case MasterboardPhase.BATTLE:
+        commit("phaseEnterMuster", getters)
         break
+      case MasterboardPhase.MUSTER:
+        commit("phaseExitMuster", getters)
     }
-    commit("nextPhase")
+    commit("nextPhase", getters)
     commit("ui/selections/deselectStack", null, { root: true })
     this.persist()
   }
@@ -266,7 +292,14 @@ export class TitanGame {
     this.persist()
   }
 
-  doMuster({ commit }: ActionContext, payload: MusterPayload): void {
+  doSetRecruit({ commit }: ActionContext, payload: MusterPayload): void {
+    if (!payload.stack.canMuster()) {
+      throw new Error("Stack is not eligible to muster!")
+    }
+    if (payload.recruit !== undefined &&
+      this.creaturePool[payload.recruit[0]] < 1 && !CREATURE_DATA[payload.recruit[0]].lord) {
+      throw new Error("No more of the requested creature remaining")
+    }
     commit("muster", payload)
     this.persist()
   }

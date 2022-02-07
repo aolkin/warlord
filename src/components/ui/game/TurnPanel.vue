@@ -1,5 +1,5 @@
 <template>
-  <v-card class="ma-3" absolute bottom right width="300">
+  <v-card class="ma-3" absolute bottom right border width="300">
     <v-card-header>
       <v-card-header-text>{{ activePlayer.name }}'s Turn</v-card-header-text>
       <v-card-avatar>
@@ -14,7 +14,7 @@
         You must adjust your stack splits before rolling.
       </span>
     </v-card-text>
-    <v-card-text v-if="activePhase === MasterboardPhase.MOVE">
+    <v-card-text v-else-if="activePhase === MasterboardPhase.MOVE">
       Moved {{ movedCount }} of {{ activeStacks.length }} stacks. {{ engagementsMessage }}
       <span v-if="movedCount < 1">
         You must move at least one stack!
@@ -22,6 +22,9 @@
       <span v-else-if="!mayProceed">
         You must move at least one stack from each split if possible.
       </span>
+    </v-card-text>
+    <v-card-text v-else-if="activePhase === MasterboardPhase.MUSTER">
+      Mustered a recruit in {{ musteredCount }} of {{ activeStacks.length }} stacks.
     </v-card-text>
     <v-fade-transition leave-absolute>
       <v-card-actions v-if="activePhase === MasterboardPhase.SPLIT">
@@ -82,9 +85,9 @@ export default defineComponent({
     MasterboardPhase
   }),
   computed: {
-    ...mapState("game", ["activeRoll", "activePhase", "firstRound"]),
+    ...mapState("game", ["activeRoll", "activePhase"]),
     ...mapGetters("game", [
-      "activePlayer", "activeStacks", "mayProceed", "mulliganAvailable", "engagedStacks"
+      "activePlayer", "activeStacks", "mayProceed", "mulliganAvailable", "engagedStacks", "firstRound"
     ]),
     icon(): string {
       switch (this.activePhase) {
@@ -102,6 +105,9 @@ export default defineComponent({
     },
     movedCount(): number {
       return _.sum(this.activeStacks.map((stack: Stack) => stack.hasMoved()))
+    },
+    musteredCount(): number {
+      return _.sum(this.activeStacks.map((stack: Stack) => stack.currentMuster !== undefined))
     },
     engagementsMessage(): string {
       if (this.engagedStacks.length < 1) {

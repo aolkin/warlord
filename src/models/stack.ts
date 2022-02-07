@@ -6,17 +6,19 @@ import { PlayerId } from "./player"
 
 export type StackRef = number
 
-type MusterBasis = [CreatureType, number]
-type MusterPossibility = [CreatureType, MusterBasis[]]
+export type MusterBasis = [CreatureType, number]
+export type MusterPossibility = [CreatureType, MusterBasis[]]
 
 export class Stack {
   readonly owner: PlayerId
   readonly creatures: CreatureType[]
   readonly marker: number
   readonly split: boolean[]
+  readonly recruits: Record<number, MusterPossibility>
 
   origin: number
   hex: number
+  currentMuster: MusterPossibility | undefined
 
   constructor(owner: PlayerId, start: number, marker: number, initial?: CreatureType[]) {
     this.owner = owner
@@ -28,6 +30,7 @@ export class Stack {
     this.hex = start
     this.origin = start
     this.marker = marker
+    this.recruits = {}
   }
 
   numSplitting(): number {
@@ -36,6 +39,10 @@ export class Stack {
 
   hasMoved(): boolean {
     return this.hex !== this.origin
+  }
+
+  canMuster(): boolean {
+    return this.hasMoved() && this.creatures.length < 7
   }
 
   isValidSplit(firstRound?: boolean): boolean {
@@ -66,9 +73,10 @@ export class Stack {
     const creatureCounts = this.creatures.reduce((acc: Map<CreatureType, number>, creature: CreatureType) =>
       acc.set(creature, (acc.get(creature) ?? 0) + 1), new Map())
     const terrainData = MUSTER_DATA[terrain]
-    console.log(creatureCounts, terrainData)
     const possibilities: MusterPossibility[] = []
     if (terrain === Terrain.TOWER) {
+      possibilities.push(...terrainData.map(([, creature]) =>
+        [creature, [[creature, 0]]] as MusterPossibility))
       const creaturePossibilities: MusterBasis[] = []
       creatureCounts.forEach((count, type) => {
         if (count >= 3) {
@@ -84,13 +92,12 @@ export class Stack {
         const creaturePossibilities: MusterBasis[] = []
         if (req !== null) {
           const previousCreature = terrainData[i - 1][1]
-          console.log(previousCreature, req)
           if ((creatureCounts.get(previousCreature) ?? 0) >= req) {
             creaturePossibilities.push([previousCreature, req])
           }
         }
         for (let k = i; k < terrainData.length; ++k) {
-          const [_, advancedType] = terrainData[k]
+          const [, advancedType] = terrainData[k]
           if (creatureCounts.get(advancedType) !== undefined) {
             creaturePossibilities.push([advancedType, 1])
           }
