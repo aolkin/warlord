@@ -60,10 +60,10 @@
           <v-card-text v-else>
             You may select at least 2 and at most {{ focusedStack.creatures.length - 2 }} creatures to split
             into a new stack.
-            <v-card-text v-if="focusedStack.getCreaturesSplit(true).length > 0" class="text-left">
+            <div v-if="focusedStack.getCreaturesSplit(true).length > 0" class="text-left mt-5">
               <p>Remaining: {{ focusedStack.getCreaturesSplit(false).map(c => CREATURES[c].name).join(", ") }}</p>
               <p>Splitting: {{ focusedStack.getCreaturesSplit(true).map(c => CREATURES[c].name).join(", ") }}</p>
-            </v-card-text>
+            </div>
           </v-card-text>
         </v-card-actions>
         <template
@@ -151,7 +151,7 @@ export default defineComponent({
     musteringCaption() {
       if (!this.focusedStack.canMuster()) {
         if (!this.focusedStack?.hasMoved()) {
-          return "You cannot muster in a stack that did not move."
+          return "You cannot muster in a stack that did not move this turn."
         } else if (this.focusedStack?.creatures.length > 6) {
           return "This stack is already full and cannot muster."
         } else {

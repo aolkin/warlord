@@ -14,7 +14,7 @@
     </template>
     <template v-else>
       <image :href="imageUrl" width="98" height="98" x="1" y="1" :filter="filter" />
-      <text x="50" y="18" class="name annotation" v-text="creature.name" />
+      <text x="50" y="18" class="name annotation" v-text="creatureName" />
       <text x="10" y="93" class="strength annotation" v-text="strength" />
       <text v-if="type === CreatureType.TITAN" x="50" y="83" class="annotation">&ndash;</text>
       <text x="90" y="93" class="skill annotation" v-text="creature.skill" />
@@ -98,6 +98,9 @@ export default defineComponent({
     ...mapState("ui/preferences", ["creatureColorMode"]),
     creature(): Creature | undefined {
       return this.type !== undefined ? CREATURE_DATA[this.type] : undefined
+    },
+    creatureName(): string {
+      return this.creature?.name.toUpperCase() ?? ""
     },
     imageUrl() {
       return new URL(`../../assets/creatures/${CreatureType[this.type ?? 0]}.svg`,

@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 
+import deepFreeze from "deep-freeze"
 import { assert } from "~/utils/assert"
 import { div, mod } from "~/utils/math"
 
@@ -262,4 +263,4 @@ export class Masterboard {
   }
 }
 
-export default new Masterboard()
+export default deepFreeze(new Masterboard())

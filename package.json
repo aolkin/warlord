@@ -11,6 +11,8 @@
   "dependencies": {
     "@3d-dice/dice-box": "^0.4.19",
     "@mdi/font": "^6.5.95",
+    "@types/deep-freeze": "^0.1.2",
+    "deep-freeze": "^0.0.1",
     "lodash": "^4.17.21",
     "roboto-fontface": "*",
     "vuetify": "npm:@vuetify/nightly@3",

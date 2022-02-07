@@ -9,6 +9,9 @@
     <v-card-text v-if="activePhase === MasterboardPhase.SPLIT">
       <span v-if="mayProceed">
         Split stacks if desired, or proceed to roll.
+        <span v-if="sevenHighCount > 0">
+          You have {{ sevenHighCount }} full stack{{ sevenHighCount > 1 ? 's' : '' }}!
+        </span>
       </span>
       <span v-else>
         You must adjust your stack splits before rolling.
@@ -102,6 +105,9 @@ export default defineComponent({
         default:
           return "mdi-dice-multiple"
       }
+    },
+    sevenHighCount(): number {
+      return _.sum(this.activeStacks.map((stack: Stack) => stack.creatures.length === 7))
     },
     movedCount(): number {
       return _.sum(this.activeStacks.map((stack: Stack) => stack.hasMoved()))
