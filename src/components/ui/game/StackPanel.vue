@@ -23,6 +23,10 @@
       border
       width="342"
     >
+      <v-card-actions v-if="selectedStack === focusedStack" class="justify-space-between">
+        <v-btn @click="cycleStacks(-1)">Previous Stack</v-btn>
+        <v-btn @click="cycleStacks(1)">Next Stack</v-btn>
+      </v-card-actions>
       <v-card-header>
         <v-card-avatar>
           <Marker :color="focusedStack.owner" :marker="focusedStack.marker" width="50" height="50" />
@@ -85,10 +89,6 @@
             v-text="musteringCaption"
           />
         </template>
-        <v-card-actions v-if="selectedStack === focusedStack" class="justify-space-between">
-          <v-btn @click="cycleStacks(-1)">Previous Stack</v-btn>
-          <v-btn @click="cycleStacks(1)">Next Stack</v-btn>
-        </v-card-actions>
       </template>
     </v-card>
   </v-expand-transition>
@@ -102,7 +102,7 @@ import { CREATURE_DATA, CreatureType } from "~/models/creature"
 import { MasterboardPhase } from "~/models/game"
 import masterboard, { Terrain } from "~/models/masterboard"
 import { Player } from "~/models/player"
-import { MusterPossibility } from "~/models/stack"
+import { MusterPossibility, Stack } from "~/models/stack"
 import { mod } from "~/utils/math"
 import Creature from "../../game/Creature.vue"
 import Marker from "../../game/Marker.vue"
@@ -181,8 +181,15 @@ export default defineComponent({
       }
     },
     cycleStacks(by: number) {
-      const index = this.activeStacks.indexOf(this.focusedStack)
-      this.selectStack(this.activeStacks[mod(index + by, this.activeStacks.length)])
+      let index = this.activeStacks.indexOf(this.selectedStack)
+      let candidateStack: Stack
+      do {
+        index += by
+        candidateStack = this.activeStacks[mod(index, this.activeStacks.length)]
+        console.log(this.selectedStack, candidateStack)
+      } while ((this.activePhase === MasterboardPhase.MOVE && candidateStack.hasMoved()) ||
+      (this.activePhase === MasterboardPhase.MUSTER && !candidateStack.canMuster()))
+      this.selectStack(candidateStack)
     }
   }
 })
