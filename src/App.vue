@@ -9,14 +9,14 @@
       <div>
         <v-btn icon="mdi-menu" variant="plain" @click="menuVisible = !menuVisible" />
         <v-btn
-          :variant="view === Views.MASTERBOARD ? 'text' : 'plain'"
+          :variant="view === View.MASTERBOARD ? 'text' : 'plain'"
           icon="mdi-dots-hexagon"
-          @click="view = Views.MASTERBOARD"
+          @click="view = View.MASTERBOARD"
         />
         <v-btn
-          :variant="view === Views.BATTLEBOARD ? 'text' : 'plain'"
+          :variant="view === View.BATTLEBOARD ? 'text' : 'plain'"
           icon="mdi-hexagon-multiple-outline"
-          @click="view = Views.BATTLEBOARD"
+          @click="view = View.BATTLEBOARD"
         />
       </div>
       <PlayerStatus />
@@ -43,8 +43,8 @@
     <v-main>
       <!-- Constructing the boards is very expensive, so we hide them with v-show instead of
            destroying and recreating them with v-if -->
-      <Masterboard v-show="view === Views.MASTERBOARD" />
-      <div v-show="view === Views.BATTLEBOARD" />
+      <Masterboard v-show="view === View.MASTERBOARD" />
+      <BattleBoard v-show="view === View.BATTLEBOARD" />
       <DiceRoller ref="diceRoller" />
     </v-main>
     <v-app-bar color="grey-darken-3" height="30" position="bottom">Status</v-app-bar>
@@ -53,20 +53,19 @@
 
 <script lang="ts">
 import { defineComponent, provide, readonly, ref } from "@vue/runtime-core"
+import { mapMutations, mapState } from "vuex"
+import BattleBoard from "~/components/game/battle/BattleBoard"
 import Masterboard from "~/components/game/masterboard/Masterboard"
 import PlayerStatus from "~/components/ui/game/PlayerStatus"
 import DiceRoller from "~/components/ui/generic/DiceRoller"
 import GameMenu from "~/components/ui/menus/GameMenu"
 import SystemMenu from "~/components/ui/menus/SystemMenu"
-
-export enum Views {
-  MASTERBOARD,
-  BATTLEBOARD
-}
+import { View } from "~/store/ui/selection"
 
 export default defineComponent({
   name: "App",
   components: {
+    BattleBoard,
     DiceRoller,
     PlayerStatus,
     SystemMenu,
@@ -79,13 +78,23 @@ export default defineComponent({
     return { diceRoller }
   },
   data: () => ({
-    Views: Views,
-    view: Views.MASTERBOARD,
+    View: View,
     menuVisible: false,
     prefsPaneVisible: false
   }),
-  computed: {},
+  computed: {
+    ...mapState("ui", ["selections"]),
+    view: {
+      get(): View {
+        return this.selections.view
+      },
+      set(value: View) {
+        this.setView(value)
+      }
+    }
+  },
   methods: {
+    ...mapMutations("ui/selections", ["setView"]),
     toggleFancyGraphics() {
       this.$store.commit("ui/preferences/setFancyGraphics",
         !this.$store.state.ui.preferences.fancyGraphics)

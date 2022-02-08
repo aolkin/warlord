@@ -2,7 +2,13 @@ import { Path } from "~/models/game"
 import masterboard, { MasterboardHex } from "~/models/masterboard"
 import { Stack } from "~/models/stack"
 
+export enum View {
+  MASTERBOARD,
+  BATTLEBOARD
+}
+
 export interface Selections {
+  view: View
   stack?: Stack
   focusedStacks: Stack[]
   focusedHexes: MasterboardHex[]
@@ -11,6 +17,7 @@ export interface Selections {
 export default {
   namespaced: true,
   state: () => ({
+    view: View.MASTERBOARD,
     focusedStacks: [],
     focusedHexes: []
   }),
@@ -37,6 +44,9 @@ export default {
     }
   },
   mutations: {
+    setView(state: Selections, view: View) {
+      state.view = view
+    },
     reset(state: Selections) {
       state.stack = undefined
       state.focusedStacks = []

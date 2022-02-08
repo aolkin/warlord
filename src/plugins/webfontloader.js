@@ -12,7 +12,7 @@ export async function loadFonts() {
       families: [
         "Roboto:100,300,400,500,700,900",
         "Fanwood Text:400", // Simple Serifs
-        "Fondamento:400",
+        "Fondamento:400", // Fun but not overly complex
         "Eczar:400,500,600,700,800",
         "Merriweather:400,700,900",
         "Neuton:400,700,800",

@@ -1,5 +1,8 @@
 import _ from "lodash"
+import { BaseActionContext } from "~/store/types"
+import { View } from "~/store/ui/selection"
 import { assert } from "~/utils/assert"
+import { Battle } from "./battle"
 import { CREATURE_DATA, CREATURE_LIST, CreatureType } from "./creature"
 import masterboard, { MasterboardHex } from "./masterboard"
 import { Player, PlayerId } from "./player"
@@ -41,14 +44,13 @@ interface Getters {
   readonly mandatoryMoves: Stack[]
 }
 
-interface MusterPayload { stack: Stack, recruit: MusterPossibility }
 interface MovePayload { stack: Stack, hex: number | MasterboardHex }
+interface MusterPayload { stack: Stack, recruit: MusterPossibility }
+interface BattlePayload { attacking: Stack, defending: Stack, hex: number }
 
-interface ActionContext {
+interface ActionContext extends BaseActionContext {
   state: TitanGame
   getters: Getters
-  commit: (mutation: string, payload?: any, options?: object) => void
-  dispatch: (action: string, payload?: any) => void
 }
 
 const GAME_PERSISTENCE_KEY = "warlord-v1"
@@ -63,6 +65,7 @@ export class TitanGame {
   activeRoll?: number
   activePlayer: number
   activePhase: MasterboardPhase
+  activeBattle?: Battle
 
   constructor(numPlayers: number) {
     this.round = 0
@@ -203,6 +206,12 @@ export class TitanGame {
     // TODO: recombine splits that failed to move
   }
 
+  mPhaseEnterBattle(getters: Getters): void {
+  }
+
+  mPhaseExitBattle(getters: Getters): void {
+  }
+
   mPhaseEnterMuster(getters: Getters): void {
   }
 
@@ -253,9 +262,13 @@ export class TitanGame {
     stack.currentMuster = recruit
   }
 
+  mInitiateBattle({ hex, attacking, defending }: BattlePayload): void {
+    this.activeBattle = new Battle(hex, attacking, defending)
+  }
+
   // Actions
 
-  doNextPhase({ getters, commit }: ActionContext): void {
+  doNextPhase({ getters, commit, dispatch }: ActionContext): void {
     switch (this.activePhase) {
       case MasterboardPhase.SPLIT:
         commit("phaseExitSplit", getters)
@@ -263,12 +276,18 @@ export class TitanGame {
         break
       case MasterboardPhase.MOVE:
         commit("phaseExitMove", getters)
+        commit("phaseEnterBattle", getters)
         if (getters.engagedStacks.length === 0) {
           commit("nextPhase", getters)
+          commit("phaseExitBattle", getters)
           commit("phaseEnterMuster", getters)
+        } else if (getters.engagedStacks.length === 1) {
+          dispatch("initiateBattle", getters.engagedStacks[0].hex)
         }
         break
       case MasterboardPhase.BATTLE:
+        assert(this.activeBattle !== undefined, "Incomplete battle!")
+        commit("phaseExitBattle", getters)
         commit("phaseEnterMuster", getters)
         break
       case MasterboardPhase.MUSTER:
@@ -302,6 +321,16 @@ export class TitanGame {
     }
     commit("muster", payload)
     this.persist()
+  }
+
+  doInitiateBattle({ commit, getters }: ActionContext, hex: number) {
+    const stacks = getters.stacksForHex(hex)
+    const attacking = stacks.find(stack => stack.owner === getters.activePlayerId) as Stack
+    const defending = stacks.find(stack => stack.owner !== getters.activePlayerId) as Stack
+    assert(attacking !== undefined && defending !== undefined,
+      `No engagement present on hex ${hex}!`)
+    commit("initiateBattle", { hex, attacking, defending })
+    commit("ui/selections/setView", View.BATTLEBOARD, { root: true })
   }
 
   persist() {

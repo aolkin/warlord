@@ -1,4 +1,5 @@
 import { Player } from "~/models/player"
+import { BaseActionContext } from "../types"
 import preferences, { Preferences } from "./preferences"
 import selections, { Selections } from "./selection"
 
@@ -28,7 +29,7 @@ export default {
     }
   },
   actions: {
-    reset({ commit }) {
+    reset({ commit }: BaseActionContext) {
       commit("selections/reset")
     }
   }
