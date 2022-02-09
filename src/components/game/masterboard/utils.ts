@@ -1,36 +1,11 @@
 import MASTERBOARD, { BoardArea } from "~/models/masterboard"
+import { Transformation, Transformations, TransformationType } from "~/utils/svg"
 
 const TRIANGLE_HEIGHT_FACTOR = Math.sqrt(3) / 2
 export const TRIANGLE_SIDE = 100
 export const TRIANGLE_HEIGHT = TRIANGLE_SIDE * TRIANGLE_HEIGHT_FACTOR
 export const CLIP_TRIANGLE_SIDE = 25
 export const CLIP_TRIANGLE_HEIGHT = CLIP_TRIANGLE_SIDE * TRIANGLE_HEIGHT_FACTOR
-
-export enum TransformationType {
-  ROTATE,
-  TRANSLATE,
-  SCALE,
-}
-
-export class Transformation {
-  readonly type: TransformationType;
-  readonly values: Array<string|number>
-
-  constructor(type: TransformationType, values: Array<string|number>) {
-    this.type = type
-    this.values = values
-  }
-
-  toString(): string {
-    return `${TransformationType[this.type].toLowerCase()}(${this.values.join(" ")})`
-  }
-}
-
-export class Transformations extends Array<Transformation> {
-  toString(): string {
-    return this.join(" ")
-  }
-}
 
 export function hexTransform(hexId: number): Transformations {
   const hex = MASTERBOARD.hexes.get(hexId)

@@ -341,11 +341,14 @@ export class TitanGame {
     const game = new TitanGame(2)
     if (localStorage[GAME_PERSISTENCE_KEY] !== undefined) {
       const hydration = JSON.parse(localStorage[GAME_PERSISTENCE_KEY])
-      hydration.players = hydration.players.map((player: Player) =>
-        _.assign(new Player(player.id, player.name), player))
-      hydration.stacks = hydration.stacks.map((stack: Stack) =>
-        _.assign(new Stack(stack.owner, stack.hex, stack.marker, stack.creatures), stack))
-      _.assign(game, hydration)
+      _.assign(game, {
+        ...hydration,
+        players: hydration.players.map((player: Player) =>
+          _.assign(new Player(player.id, player.name), player)),
+        stacks: hydration.stacks.map((stack: Stack) =>
+          _.assign(new Stack(stack.owner, stack.hex, stack.marker, stack.creatures), stack)),
+        activeBattle: Battle.hydrate(hydration.activeBattle)
+      })
     }
     return game
   }

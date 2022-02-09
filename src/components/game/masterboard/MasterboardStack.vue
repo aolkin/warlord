@@ -53,9 +53,10 @@ import { MasterboardPhase, Path } from "~/models/game"
 import masterboard, { MasterboardHex } from "~/models/masterboard"
 import { Player } from "~/models/player"
 import { Stack } from "~/models/stack"
+import { Transformation, TransformationType } from "~/utils/svg"
 import Creature from "../Creature.vue"
 import Marker from "../Marker.vue"
-import { hexTransform, isHexInverted, Transformation, TransformationType } from "./utils"
+import { hexTransform, isHexInverted } from "./utils"
 
 export default defineComponent({
   name: "MasterboardStack",

@@ -94,9 +94,6 @@ export default defineComponent({
     terrain() {
       return Terrain[this.hex?.terrain].toLowerCase()
     },
-    viewBox() {
-      return `-${TRIANGLE_SIDE / 2} -${TRIANGLE_HEIGHT / 2} ${TRIANGLE_SIDE} ${TRIANGLE_HEIGHT}`
-    },
     points() {
       return [
         [-CLIP_TRIANGLE_SIDE / 2, CLIP_TRIANGLE_HEIGHT - TRIANGLE_HEIGHT / 2],
