@@ -1,3 +1,4 @@
+import { div } from "~/utils/math"
 import { CreatureType } from "./creature"
 import masterboard, { Terrain } from "./masterboard"
 import { PlayerId } from "./player"
@@ -82,7 +83,7 @@ export enum Hazard {
   BOG,
   BRAMBLE,
   DRIFT,
-  DUNE,
+  SAND,
   TREE,
   VOLCANO,
 }
@@ -101,6 +102,32 @@ export interface BattleBoardProps {
   // Upper Hex -> Lower Hex -> Hazard
   edgeHazards?: Record<number, Record<number, EdgeHazard>>
 }
+
+export const BATTLE_BOARD_HEXES = Object.freeze([
+  2, 3, 4,
+  7, 8, 9, 10,
+  13, 14, 15, 16, 17,
+  18, 19, 20, 21, 22, 23,
+  25, 26, 27, 28, 29,
+  31, 32, 33, 34
+])
+
+const getAdjacencyDists = (hex: number) => div(hex, 6) % 2 === 0
+  ? [-7, -6, 1, 6, 5, -1]
+  : [-6, -5, 1, 7, 6, -1]
+
+/** Return, starting from the above-left position, the index around the hex of the adjacent hex. */
+export const relationToHex = (hex: number, adjacent: number): number =>
+  getAdjacencyDists(hex).indexOf(adjacent - hex)
+
+export const BATTLE_BOARD_ADJACENCIES = Object.freeze(Object.fromEntries(BATTLE_BOARD_HEXES
+  .map((hex: number) => {
+    const adjacencies = getAdjacencyDists(hex)
+    return [hex, adjacencies
+      .filter(dist => BATTLE_BOARD_HEXES.includes(hex + dist))
+      .map(dist => hex + dist)]
+  })
+))
 
 export class BattleBoard {
   readonly terrain: Terrain
@@ -157,7 +184,7 @@ export const BATTLE_BOARDS: Record<Terrain, BattleBoard> = {
   }),
   [Terrain.DESERT]: new BattleBoard(Terrain.DESERT, {
     elevations: propForHexes([2, 3, 4, 8, 9, 15, 25, 26, 31, 29, 34], 1),
-    hazards: propForHexes([2, 3, 4, 8, 9, 15, 25, 26, 31, 29, 34], Hazard.DUNE),
+    hazards: propForHexes([2, 3, 4, 8, 9, 15, 25, 26, 31, 29, 34], Hazard.SAND),
     edgeHazards: {
       8: propForHexes([14], EdgeHazard.DUNE),
       9: propForHexes([10, 16], EdgeHazard.DUNE),

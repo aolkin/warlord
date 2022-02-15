@@ -13,7 +13,7 @@
           :key="hex"
           :elevation="board.getElevation(hex)"
           :hazard="board.getHazard(hex)"
-          :edge-hazards="board.getEdgeHazards(hex)"
+          :edge-hazards="edgesForHex(hex)"
           :transform="hexTransformStr(hex)"
         />
         <Creature
@@ -42,7 +42,14 @@
 <script lang="ts">
 import { defineComponent } from "@vue/runtime-core"
 import { mapState } from "vuex"
-import { BATTLE_BOARDS, BattleBoard } from "~/models/battle"
+import {
+  BATTLE_BOARD_ADJACENCIES,
+  BATTLE_BOARD_HEXES,
+  BATTLE_BOARDS,
+  BattleBoard,
+  EdgeHazard,
+  relationToHex
+} from "~/models/battle"
 import { Terrain } from "~/models/masterboard"
 import Creature from "../Creature.vue"
 import BattleBoardHex from "./BattleBoardHex.vue"
@@ -63,15 +70,15 @@ export default defineComponent({
     board(): BattleBoard {
       return BATTLE_BOARDS[this.terrain]
     },
-    hexes(): number[] {
-      return [
-        2, 3, 4,
-        7, 8, 9, 10,
-        13, 14, 15, 16, 17,
-        18, 19, 20, 21, 22, 23,
-        25, 26, 27, 28, 29,
-        31, 32, 33, 34
-      ]
+    hexes(): readonly number[] {
+      return BATTLE_BOARD_HEXES
+    },
+    edgesForHex(): ((hex: number) => Record<number, EdgeHazard>) {
+      return (hex: number) => Object.fromEntries(BATTLE_BOARD_ADJACENCIES[hex]
+        .map((adjacency: number): [number, EdgeHazard] =>
+          [relationToHex(hex, adjacency), this.board.getEdgeHazard(adjacency, hex)])
+        .filter(([, hazard]: [number, EdgeHazard]) => hazard !== EdgeHazard.NONE)
+      )
     }
   }
 })

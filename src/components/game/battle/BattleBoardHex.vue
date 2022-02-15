@@ -9,6 +9,17 @@
       x="-50"
       y="-58"
     />
+    <image
+      v-for="(edge, index) in edgeHazards"
+      :key="index"
+      :href="edgeHazardImg(edge)"
+      width="100"
+      height="116"
+      x="-50"
+      y="-58"
+      class="edge-hazard"
+      :class="`edge-hazard-${index}`"
+    />
   </g>
 </template>
 <script lang="ts">
@@ -41,6 +52,11 @@ export default defineComponent({
     hazardImg() {
       return new URL(`../../../assets/hazards/${Hazard[this.hazard].toLowerCase()}.svg`,
         import.meta.url).href
+    },
+    edgeHazardImg(): ((hazard: EdgeHazard) => string) {
+      return (hazard: EdgeHazard) =>
+        new URL(`../../../assets/hazards/${EdgeHazard[hazard].toLowerCase()}.svg`,
+          import.meta.url).href
     }
   }
 })
@@ -58,4 +74,8 @@ export default defineComponent({
   filter: saturate(35%) brightness(250%)
 .hex.elevation-2
   filter: saturate(20%) brightness(300%)
+
+@for $i from 0 through 5
+  .edge-hazard-#{$i}
+    transform: rotate($i * 60deg) scale(1.03) translate(-15.5px, -24px)
 </style>
