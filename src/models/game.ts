@@ -339,16 +339,21 @@ export class TitanGame {
 
   static hydrate(): TitanGame {
     const game = new TitanGame(2)
-    if (localStorage[GAME_PERSISTENCE_KEY] !== undefined) {
-      const hydration = JSON.parse(localStorage[GAME_PERSISTENCE_KEY])
-      _.assign(game, {
-        ...hydration,
-        players: hydration.players.map((player: Player) =>
-          _.assign(new Player(player.id, player.name), player)),
-        stacks: hydration.stacks.map((stack: Stack) =>
-          _.assign(new Stack(stack.owner, stack.hex, stack.marker, stack.creatures), stack)),
-        activeBattle: Battle.hydrate(hydration.activeBattle)
-      })
+    try {
+      if (localStorage[GAME_PERSISTENCE_KEY] !== undefined) {
+        const hydration = JSON.parse(localStorage[GAME_PERSISTENCE_KEY])
+        _.assign(game, {
+          ...hydration,
+          players: hydration.players.map((player: Player) =>
+            _.assign(new Player(player.id, player.name), player)),
+          stacks: hydration.stacks.map((stack: Stack) =>
+            _.assign(new Stack(stack.owner, stack.hex, stack.marker, stack.creatures), stack)),
+          activeBattle: Battle.hydrate(hydration.activeBattle)
+        })
+      }
+    } catch (e) {
+      console.error("Error during hydration", e)
+      return new TitanGame(2)
     }
     return game
   }
