@@ -77,5 +77,5 @@ export default defineComponent({
 
 @for $i from 0 through 5
   .edge-hazard-#{$i}
-    transform: rotate($i * 60deg) scale(1.03) translate(-15.5px, -24px)
+    transform: rotate($i * 60deg) scale(1.04) translate(-14.5px, -24.5px)
 </style>

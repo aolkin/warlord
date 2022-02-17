@@ -25,6 +25,9 @@
       <v-btn block @click="reset">Reset Game</v-btn>
     </v-list-item>
     <v-list-item>
+      <v-btn block @click="persistToClipboard">Persist</v-btn>
+    </v-list-item>
+    <v-list-item>
       <v-list-item-header>Local Player</v-list-item-header>
       <v-slider v-model="localPlayer" min="1" :max="players.length" step="1" />
     </v-list-item>
@@ -50,11 +53,11 @@
   </v-list>
 </template>
 
-<script>
+<script lang="ts">
 import { defineComponent } from "@vue/runtime-core"
 import { mapActions, mapGetters, mapMutations, mapState } from "vuex"
+import { Creature, CREATURE_LIST } from "~/models/creature"
 import { CreatureColorMode } from "~/store/ui/preferences"
-import { CREATURE_LIST } from "~/models/creature"
 
 export default defineComponent({
   name: "SystemMenu",
@@ -78,7 +81,7 @@ export default defineComponent({
       get() {
         return this.preferences.fancyGraphics
       },
-      set(value) {
+      set(value: boolean) {
         this.setFancyGraphics(value)
       }
     },
@@ -86,7 +89,7 @@ export default defineComponent({
       get() {
         return this.preferences.quickDice
       },
-      set(value) {
+      set(value: boolean) {
         this.setQuickDice(value)
       }
     },
@@ -94,7 +97,7 @@ export default defineComponent({
       get() {
         return this.preferences.freeMovement
       },
-      set(value) {
+      set(value: boolean) {
         this.setFreeMovement(value)
       }
     },
@@ -102,7 +105,7 @@ export default defineComponent({
       get() {
         return `${this.preferences.creatureColorMode}`
       },
-      set(value) {
+      set(value: string) {
         this.setCreatureColorMode(Number(value))
       }
     },
@@ -110,7 +113,7 @@ export default defineComponent({
       get() {
         return this.activePlayer + 1
       },
-      set(value) {
+      set(value: number) {
         this.setPlayer(value - 1)
       }
     }
@@ -121,7 +124,8 @@ export default defineComponent({
       "setFancyGraphics", "setQuickDice", "setCreatureColorMode", "setFreeMovement"
     ]),
     ...mapActions(["reset"]),
-    summon(creature) {
+    ...mapActions("game", ["persist"]),
+    summon(creature: Creature) {
       if (this.selections.stack !== undefined) {
         this.$store.commit("game/muster", {
           stack: this.selections.stack,
@@ -131,6 +135,12 @@ export default defineComponent({
     },
     roll() {
       this.diceRoller.roll(this.diceQuantity)
+    },
+    async persistToClipboard() {
+      const value = await this.persist()
+      if (value) {
+        await navigator.clipboard.writeText(value)
+      }
     }
   }
 })

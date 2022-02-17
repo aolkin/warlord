@@ -1,5 +1,5 @@
 <template>
-  <div class="root" :class="Terrain[terrain].toLowerCase()">
+  <div class="root" :class="activeBattle === undefined ? 'inactive' : Terrain[terrain].toLowerCase()">
     <svg v-if="activeBattle === undefined" class="no-active-battle" viewBox="-100 -50 200 100">
       <text x="0" y="0">No Active Battle!</text>
     </svg>
@@ -15,12 +15,13 @@
           :hazard="board.getHazard(hex)"
           :edge-hazards="edgesForHex(hex)"
           :transform="hexTransformStr(hex)"
+          :class="`hex-${hex}`"
         />
         <Creature
           v-for="(creature, index) in activeBattle.offense"
           :key="index"
           :type="creature.type"
-          :player="activeBattle.attacker"
+          :player="playerById(activeBattle.attacker)"
           :wounds="creature.wounds"
           :transform="`${hexTransformStr(creature.hex)} scale(0.9)`"
           in-svg
@@ -29,7 +30,7 @@
           v-for="(creature, index) in activeBattle.defense"
           :key="index"
           :type="creature.type"
-          :player="activeBattle.defender"
+          :player="playerById(activeBattle.defender)"
           :wounds="creature.wounds"
           :transform="`${hexTransformStr(creature.hex)} scale(0.9)`"
           in-svg
@@ -41,7 +42,7 @@
 
 <script lang="ts">
 import { defineComponent } from "@vue/runtime-core"
-import { mapState } from "vuex"
+import { mapGetters, mapState } from "vuex"
 import {
   BATTLE_BOARD_ADJACENCIES,
   BATTLE_BOARD_HEXES,
@@ -64,6 +65,7 @@ export default defineComponent({
   }),
   computed: {
     ...mapState("game", ["activeBattle"]),
+    ...mapGetters("game", ["playerById"]),
     terrain(): Terrain {
       return this.activeBattle.terrain
     },

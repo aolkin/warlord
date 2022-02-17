@@ -8,9 +8,21 @@ interface State {
   ui: UiState
 }
 
+interface LocalState {
+  encodedSave?: string
+}
+
 export default createStore({
+  state: (): LocalState => ({
+    encodedSave: undefined
+  }),
   modules: {
     game, ui
+  },
+  mutations: {
+    setEncodedSaveData(state, data?: string) {
+      state.encodedSave = data
+    }
   },
   actions: {
     reset({ commit, dispatch }) {

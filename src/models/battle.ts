@@ -264,7 +264,7 @@ export const BATTLE_BOARDS: Record<Terrain, BattleBoard> = {
       9: propForHexes([3, 4, 10], EdgeHazard.WALL),
       14: propForHexes([7, 13, 19], EdgeHazard.WALL),
       15: propForHexes([8, 9, 14, 16, 20, 21], EdgeHazard.WALL),
-      16: propForHexes([10, 17, 23], EdgeHazard.WALL),
+      16: propForHexes([10, 17, 22], EdgeHazard.WALL),
       20: propForHexes([19, 26, 27], EdgeHazard.WALL),
       21: propForHexes([22, 27, 28], EdgeHazard.WALL)
     }
