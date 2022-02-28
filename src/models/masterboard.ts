@@ -5,6 +5,7 @@ import { assert } from "~/utils/assert"
 import { div, mod } from "~/utils/math"
 
 export enum MovementRule {
+  NONE, // for backwards edges
   ARROW,
   SQUARE,
   CIRCLE,
@@ -61,12 +62,37 @@ export interface MasterboardEdge {
 export class MasterboardHex {
   readonly id: number;
   readonly terrain: Terrain;
-  readonly edges: MasterboardEdge[];
+  private readonly edges: Partial<Record<HexEdge, MasterboardEdge>>;
 
   constructor(id: number, terrain: Terrain) {
     this.id = id
     this.terrain = terrain
-    this.edges = []
+    this.edges = {}
+  }
+
+  getEdges(): MasterboardEdge[] {
+    return Object.values(this.edges)
+  }
+
+  addEdge(hex: MasterboardHex, hexEdge: HexEdge, rule: MovementRule): void {
+    assert(this.edges[hexEdge] === undefined || this.edges[hexEdge]?.rule === MovementRule.NONE,
+      "Cannot overwrite already configured edge")
+    this.edges[hexEdge] = { hex, rule, hexEdge }
+    if (this.getArea() === BoardArea.MIDDLE || this.getArea() === BoardArea.LOWER) {
+      // Generally speaking, the receiving edge is frequently the sending edge as well
+      // In most instances where this is not the case, the correct edge is added separately
+      // as a normal path and overwrites the "NONE" back-edge
+      let targetEdge = hexEdge
+      // The only place it does not is on the border of a side:
+      if (this.getArea() === BoardArea.MIDDLE && this.getSideIndex() === 6) {
+        targetEdge = HexEdge.THIRD
+      } else if (this.getArea() === BoardArea.LOWER && this.getSideIndex() === 0) {
+        targetEdge = HexEdge.FIRST
+      }
+      if (hex.edges[targetEdge] === undefined) {
+        hex.edges[targetEdge] = { hex: this, rule: MovementRule.NONE, hexEdge: targetEdge }
+      }
+    }
   }
 
   getArea(): BoardArea {
@@ -108,20 +134,15 @@ export class MasterboardHex {
   }
 
   getMovement(initial?: boolean): MasterboardEdge[] {
-    const options = this.edges.filter(edge => edge.rule === MovementRule.ARROW)
+    const options = this.getEdges().filter(edge => edge.rule === MovementRule.ARROW)
     if (initial ?? false) {
-      if (this.edges.some(edge => edge.rule === MovementRule.SQUARE)) {
-        return this.edges.filter(edge => edge.rule === MovementRule.SQUARE)
+      if (this.getEdges().some(edge => edge.rule === MovementRule.SQUARE)) {
+        return this.getEdges().filter(edge => edge.rule === MovementRule.SQUARE)
       } else {
-        options.push(...this.edges.filter(edge => edge.rule === MovementRule.CIRCLE))
+        options.push(...this.getEdges().filter(edge => edge.rule === MovementRule.CIRCLE))
       }
     }
     return options
-  }
-
-  addEdge(hex: MasterboardHex, hexEdge: HexEdge, rule: MovementRule): void {
-    assert(this.edges.length < 3, "Cannot add edge to hex with 3 edges")
-    this.edges.push({ hex, rule, hexEdge })
   }
 }
 

@@ -19,7 +19,7 @@
 </template>
 <script lang="ts">
 import { defineComponent } from "@vue/runtime-core"
-import board, { Masterboard, MasterboardEdge, MasterboardHex } from "~/models/masterboard"
+import board, { Masterboard, MasterboardEdge, MasterboardHex, MovementRule } from "~/models/masterboard"
 import HexEdge from "./HexEdge.vue"
 
 export default defineComponent({
@@ -31,7 +31,8 @@ export default defineComponent({
     },
     edges(): [MasterboardHex, MasterboardEdge][] {
       return Array.from(this.board.hexes.values()).flatMap(
-        hex => hex.edges.map((edge): [MasterboardHex, MasterboardEdge] => [hex, edge]))
+        hex => hex.getEdges().map((edge): [MasterboardHex, MasterboardEdge] => [hex, edge]))
+        .filter(([, edge]) => edge.rule !== MovementRule.NONE)
     },
     shadows(): boolean {
       return this.$store.state.ui.preferences.fancyGraphics

@@ -4,8 +4,8 @@
     :transform="fullTransform"
     :width="inSvg ? '' : 100"
     :height="inSvg ? '' : 100"
-    :viewBox="!inSvg ? '0 0 100 100' : ''"
-    class="root"
+    :viewBox="inSvg ? '' : '0 0 100 100'"
+    class="creature-root"
     :class="classes"
   >
     <rect width="100" height="100" x="0" y="0" class="background" />
@@ -15,7 +15,7 @@
     <template v-else>
       <image :href="imageUrl" width="98" height="98" x="1" y="1" :filter="filter" />
       <text x="50" y="18" class="name annotation" v-text="creatureName" />
-      <text x="10" y="93" class="strength annotation" v-text="strength" />
+      <text x="10" y="93" class="strength annotation" :class="titanStrength" v-text="strength" />
       <text v-if="type === CreatureType.TITAN" x="50" y="83" class="annotation">&ndash;</text>
       <text x="90" y="93" class="skill annotation" v-text="creature.skill" />
       <g transform="translate(50 82) scale(1.1)" :class="{ 'both-present': creature.canFly && creature.canRangestrike }">
@@ -130,6 +130,12 @@ export default defineComponent({
       }
       return classMap
     },
+    titanStrength() {
+      return {
+        "double-digits": (this.creature?.type === CreatureType.TITAN &&
+          (this.player?.score ?? 0) >= 400)
+      }
+    },
     currentTheme() {
       return this.$vuetify.theme.getTheme(this.$vuetify.theme.current)
     },
@@ -153,8 +159,9 @@ export default defineComponent({
   stroke-width: 0.5px
   stroke: #353535
 
-.root
+.creature-root
   user-select: none
+  position: relative
 
 .annotation
   font-family: "Frank Ruhl Libre", serif
@@ -167,17 +174,17 @@ export default defineComponent({
   fill: currentColor
 
 .icon.rangestrike
-  transform: translate(-7.5%, 2%)
+  transform: translate(-7.5px, 2px)
 
 .icon.flight
-  transform: translate(-5%, 0)
+  transform: translate(-5.5px, 0)
 
 .both-present
   .icon.rangestrike
-    transform: translate(-17%, 2%)
+    transform: translate(-17px, 2px)
 
   .icon.flight
-    transform: translate(5%, 0)
+    transform: translate(5px, 0)
 
 .uniform-text
   .annotation, .icon
@@ -199,10 +206,13 @@ export default defineComponent({
     display: none
 
   &.strength
-    transform: translate(20%, -8%)
+    transform: translate(20px, -8.5px)
+
+    &.double-digits
+      transform: translate(18px, -8.5px)
 
   &.skill
-    transform: translate(-20%, -8%)
+    transform: translate(-20px, -8.5px)
 
 .standard
   &.ogre, &.minotaur

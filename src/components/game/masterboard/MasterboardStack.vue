@@ -27,11 +27,13 @@
     <text v-if="!selected && stacksOnHex.length > 1 && !engaged" x="0" y="0" class="annotation stack-count">
       x{{ stacksOnHex.length }}
     </text>
-    <!-- sword-cross from Material Design Icons -->
-    <path
-      v-if="engageable || engaged"
-      class="engage-graphic"
-      d="M6.2,2.44L18.1,14.34L20.22,12.22L21.63,13.63L19.16,16.1L22.34,19.28C22.73,19.67 22.73,20.3 22.34,20.69L21.63,21.4C21.24,21.79 20.61,21.79 20.22,21.4L17,18.23L14.56,20.7L13.15,19.29L15.27,17.17L3.37,5.27V2.44H6.2M15.89,10L20.63,5.26V2.44H17.8L13.06,7.18L15.89,10M10.94,15L8.11,12.13L5.9,14.34L3.78,12.22L2.37,13.63L4.84,16.1L1.66,19.29C1.27,19.68 1.27,20.31 1.66,20.7L2.37,21.41C2.76,21.8 3.39,21.8 3.78,21.41L7,18.23L9.44,20.7L10.85,19.29L8.73,17.17L10.94,15Z"
+    <EngageIcon v-if="engaged" />
+    <EngageIcon
+      v-for="[edge, iconTransform] in engageable"
+      :key="edge"
+      :interactive="true"
+      :transform="iconTransform"
+      @click="attack(edge)"
     />
     <transition name="muster">
       <g v-if="stack.currentMuster !== undefined" class="recruited-creature">
@@ -50,17 +52,27 @@ import { defineComponent } from "@vue/runtime-core"
 import { mapActions, mapGetters, mapMutations, mapState } from "vuex"
 import { CreatureType } from "~/models/creature"
 import { MasterboardPhase, Path } from "~/models/game"
-import masterboard, { MasterboardHex } from "~/models/masterboard"
+import masterboard, { HexEdge, MasterboardEdge, MasterboardHex } from "~/models/masterboard"
 import { Player } from "~/models/player"
 import { Stack } from "~/models/stack"
-import { Transformation, TransformationType } from "~/utils/svg"
+import { Transformation, Transformations, TransformationType } from "~/utils/svg"
 import Creature from "../Creature.vue"
 import Marker from "../Marker.vue"
+import EngageIcon from "./EngageIcon.vue"
 import { hexTransform, isHexInverted } from "./utils"
+
+const getEngageTransformForEdge = (edge: HexEdge, hex: number): Transformations => {
+  const transforms = new Transformations()
+  transforms.push(new Transformation(TransformationType.ROTATE, [edge * 120 + 60]))
+  transforms.push(new Transformation(TransformationType.TRANSLATE,
+    [0, edge === HexEdge.SECOND ? 50 : 60]))
+  transforms.push(new Transformation(TransformationType.SCALE, [0.75]))
+  return transforms
+}
 
 export default defineComponent({
   name: "MasterboardStack",
-  components: { Creature, Marker },
+  components: { EngageIcon, Creature, Marker },
   props: {
     stack: {
       type: Stack,
@@ -100,19 +112,28 @@ export default defineComponent({
     stackPlayer(): Player {
       return this.playerById(this.stack.owner)
     },
-    engageable(): boolean {
+    potentialEngagements(): HexEdge[] {
       if (this.selectedStack === undefined) {
-        return false
+        return []
       } else if (this.stacksForHex(this.stack.hex)
         .some((stack: Stack) => stack.owner === this.activePlayerId)) {
-        return false
+        return []
       } else if (this.activeRoll === 6 && this.activePlayer.score >= 400 &&
         this.selectedStack.creatures.includes(CreatureType.TITAN)) {
-        return true
+        return [HexEdge.FIRST, HexEdge.SECOND, HexEdge.THIRD]
       } else {
-        return this.paths.flatMap((path: Path) => path[1])
-          .map((hex: MasterboardHex) => hex.id).includes(this.stack.hex)
+        // For paths where this stack is the enemy...
+        return this.paths.filter((path: Path) => path.foe === this.stack).flatMap(({ path }: Path) =>
+          // Find the index on the path where this stack resides...
+          path.map((hex: MasterboardHex, i: number) => hex.id === this.stack.hex
+            // Figure out where the stack would enter this hex from
+            ? hex.getEdges().find((edge: MasterboardEdge) => edge.hex.id === path[i - 1].id)?.hexEdge
+            : undefined)
+        ).filter((item?: HexEdge) => item !== undefined)
       }
+    },
+    engageable(): [HexEdge, Transformations][] {
+      return this.potentialEngagements.map(edge => [edge, getEngageTransformForEdge(edge, this.stack.hex)])
     },
     engaged(): boolean {
       return this.isActivePlayer && this.stacksForHex(this.stack.hex)
@@ -150,7 +171,7 @@ export default defineComponent({
         owned: this.isActivePlayer,
         mandatory: this.isMandatory,
         disabled: this.isDisabled,
-        engageable: this.engageable,
+        engageable: this.engageable.length > 0,
         engaged: this.engaged,
         [`player-${this.stack.owner}`]: true,
         "multiple-stacks": this.stacksOnHex.length > 1,
@@ -179,10 +200,6 @@ export default defineComponent({
     ...mapActions("game", ["move"]),
     select() {
       if (!(this.isActivePlayer)) {
-        if (this.engageable) {
-          this.move({ stack: this.selectedStack, hex: this.stack.hex })
-          this.deselectStack()
-        }
         return
       }
       if (this.activePhase === MasterboardPhase.MOVE && this.stack.hasMoved()) {
@@ -197,6 +214,10 @@ export default defineComponent({
           this.selectStack(this.stack)
         }
       }
+    },
+    attack(edge: HexEdge) {
+      this.move({ stack: this.selectedStack, hex: this.stack.hex, edge })
+      this.deselectStack()
     },
     enter() {
       this.enterStack(this.stack)
@@ -234,9 +255,6 @@ export default defineComponent({
 
 .disabled
   filter: brightness(50%)
-
-.engageable
-  cursor: pointer
 
 .annotation
   font-family: "Eczar", serif

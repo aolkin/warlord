@@ -61,7 +61,8 @@ export default defineComponent({
   computed: {
     multiArrow(): boolean {
       return this.edge.rule === MovementRule.ARROW &&
-        !this.edge.hex.edges.some(edge => edge.hex.id === this.hex.id)
+        !this.edge.hex.getEdges().some(edge =>
+          edge.rule !== MovementRule.NONE && edge.hex.id === this.hex.id)
     },
     hexTransform() {
       return hexTransform(this.hex.id)

@@ -1,7 +1,7 @@
 import _ from "lodash"
 import { assert } from "~/utils/assert"
 import { CREATURE_DATA, CreatureType, MUSTER_DATA } from "./creature"
-import { Terrain } from "./masterboard"
+import { HexEdge, Terrain } from "./masterboard"
 import { PlayerId } from "./player"
 
 export type StackRef = number
@@ -18,6 +18,7 @@ export class Stack {
 
   origin: number
   hex: number
+  attackEdge: HexEdge | undefined
   currentMuster: MusterPossibility | undefined
 
   constructor(owner: PlayerId, start: number, marker: number, initial?: CreatureType[]) {

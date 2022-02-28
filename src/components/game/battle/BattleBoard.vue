@@ -1,5 +1,5 @@
 <template>
-  <div class="root" :class="activeBattle === undefined ? 'inactive' : Terrain[terrain].toLowerCase()">
+  <div class="battleboard-root" :class="activeBattle === undefined ? 'inactive' : Terrain[terrain].toLowerCase()">
     <svg v-if="activeBattle === undefined" class="no-active-battle" viewBox="-100 -50 200 100">
       <text x="0" y="0">No Active Battle!</text>
     </svg>
@@ -23,7 +23,8 @@
           :type="creature.type"
           :player="playerById(activeBattle.attacker)"
           :wounds="creature.wounds"
-          :transform="`${hexTransformStr(creature.hex)} scale(0.9)`"
+          :transform="`${hexTransformStr(creature.hex, index)} scale(0.9)
+           rotate(${120 * (activeBattle.attackerEdge - 1)})`"
           in-svg
         />
         <Creature
@@ -32,10 +33,14 @@
           :type="creature.type"
           :player="playerById(activeBattle.defender)"
           :wounds="creature.wounds"
-          :transform="`${hexTransformStr(creature.hex)} scale(0.9)`"
+          :transform="`${hexTransformStr(creature.hex, index)} scale(0.9)
+           rotate(${180 + 120 * (activeBattle.attackerEdge - 1)})`"
           in-svg
         />
       </svg>
+      <v-card absolute bottom right class="ma-3">
+        <v-card-title>Round: {{ activeBattle.round + 1 }} - {{ phaseTitle }}</v-card-title>
+      </v-card>
     </template>
   </div>
 </template>
@@ -48,6 +53,7 @@ import {
   BATTLE_BOARD_HEXES,
   BATTLE_BOARDS,
   BattleBoard,
+  BattlePhase,
   EdgeHazard,
   relationToHex
 } from "~/models/battle"
@@ -81,6 +87,24 @@ export default defineComponent({
           [relationToHex(hex, adjacency), this.board.getEdgeHazard(adjacency, hex)])
         .filter(([, hazard]: [number, EdgeHazard]) => hazard !== EdgeHazard.NONE)
       )
+    },
+    phaseTitle(): string {
+      switch (this.activeBattle.phase) {
+        case BattlePhase.DEFENDER_MOVE:
+          return "Defender's Move"
+        case BattlePhase.DEFENDER_STRIKE:
+          return "Defender's Strikes"
+        case BattlePhase.ATTACKER_STRIKEBACK:
+          return "Attacker's Strikebacks"
+        case BattlePhase.ATTACKER_MOVE:
+          return "Attacker's Move"
+        case BattlePhase.ATTACKER_STRIKE:
+          return "Attacker's Strikes"
+        case BattlePhase.DEFENDER_STRIKEBACK:
+          return "Defender's Strikebacks"
+        default:
+          return "Unknown Phase"
+      }
     }
   }
 })
@@ -98,10 +122,10 @@ export default defineComponent({
     dominant-baseline: central
     font-family: "Fondamento", serif
 
-.root, .board, .no-active-battle
+.battleboard-root, .board, .no-active-battle
   width: 100%
 
-.root
+.battleboard-root
   height: calc(100vh - 30px)
   background-color: #101010
 

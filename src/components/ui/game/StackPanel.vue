@@ -186,7 +186,6 @@ export default defineComponent({
       do {
         index += by
         candidateStack = this.activeStacks[mod(index, this.activeStacks.length)]
-        console.log(this.selectedStack, candidateStack)
       } while ((this.activePhase === MasterboardPhase.MOVE && candidateStack.hasMoved()) ||
       (this.activePhase === MasterboardPhase.MUSTER && !candidateStack.canMuster()))
       this.selectStack(candidateStack)

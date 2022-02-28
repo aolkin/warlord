@@ -38,6 +38,7 @@
 import { defineComponent } from "@vue/runtime-core"
 import { mapMutations, mapState } from "vuex"
 import { MasterboardHex, Terrain } from "~/models/masterboard"
+import { Preferences } from "~/store/ui/preferences"
 import {
   CLIP_TRIANGLE_HEIGHT,
   CLIP_TRIANGLE_SIDE,
@@ -72,9 +73,10 @@ export default defineComponent({
   },
   computed: {
     ...mapState("game", ["activeRoll"]),
-    ...mapState("ui/preferences", {
-      shadows: state => state.fancyGraphics
-    }),
+    ...mapState("ui/preferences", ["fancyGraphics"]),
+    shadows(): boolean {
+      return this.fancyGraphics
+    },
     rootClass() {
       if (this.path) {
         return {
@@ -114,7 +116,7 @@ export default defineComponent({
       return this.distanceToDest !== undefined
     },
     pathCount(): number {
-      return this.activeRoll - this.distanceToDest + 1
+      return this.activeRoll - (this.distanceToDest ?? 0) + 1
     }
   },
   methods: {
@@ -174,7 +176,7 @@ export default defineComponent({
   $path-color: adjust-hue(#ff43ab, $path * 120deg)
 
   @for $dist from 1 through 6
-    $dist-opacity: calc(1 - $dist / 6 * 0.5)
+    $dist-opacity: calc(0.75 - $dist / 6 * 0.5)
 
     .path-#{$path}.distance-#{$dist}
       .hex

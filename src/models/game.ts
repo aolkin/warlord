@@ -4,7 +4,7 @@ import { View } from "~/store/ui/selection"
 import { assert } from "~/utils/assert"
 import { Battle } from "./battle"
 import { CREATURE_DATA, CREATURE_LIST, CreatureType } from "./creature"
-import masterboard, { MasterboardHex } from "./masterboard"
+import masterboard, { HexEdge, MasterboardHex } from "./masterboard"
 import { Player, PlayerId } from "./player"
 import { MusterPossibility, Stack } from "./stack"
 
@@ -24,7 +24,10 @@ export enum MasterboardPhase {
   END
 }
 
-export type Path = [boolean, MasterboardHex[]]
+export interface Path {
+  foe?: Stack
+  path: MasterboardHex[]
+}
 
 interface Getters {
   readonly round: number // 1-indexed
@@ -44,9 +47,9 @@ interface Getters {
   readonly mandatoryMoves: Stack[]
 }
 
-interface MovePayload { stack: Stack, hex: number | MasterboardHex }
+interface MovePayload { stack: Stack, hex: number | MasterboardHex, edge?: HexEdge }
 interface MusterPayload { stack: Stack, recruit: MusterPossibility }
-interface BattlePayload { attacking: Stack, defending: Stack, hex: number }
+interface BattlePayload { attacking: Stack, defending: Stack }
 
 interface ActionContext extends BaseActionContext {
   state: TitanGame
@@ -82,15 +85,15 @@ export class TitanGame {
     this.stacks.flatMap(stack => stack.creatures).forEach(creature => this.creaturePool[creature]--)
   }
 
-  getRound() {
+  getRound(): number {
     return this.round + 1
   }
 
-  getFirstRound() {
+  getFirstRound(): boolean {
     return this.round === 0
   }
 
-  getPlayers() {
+  getPlayers(): Player[] {
     return this.players
   }
 
@@ -122,18 +125,22 @@ export class TitanGame {
       }
       const initialHex = masterboard.getHex(hexNum)
       const paths: Path[] = []
-      type pathing = [MasterboardHex[], MasterboardHex | undefined, MasterboardHex]
+      // [Array of hexes to get where we are, first hex with enemies, current hex]
+      type pathing = [MasterboardHex[], Stack | undefined, MasterboardHex]
       const stack: pathing[] = initialHex.getMovement(true).map(edge => [[initialHex], undefined, edge.hex])
-      while (stack.length > 0) {
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        let [path, foe, hex] = stack.pop()!
+      let entry: pathing | undefined
+      while ((entry = stack.pop()) !== undefined) {
+        let [path, foe, hex] = entry
         const occupants: Stack[] = getters.stacksForHex(hex.id)
-        if (occupants.some((stack: Stack) => stack.owner !== getters.activePlayerId)) {
-          foe = hex
+        if (foe === undefined) {
+          const foes = occupants.filter((stack: Stack) => stack.owner !== getters.activePlayerId)
+          if (foes.length > 0) {
+            foe = foes[0]
+          }
         }
         if (path.length === this.activeRoll) {
           if (!occupants.some((stack: Stack) => stack.owner === getters.activePlayerId)) {
-            paths.push([foe !== undefined, [...path.splice(1), hex]])
+            paths.push({ foe, path: [...path, hex] })
           }
         } else {
           stack.push(...hex.getMovement(false)
@@ -197,7 +204,10 @@ export class TitanGame {
   }
 
   mPhaseEnterMove(getters: Getters): void {
-    getters.activeStacks.forEach(stack => stack.origin = stack.hex)
+    getters.activeStacks.forEach(stack => {
+      stack.origin = stack.hex
+      stack.attackEdge = undefined
+    })
     this.mulliganTaken = false
   }
 
@@ -248,8 +258,9 @@ export class TitanGame {
     this.activeRoll = payload
   }
 
-  mMove({ stack, hex }: MovePayload): void {
+  mMove({ stack, hex, edge }: MovePayload): void {
     assert(this.activePhase === MasterboardPhase.MOVE, "Innappropriate phase")
+    stack.attackEdge = edge
     if (hex instanceof MasterboardHex) {
       stack.hex = hex.id
     } else {
@@ -262,13 +273,13 @@ export class TitanGame {
     stack.currentMuster = recruit
   }
 
-  mInitiateBattle({ hex, attacking, defending }: BattlePayload): void {
-    this.activeBattle = new Battle(hex, attacking, defending)
+  mInitiateBattle({ attacking, defending }: BattlePayload): void {
+    this.activeBattle = new Battle(attacking.hex, attacking.attackEdge, attacking, defending)
   }
 
   // Actions
 
-  async doNextPhase({ getters, commit, dispatch }: ActionContext): void {
+  async doNextPhase({ getters, commit, dispatch }: ActionContext): Promise<void> {
     switch (this.activePhase) {
       case MasterboardPhase.SPLIT:
         commit("phaseExitSplit", getters)
@@ -282,7 +293,7 @@ export class TitanGame {
           commit("phaseExitBattle", getters)
           commit("phaseEnterMuster", getters)
         } else if (getters.engagedStacks.length === 1) {
-          dispatch("initiateBattle", getters.engagedStacks[0].hex)
+          dispatch("initiateBattle", getters.engagedStacks[0])
         }
         break
       case MasterboardPhase.BATTLE:
@@ -298,7 +309,7 @@ export class TitanGame {
     await this.persist()
   }
 
-  async doSetRoll({ getters, commit }: ActionContext, payload?: number): void {
+  async doSetRoll({ getters, commit }: ActionContext, payload?: number): Promise<void> {
     if (payload === undefined && this.activeRoll !== undefined) {
       assert(getters.mulliganAvailable, "Mulligan unavailable")
     }
@@ -306,12 +317,12 @@ export class TitanGame {
     await this.persist()
   }
 
-  async doMove({ commit }: ActionContext, payload: MovePayload): void {
+  async doMove({ commit }: ActionContext, payload: MovePayload): Promise<void> {
     commit("move", payload)
     await this.persist()
   }
 
-  async doSetRecruit({ commit }: ActionContext, payload: MusterPayload): void {
+  async doSetRecruit({ commit }: ActionContext, payload: MusterPayload): Promise<void> {
     if (!payload.stack.canMuster()) {
       throw new Error("Stack is not eligible to muster!")
     }
@@ -323,13 +334,12 @@ export class TitanGame {
     await this.persist()
   }
 
-  doInitiateBattle({ commit, getters }: ActionContext, hex: number) {
-    const stacks = getters.stacksForHex(hex)
-    const attacking = stacks.find(stack => stack.owner === getters.activePlayerId) as Stack
-    const defending = stacks.find(stack => stack.owner !== getters.activePlayerId) as Stack
-    assert(attacking !== undefined && defending !== undefined,
-      `No engagement present on hex ${hex}!`)
-    commit("initiateBattle", { hex, attacking, defending })
+  doInitiateBattle({ commit, getters }: ActionContext, attacking: Stack): void {
+    const defending = getters.stacksForHex(attacking.hex)
+      .find(stack => stack.owner !== getters.activePlayerId) as Stack
+    assert(defending !== undefined,
+      `No engagement present on hex ${attacking.hex}!`)
+    commit("initiateBattle", { attacking, defending })
     commit("ui/selections/setView", View.BATTLEBOARD, { root: true })
   }
 
@@ -343,7 +353,7 @@ export class TitanGame {
   async persist(): Promise<string | undefined> {
     const stringified = JSON.stringify(this)
     localStorage[GAME_PERSISTENCE_KEY] = stringified
-    return compressAndEncode(stringified)
+    return await compressAndEncode(stringified)
   }
 
   static hydrate(): TitanGame {
@@ -368,7 +378,7 @@ export class TitanGame {
   }
 }
 
-async function compressAndEncode(stringified: string): string | undefined {
+async function compressAndEncode(stringified: string): Promise<string | undefined> {
   // @ts-expect-error
   if (window.CompressionStream !== undefined) {
     const stringStream = new ReadableStream({
@@ -394,13 +404,11 @@ async function compressAndEncode(stringified: string): string | undefined {
       result.done = read.done
       result.value = newValue
     }
-    const b64 = base64ArrayBuffer(result.value)
-    console.log(b64)
-    return b64
+    return base64ArrayBuffer(result.value)
   }
 }
 
-function base64ArrayBuffer(arrayBuffer: ArrayBuffer) {
+function base64ArrayBuffer(arrayBuffer: ArrayBuffer): string {
   let base64 = ""
   const encodings = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
 

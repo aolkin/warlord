@@ -1,6 +1,6 @@
 import { div } from "~/utils/math"
 import { CreatureType } from "./creature"
-import masterboard, { Terrain } from "./masterboard"
+import masterboard, { HexEdge, Terrain } from "./masterboard"
 import { PlayerId } from "./player"
 import { Stack } from "./stack"
 
@@ -27,6 +27,7 @@ export enum BattlePhase {
 
 export class Battle {
   readonly hex: number
+  readonly attackerEdge: HexEdge
   readonly terrain: Terrain
   readonly attacker: PlayerId
   readonly defender: PlayerId
@@ -37,10 +38,11 @@ export class Battle {
   phase: BattlePhase
 
   // Parameters optional for Hydration
-  constructor(hex: number, attacking?: Stack, defending?: Stack) {
+  constructor(hex: number, edge: HexEdge, attacking?: Stack, defending?: Stack) {
     this.round = 0
     this.phase = BattlePhase.DEFENDER_MOVE
     this.hex = hex
+    this.attackerEdge = edge
     this.terrain = masterboard.getHex(hex).terrain
     if (attacking !== undefined && defending !== undefined) {
       this.attacker = attacking.owner
@@ -57,7 +59,7 @@ export class Battle {
   }
 
   static hydrate(battle: Battle): Battle {
-    const hydrated = new Battle(battle.hex)
+    const hydrated = new Battle(battle.hex, battle.attackerEdge)
     Object.assign(hydrated, {
       ...battle,
       offense: battle.offense.map(creature =>
