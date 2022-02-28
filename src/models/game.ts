@@ -274,7 +274,8 @@ export class TitanGame {
   }
 
   mInitiateBattle({ attacking, defending }: BattlePayload): void {
-    this.activeBattle = new Battle(attacking.hex, attacking.attackEdge, attacking, defending)
+    assert(attacking.attackEdge !== undefined, "Cannot attack without coming from somewhere")
+    this.activeBattle = new Battle(attacking.hex, attacking.attackEdge as HexEdge, attacking, defending)
   }
 
   // Actions

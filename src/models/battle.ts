@@ -42,8 +42,8 @@ export class Battle {
     this.round = 0
     this.phase = BattlePhase.DEFENDER_MOVE
     this.hex = hex
-    this.attackerEdge = edge
     this.terrain = masterboard.getHex(hex).terrain
+    this.attackerEdge = this.terrain === Terrain.TOWER ? HexEdge.SECOND : edge
     if (attacking !== undefined && defending !== undefined) {
       this.attacker = attacking.owner
       this.defender = defending.owner
