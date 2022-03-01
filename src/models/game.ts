@@ -2,7 +2,7 @@ import _ from "lodash"
 import { BaseActionContext } from "~/store/types"
 import { View } from "~/store/ui/selection"
 import { assert } from "~/utils/assert"
-import { Battle } from "./battle"
+import { Battle, BattleCreature, BattlePhase } from "./battle"
 import { CREATURE_DATA, CREATURE_LIST, CreatureType } from "./creature"
 import masterboard, { HexEdge, MasterboardHex } from "./masterboard"
 import { Player, PlayerId } from "./player"
@@ -164,6 +164,29 @@ export class TitanGame {
 
   getActivePlayerId(getters: Getters): PlayerId {
     return getters.activePlayer.id
+  }
+
+  getBattleActivePlayer(): PlayerId | undefined {
+    switch (this.activeBattle?.phase) {
+      case BattlePhase.DEFENDER_MOVE:
+      case BattlePhase.DEFENDER_STRIKE:
+      case BattlePhase.DEFENDER_STRIKEBACK:
+        return this.activeBattle.defender
+      case BattlePhase.ATTACKER_STRIKEBACK:
+      case BattlePhase.ATTACKER_MOVE:
+      case BattlePhase.ATTACKER_STRIKE:
+        return this.activeBattle.attacker
+    }
+    return undefined
+  }
+
+  getBattleMoves(): (creature: BattleCreature) => Set<number> {
+    return (creature: BattleCreature) => {
+      if (this.activeBattle === undefined) {
+        return new Set<number>()
+      }
+      return this.activeBattle.movementFor(creature)
+    }
   }
 
   getMayProceed(getters: Getters): boolean {

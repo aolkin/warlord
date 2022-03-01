@@ -1,3 +1,4 @@
+import { BattleCreature } from "~/models/battle"
 import { Path } from "~/models/game"
 import masterboard, { MasterboardHex } from "~/models/masterboard"
 import { Stack } from "~/models/stack"
@@ -12,14 +13,19 @@ export interface Selections {
   stack?: Stack
   focusedStacks: Stack[]
   focusedHexes: MasterboardHex[]
+  creature?: BattleCreature
+  focusedCreatures: BattleCreature[]
+  focusedBattleHexes: number[]
 }
 
 export default {
   namespaced: true,
   state: () => ({
-    view: View.MASTERBOARD,
+    view: View.BATTLEBOARD,
     focusedStacks: [],
-    focusedHexes: []
+    focusedHexes: [],
+    focusedCreatures: [],
+    focusedBattleHexes: []
   }),
   getters: {
     selectedStack(state: Selections): Stack | undefined {
@@ -35,12 +41,31 @@ export default {
         ? state.focusedHexes[state.focusedHexes.length - 1]
         : undefined
     },
+    selectedCreature(state: Selections): BattleCreature | undefined {
+      return state.creature
+    },
+    focusedCreature(state: Selections): BattleCreature | undefined {
+      return (state.focusedCreatures.length > 0)
+        ? state.focusedCreatures[state.focusedCreatures.length - 1]
+        : state.creature
+    },
+    focusedBattleHex(state: Selections): number | undefined {
+      return (state.focusedBattleHexes.length > 0)
+        ? state.focusedBattleHexes[state.focusedBattleHexes.length - 1]
+        : undefined
+    },
     paths(state: Selections, getters: any, rootState: any, rootGetters: any): Path[] {
       if (state.stack?.hex === undefined || masterboard.getHex(state.stack.hex) === undefined ||
         rootState.game.activeRoll === undefined) {
         return []
       }
       return rootGetters["game/pathsForHex"](state.stack.hex)
+    },
+    movementHexes(state: Selections, getters: any, rootState: any, rootGetters: any): Set<number> {
+      if (state.creature === undefined || rootState.game.activeBattle === undefined) {
+        return new Set<number>()
+      }
+      return rootGetters["game/battleMoves"](state.creature)
     }
   },
   mutations: {
@@ -49,7 +74,11 @@ export default {
     },
     reset(state: Selections) {
       state.stack = undefined
+      state.creature = undefined
       state.focusedStacks = []
+      state.focusedHexes = []
+      state.focusedCreatures = []
+      state.focusedBattleHexes = []
     },
     selectStack(state: Selections, selection: Stack) {
       state.stack = selection
@@ -77,6 +106,34 @@ export default {
       const index = state.focusedHexes.indexOf(leaving)
       if (index !== -1) {
         state.focusedHexes.splice(index)
+      }
+    },
+    selectCreature(state: Selections, selection: BattleCreature) {
+      state.creature = selection
+    },
+    deselectCreature(state: Selections) {
+      state.creature = undefined
+    },
+    enterCreature(state: Selections, entering: BattleCreature) {
+      if (!state.focusedCreatures.includes(entering)) {
+        state.focusedCreatures.push(entering)
+      }
+    },
+    leaveCreature(state: Selections, leaving: BattleCreature) {
+      const index = state.focusedCreatures.indexOf(leaving)
+      if (index !== -1) {
+        state.focusedCreatures.splice(index)
+      }
+    },
+    enterBattleHex(state: Selections, entering: number) {
+      if (!state.focusedBattleHexes.includes(entering)) {
+        state.focusedBattleHexes.push(entering)
+      }
+    },
+    leaveBattleHex(state: Selections, leaving: number) {
+      const index = state.focusedBattleHexes.indexOf(leaving)
+      if (index !== -1) {
+        state.focusedBattleHexes.splice(index)
       }
     }
   }

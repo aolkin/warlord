@@ -6,7 +6,7 @@ import selections, { Selections } from "./selection"
 export interface UiState {
   preferences: Preferences
   selections: Selections
-  activePlayer: number
+  localPlayer: number
 }
 
 export default {
@@ -16,16 +16,17 @@ export default {
     selections
   },
   state: () => ({
-    activePlayer: 0
+    localPlayer: 0
   }),
   getters: {
-    activePlayer(state: UiState, getters: any, rootState: any): Player {
-      return rootState.game.players[state.activePlayer]
+    localPlayer(state: UiState, getters: any, rootState: any, rootGetters: any): Player {
+      // return rootGetters["game/playerById"](state.localPlayer)
+      return rootState.game.players[state.localPlayer]
     }
   },
   mutations: {
     setPlayer(state: UiState, player: number) {
-      state.activePlayer = player
+      state.localPlayer = player
     }
   },
   actions: {

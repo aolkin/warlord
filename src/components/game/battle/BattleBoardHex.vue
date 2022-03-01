@@ -20,6 +20,7 @@
       class="edge-hazard"
       :class="`edge-hazard-${index}`"
     />
+    <polygon v-if="interactive" class="highlight-border" points="-50,-29 -50,29 0,58 50,29 50,-29 0,-58 " />
   </g>
 </template>
 <script lang="ts">
@@ -40,6 +41,10 @@ export default defineComponent({
     edgeHazards: {
       type: Object as PropType<Record<number, EdgeHazard>>,
       default: () => {}
+    },
+    interactive: {
+      type: Boolean,
+      default: false
     }
   },
   computed: {
@@ -78,4 +83,10 @@ export default defineComponent({
 @for $i from 0 through 5
   .edge-hazard-#{$i}
     transform: rotate($i * 60deg) scale(1.04) translate(-14.5px, -24.5px)
+
+.highlight-border
+  fill: transparent
+  stroke: rgb(var(--v-theme-primary))
+  stroke-width: 10px
+  transform: scale(0.98)
 </style>

@@ -29,7 +29,7 @@
     </v-list-item>
     <v-list-item>
       <v-list-item-header>Local Player</v-list-item-header>
-      <v-slider v-model="localPlayer" min="1" :max="players.length" step="1" />
+      <v-slider v-model="uiPlayer" min="1" :max="players.length" step="1" />
     </v-list-item>
     <v-list-item>
       <v-list-item-header>Dice to Roll</v-list-item-header>
@@ -67,7 +67,7 @@ export default defineComponent({
     diceQuantity: 1
   }),
   computed: {
-    ...mapState("ui", ["preferences", "selections", "activePlayer"]),
+    ...mapState("ui", ["preferences", "selections", "localPlayer"]),
     ...mapGetters("game", ["players"]),
     colorModes() {
       return {
@@ -109,9 +109,9 @@ export default defineComponent({
         this.setCreatureColorMode(Number(value))
       }
     },
-    localPlayer: {
+    uiPlayer: {
       get() {
-        return this.activePlayer + 1
+        return this.localPlayer + 1
       },
       set(value: number) {
         this.setPlayer(value - 1)

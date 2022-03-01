@@ -1,15 +1,72 @@
-import { div } from "~/utils/math"
-import { CreatureType } from "./creature"
+import { Creature, CREATURE_DATA, CreatureType } from "./creature"
 import masterboard, { HexEdge, Terrain } from "./masterboard"
 import { PlayerId } from "./player"
 import { Stack } from "./stack"
 
+export enum Hazard {
+  NONE,
+  BOG,
+  BRAMBLE,
+  DRIFT,
+  SAND,
+  TREE,
+  VOLCANO,
+}
+
+export enum EdgeHazard {
+  NONE,
+  CLIFF,
+  DUNE,
+  SLOPE,
+  WALL
+}
+
+const HAZARD_NATIVES: Record<Hazard, Set<CreatureType>> = {
+  [Hazard.NONE]: new Set<CreatureType>(),
+  [Hazard.BOG]: new Set<CreatureType>([
+    CreatureType.OGRE, CreatureType.TROLL, CreatureType.RANGER,
+    CreatureType.WYVERN, CreatureType.HYDRA
+  ]),
+  [Hazard.BRAMBLE]: new Set<CreatureType>([
+    CreatureType.GARGOYLE, CreatureType.CYCLOPS, CreatureType.GORGON,
+    CreatureType.BEHEMOTH, CreatureType.SERPENT
+  ]),
+  [Hazard.DRIFT]: new Set<CreatureType>([
+    CreatureType.TROLL, CreatureType.WARBEAR, CreatureType.GIANT, CreatureType.COLOSSUS
+  ]),
+  [Hazard.SAND]: new Set<CreatureType>([
+    CreatureType.LION, CreatureType.GRIFFON, CreatureType.HYDRA
+  ]),
+  [Hazard.TREE]: new Set<CreatureType>(),
+  [Hazard.VOLCANO]: new Set<CreatureType>([CreatureType.DRAGON])
+}
+
+const EDGE_HAZARD_NATIVES: Record<EdgeHazard, Set<CreatureType>> = {
+  [EdgeHazard.NONE]: new Set<CreatureType>(),
+  [EdgeHazard.CLIFF]: new Set<CreatureType>(),
+  [EdgeHazard.DUNE]: new Set<CreatureType>([
+    CreatureType.LION, CreatureType.GRIFFON, CreatureType.HYDRA
+  ]),
+  [EdgeHazard.SLOPE]: new Set<CreatureType>([
+    CreatureType.OGRE, CreatureType.LION, CreatureType.MINOTAUR,
+    CreatureType.UNICORN, CreatureType.DRAGON, CreatureType.COLOSSUS
+  ]),
+  [EdgeHazard.WALL]: new Set<CreatureType>()
+}
+
+const isCreatureNative = (type: CreatureType, hazard: Hazard): boolean =>
+  HAZARD_NATIVES[hazard].has(type)
+const isCreatureEdgeNative = (type: CreatureType, hazard: EdgeHazard): boolean =>
+  EDGE_HAZARD_NATIVES[hazard].has(type)
+
+const UNATTAINABLE_MOVEMENT_COST = 99
+
 export class BattleCreature {
   readonly type: CreatureType
   wounds: number
-  hex?: number
+  hex: number
 
-  constructor(type: CreatureType, origin?: number, wounds?: number) {
+  constructor(type: CreatureType, origin: number, wounds?: number) {
     this.type = type
     this.hex = origin
     this.wounds = wounds ?? 0
@@ -29,6 +86,7 @@ export class Battle {
   readonly hex: number
   readonly attackerEdge: HexEdge
   readonly terrain: Terrain
+  readonly board: BattleBoard
   readonly attacker: PlayerId
   readonly defender: PlayerId
   readonly offense: BattleCreature[]
@@ -43,6 +101,7 @@ export class Battle {
     this.phase = BattlePhase.DEFENDER_MOVE
     this.hex = hex
     this.terrain = masterboard.getHex(hex).terrain
+    this.board = BATTLE_BOARDS[this.terrain]
     this.attackerEdge = this.terrain === Terrain.TOWER ? HexEdge.SECOND : edge
     if (attacking !== undefined && defending !== undefined) {
       this.attacker = attacking.owner
@@ -78,24 +137,85 @@ export class Battle {
       this.phase += 1
     }
   }
-}
 
-export enum Hazard {
-  NONE,
-  BOG,
-  BRAMBLE,
-  DRIFT,
-  SAND,
-  TREE,
-  VOLCANO,
-}
+  creatureOnHex(hex: number): BattleCreature | undefined {
+    return this.defense.find(creature => creature.hex === hex) ??
+      this.offense.find(creature => creature.hex === hex)
+  }
 
-export enum EdgeHazard {
-  NONE,
-  CLIFF,
-  DUNE,
-  SLOPE,
-  WALL
+  creatureMovementCost(hex: number, origin: number, creature: Creature): number {
+    if (creature.canFly || this.creatureOnHex(hex) === undefined) {
+      let cost = 1
+      if (!creature.canFly) {
+        const upEdgeHazard = this.board.getEdgeHazard(origin, hex)
+        const downEdgeHazard = this.board.getEdgeHazard(hex, origin)
+        if (upEdgeHazard === EdgeHazard.CLIFF || downEdgeHazard === EdgeHazard.CLIFF) {
+          return UNATTAINABLE_MOVEMENT_COST
+        } else if (upEdgeHazard === EdgeHazard.WALL || (
+          upEdgeHazard === EdgeHazard.SLOPE && !isCreatureEdgeNative(creature.type, upEdgeHazard))) {
+          cost += 1
+        }
+      }
+
+      const hazard = this.board.getHazard(hex)
+      const native = isCreatureNative(creature.type, hazard)
+      switch (hazard) {
+        case Hazard.NONE:
+          return cost
+        case Hazard.BRAMBLE:
+        case Hazard.DRIFT:
+          return native ? cost : cost + 1
+        case Hazard.BOG:
+        case Hazard.TREE:
+          return native || creature.canFly ? cost : UNATTAINABLE_MOVEMENT_COST
+        case Hazard.SAND:
+          return native || creature.canFly ? cost : cost + 1
+        case Hazard.VOLCANO:
+          return native ? cost : UNATTAINABLE_MOVEMENT_COST
+      }
+    } else {
+      return UNATTAINABLE_MOVEMENT_COST
+    }
+  }
+
+  /** This method assumes the creature can enter - for efficiency, it will not check all rules */
+  creatureCanLand(hex: number, creature: Creature): boolean {
+    const hazard = this.board.getHazard(hex)
+    return !(
+      hazard === Hazard.TREE ||
+      (hazard === Hazard.BOG && !isCreatureNative(creature.type, hazard)) ||
+      this.creatureOnHex(hex) !== undefined
+    )
+  }
+
+  movementFor(creature: BattleCreature): Set<number> {
+    if (creature.hex === 0) {
+      return new Set<number>()
+    }
+    const data = CREATURE_DATA[creature.type]
+    // Map of hex to remaining movement last time it was visited
+    const possibilities = new Map<number, number>()
+    const stack: Array<[number, number]> = [[creature.hex, data.skill]]
+    let entry
+    while ((entry = stack.pop()) !== undefined) {
+      const [origin, remainingMovement] = entry
+      const adjacencies = BATTLE_BOARD_ADJACENCIES[origin]
+        .filter(i => (possibilities.get(i) ?? -1) < remainingMovement)
+      adjacencies.forEach(potentialHex => {
+        const movementCost = this.creatureMovementCost(potentialHex, origin, data)
+        console.log({ origin, potentialHex, remainingMovement, movementCost })
+        if (movementCost <= remainingMovement) {
+          if (remainingMovement - movementCost > 0) {
+            stack.push([potentialHex, remainingMovement - movementCost])
+          }
+          if (this.creatureCanLand(potentialHex, data)) {
+            possibilities.set(potentialHex, remainingMovement - movementCost)
+          }
+        }
+      })
+    }
+    return new Set<number>(possibilities.keys())
+  }
 }
 
 export interface BattleBoardProps {
@@ -114,22 +234,39 @@ export const BATTLE_BOARD_HEXES = Object.freeze([
   31, 32, 33, 34
 ])
 
-const getAdjacencyDists = (hex: number) => div(hex, 6) % 2 === 0
-  ? [-7, -6, 1, 6, 5, -1]
-  : [-6, -5, 1, 7, 6, -1]
+const getAdjacencyDists = (hex: number): number[] => {
+  const dists = hex % 2 === 0
+    ? [-7, -6, 1, 6, 5, -1]
+    : [-6, -5, 1, 7, 6, -1]
+  if (hex === 17) {
+    dists[2] = 99
+  } else if (hex === 18) {
+    dists[5] = 99
+  } else if (hex === 23) {
+    dists[1] = 99
+  }
+  return dists
+}
 
 /** Return, starting from the above-left position, the index around the hex of the adjacent hex. */
 export const relationToHex = (hex: number, adjacent: number): number =>
   getAdjacencyDists(hex).indexOf(adjacent - hex)
 
-export const BATTLE_BOARD_ADJACENCIES = Object.freeze(Object.fromEntries(BATTLE_BOARD_HEXES
+export const BATTLE_BOARD_ADJACENCIES = Object.freeze(Object.assign(Object.fromEntries(BATTLE_BOARD_HEXES
   .map((hex: number) => {
     const adjacencies = getAdjacencyDists(hex)
     return [hex, adjacencies
       .filter(dist => BATTLE_BOARD_HEXES.includes(hex + dist))
       .map(dist => hex + dist)]
   })
-))
+), {
+  36: [2, 3, 4],
+  37: [31, 32, 33, 34],
+  38: [23, 29, 34],
+  39: [2, 7, 13, 18],
+  40: [18, 25, 31],
+  41: [4, 10, 17, 23]
+}))
 
 export class BattleBoard {
   readonly terrain: Terrain
