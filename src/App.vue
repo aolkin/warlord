@@ -21,6 +21,7 @@
       </div>
       <PlayerStatus />
       <div>
+        <v-btn icon="mdi-code-tags" variant="plain" @click="toggleDebugUi" />
         <v-btn icon="mdi-shimmer" variant="plain" @click="toggleFancyGraphics" />
         <v-btn icon="mdi-cog" variant="plain" @click="prefsPaneVisible = !prefsPaneVisible" />
       </div>
@@ -98,6 +99,10 @@ export default defineComponent({
     toggleFancyGraphics() {
       this.$store.commit("ui/preferences/setFancyGraphics",
         !this.$store.state.ui.preferences.fancyGraphics)
+    },
+    toggleDebugUi() {
+      this.$store.commit("ui/preferences/setDebugUi",
+        !this.$store.state.ui.preferences.debugUi)
     }
   }
 })

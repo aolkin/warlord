@@ -21,6 +21,17 @@
           @mouseenter="enterBattleHex(hex)"
           @mouseleave="leaveBattleHex(hex)"
         />
+        <g v-if="debugUi" class="debug-ui">
+          <text
+            v-for="hex in hexes"
+            :key="hex"
+            class="debug-hex-id"
+            :class="{'debug-adjacent': debugHexAdjacencies.includes(hex), 'debug-selected': debugHex === hex}"
+            :transform="`${hexTransformStr(hex)}`"
+            @click.stop="debugHex = hex"
+            v-text="hex"
+          />
+        </g>
         <Creature
           v-for="(creature, index) in activeOffense"
           :key="index"
@@ -77,9 +88,11 @@ export default defineComponent({
   data: () => ({
     Terrain,
     BattlePhase,
-    hexTransformStr
+    hexTransformStr,
+    debugHex: 0
   }),
   computed: {
+    ...mapState("ui/preferences", ["debugUi"]),
     ...mapState("game", ["activeBattle"]),
     ...mapGetters("game", ["playerById"]),
     ...mapGetters("ui/selections", ["movementHexes", "selectedCreature"]),
@@ -124,6 +137,9 @@ export default defineComponent({
         default:
           return "Unknown Phase"
       }
+    },
+    debugHexAdjacencies(): number[] {
+      return BATTLE_BOARD_ADJACENCIES[this.debugHex] ?? []
     }
   },
   methods: {
@@ -167,5 +183,19 @@ export default defineComponent({
 
 .available-move
   cursor: pointer
+
+.debug-hex-id
+  text-anchor: middle
+  dominant-baseline: middle
+  font-size: 56px
+  fill: orange
+  stroke-width: 2.5px
+  cursor: crosshair
+
+  &.debug-selected
+    stroke: red
+
+  &.debug-adjacent
+    stroke: lime
 
 </style>

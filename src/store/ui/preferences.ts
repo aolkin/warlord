@@ -7,6 +7,7 @@ export enum CreatureColorMode {
 
 export interface Preferences {
   fancyGraphics: boolean
+  debugUi: boolean
   quickDice: boolean
   freeMovement: boolean
   creatureColorMode: CreatureColorMode
@@ -45,6 +46,10 @@ export default {
     },
     setFreeMovement(state: Preferences, payload: boolean) {
       state.freeMovement = payload
+      savePreferences(state)
+    },
+    setDebugUi(state: Preferences, payload: boolean) {
+      state.debugUi = payload
       savePreferences(state)
     }
   }

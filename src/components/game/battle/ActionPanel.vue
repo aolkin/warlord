@@ -21,7 +21,7 @@ export default defineComponent({
     ...mapState("game", ["activeBattle"]),
     ...mapGetters("ui/selections", ["focusedBattleHex"]),
     land(): BattleBoard {
-      return this.activeBattle.board
+      return this.activeBattle.getBoard()
     }
   }
 })

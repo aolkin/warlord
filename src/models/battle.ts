@@ -1,3 +1,4 @@
+import { div } from "~/utils/math"
 import { Creature, CREATURE_DATA, CreatureType } from "./creature"
 import masterboard, { HexEdge, Terrain } from "./masterboard"
 import { PlayerId } from "./player"
@@ -86,7 +87,6 @@ export class Battle {
   readonly hex: number
   readonly attackerEdge: HexEdge
   readonly terrain: Terrain
-  readonly board: BattleBoard
   readonly attacker: PlayerId
   readonly defender: PlayerId
   readonly offense: BattleCreature[]
@@ -101,7 +101,6 @@ export class Battle {
     this.phase = BattlePhase.DEFENDER_MOVE
     this.hex = hex
     this.terrain = masterboard.getHex(hex).terrain
-    this.board = BATTLE_BOARDS[this.terrain]
     this.attackerEdge = this.terrain === Terrain.TOWER ? HexEdge.SECOND : edge
     if (attacking !== undefined && defending !== undefined) {
       this.attacker = attacking.owner
@@ -129,6 +128,10 @@ export class Battle {
     return hydrated
   }
 
+  getBoard(): BattleBoard {
+    return BATTLE_BOARDS[this.terrain]
+  }
+
   nextPhase(): void {
     if (this.phase === BattlePhase.DEFENDER_STRIKEBACK) {
       this.round += 1
@@ -147,8 +150,8 @@ export class Battle {
     if (creature.canFly || this.creatureOnHex(hex) === undefined) {
       let cost = 1
       if (!creature.canFly) {
-        const upEdgeHazard = this.board.getEdgeHazard(origin, hex)
-        const downEdgeHazard = this.board.getEdgeHazard(hex, origin)
+        const upEdgeHazard = this.getBoard().getEdgeHazard(origin, hex)
+        const downEdgeHazard = this.getBoard().getEdgeHazard(hex, origin)
         if (upEdgeHazard === EdgeHazard.CLIFF || downEdgeHazard === EdgeHazard.CLIFF) {
           return UNATTAINABLE_MOVEMENT_COST
         } else if (upEdgeHazard === EdgeHazard.WALL || (
@@ -157,7 +160,7 @@ export class Battle {
         }
       }
 
-      const hazard = this.board.getHazard(hex)
+      const hazard = this.getBoard().getHazard(hex)
       const native = isCreatureNative(creature.type, hazard)
       switch (hazard) {
         case Hazard.NONE:
@@ -180,7 +183,7 @@ export class Battle {
 
   /** This method assumes the creature can enter - for efficiency, it will not check all rules */
   creatureCanLand(hex: number, creature: Creature): boolean {
-    const hazard = this.board.getHazard(hex)
+    const hazard = this.getBoard().getHazard(hex)
     return !(
       hazard === Hazard.TREE ||
       (hazard === Hazard.BOG && !isCreatureNative(creature.type, hazard)) ||
@@ -235,7 +238,7 @@ export const BATTLE_BOARD_HEXES = Object.freeze([
 ])
 
 const getAdjacencyDists = (hex: number): number[] => {
-  const dists = hex % 2 === 0
+  const dists = div(hex, 6) % 2 === 0
     ? [-7, -6, 1, 6, 5, -1]
     : [-6, -5, 1, 7, 6, -1]
   if (hex === 17) {
