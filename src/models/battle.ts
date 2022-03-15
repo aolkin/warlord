@@ -64,11 +64,13 @@ const UNATTAINABLE_MOVEMENT_COST = 99
 
 export class BattleCreature {
   readonly type: CreatureType
+  readonly player: PlayerId
   wounds: number
   hex: number
 
-  constructor(type: CreatureType, origin: number, wounds?: number) {
+  constructor(type: CreatureType, player: PlayerId, origin: number, wounds?: number) {
     this.type = type
+    this.player = player
     this.hex = origin
     this.wounds = wounds ?? 0
   }
@@ -89,8 +91,7 @@ export class Battle {
   readonly terrain: Terrain
   readonly attacker: PlayerId
   readonly defender: PlayerId
-  readonly offense: BattleCreature[]
-  readonly defense: BattleCreature[]
+  readonly creatures: BattleCreature[]
 
   round: number
   phase: BattlePhase
@@ -105,14 +106,13 @@ export class Battle {
     if (attacking !== undefined && defending !== undefined) {
       this.attacker = attacking.owner
       this.defender = defending.owner
-      this.offense = attacking.creatures.map(type => new BattleCreature(type, 37))
-      this.defense = defending.creatures.map(type => new BattleCreature(type, 36))
+      this.creatures = attacking.creatures.map(type => new BattleCreature(type, attacking.owner, 37))
+        .concat(defending.creatures.map(type => new BattleCreature(type, defending.owner, 36)))
     } else {
       // These will be overwritten during hydration, but satisfy TypeScript
       this.attacker = 0
       this.defender = 0
-      this.offense = []
-      this.defense = []
+      this.creatures = []
     }
   }
 
@@ -120,16 +120,22 @@ export class Battle {
     const hydrated = new Battle(battle.hex, battle.attackerEdge)
     Object.assign(hydrated, {
       ...battle,
-      offense: battle.offense.map(creature =>
-        new BattleCreature(creature.type, creature.hex, creature.wounds)),
-      defense: battle.defense.map(creature =>
-        new BattleCreature(creature.type, creature.hex, creature.wounds))
+      creatures: battle.creatures.map(creature =>
+        new BattleCreature(creature.type, creature.player, creature.hex, creature.wounds))
     })
     return hydrated
   }
 
   getBoard(): BattleBoard {
     return BATTLE_BOARDS[this.terrain]
+  }
+
+  getOffense(): BattleCreature[] {
+    return this.creatures.filter(creature => creature.player === this.attacker)
+  }
+
+  getDefense(): BattleCreature[] {
+    return this.creatures.filter(creature => creature.player === this.defender)
   }
 
   nextPhase(): void {
@@ -142,8 +148,7 @@ export class Battle {
   }
 
   creatureOnHex(hex: number): BattleCreature | undefined {
-    return this.defense.find(creature => creature.hex === hex) ??
-      this.offense.find(creature => creature.hex === hex)
+    return this.creatures.find(creature => creature.hex === hex)
   }
 
   creatureMovementCost(hex: number, origin: number, creature: Creature): number {

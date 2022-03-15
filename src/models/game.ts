@@ -2,6 +2,7 @@ import _ from "lodash"
 import { BaseActionContext } from "~/store/types"
 import { View } from "~/store/ui/selection"
 import { assert } from "~/utils/assert"
+import { compressAndEncode, decodeAndDecompress } from "~/utils/base64"
 import { Battle, BattleCreature, BattlePhase } from "./battle"
 import { CREATURE_DATA, CREATURE_LIST, CreatureType } from "./creature"
 import masterboard, { HexEdge, MasterboardHex } from "./masterboard"
@@ -48,6 +49,7 @@ interface Getters {
 }
 
 interface MovePayload { stack: Stack, hex: number | MasterboardHex, edge?: HexEdge }
+interface BattleMovePayload { creature: BattleCreature, hex: number }
 interface MusterPayload { stack: Stack, recruit: MusterPossibility }
 interface BattlePayload { attacking: Stack, defending: Stack }
 
@@ -291,6 +293,15 @@ export class TitanGame {
     }
   }
 
+  mMoveCreature({ creature, hex }: BattleMovePayload): void {
+    assert((creature.player === this.activeBattle?.attacker &&
+        this.activeBattle?.phase === BattlePhase.ATTACKER_MOVE) ||
+      (creature.player === this.activeBattle?.defender &&
+        this.activeBattle?.phase === BattlePhase.DEFENDER_MOVE), "Illegal state")
+    assert(!(this.activeBattle?.creatures.includes(creature) ?? false), "Unexpected creature")
+    creature.hex = hex
+  }
+
   mMuster({ stack, recruit }: MusterPayload): void {
     assert(this.activePhase === MasterboardPhase.MUSTER, "Innappropriate phase")
     stack.currentMuster = recruit
@@ -346,6 +357,11 @@ export class TitanGame {
     await this.persist()
   }
 
+  async doMoveCreature({ commit }: ActionContext, payload: BattleMovePayload): Promise<void> {
+    commit("moveCreature", payload)
+    await this.persist()
+  }
+
   async doSetRecruit({ commit }: ActionContext, payload: MusterPayload): Promise<void> {
     if (!payload.stack.canMuster()) {
       throw new Error("Stack is not eligible to muster!")
@@ -380,19 +396,31 @@ export class TitanGame {
     return await compressAndEncode(stringified)
   }
 
+  mRehydrate(hydration: TitanGame): void {
+    _.assign(this, {
+      ...hydration,
+      players: hydration.players.map((player: Player) =>
+        _.assign(new Player(player.id, player.name), player)),
+      stacks: hydration.stacks.map((stack: Stack) =>
+        _.assign(new Stack(stack.owner, stack.hex, stack.marker, stack.creatures), stack)),
+      activeBattle: hydration.activeBattle !== undefined ? Battle.hydrate(hydration.activeBattle) : undefined
+    })
+  }
+
+  async doRestore({ commit }: ActionContext, encoded: string): Promise<void> {
+    const hydration = await decodeAndDecompress(encoded)
+    if (hydration === undefined) {
+      throw new Error("Failed to load save data")
+    }
+    commit("rehydrate", JSON.parse(hydration))
+  }
+
   static hydrate(): TitanGame {
     const game = new TitanGame(2)
     try {
       if (localStorage[GAME_PERSISTENCE_KEY] !== undefined) {
         const hydration = JSON.parse(localStorage[GAME_PERSISTENCE_KEY])
-        _.assign(game, {
-          ...hydration,
-          players: hydration.players.map((player: Player) =>
-            _.assign(new Player(player.id, player.name), player)),
-          stacks: hydration.stacks.map((stack: Stack) =>
-            _.assign(new Stack(stack.owner, stack.hex, stack.marker, stack.creatures), stack)),
-          activeBattle: hydration.activeBattle !== undefined ? Battle.hydrate(hydration.activeBattle) : undefined
-        })
+        game.mRehydrate(hydration)
       }
     } catch (e) {
       console.error("Error during hydration", e)
@@ -400,86 +428,4 @@ export class TitanGame {
     }
     return game
   }
-}
-
-async function compressAndEncode(stringified: string): Promise<string | undefined> {
-  // @ts-expect-error
-  if (window.CompressionStream !== undefined) {
-    const stringStream = new ReadableStream({
-      start(controller) {
-        const buffer = new ArrayBuffer(stringified.length * 2) // 2 bytes for each char
-        const bufferView = new Uint16Array(buffer)
-        for (let i = 0; i < stringified.length; i++) {
-          bufferView[i] = stringified.charCodeAt(i)
-        }
-        controller.enqueue(buffer)
-        controller.close()
-      }
-    })
-    // @ts-expect-error
-    const compressedStream = stringStream.pipeThrough(new CompressionStream("gzip"))
-    const reader = compressedStream.getReader()
-    const result = { value: new Uint8Array(0), done: false }
-    let read
-    while (!(read = await reader.read() as { value: Uint8Array, done: boolean }).done) {
-      const newValue = new Uint8Array(result.value.length + read.value.length)
-      newValue.set(result.value)
-      newValue.set(read.value, result.value.length)
-      result.done = read.done
-      result.value = newValue
-    }
-    return base64ArrayBuffer(result.value)
-  }
-}
-
-function base64ArrayBuffer(arrayBuffer: ArrayBuffer): string {
-  let base64 = ""
-  const encodings = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
-
-  const bytes = new Uint8Array(arrayBuffer)
-  const byteLength = bytes.byteLength
-  const byteRemainder = byteLength % 3
-  const mainLength = byteLength - byteRemainder
-
-  let a, b, c, d
-  let chunk
-
-  // Main loop deals with bytes in chunks of 3
-  for (let i = 0; i < mainLength; i = i + 3) {
-    // Combine the three bytes into a single integer
-    chunk = (bytes[i] << 16) | (bytes[i + 1] << 8) | bytes[i + 2]
-
-    // Use bitmasks to extract 6-bit segments from the triplet
-    a = (chunk & 16515072) >> 18 // 16515072 = (2^6 - 1) << 18
-    b = (chunk & 258048) >> 12 // 258048   = (2^6 - 1) << 12
-    c = (chunk & 4032) >> 6 // 4032     = (2^6 - 1) << 6
-    d = chunk & 63 // 63       = 2^6 - 1
-
-    // Convert the raw binary segments to the appropriate ASCII encoding
-    base64 += encodings[a] + encodings[b] + encodings[c] + encodings[d]
-  }
-
-  // Deal with the remaining bytes and padding
-  if (byteRemainder === 1) {
-    chunk = bytes[mainLength]
-
-    a = (chunk & 252) >> 2 // 252 = (2^6 - 1) << 2
-
-    // Set the 4 least significant bits to zero
-    b = (chunk & 3) << 4 // 3   = 2^2 - 1
-
-    base64 += encodings[a] + encodings[b] + "=="
-  } else if (byteRemainder === 2) {
-    chunk = (bytes[mainLength] << 8) | bytes[mainLength + 1]
-
-    a = (chunk & 64512) >> 10 // 64512 = (2^6 - 1) << 10
-    b = (chunk & 1008) >> 4 // 1008  = (2^6 - 1) << 4
-
-    // Set the 2 least significant bits to zero
-    c = (chunk & 15) << 2 // 15    = 2^4 - 1
-
-    base64 += encodings[a] + encodings[b] + encodings[c] + "="
-  }
-
-  return base64
 }

@@ -27,6 +27,9 @@ export default defineComponent({
       reject: undefined
     }
   },
+  computed: {
+    ...mapState("ui/preferences", ["quickDice"])
+  },
   mounted() {
     const diceBox = new DiceBox("#dicebox-container", {
       assetPath: "/assets/dice-box/",
@@ -53,9 +56,6 @@ export default defineComponent({
       this.rolling = false
     }
     _.set(this, "diceBox", diceBox)
-  },
-  computed: {
-    ...mapState("ui/preferences", ["quickDice"])
   },
   methods: {
     async roll(quantity?: number) {

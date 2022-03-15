@@ -90,16 +90,16 @@ export default defineComponent({
       return this.playerById(this.activeBattle.defender)
     },
     pendingOffense(): BattleCreature[] {
-      return this.activeBattle.offense.filter((creature: BattleCreature) => creature.hex >= 36)
+      return this.activeBattle.getOffense().filter((creature: BattleCreature) => creature.hex >= 36)
     },
     pendingDefense(): BattleCreature[] {
-      return this.activeBattle.defense.filter((creature: BattleCreature) => creature.hex >= 36)
+      return this.activeBattle.getDefense().filter((creature: BattleCreature) => creature.hex >= 36)
     },
     deadOffense(): BattleCreature[] {
-      return this.activeBattle.offense.filter((creature: BattleCreature) => creature.hex === 0)
+      return this.activeBattle.getOffense().filter((creature: BattleCreature) => creature.hex === 0)
     },
     deadDefense(): BattleCreature[] {
-      return this.activeBattle.defense.filter((creature: BattleCreature) => creature.hex === 0)
+      return this.activeBattle.getDefense().filter((creature: BattleCreature) => creature.hex === 0)
     }
   },
   methods: {

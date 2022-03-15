@@ -64,7 +64,7 @@
 
 <script lang="ts">
 import { defineComponent } from "@vue/runtime-core"
-import { mapGetters, mapMutations, mapState } from "vuex"
+import { mapActions, mapGetters, mapMutations, mapState } from "vuex"
 import {
   BATTLE_BOARD_ADJACENCIES,
   BATTLE_BOARD_HEXES,
@@ -76,6 +76,7 @@ import {
   relationToHex
 } from "~/models/battle"
 import { Terrain } from "~/models/masterboard"
+import { PlayerId } from "~/models/player"
 import Creature from "../Creature.vue"
 import ActionPanel from "./ActionPanel.vue"
 import BattleBoardHex from "./BattleBoardHex.vue"
@@ -112,13 +113,19 @@ export default defineComponent({
         .filter(([, hazard]: [number, EdgeHazard]) => hazard !== EdgeHazard.NONE)
       )
     },
+    attacker(): PlayerId {
+      return this.activeBattle.attacker
+    },
+    defender(): PlayerId {
+      return this.activeBattle.defender
+    },
     activeOffense(): BattleCreature[] {
-      return this.activeBattle.offense.filter((creature: BattleCreature) =>
-        creature.hex > 0 && creature.hex < 36)
+      return this.activeBattle.creatures.filter((creature: BattleCreature) =>
+        creature.player === this.attacker && creature.hex > 0 && creature.hex < 36)
     },
     activeDefense(): BattleCreature[] {
-      return this.activeBattle.defense.filter((creature: BattleCreature) =>
-        creature.hex > 0 && creature.hex < 36)
+      return this.activeBattle.creatures.filter((creature: BattleCreature) =>
+        creature.player === this.defender && creature.hex > 0 && creature.hex < 36)
     },
     phaseTitle(): string {
       switch (this.activeBattle.phase) {
@@ -144,9 +151,10 @@ export default defineComponent({
   },
   methods: {
     ...mapMutations("ui/selections", ["enterBattleHex", "leaveBattleHex", "deselectCreature"]),
+    ...mapActions("game", ["moveCreature"]),
     moveSelected(hex: number): void {
-      if (this.movementHexes.has(hex)) {
-        this.selectedCreature.hex = hex
+      if (this.selectedCreature && this.movementHexes.has(hex)) {
+        this.moveCreature({ creature: this.selectedCreature, hex })
       }
     }
   }

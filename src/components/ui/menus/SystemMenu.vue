@@ -28,6 +28,22 @@
       <v-btn block @click="persistToClipboard">Persist</v-btn>
     </v-list-item>
     <v-list-item>
+      <v-textarea
+        v-model="saveText"
+        class="save-data"
+        bg-color="surface-variant"
+        no-resize
+        hide-details
+        :rows="2"
+        density="compact"
+        variant="contained"
+      />
+    </v-list-item>
+    <v-list-item>
+      <v-btn @click="loadSave">Load from Save</v-btn>
+      <v-btn @click="loadJson">Load JSON</v-btn>
+    </v-list-item>
+    <v-list-item>
       <v-list-item-header>Local Player</v-list-item-header>
       <v-slider v-model="uiPlayer" min="1" :max="players.length" step="1" />
     </v-list-item>
@@ -64,7 +80,8 @@ export default defineComponent({
   inject: ["diceRoller"],
   data: () => ({
     CREATURE_LIST,
-    diceQuantity: 1
+    diceQuantity: 1,
+    saveText: ""
   }),
   computed: {
     ...mapState("ui", ["preferences", "selections", "localPlayer"]),
@@ -123,8 +140,9 @@ export default defineComponent({
     ...mapMutations("ui/preferences", [
       "setFancyGraphics", "setQuickDice", "setCreatureColorMode", "setFreeMovement"
     ]),
+    ...mapMutations("game", ["rehydrate"]),
     ...mapActions(["reset"]),
-    ...mapActions("game", ["persist"]),
+    ...mapActions("game", ["persist", "restore"]),
     summon(creature: Creature) {
       if (this.selections.stack !== undefined) {
         this.$store.commit("game/muster", {
@@ -139,13 +157,21 @@ export default defineComponent({
     async persistToClipboard() {
       const value = await this.persist()
       if (value) {
+        this.saveText = value
         await navigator.clipboard.writeText(value)
       }
+    },
+    loadSave() {
+      this.restore(this.saveText)
+    },
+    loadJson() {
+      this.rehydrate(JSON.parse(this.saveText))
     }
   }
 })
 </script>
 
-<style scoped>
-
+<style scoped lang="sass">
+.save-data
+  font-size: 0.5em
 </style>
