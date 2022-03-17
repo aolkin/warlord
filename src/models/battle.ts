@@ -1,5 +1,5 @@
 import { div } from "~/utils/math"
-import { Creature, CREATURE_DATA, CreatureType } from "./creature"
+import { CREATURE_DATA, CreatureType } from "./creature"
 import masterboard, { HexEdge, Terrain } from "./masterboard"
 import { PlayerId } from "./player"
 import { Stack } from "./stack"
@@ -67,12 +67,18 @@ export class BattleCreature {
   readonly player: PlayerId
   wounds: number
   hex: number
+  initialHex: number
 
-  constructor(type: CreatureType, player: PlayerId, origin: number, wounds?: number) {
+  constructor(type: CreatureType, player: PlayerId, origin: number, wounds?: number, initial?: number) {
     this.type = type
     this.player = player
     this.hex = origin
     this.wounds = wounds ?? 0
+    this.initialHex = initial ?? origin
+  }
+
+  phaseEnterMove(): void {
+    this.initialHex = this.hex
   }
 }
 
@@ -121,7 +127,7 @@ export class Battle {
     Object.assign(hydrated, {
       ...battle,
       creatures: battle.creatures.map(creature =>
-        new BattleCreature(creature.type, creature.player, creature.hex, creature.wounds))
+        new BattleCreature(creature.type, creature.player, creature.hex, creature.wounds, creature.initialHex))
     })
     return hydrated
   }
@@ -145,16 +151,24 @@ export class Battle {
     } else {
       this.phase += 1
     }
+    if (this.phase === BattlePhase.DEFENDER_MOVE || this.phase === BattlePhase.ATTACKER_MOVE) {
+      this.phaseEnterMove()
+    }
+  }
+
+  phaseEnterMove(): void {
+    this.creatures.forEach(creature => creature.phaseEnterMove())
   }
 
   creatureOnHex(hex: number): BattleCreature | undefined {
     return this.creatures.find(creature => creature.hex === hex)
   }
 
-  creatureMovementCost(hex: number, origin: number, creature: Creature): number {
-    if (creature.canFly || this.creatureOnHex(hex) === undefined) {
+  creatureMovementCost(hex: number, origin: number, creature: BattleCreature): number {
+    const canFly = CREATURE_DATA[creature.type].canFly
+    if (canFly || hex === creature.hex || this.creatureOnHex(hex) === undefined) {
       let cost = 1
-      if (!creature.canFly) {
+      if (!canFly) {
         const upEdgeHazard = this.getBoard().getEdgeHazard(origin, hex)
         const downEdgeHazard = this.getBoard().getEdgeHazard(hex, origin)
         if (upEdgeHazard === EdgeHazard.CLIFF || downEdgeHazard === EdgeHazard.CLIFF) {
@@ -175,9 +189,9 @@ export class Battle {
           return native ? cost : cost + 1
         case Hazard.BOG:
         case Hazard.TREE:
-          return native || creature.canFly ? cost : UNATTAINABLE_MOVEMENT_COST
+          return native || canFly ? cost : UNATTAINABLE_MOVEMENT_COST
         case Hazard.SAND:
-          return native || creature.canFly ? cost : cost + 1
+          return native || canFly ? cost : cost + 1
         case Hazard.VOLCANO:
           return native ? cost : UNATTAINABLE_MOVEMENT_COST
       }
@@ -187,7 +201,7 @@ export class Battle {
   }
 
   /** This method assumes the creature can enter - for efficiency, it will not check all rules */
-  creatureCanLand(hex: number, creature: Creature): boolean {
+  creatureCanLand(hex: number, creature: BattleCreature): boolean {
     const hazard = this.getBoard().getHazard(hex)
     return !(
       hazard === Hazard.TREE ||
@@ -197,26 +211,25 @@ export class Battle {
   }
 
   movementFor(creature: BattleCreature): Set<number> {
-    if (creature.hex === 0) {
+    if (creature.initialHex === 0) {
       return new Set<number>()
     }
-    const data = CREATURE_DATA[creature.type]
     // Map of hex to remaining movement last time it was visited
     const possibilities = new Map<number, number>()
-    const stack: Array<[number, number]> = [[creature.hex, data.skill]]
+    const stack: Array<[number, number]> = [[creature.initialHex, CREATURE_DATA[creature.type].skill]]
     let entry
     while ((entry = stack.pop()) !== undefined) {
       const [origin, remainingMovement] = entry
       const adjacencies = BATTLE_BOARD_ADJACENCIES[origin]
         .filter(i => (possibilities.get(i) ?? -1) < remainingMovement)
       adjacencies.forEach(potentialHex => {
-        const movementCost = this.creatureMovementCost(potentialHex, origin, data)
-        console.log({ origin, potentialHex, remainingMovement, movementCost })
+        const movementCost = this.creatureMovementCost(potentialHex, origin, creature)
+        // console.log({ origin, potentialHex, remainingMovement, movementCost })
         if (movementCost <= remainingMovement) {
           if (remainingMovement - movementCost > 0) {
             stack.push([potentialHex, remainingMovement - movementCost])
           }
-          if (this.creatureCanLand(potentialHex, data)) {
+          if (this.creatureCanLand(potentialHex, creature)) {
             possibilities.set(potentialHex, remainingMovement - movementCost)
           }
         }

@@ -1,35 +1,27 @@
 <template>
   <v-card absolute top right class="ma-3" width="342">
     <div class="d-flex flex-column" :class="orderingClasses">
-      <div v-if="pendingOffense.length > 0">
+      <div
+        v-if="pendingOffense.length > 0 ||
+          (activeBattle.phase === BattlePhase.ATTACKER_MOVE && selectedCreature?.initialHex >= 36)"
+      >
         <v-card-title>{{ attacker.name }}'s Pending Creatures</v-card-title>
-        <div class="px-2 pb-1">
-          <Creature
-            v-for="(creature, index) in pendingOffense"
-            :key="index"
-            :type="creature.type"
-            :player="attacker"
-            :class="{ interactive: activeBattle.phase === BattlePhase.ATTACKER_MOVE,
-                      selected: creature === selectedCreature }"
-            class="ma-1 pending"
-            @click="activeBattle.phase === BattlePhase.ATTACKER_MOVE && selectCreature(creature)"
-          />
-        </div>
+        <PendingCreatures
+          :creatures="pendingOffense"
+          :expected-phase="BattlePhase.ATTACKER_MOVE"
+          class="px-2 pb-1"
+        />
       </div>
-      <div v-if="pendingDefense.length > 0">
+      <div
+        v-if="pendingDefense.length > 0 ||
+          (activeBattle.phase === BattlePhase.DEFENDER_MOVE && selectedCreature?.initialHex >= 36)"
+      >
         <v-card-title>{{ defender.name }}'s Pending Creatures</v-card-title>
-        <div class="px-2 pb-1">
-          <Creature
-            v-for="(creature, index) in pendingDefense"
-            :key="index"
-            :type="creature.type"
-            :player="defender"
-            :class="{ interactive: activeBattle.phase === BattlePhase.DEFENDER_MOVE,
-                      selected: creature === selectedCreature }"
-            class="ma-1 pending"
-            @click="activeBattle.phase === BattlePhase.DEFENDER_MOVE && selectCreature(creature)"
-          />
-        </div>
+        <PendingCreatures
+          :creatures="pendingDefense"
+          :expected-phase="BattlePhase.DEFENDER_MOVE"
+          class="px-2 pb-1"
+        />
       </div>
     </div>
     <div>
@@ -66,10 +58,11 @@ import { mapGetters, mapMutations, mapState } from "vuex"
 import { BattleCreature, BattlePhase } from "~/models/battle"
 import { Player } from "~/models/player"
 import Creature from "../Creature.vue"
+import PendingCreatures from "./PendingCreatures.vue"
 
 export default defineComponent({
   name: "CreaturePanel",
-  components: { Creature },
+  components: { PendingCreatures, Creature },
   data() {
     return {
       BattlePhase

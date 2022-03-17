@@ -43,6 +43,7 @@ interface Getters {
   readonly mulliganAvailable: boolean
   readonly activePlayer: Player
   readonly activePlayerId: PlayerId
+  readonly battleActivePlayer: PlayerId
   readonly mayProceed: boolean
   readonly engagedStacks: Stack[]
   readonly mandatoryMoves: Stack[]
@@ -294,11 +295,7 @@ export class TitanGame {
   }
 
   mMoveCreature({ creature, hex }: BattleMovePayload): void {
-    assert((creature.player === this.activeBattle?.attacker &&
-        this.activeBattle?.phase === BattlePhase.ATTACKER_MOVE) ||
-      (creature.player === this.activeBattle?.defender &&
-        this.activeBattle?.phase === BattlePhase.DEFENDER_MOVE), "Illegal state")
-    assert(!(this.activeBattle?.creatures.includes(creature) ?? false), "Unexpected creature")
+    assert(this.activeBattle?.creatures.some(_.matches(creature)) ?? false, "Unexpected creature")
     creature.hex = hex
   }
 
@@ -357,7 +354,10 @@ export class TitanGame {
     await this.persist()
   }
 
-  async doMoveCreature({ commit }: ActionContext, payload: BattleMovePayload): Promise<void> {
+  async doMoveCreature({ getters, commit }: ActionContext, payload: BattleMovePayload): Promise<void> {
+    assert(this.activeBattle?.phase === BattlePhase.DEFENDER_MOVE ||
+      this.activeBattle?.phase === BattlePhase.ATTACKER_MOVE, "Not in movement phase")
+    assert(payload.creature.player === this.getBattleActivePlayer(), "Incorrect player")
     commit("moveCreature", payload)
     await this.persist()
   }

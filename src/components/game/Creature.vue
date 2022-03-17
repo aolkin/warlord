@@ -10,7 +10,9 @@
   >
     <rect width="100" height="100" x="0" y="0" class="background" />
     <template v-if="type === undefined">
-      <text x="50" y="50" class="name annotation">NONE</text>
+      <text x="50" :y="18 + (noneLabelWords.length - 1) * -16" class="name annotation">
+        <tspan v-for="(word, index) in noneLabelWords" :key="index" x="50" dy="32" v-text="word" />
+      </text>
     </template>
     <template v-else>
       <image :href="imageUrl" width="98" height="98" x="1" y="1" :filter="filter" />
@@ -89,6 +91,11 @@ export default defineComponent({
       type: Number,
       required: false,
       default: 0
+    },
+    noneLabel: {
+      type: String,
+      required: false,
+      default: undefined
     }
   },
   data: () => ({
@@ -148,6 +155,9 @@ export default defineComponent({
         }
       }
       return FilterCache.getForHex(color).filter
+    },
+    noneLabelWords(): string[] {
+      return this.noneLabel?.split(/\s/) ?? ["NONE"]
     }
   }
 })
@@ -236,6 +246,6 @@ export default defineComponent({
   color: rgb(var(--v-theme-titan-red))
 
   .name
-    font-size: 2em
+    font-size: 32px
     dominant-baseline: central
 </style>

@@ -109,7 +109,11 @@ export default {
       }
     },
     selectCreature(state: Selections, selection: BattleCreature) {
-      state.creature = selection
+      if (state.creature === selection) {
+        state.creature = undefined
+      } else {
+        state.creature = selection
+      }
     },
     deselectCreature(state: Selections) {
       state.creature = undefined

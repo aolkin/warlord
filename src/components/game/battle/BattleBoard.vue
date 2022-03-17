@@ -33,24 +33,17 @@
           />
         </g>
         <Creature
-          v-for="(creature, index) in activeOffense"
+          v-for="(creature, index) in activeCreatures"
           :key="index"
           :type="creature.type"
-          :player="playerById(activeBattle.attacker)"
+          :player="playerById(creature.player)"
           :wounds="creature.wounds"
+          class="battle-creature"
+          :class="creatureClasses(creature)"
           :transform="`${hexTransformStr(creature.hex)} scale(0.9)
-           rotate(${120 * (activeBattle.attackerEdge - 1)})`"
+           rotate(${120 * (activeBattle.attackerEdge - 1) + (creature.player === defender ? 180 : 0)})`"
           in-svg
-        />
-        <Creature
-          v-for="(creature, index) in activeDefense"
-          :key="index"
-          :type="creature.type"
-          :player="playerById(activeBattle.defender)"
-          :wounds="creature.wounds"
-          :transform="`${hexTransformStr(creature.hex)} scale(0.9)
-           rotate(${180 + 120 * (activeBattle.attackerEdge - 1)})`"
-          in-svg
+          @click.stop="chooseCreature(creature)"
         />
       </svg>
       <CreaturePanel />
@@ -95,7 +88,7 @@ export default defineComponent({
   computed: {
     ...mapState("ui/preferences", ["debugUi"]),
     ...mapState("game", ["activeBattle"]),
-    ...mapGetters("game", ["playerById"]),
+    ...mapGetters("game", ["playerById", "battleActivePlayer"]),
     ...mapGetters("ui/selections", ["movementHexes", "selectedCreature"]),
     terrain(): Terrain {
       return this.activeBattle.terrain
@@ -119,13 +112,14 @@ export default defineComponent({
     defender(): PlayerId {
       return this.activeBattle.defender
     },
-    activeOffense(): BattleCreature[] {
+    activeCreatures(): BattleCreature[] {
       return this.activeBattle.creatures.filter((creature: BattleCreature) =>
-        creature.player === this.attacker && creature.hex > 0 && creature.hex < 36)
+        creature.hex > 0 && creature.hex < 36)
     },
-    activeDefense(): BattleCreature[] {
-      return this.activeBattle.creatures.filter((creature: BattleCreature) =>
-        creature.player === this.defender && creature.hex > 0 && creature.hex < 36)
+    creatureClasses(): (creature: BattleCreature) => object {
+      return (creature: BattleCreature) => ({
+        interactive: (creature.player === this.battleActivePlayer)
+      })
     },
     phaseTitle(): string {
       switch (this.activeBattle.phase) {
@@ -150,11 +144,19 @@ export default defineComponent({
     }
   },
   methods: {
-    ...mapMutations("ui/selections", ["enterBattleHex", "leaveBattleHex", "deselectCreature"]),
+    ...mapMutations("ui/selections", [
+      "enterBattleHex", "leaveBattleHex", "selectCreature", "deselectCreature"
+    ]),
     ...mapActions("game", ["moveCreature"]),
     moveSelected(hex: number): void {
       if (this.selectedCreature && this.movementHexes.has(hex)) {
         this.moveCreature({ creature: this.selectedCreature, hex })
+      }
+    },
+    chooseCreature(creature: BattleCreature): void {
+      if ((this.activeBattle.phase === BattlePhase.ATTACKER_MOVE && creature.player === this.attacker) ||
+        (this.activeBattle.phase === BattlePhase.DEFENDER_MOVE && creature.player === this.defender)) {
+        this.selectCreature(creature)
       }
     }
   }
@@ -191,6 +193,10 @@ export default defineComponent({
 
 .available-move
   cursor: pointer
+
+.battle-creature
+  &.interactive
+    cursor: pointer
 
 .debug-hex-id
   text-anchor: middle
