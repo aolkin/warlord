@@ -3,7 +3,7 @@ import { BaseActionContext } from "~/store/types"
 import { View } from "~/store/ui/selection"
 import { assert } from "~/utils/assert"
 import { compressAndEncode, decodeAndDecompress } from "~/utils/base64"
-import { Battle, BattleCreature, BattlePhase } from "./battle"
+import { Battle, BATTLE_PHASE_TYPES, BattleCreature, BattlePhase, BattlePhaseType } from "./battle"
 import { CREATURE_DATA, CREATURE_LIST, CreatureType } from "./creature"
 import masterboard, { HexEdge, MasterboardHex } from "./masterboard"
 import { Player, PlayerId } from "./player"
@@ -44,6 +44,7 @@ interface Getters {
   readonly activePlayer: Player
   readonly activePlayerId: PlayerId
   readonly battleActivePlayer: PlayerId
+  readonly battlePhaseType: BattlePhaseType
   readonly mayProceed: boolean
   readonly engagedStacks: Stack[]
   readonly mandatoryMoves: Stack[]
@@ -170,17 +171,11 @@ export class TitanGame {
   }
 
   getBattleActivePlayer(): PlayerId | undefined {
-    switch (this.activeBattle?.phase) {
-      case BattlePhase.DEFENDER_MOVE:
-      case BattlePhase.DEFENDER_STRIKE:
-      case BattlePhase.DEFENDER_STRIKEBACK:
-        return this.activeBattle.defender
-      case BattlePhase.ATTACKER_STRIKEBACK:
-      case BattlePhase.ATTACKER_MOVE:
-      case BattlePhase.ATTACKER_STRIKE:
-        return this.activeBattle.attacker
-    }
-    return undefined
+    return this.activeBattle?.getActivePlayer()
+  }
+
+  getBattlePhaseType(): BattlePhaseType | undefined {
+    return this.activeBattle === undefined ? undefined : BATTLE_PHASE_TYPES[this.activeBattle.phase]
   }
 
   getBattleMoves(): (creature: BattleCreature) => Set<number> {
@@ -306,7 +301,12 @@ export class TitanGame {
 
   mInitiateBattle({ attacking, defending }: BattlePayload): void {
     assert(attacking.attackEdge !== undefined, "Cannot attack without coming from somewhere")
-    this.activeBattle = new Battle(attacking.hex, attacking.attackEdge as HexEdge, attacking, defending)
+    this.activeBattle = new Battle(attacking.hex, attacking.attackEdge as HexEdge, this, attacking, defending)
+  }
+
+  mNextBattlePhase(): void {
+    assert(this.activeBattle !== undefined, "No active battle!")
+    this.activeBattle?.nextPhase()
   }
 
   // Actions
@@ -354,14 +354,6 @@ export class TitanGame {
     await this.persist()
   }
 
-  async doMoveCreature({ getters, commit }: ActionContext, payload: BattleMovePayload): Promise<void> {
-    assert(this.activeBattle?.phase === BattlePhase.DEFENDER_MOVE ||
-      this.activeBattle?.phase === BattlePhase.ATTACKER_MOVE, "Not in movement phase")
-    assert(payload.creature.player === this.getBattleActivePlayer(), "Incorrect player")
-    commit("moveCreature", payload)
-    await this.persist()
-  }
-
   async doSetRecruit({ commit }: ActionContext, payload: MusterPayload): Promise<void> {
     if (!payload.stack.canMuster()) {
       throw new Error("Stack is not eligible to muster!")
@@ -374,14 +366,36 @@ export class TitanGame {
     await this.persist()
   }
 
-  doInitiateBattle({ commit, getters }: ActionContext, attacking: Stack): void {
+  /*
+   *** BATTLE FUNCTIONS ***
+   */
+
+  async doInitiateBattle({ commit, getters }: ActionContext, attacking: Stack): Promise<void> {
     const defending = getters.stacksForHex(attacking.hex)
       .find(stack => stack.owner !== getters.activePlayerId) as Stack
     assert(defending !== undefined,
       `No engagement present on hex ${attacking.hex}!`)
     commit("initiateBattle", { attacking, defending })
     commit("ui/selections/setView", View.BATTLEBOARD, { root: true })
+    await this.persist()
   }
+
+  async doMoveCreature({ getters, commit }: ActionContext, payload: BattleMovePayload): Promise<void> {
+    assert(this.activeBattle?.phase === BattlePhase.DEFENDER_MOVE ||
+      this.activeBattle?.phase === BattlePhase.ATTACKER_MOVE, "Not in movement phase")
+    assert(payload.creature.player === this.getBattleActivePlayer(), "Incorrect player")
+    commit("moveCreature", payload)
+    await this.persist()
+  }
+
+  async doNextBattlePhase({ getters, commit }: ActionContext): Promise<void> {
+    commit("nextBattlePhase")
+    await this.persist()
+  }
+
+  /*
+   *** PERSISTENCE FUNCTIONS ***
+   */
 
   async doPersist({ commit }: ActionContext): Promise<string | undefined> {
     console.log(localStorage[GAME_PERSISTENCE_KEY])
@@ -403,7 +417,7 @@ export class TitanGame {
         _.assign(new Player(player.id, player.name), player)),
       stacks: hydration.stacks.map((stack: Stack) =>
         _.assign(new Stack(stack.owner, stack.hex, stack.marker, stack.creatures), stack)),
-      activeBattle: hydration.activeBattle !== undefined ? Battle.hydrate(hydration.activeBattle) : undefined
+      activeBattle: hydration.activeBattle !== undefined ? Battle.hydrate(hydration.activeBattle, this) : undefined
     })
   }
 

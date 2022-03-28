@@ -1,5 +1,6 @@
 import { div } from "~/utils/math"
 import { CREATURE_DATA, CreatureType } from "./creature"
+import { TitanGame } from "./game"
 import masterboard, { HexEdge, Terrain } from "./masterboard"
 import { PlayerId } from "./player"
 import { Stack } from "./stack"
@@ -62,24 +63,44 @@ const isCreatureEdgeNative = (type: CreatureType, hazard: EdgeHazard): boolean =
 
 const UNATTAINABLE_MOVEMENT_COST = 99
 
-export class BattleCreature {
+export interface IBattleCreature {
   readonly type: CreatureType
   readonly player: PlayerId
-  wounds: number
+  readonly playerScore: number
   hex: number
-  initialHex: number
+  wounds?: number
+  initialHex?: number
+}
 
-  constructor(type: CreatureType, player: PlayerId, origin: number, wounds?: number, initial?: number) {
-    this.type = type
-    this.player = player
-    this.hex = origin
-    this.wounds = wounds ?? 0
-    this.initialHex = initial ?? origin
+export interface BattleCreature extends IBattleCreature {
+  wounds: number
+  initialHex: number
+}
+export class BattleCreature {
+  constructor(props: IBattleCreature) {
+    Object.assign(this, {
+      ...props,
+      wounds: props.wounds ?? 0,
+      initialHex: props.initialHex ?? props.hex
+    })
   }
 
   phaseEnterMove(): void {
     this.initialHex = this.hex
   }
+
+  phaseExitMove(): void {
+    if (this.hex >= 36) {
+      // this.wounds = CREATURE_DATA[this.type].getStrength(this.playerScore)
+      this.hex = 0
+    }
+  }
+}
+
+export enum BattlePhaseType {
+  MOVE,
+  STRIKE,
+  STRIKEBACK
 }
 
 export enum BattlePhase {
@@ -89,6 +110,24 @@ export enum BattlePhase {
   ATTACKER_MOVE,
   ATTACKER_STRIKE,
   DEFENDER_STRIKEBACK
+}
+
+export const BATTLE_PHASE_TYPES: Record<BattlePhase, BattlePhaseType> = {
+  [BattlePhase.DEFENDER_MOVE]: BattlePhaseType.MOVE,
+  [BattlePhase.DEFENDER_STRIKE]: BattlePhaseType.STRIKE,
+  [BattlePhase.DEFENDER_STRIKEBACK]: BattlePhaseType.STRIKEBACK,
+  [BattlePhase.ATTACKER_MOVE]: BattlePhaseType.MOVE,
+  [BattlePhase.ATTACKER_STRIKE]: BattlePhaseType.STRIKE,
+  [BattlePhase.ATTACKER_STRIKEBACK]: BattlePhaseType.STRIKEBACK
+}
+
+export const BATTLE_PHASE_TITLES: Record<BattlePhase, string> = {
+  [BattlePhase.DEFENDER_MOVE]: "Defender's Move",
+  [BattlePhase.DEFENDER_STRIKE]: "Defender's Strikes",
+  [BattlePhase.DEFENDER_STRIKEBACK]: "Defender's Strikebacks",
+  [BattlePhase.ATTACKER_MOVE]: "Attacker's Move",
+  [BattlePhase.ATTACKER_STRIKE]: "Attacker's Strikes",
+  [BattlePhase.ATTACKER_STRIKEBACK]: "Attacker's Strikebacks"
 }
 
 export class Battle {
@@ -103,7 +142,7 @@ export class Battle {
   phase: BattlePhase
 
   // Parameters optional for Hydration
-  constructor(hex: number, edge: HexEdge, attacking?: Stack, defending?: Stack) {
+  constructor(hex: number, edge: HexEdge, game: TitanGame, attacking?: Stack, defending?: Stack) {
     this.round = 0
     this.phase = BattlePhase.DEFENDER_MOVE
     this.hex = hex
@@ -112,8 +151,17 @@ export class Battle {
     if (attacking !== undefined && defending !== undefined) {
       this.attacker = attacking.owner
       this.defender = defending.owner
-      this.creatures = attacking.creatures.map(type => new BattleCreature(type, attacking.owner, 37))
-        .concat(defending.creatures.map(type => new BattleCreature(type, defending.owner, 36)))
+      this.creatures = attacking.creatures.map(type => new BattleCreature({
+        type,
+        player: attacking.owner,
+        playerScore: game.getPlayerById()(attacking.owner)?.score ?? 0,
+        hex: 37
+      })).concat(defending.creatures.map(type => new BattleCreature({
+        type,
+        player: defending.owner,
+        playerScore: game.getPlayerById()(defending.owner)?.score ?? 0,
+        hex: 36
+      })))
     } else {
       // These will be overwritten during hydration, but satisfy TypeScript
       this.attacker = 0
@@ -122,18 +170,30 @@ export class Battle {
     }
   }
 
-  static hydrate(battle: Battle): Battle {
-    const hydrated = new Battle(battle.hex, battle.attackerEdge)
+  static hydrate(battle: Battle, game: TitanGame): Battle {
+    const hydrated = new Battle(battle.hex, battle.attackerEdge, game)
     Object.assign(hydrated, {
       ...battle,
-      creatures: battle.creatures.map(creature =>
-        new BattleCreature(creature.type, creature.player, creature.hex, creature.wounds, creature.initialHex))
+      creatures: battle.creatures.map(creature => new BattleCreature(creature))
     })
     return hydrated
   }
 
   getBoard(): BattleBoard {
     return BATTLE_BOARDS[this.terrain]
+  }
+
+  getActivePlayer(): PlayerId {
+    switch (this.phase) {
+      case BattlePhase.DEFENDER_MOVE:
+      case BattlePhase.DEFENDER_STRIKE:
+      case BattlePhase.DEFENDER_STRIKEBACK:
+        return this.defender
+      case BattlePhase.ATTACKER_STRIKEBACK:
+      case BattlePhase.ATTACKER_MOVE:
+      case BattlePhase.ATTACKER_STRIKE:
+        return this.attacker
+    }
   }
 
   getOffense(): BattleCreature[] {
@@ -144,21 +204,36 @@ export class Battle {
     return this.creatures.filter(creature => creature.player === this.defender)
   }
 
+  getActiveCreatures(): BattleCreature[] {
+    return this.getActivePlayer() === this.attacker ? this.getOffense() : this.getDefense()
+  }
+
+  /** Battle Phase Maintenance **/
+
   nextPhase(): void {
+    if (BATTLE_PHASE_TYPES[this.phase] === BattlePhaseType.MOVE) {
+      this.phaseExitMove()
+    }
     if (this.phase === BattlePhase.DEFENDER_STRIKEBACK) {
       this.round += 1
       this.phase = BattlePhase.DEFENDER_MOVE
     } else {
       this.phase += 1
     }
-    if (this.phase === BattlePhase.DEFENDER_MOVE || this.phase === BattlePhase.ATTACKER_MOVE) {
+    if (BATTLE_PHASE_TYPES[this.phase] === BattlePhaseType.MOVE) {
       this.phaseEnterMove()
     }
   }
 
   phaseEnterMove(): void {
-    this.creatures.forEach(creature => creature.phaseEnterMove())
+    this.getActiveCreatures().forEach(creature => creature.phaseEnterMove())
   }
+
+  phaseExitMove(): void {
+    this.getActiveCreatures().forEach(creature => creature.phaseExitMove())
+  }
+
+  /** End Phase Manipulation **/
 
   creatureOnHex(hex: number): BattleCreature | undefined {
     return this.creatures.find(creature => creature.hex === hex)

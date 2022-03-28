@@ -6,6 +6,9 @@
     <template v-else>
       <v-card absolute top left class="ma-3">
         <v-card-title>Battle Land: {{ Terrain[terrain] }}</v-card-title>
+        <v-card-title>
+          Round: {{ activeBattle.round + 1 }} - {{ BATTLE_PHASE_TITLES[activeBattle.phase] }}
+        </v-card-title>
       </v-card>
       <svg class="board" viewBox="-450 -450 800 800" @click="deselectCreature">
         <BattleBoardHex
@@ -46,11 +49,8 @@
           @click.stop="chooseCreature(creature)"
         />
       </svg>
-      <CreaturePanel />
-      <ActionPanel />
-      <v-card absolute bottom right class="ma-3">
-        <v-card-title>Round: {{ activeBattle.round + 1 }} - {{ phaseTitle }}</v-card-title>
-      </v-card>
+      <CreaturePanel absolute top right />
+      <ActionPanel absolute bottom right />
     </template>
   </div>
 </template>
@@ -62,6 +62,7 @@ import {
   BATTLE_BOARD_ADJACENCIES,
   BATTLE_BOARD_HEXES,
   BATTLE_BOARDS,
+  BATTLE_PHASE_TITLES,
   BattleBoard,
   BattleCreature,
   BattlePhase,
@@ -82,6 +83,7 @@ export default defineComponent({
   data: () => ({
     Terrain,
     BattlePhase,
+    BATTLE_PHASE_TITLES,
     hexTransformStr,
     debugHex: 0
   }),
@@ -120,24 +122,6 @@ export default defineComponent({
       return (creature: BattleCreature) => ({
         interactive: (creature.player === this.battleActivePlayer)
       })
-    },
-    phaseTitle(): string {
-      switch (this.activeBattle.phase) {
-        case BattlePhase.DEFENDER_MOVE:
-          return "Defender's Move"
-        case BattlePhase.DEFENDER_STRIKE:
-          return "Defender's Strikes"
-        case BattlePhase.ATTACKER_STRIKEBACK:
-          return "Attacker's Strikebacks"
-        case BattlePhase.ATTACKER_MOVE:
-          return "Attacker's Move"
-        case BattlePhase.ATTACKER_STRIKE:
-          return "Attacker's Strikes"
-        case BattlePhase.DEFENDER_STRIKEBACK:
-          return "Defender's Strikebacks"
-        default:
-          return "Unknown Phase"
-      }
     },
     debugHexAdjacencies(): number[] {
       return BATTLE_BOARD_ADJACENCIES[this.debugHex] ?? []

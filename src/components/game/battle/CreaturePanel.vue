@@ -1,5 +1,5 @@
 <template>
-  <v-card absolute top right class="ma-3" width="342">
+  <v-card v-bind="$props" class="ma-3" width="342">
     <div class="d-flex flex-column" :class="orderingClasses">
       <div
         v-if="pendingOffense.length > 0 ||
@@ -107,4 +107,7 @@ export default defineComponent({
 .selected
   outline: 4px solid rgb(var(--v-theme-secondary))
   outline-offset: -2px
+
+.dead
+  filter: brightness(0.5)
 </style>

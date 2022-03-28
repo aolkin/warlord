@@ -1,5 +1,6 @@
 import _ from "lodash"
 import { assert } from "~/utils/assert"
+import { div } from "~/utils/math"
 import { Terrain } from "./masterboard"
 
 export enum CreatureType {
@@ -55,6 +56,10 @@ export class Creature {
 
   getValue(): number {
     return this.strength * this.skill
+  }
+
+  getStrength(score: number) {
+    return this.type === CreatureType.TITAN ? 6 + div(score, 100) : this.strength
   }
 }
 
