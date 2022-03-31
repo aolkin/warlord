@@ -16,10 +16,14 @@
     </template>
     <template v-else>
       <image :href="imageUrl" width="98" height="98" x="1" y="1" :filter="filter" />
-      <text x="50" y="18" class="name annotation" v-text="creatureName" />
-      <text x="10" y="93" class="strength annotation" :class="titanStrength" v-text="strength" />
+      <text x="50" y="15" class="name annotation" v-text="creatureName" />
+      <text x="10" y="90" class="strength annotation" :class="titanStrength" v-text="strength" />
       <text v-if="type === CreatureType.TITAN" x="50" y="83" class="annotation">&ndash;</text>
-      <text x="90" y="93" class="skill annotation" v-text="creature.skill" />
+      <text x="90" y="90" class="skill annotation" v-text="creature.skill" />
+      <g v-if="wounds">
+        <text x="50" y="45" class="wounds number annotation" v-text="wounds" />
+        <text x="50" y="75" class="wounds label annotation" v-text="`Hit${wounds > 1 ? 's' : ''}`" />
+      </g>
       <g transform="translate(50 82) scale(1.1)" :class="{ 'both-present': creature.canFly && creature.canRangestrike }">
         <!-- icons copied directly from Adobe Illustrator -->
         <path v-if="creature.canRangestrike" class="icon rangestrike" d="M15,.966A50.386,50.386,0,0,1,6.37,7.9c-.513-1.114,1.262-3.18-1.041-2.533C3.69,5.823-1.16,7.7.394,6.878c-1.229.651.765-1.4,1.281-1.8C3.534,3.625,5.419,2.2,7.39.907c3.288-2.156,1.485.14,1.3.663C8.029,3.462,9.78,3.022,10.9,2.554,12.253,1.99,13.632,1.492,15,.966Z" />
@@ -118,7 +122,7 @@ export default defineComponent({
     },
     strength() {
       if (this.type === CreatureType.TITAN) {
-        return Math.floor((this.player?.score ?? 0) / 100) + this.creature?.strength ?? 0
+        return Math.floor((this.player?.score ?? 0) / 100) + (this.creature?.strength ?? 0)
       } else {
         return this.creature?.strength
       }
@@ -179,6 +183,22 @@ export default defineComponent({
   font-size: 12pt
   letter-spacing: -0.025em
   text-anchor: middle
+  dominant-baseline: middle
+
+  &.wounds
+    fill: #d61c1c
+    font-family: Arvo, Roboto, sans-serif
+    letter-spacing: normal
+    stroke: black
+
+    &.number
+      font-size: 30pt
+      stroke-width: 2px
+
+    &.label
+      font-size: 18pt
+      stroke-width: 1px
+      text-transform: uppercase
 
 .annotation, .icon
   fill: currentColor

@@ -13,16 +13,14 @@
         <v-icon :icon="roundIcon" size="x-large" />
       </v-card-avatar>
     </v-card-header>
-    <v-card-text v-if="battlePhaseType === BattlePhaseType.MOVE">
-      <span v-if="pendingCreatures > 0">
-        You have {{ pendingCreatures }} creature{{ pendingCreatures > 1 ? 's' : '' }} that
-        {{ pendingCreatures > 1 ? 'have' : 'has' }} not entered the battle board. If they do
-        not do so this round, they will be eliminated.
-      </span>
+    <v-card-text v-if="battlePhaseType === BattlePhaseType.MOVE && pendingCreatures > 0">
+      You have {{ pendingCreatures }} creature{{ pendingCreatures > 1 ? 's' : '' }} that
+      {{ pendingCreatures > 1 ? 'have' : 'has' }} not entered the battle board. If they do
+      not do so this round, they will be eliminated.
     </v-card-text>
     <v-fade-transition leave absolute>
       <v-card-actions>
-        <v-btn block variant="outlined" @click="nextBattlePhase">
+        <v-btn block variant="outlined" @click="nextPhase">
           End {{ phaseTypeTitle }}
         </v-btn>
       </v-card-actions>
@@ -31,7 +29,7 @@
 </template>
 <script lang="ts">
 import { defineComponent } from "@vue/runtime-core"
-import { mapActions, mapGetters, mapState } from "vuex"
+import { mapActions, mapGetters, mapMutations, mapState } from "vuex"
 import {
   BATTLE_PHASE_TITLES,
   BATTLE_PHASE_TYPES,
@@ -90,7 +88,12 @@ export default defineComponent({
     }
   },
   methods: {
-    ...mapActions("game", ["nextBattlePhase"])
+    ...mapMutations("ui/selections", ["deselectCreature"]),
+    ...mapActions("game", ["nextBattlePhase"]),
+    nextPhase(): void {
+      this.deselectCreature()
+      this.nextBattlePhase()
+    }
   }
 })
 </script>

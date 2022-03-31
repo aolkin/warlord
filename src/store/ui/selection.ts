@@ -62,10 +62,10 @@ export default {
       return rootGetters["game/pathsForHex"](state.stack.hex)
     },
     movementHexes(state: Selections, getters: any, rootState: any, rootGetters: any): Set<number> {
-      if (state.creature === undefined || rootState.game.activeBattle === undefined) {
-        return new Set<number>()
-      }
-      return rootGetters["game/battleMoves"](state.creature)
+      return state.creature === undefined ? new Set<number>() : rootGetters["game/battleMoves"](state.creature)
+    },
+    engagements(state: Selections, getters: any, rootState: any, rootGetters: any): BattleCreature[] {
+      return state.creature === undefined ? [] : rootGetters["game/battleEngagements"](state.creature)
     }
   },
   mutations: {

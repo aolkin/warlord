@@ -45,6 +45,8 @@ interface Getters {
   readonly activePlayerId: PlayerId
   readonly battleActivePlayer: PlayerId
   readonly battlePhaseType: BattlePhaseType
+  readonly battleMoves: Set<number>
+  readonly battleEngagements: BattleCreature[]
   readonly mayProceed: boolean
   readonly engagedStacks: Stack[]
   readonly mandatoryMoves: Stack[]
@@ -180,10 +182,13 @@ export class TitanGame {
 
   getBattleMoves(): (creature: BattleCreature) => Set<number> {
     return (creature: BattleCreature) => {
-      if (this.activeBattle === undefined) {
-        return new Set<number>()
-      }
-      return this.activeBattle.movementFor(creature)
+      return this.activeBattle === undefined ? new Set<number>() : this.activeBattle.movementFor(creature)
+    }
+  }
+
+  getBattleEngagements(): (creature: BattleCreature) => BattleCreature[] {
+    return (creature: BattleCreature) => {
+      return this.activeBattle === undefined ? [] : this.activeBattle.engagedWith(creature)
     }
   }
 

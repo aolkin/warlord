@@ -1,6 +1,6 @@
 <template>
   <g class="engage-icon-root">
-    <g class="engage-icon-container" :class="{ interactive }">
+    <g class="engage-icon-container" :class="{ interactive, transparentHover }">
       <rect v-if="interactive" width="24" height="24" class="interaction-target" />
       <!-- sword-cross from Material Design Icons -->
       <path
@@ -21,6 +21,11 @@ export default defineComponent({
       type: Boolean,
       required: false,
       default: false
+    },
+    transparentHover: {
+      type: Boolean,
+      required: false,
+      default: false
     }
   }
 })
@@ -29,6 +34,7 @@ export default defineComponent({
 <style lang="sass" scoped>
 .engage-icon-container
   transform: scale(3) translate(-12px, -12px)
+  opacity: 1
   transition: all 0.25s
 
 .engage-graphic
@@ -44,4 +50,7 @@ export default defineComponent({
 
 .engage-icon-container.interactive:hover
   transform: scale(4) translate(-12px, -12px)
+
+.engage-icon-container.transparentHover:hover
+  opacity: 0.2
 </style>

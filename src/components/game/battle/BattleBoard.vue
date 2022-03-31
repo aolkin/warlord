@@ -17,7 +17,7 @@
           :elevation="board.getElevation(hex)"
           :hazard="board.getHazard(hex)"
           :edge-hazards="edgesForHex(hex)"
-          :interactive="movementHexes.has(hex)"
+          :interactive="battlePhaseType === BattlePhaseType.MOVE && movementHexes.has(hex)"
           :transform="hexTransformStr(hex)"
           :class="{ [`hex-${hex}`]: true, 'available-move': movementHexes.has(hex) }"
           @click="moveSelected(hex)"
@@ -36,8 +36,8 @@
           />
         </g>
         <Creature
-          v-for="(creature, index) in activeCreatures"
-          :key="index"
+          v-for="(creature) in activeCreatures"
+          :key="creature.hex"
           :type="creature.type"
           :player="playerById(creature.player)"
           :wounds="creature.wounds"
@@ -48,9 +48,35 @@
           in-svg
           @click.stop="chooseCreature(creature)"
         />
+        <EngageIcon
+          v-for="(creature) in engagements"
+          :key="creature.hex"
+          interactive
+          transparent-hover
+          :transform="`${hexTransformStr(creature.hex)} scale(0.9)
+           rotate(${120 * (activeBattle.attackerEdge - 1) + (creature.player === defender ? 180 : 0)})`"
+          @click.stop="targetedCreature = creature"
+        />
       </svg>
       <CreaturePanel absolute top right />
       <ActionPanel absolute bottom right />
+
+      <v-dialog v-model="attackCreatureDialog">
+        <v-card>
+          <v-card-title>
+            Attack {{ targetedCreatureName }} with {{ selectedCreatureName }}?
+          </v-card-title>
+          <v-card-text>
+            Are you sure you want to attack this {{ targetedCreatureName }} ({{ targetedCreature?.wounds }} hits)
+            with your {{ selectedCreatureName }}?
+          </v-card-text>
+          <v-card-actions>
+            <v-spacer />
+            <v-btn variant="text" color="secondary" @click="targetedCreature = undefined">Cancel</v-btn>
+            <v-btn color="primary" class="float-right" @click="attackTargetedCreature">Attack</v-btn>
+          </v-card-actions>
+        </v-card>
+      </v-dialog>
     </template>
   </div>
 </template>
@@ -66,12 +92,15 @@ import {
   BattleBoard,
   BattleCreature,
   BattlePhase,
+  BattlePhaseType,
   EdgeHazard,
   relationToHex
 } from "~/models/battle"
+import { CREATURE_DATA } from "~/models/creature"
 import { Terrain } from "~/models/masterboard"
 import { PlayerId } from "~/models/player"
 import Creature from "../Creature.vue"
+import EngageIcon from "../masterboard/EngageIcon.vue"
 import ActionPanel from "./ActionPanel.vue"
 import BattleBoardHex from "./BattleBoardHex.vue"
 import CreaturePanel from "./CreaturePanel.vue"
@@ -79,19 +108,31 @@ import { hexTransformStr } from "./utils"
 
 export default defineComponent({
   name: "BattleBoard",
-  components: { ActionPanel, CreaturePanel, Creature, BattleBoardHex },
+  components: { EngageIcon, ActionPanel, CreaturePanel, Creature, BattleBoardHex },
   data: () => ({
     Terrain,
     BattlePhase,
+    BattlePhaseType,
     BATTLE_PHASE_TITLES,
     hexTransformStr,
+    targetedCreature: undefined,
     debugHex: 0
   }),
   computed: {
     ...mapState("ui/preferences", ["debugUi"]),
     ...mapState("game", ["activeBattle"]),
-    ...mapGetters("game", ["playerById", "battleActivePlayer"]),
-    ...mapGetters("ui/selections", ["movementHexes", "selectedCreature"]),
+    ...mapGetters("game", ["playerById", "battleActivePlayer", "battlePhaseType", "battleEngagements"]),
+    ...mapGetters("ui/selections", ["movementHexes", "selectedCreature", "engagements"]),
+    attackCreatureDialog: {
+      get(): boolean {
+        return this.targetedCreature !== undefined
+      },
+      set(val: boolean): void {
+        if (!val) {
+          this.targetedCreature = undefined
+        }
+      }
+    },
     terrain(): Terrain {
       return this.activeBattle.terrain
     },
@@ -118,10 +159,24 @@ export default defineComponent({
       return this.activeBattle.creatures.filter((creature: BattleCreature) =>
         creature.hex > 0 && creature.hex < 36)
     },
+    creatureEnabled(): (creature: BattleCreature) => boolean {
+      return (creature) => {
+        const engagements = this.battleEngagements(creature).length
+        return this.battlePhaseType === BattlePhaseType.MOVE ? engagements === 0 : engagements !== 0
+      }
+    },
     creatureClasses(): (creature: BattleCreature) => object {
       return (creature: BattleCreature) => ({
-        interactive: (creature.player === this.battleActivePlayer)
+        "active-player": creature.player === this.battleActivePlayer,
+        interactive: (creature.player === this.battleActivePlayer && this.creatureEnabled(creature)),
+        selected: creature === this.selectedCreature
       })
+    },
+    selectedCreatureName(): string {
+      return this.selectedCreature !== undefined ? CREATURE_DATA[this.selectedCreature.type].name : ""
+    },
+    targetedCreatureName(): string {
+      return this.targetedCreature !== undefined ? CREATURE_DATA[this.targetedCreature.type].name : ""
     },
     debugHexAdjacencies(): number[] {
       return BATTLE_BOARD_ADJACENCIES[this.debugHex] ?? []
@@ -138,10 +193,14 @@ export default defineComponent({
       }
     },
     chooseCreature(creature: BattleCreature): void {
-      if ((this.activeBattle.phase === BattlePhase.ATTACKER_MOVE && creature.player === this.attacker) ||
-        (this.activeBattle.phase === BattlePhase.DEFENDER_MOVE && creature.player === this.defender)) {
+      if (creature.player === this.battleActivePlayer && this.creatureEnabled(creature)) {
         this.selectCreature(creature)
       }
+    },
+    attackTargetedCreature(): void {
+      console.log(this.selectedCreature, this.targetedCreature)
+      this.targetedCreature = undefined
+      this.deselectCreature()
     }
   }
 })
@@ -179,8 +238,14 @@ export default defineComponent({
   cursor: pointer
 
 .battle-creature
+  &.active-player
+    filter: brightness(0.75)
   &.interactive
+    filter: none
     cursor: pointer
+  &.selected
+    outline: solid rgb(var(--v-theme-secondary)) 3px
+    outline-offset: -1px
 
 .debug-hex-id
   text-anchor: middle

@@ -91,7 +91,6 @@ export class BattleCreature {
 
   phaseExitMove(): void {
     if (this.hex >= 36) {
-      // this.wounds = CREATURE_DATA[this.type].getStrength(this.playerScore)
       this.hex = 0
     }
   }
@@ -311,6 +310,12 @@ export class Battle {
       })
     }
     return new Set<number>(possibilities.keys())
+  }
+
+  engagedWith(whom: BattleCreature): BattleCreature[] {
+    const hex = BATTLE_PHASE_TYPES[this.phase] === BattlePhaseType.MOVE ? whom.initialHex : whom.hex
+    const adjacencies = BATTLE_BOARD_ADJACENCIES[hex]
+    return this.creatures.filter(creature => adjacencies.includes(creature.hex) && creature.player !== whom.player)
   }
 }
 
