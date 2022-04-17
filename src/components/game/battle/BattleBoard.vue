@@ -55,7 +55,7 @@
           transparent-hover
           :transform="`${hexTransformStr(creature.hex)} scale(0.9)
            rotate(${120 * (activeBattle.attackerEdge - 1) + (creature.player === defender ? 180 : 0)})`"
-          @click.stop="targetedCreature = creature"
+          @click.stop="targetCreature(creature)"
         />
       </svg>
       <CreaturePanel absolute top right />
@@ -67,12 +67,25 @@
             Attack {{ targetedCreatureName }} with {{ selectedCreatureName }}?
           </v-card-title>
           <v-card-text>
-            Are you sure you want to attack this {{ targetedCreatureName }} ({{ targetedCreature?.wounds }} hits)
-            with your {{ selectedCreatureName }}?
+            Are you sure you want to attack this {{ targetedCreatureName }}
+            ({{ targetedCreature?.wounds }} hits taken) with your {{ selectedCreatureName }}?
+          </v-card-text>
+          <v-card-text>
+            You will roll {{ targetedStrike.dice }} {{ targetedStrike.dice > 1 ? "dice" : "die" }}
+            and must roll {{ targetedStrike.toHit }}s or better to hit your opponent.
+            <span v-if="targetedStrikeWasAdjusted">
+              This has been adjusted due to terrain and would otherwise have been
+              {{ targetedStrikeUnadjusted.dice }} {{ targetedStrikeUnadjusted.dice > 1 ? "dice" : "die" }}
+              needing {{ targetedStrikeUnadjusted.toHit }}s or better.
+            </span>
+          </v-card-text>
+          <v-card-text v-if="tougherCarryovers.length > 0">
+            You may choose to roll with a higher "to hit" requirement to enable your attack to carry over to
+            these creatures it would otherwise be unable to: {{ tougherCarryovers }}.
           </v-card-text>
           <v-card-actions>
             <v-spacer />
-            <v-btn variant="text" color="secondary" @click="targetedCreature = undefined">Cancel</v-btn>
+            <v-btn variant="text" color="secondary" @click="resetAttack">Cancel</v-btn>
             <v-btn color="primary" class="float-right" @click="attackTargetedCreature">Attack</v-btn>
           </v-card-actions>
         </v-card>
@@ -83,6 +96,7 @@
 
 <script lang="ts">
 import { defineComponent } from "@vue/runtime-core"
+import _ from "lodash"
 import { mapActions, mapGetters, mapMutations, mapState } from "vuex"
 import {
   BATTLE_BOARD_ADJACENCIES,
@@ -93,10 +107,12 @@ import {
   BattleCreature,
   BattlePhase,
   BattlePhaseType,
+  combineStrikes,
   EdgeHazard,
-  relationToHex
+  relationToHex,
+  Strike
 } from "~/models/battle"
-import { CREATURE_DATA } from "~/models/creature"
+import { CREATURE_DATA, CreatureType } from "~/models/creature"
 import { Terrain } from "~/models/masterboard"
 import { PlayerId } from "~/models/player"
 import Creature from "../Creature.vue"
@@ -109,13 +125,15 @@ import { hexTransformStr } from "./utils"
 export default defineComponent({
   name: "BattleBoard",
   components: { EngageIcon, ActionPanel, CreaturePanel, Creature, BattleBoardHex },
-  data: () => ({
+  inject: ["diceRoller"],
+  data: (): any | { targetedCreature: BattleCreature } => ({
     Terrain,
     BattlePhase,
     BattlePhaseType,
     BATTLE_PHASE_TITLES,
     hexTransformStr,
     targetedCreature: undefined,
+    optionalToHit: undefined,
     debugHex: 0
   }),
   computed: {
@@ -137,7 +155,7 @@ export default defineComponent({
       return this.activeBattle.terrain
     },
     board(): BattleBoard {
-      return BATTLE_BOARDS[this.terrain]
+      return BATTLE_BOARDS[this.terrain as Terrain]
     },
     hexes(): readonly number[] {
       return BATTLE_BOARD_HEXES
@@ -162,7 +180,16 @@ export default defineComponent({
     creatureEnabled(): (creature: BattleCreature) => boolean {
       return (creature) => {
         const engagements = this.battleEngagements(creature).length
-        return this.battlePhaseType === BattlePhaseType.MOVE ? engagements === 0 : engagements !== 0
+        switch (this.battlePhaseType) {
+          case BattlePhaseType.MOVE:
+            return engagements === 0
+          case BattlePhaseType.STRIKE:
+            return !creature.hasStruck && engagements > 0
+          case BattlePhaseType.STRIKEBACK:
+            return !creature.hasStruck && engagements > 0
+          default:
+            return false
+        }
       }
     },
     creatureClasses(): (creature: BattleCreature) => object {
@@ -173,10 +200,42 @@ export default defineComponent({
       })
     },
     selectedCreatureName(): string {
-      return this.selectedCreature !== undefined ? CREATURE_DATA[this.selectedCreature.type].name : ""
+      return this.selectedCreature ? CREATURE_DATA[this.selectedCreature.type as CreatureType].name : ""
     },
     targetedCreatureName(): string {
-      return this.targetedCreature !== undefined ? CREATURE_DATA[this.targetedCreature.type].name : ""
+      return this.targetedCreature ? CREATURE_DATA[this.targetedCreature.type as CreatureType].name : ""
+    },
+    targetedStrikeUnadjusted(): Strike {
+      if (this.selectedCreature && this.targetedCreature) {
+        return {
+          toHit: this.activeBattle.toHitRaw(this.selectedCreature, this.targetedCreature),
+          dice: this.selectedCreature.getStrength()
+        }
+      }
+      return { toHit: 0, dice: 0 }
+    },
+    targetedStrike(): Strike {
+      const strike = this.selectedCreature && this.targetedCreature
+        ? combineStrikes(
+          this.targetedStrikeUnadjusted,
+          this.activeBattle.strikeAdjustment(this.selectedCreature, this.targetedCreature))
+        : { toHit: 0, dice: 0 }
+      return this.optionalToHit !== undefined ? { ...strike, toHit: this.optionalToHit } : strike
+    },
+    targetedStrikeWasAdjusted(): boolean {
+      return !_.isEqual(this.targetedStrikeUnadjusted, this.targetedStrike)
+    },
+    tougherCarryovers(): BattleCreature[] {
+      if (
+        this.selectedCreature === undefined ||
+        this.targetedCreature === undefined ||
+        this.engagements.length < 2 ||
+        this.targetedStrike.dice - this.targetedCreature.getRemainingHp() <= 0
+      ) {
+        return []
+      }
+      return this.engagements.filter((target: BattleCreature) =>
+        this.activeBattle.toHitAdjusted(this.selectedCreature, target) > this.targetedStrike.toHit)
     },
     debugHexAdjacencies(): number[] {
       return BATTLE_BOARD_ADJACENCIES[this.debugHex] ?? []
@@ -186,7 +245,7 @@ export default defineComponent({
     ...mapMutations("ui/selections", [
       "enterBattleHex", "leaveBattleHex", "selectCreature", "deselectCreature"
     ]),
-    ...mapActions("game", ["moveCreature"]),
+    ...mapActions("game", ["moveCreature", "attackCreature"]),
     moveSelected(hex: number): void {
       if (this.selectedCreature && this.movementHexes.has(hex)) {
         this.moveCreature({ creature: this.selectedCreature, hex })
@@ -197,10 +256,25 @@ export default defineComponent({
         this.selectCreature(creature)
       }
     },
-    attackTargetedCreature(): void {
+    targetCreature(creature: BattleCreature): void {
+      this.targetedCreature = creature
+    },
+    async attackTargetedCreature(): Promise<void> {
       console.log(this.selectedCreature, this.targetedCreature)
-      this.targetedCreature = undefined
+      const rolls = await this.diceRoller.roll(this.targetedStrike.dice)
+      this.attackCreature({
+        attacker: this.selectedCreature,
+        target: this.targetedCreature,
+        optionalToHit: this.optionalToHit,
+        rolls
+      })
+      console.log(this.activeBattle.activeStrike)
+      this.resetAttack()
       this.deselectCreature()
+    },
+    resetAttack(): void {
+      this.targetedCreature = undefined
+      this.optionalToHit = undefined
     }
   }
 })

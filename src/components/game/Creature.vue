@@ -20,7 +20,15 @@
       <text x="10" y="90" class="strength annotation" :class="titanStrength" v-text="strength" />
       <text v-if="type === CreatureType.TITAN" x="50" y="83" class="annotation">&ndash;</text>
       <text x="90" y="90" class="skill annotation" v-text="creature.skill" />
-      <g v-if="wounds">
+      <g v-if="dead">
+        <!-- mdi-skull -->
+        <path
+          class="wounds annotation"
+          transform="translate(25, 28) scale(2)"
+          d="M12,2A9,9 0 0,0 3,11C3,14.03 4.53,16.82 7,18.47V22H9V19H11V22H13V19H15V22H17V18.46C19.47,16.81 21,14 21,11A9,9 0 0,0 12,2M8,11A2,2 0 0,1 10,13A2,2 0 0,1 8,15A2,2 0 0,1 6,13A2,2 0 0,1 8,11M16,11A2,2 0 0,1 18,13A2,2 0 0,1 16,15A2,2 0 0,1 14,13A2,2 0 0,1 16,11M12,14L13.5,17H10.5L12,14Z"
+        />
+      </g>
+      <g v-else-if="wounds">
         <text x="50" y="45" class="wounds number annotation" v-text="wounds" />
         <text x="50" y="75" class="wounds label annotation" v-text="`Hit${wounds > 1 ? 's' : ''}`" />
       </g>
@@ -126,6 +134,9 @@ export default defineComponent({
       } else {
         return this.creature?.strength
       }
+    },
+    dead(): boolean {
+      return this.wounds >= (this.strength ?? 1)
     },
     classes() {
       const classMap = {

@@ -1,3 +1,5 @@
+import _ from "lodash"
+import { assert } from "~/utils/assert"
 import { div } from "~/utils/math"
 import { CREATURE_DATA, CreatureType } from "./creature"
 import { TitanGame } from "./game"
@@ -56,6 +58,16 @@ const EDGE_HAZARD_NATIVES: Record<EdgeHazard, Set<CreatureType>> = {
   [EdgeHazard.WALL]: new Set<CreatureType>()
 }
 
+export interface Strike {
+  readonly toHit: number
+  readonly dice: number
+}
+
+export const combineStrikes = (a: Strike, b: Strike, clamp?: boolean): Strike => ({
+  toHit: clamp === false ? a.toHit + b.toHit : _.clamp(a.toHit + b.toHit, 2, 6),
+  dice: a.dice + b.dice
+})
+
 const isCreatureNative = (type: CreatureType, hazard: Hazard): boolean =>
   HAZARD_NATIVES[hazard].has(type)
 const isCreatureEdgeNative = (type: CreatureType, hazard: EdgeHazard): boolean =>
@@ -70,19 +82,38 @@ export interface IBattleCreature {
   hex: number
   wounds?: number
   initialHex?: number
+  hasStruck?: boolean
 }
 
 export interface BattleCreature extends IBattleCreature {
   wounds: number
   initialHex: number
+  hasStruck: boolean
 }
 export class BattleCreature {
   constructor(props: IBattleCreature) {
     Object.assign(this, {
       ...props,
       wounds: props.wounds ?? 0,
-      initialHex: props.initialHex ?? props.hex
+      initialHex: props.initialHex ?? props.hex,
+      hasStruck: props.hasStruck ?? false
     })
+  }
+
+  getStrength(): number {
+    return CREATURE_DATA[this.type].getStrength(this.playerScore)
+  }
+
+  getRemainingHp(): number {
+    return this.getStrength() - this.wounds
+  }
+
+  wound(amount: number): void {
+    this.wounds += amount
+  }
+
+  performStrike(): void {
+    this.hasStruck = true
   }
 
   phaseEnterMove(): void {
@@ -91,6 +122,16 @@ export class BattleCreature {
 
   phaseExitMove(): void {
     if (this.hex >= 36) {
+      this.hex = 0
+    }
+  }
+
+  phaseEnterStrike(): void {
+    this.hasStruck = false
+  }
+
+  phaseExitStrikeback(): void {
+    if (this.getRemainingHp() <= 0) {
       this.hex = 0
     }
   }
@@ -129,6 +170,14 @@ export const BATTLE_PHASE_TITLES: Record<BattlePhase, string> = {
   [BattlePhase.ATTACKER_STRIKEBACK]: "Attacker's Strikebacks"
 }
 
+interface ActiveStrike {
+  attacker: number
+  target: number
+  rolls: number[]
+  totalHits: number
+  carryoverHits: number
+}
+
 export class Battle {
   readonly hex: number
   readonly attackerEdge: HexEdge
@@ -139,6 +188,7 @@ export class Battle {
 
   round: number
   phase: BattlePhase
+  activeStrike?: ActiveStrike
 
   // Parameters optional for Hydration
   constructor(hex: number, edge: HexEdge, game: TitanGame, attacking?: Stack, defending?: Stack) {
@@ -212,6 +262,8 @@ export class Battle {
   nextPhase(): void {
     if (BATTLE_PHASE_TYPES[this.phase] === BattlePhaseType.MOVE) {
       this.phaseExitMove()
+    } else if (BATTLE_PHASE_TYPES[this.phase] === BattlePhaseType.STRIKEBACK) {
+      this.phaseExitStrikeback()
     }
     if (this.phase === BattlePhase.DEFENDER_STRIKEBACK) {
       this.round += 1
@@ -221,6 +273,8 @@ export class Battle {
     }
     if (BATTLE_PHASE_TYPES[this.phase] === BattlePhaseType.MOVE) {
       this.phaseEnterMove()
+    } else if (BATTLE_PHASE_TYPES[this.phase] === BattlePhaseType.STRIKE) {
+      this.phaseEnterStrike()
     }
   }
 
@@ -230,6 +284,20 @@ export class Battle {
 
   phaseExitMove(): void {
     this.getActiveCreatures().forEach(creature => creature.phaseExitMove())
+  }
+
+  phaseEnterStrike(): void {
+    this.activeStrike = undefined
+    this.creatures.forEach(creature => creature.phaseEnterStrike())
+    if (this.terrain === Terrain.TUNDRA) {
+      this.creatures
+        .filter(creature => this.getBoard().getHazard(creature.hex) === Hazard.DRIFT)
+        .forEach(creature => creature.wound(1))
+    }
+  }
+
+  phaseExitStrikeback(): void {
+    this.creatures.forEach(creature => creature.phaseExitStrikeback())
   }
 
   /** End Phase Manipulation **/
@@ -315,7 +383,88 @@ export class Battle {
   engagedWith(whom: BattleCreature): BattleCreature[] {
     const hex = BATTLE_PHASE_TYPES[this.phase] === BattlePhaseType.MOVE ? whom.initialHex : whom.hex
     const adjacencies = BATTLE_BOARD_ADJACENCIES[hex]
-    return this.creatures.filter(creature => adjacencies.includes(creature.hex) && creature.player !== whom.player)
+    return this.creatures.filter(creature => creature.player !== whom.player &&
+      creature.getRemainingHp() > 0 &&
+      adjacencies.includes(creature.hex) &&
+      this.getBoard().getEdgeHazard(whom.hex, creature.hex) !== EdgeHazard.CLIFF)
+  }
+
+  private strikeAdjustmentEdge(striker: BattleCreature, target: BattleCreature): Strike {
+    const board = this.getBoard()
+    const strikingUp = board.getElevation(striker.hex) <= board.getElevation(target.hex)
+    const edgeHazard = board.getEdgeHazard(strikingUp ? striker.hex : target.hex,
+      strikingUp ? target.hex : striker.hex)
+    if (edgeHazard === EdgeHazard.SLOPE) {
+      const strikerNative = isCreatureEdgeNative(striker.type, edgeHazard)
+      if (strikerNative && !strikingUp) {
+        return { toHit: 0, dice: 1 }
+      } else if (!strikerNative && strikingUp) {
+        return { toHit: 1, dice: 0 }
+      }
+    } else if (edgeHazard === EdgeHazard.DUNE) {
+      const strikerNative = isCreatureEdgeNative(striker.type, edgeHazard)
+      if (strikerNative && !strikingUp) {
+        return { toHit: 0, dice: 2 }
+      } else if (!strikerNative && strikingUp) {
+        return { toHit: 0, dice: -1 }
+      }
+    } else if (edgeHazard === EdgeHazard.WALL) {
+      return { toHit: strikingUp ? 1 : -1, dice: 0 }
+    } else {
+      return { toHit: 0, dice: 0 }
+    }
+  }
+
+  strikeAdjustment(striker: BattleCreature, target: BattleCreature): Strike {
+    const board = this.getBoard()
+    const strikerHazard = board.getHazard(striker.hex)
+    const strikerNative = isCreatureNative(striker.type, strikerHazard)
+    const targetHazard = board.getHazard(target.hex)
+    const targetNative = isCreatureNative(target.type, targetHazard)
+    const edgeAdjustment = this.strikeAdjustmentEdge(striker, target)
+    let adjustment = { toHit: 0, dice: 0 }
+    if (strikerHazard === Hazard.BRAMBLE && !strikerNative) {
+      adjustment = { toHit: 1, dice: 0 }
+    } else if (targetHazard === Hazard.BRAMBLE && targetNative &&
+      !isCreatureNative(striker.type, targetHazard)) {
+      adjustment = { toHit: 1, dice: 0 }
+    } else if (strikerHazard === Hazard.VOLCANO && strikerNative) {
+      adjustment = { toHit: 0, dice: 2 }
+    }
+    return combineStrikes(adjustment, edgeAdjustment, false)
+  }
+
+  /** Attacker must roll at least this high to get a hit. */
+  toHitRaw(attacker: BattleCreature, defender: BattleCreature): number {
+    return 4 - (CREATURE_DATA[attacker.type].skill - CREATURE_DATA[defender.type].skill)
+  }
+
+  /** Attacker must roll at least this high to get a hit. */
+  toHitAdjusted(attacker: BattleCreature, defender: BattleCreature): number {
+    return combineStrikes(
+      { dice: 0, toHit: this.toHitRaw(attacker, defender) },
+      this.strikeAdjustment(attacker, defender)
+    ).toHit
+  }
+
+  strike(attacker: BattleCreature, defender: BattleCreature,
+    rolls: number[], optionalToHit?: number): void {
+    let toHit = this.toHitAdjusted(attacker, defender)
+    if (optionalToHit !== undefined) {
+      assert(optionalToHit >= toHit, "Cannot choose a lower to-hit")
+      toHit = optionalToHit
+    }
+    const hits = rolls.filter(roll => roll >= toHit).length
+    const carryover = Math.max(hits - defender.getRemainingHp(), 0)
+    attacker.performStrike()
+    defender.wound(hits - carryover)
+    this.activeStrike = {
+      attacker: attacker.hex,
+      target: defender.hex,
+      totalHits: hits,
+      carryoverHits: carryover,
+      rolls
+    }
   }
 }
 

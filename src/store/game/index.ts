@@ -23,7 +23,7 @@ interface actionParam {
 
 export default {
   namespaced: true,
-  state: () => TitanGame.hydrate(),
+  state: (): TitanGame => TitanGame.hydrate(),
   getters: {
     ...titanGameGetters
   },

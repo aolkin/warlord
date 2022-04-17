@@ -9471,9 +9471,9 @@ vuetify-loader@^2.0.0-alpha.0:
     upath "^2.0.1"
 
 "vuetify@npm:@vuetify/nightly@3":
-  version "3.0.0-next-20220216.0"
-  resolved "https://registry.yarnpkg.com/@vuetify/nightly/-/nightly-3.0.0-next-20220216.0.tgz#a486101af33a13a0a9d73573d03b76ccbad8c723"
-  integrity sha512-5VA86rpw8YAFPNuyj9fDS6mqjK7Uiza8rgH7Wd30s8/jBLtoNcrngRUpCvgIiRF+UPsia2oFAskDulASwQ8OVg==
+  version "3.0.0-next-20220416.0"
+  resolved "https://registry.yarnpkg.com/@vuetify/nightly/-/nightly-3.0.0-next-20220416.0.tgz#d3be97e6130900647b51ca924ae60b0812a9b5d2"
+  integrity sha512-3jgtwcZXmrCeR1gcLyL2jvUnZftc9RyaXHdQpXQhmlFazYEtSymsRoD8RAEv2P2GeVGKVKkR7KfBrVhUBEgaSg==
 
 vuex@^4.0.2:
   version "4.0.2"

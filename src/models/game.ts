@@ -3,7 +3,7 @@ import { BaseActionContext } from "~/store/types"
 import { View } from "~/store/ui/selection"
 import { assert } from "~/utils/assert"
 import { compressAndEncode, decodeAndDecompress } from "~/utils/base64"
-import { Battle, BATTLE_PHASE_TYPES, BattleCreature, BattlePhase, BattlePhaseType } from "./battle"
+import { Battle, BATTLE_PHASE_TYPES, BattleCreature, BattlePhaseType } from "./battle"
 import { CREATURE_DATA, CREATURE_LIST, CreatureType } from "./creature"
 import masterboard, { HexEdge, MasterboardHex } from "./masterboard"
 import { Player, PlayerId } from "./player"
@@ -56,6 +56,12 @@ interface MovePayload { stack: Stack, hex: number | MasterboardHex, edge?: HexEd
 interface BattleMovePayload { creature: BattleCreature, hex: number }
 interface MusterPayload { stack: Stack, recruit: MusterPossibility }
 interface BattlePayload { attacking: Stack, defending: Stack }
+interface AttackPayload {
+  attacker: BattleCreature
+  target: BattleCreature
+  optionalToHit?: number
+  rolls: number[]
+}
 
 interface ActionContext extends BaseActionContext {
   state: TitanGame
@@ -294,11 +300,6 @@ export class TitanGame {
     }
   }
 
-  mMoveCreature({ creature, hex }: BattleMovePayload): void {
-    assert(this.activeBattle?.creatures.some(_.matches(creature)) ?? false, "Unexpected creature")
-    creature.hex = hex
-  }
-
   mMuster({ stack, recruit }: MusterPayload): void {
     assert(this.activePhase === MasterboardPhase.MUSTER, "Innappropriate phase")
     stack.currentMuster = recruit
@@ -312,6 +313,17 @@ export class TitanGame {
   mNextBattlePhase(): void {
     assert(this.activeBattle !== undefined, "No active battle!")
     this.activeBattle?.nextPhase()
+  }
+
+  mMoveCreature({ creature, hex }: BattleMovePayload): void {
+    assert(this.activeBattle?.creatures.some(_.matches(creature)) ?? false, "Unexpected creature")
+    creature.hex = hex
+  }
+
+  mAttackCreature({ attacker, target, rolls, optionalToHit }: AttackPayload): void {
+    assert(this.activeBattle?.creatures.some(_.matches(attacker)) ?? false, "Unexpected attacker")
+    assert(this.activeBattle?.creatures.some(_.matches(target)) ?? false, "Unexpected defender")
+    this.activeBattle?.strike(attacker, target, rolls, optionalToHit)
   }
 
   // Actions
@@ -386,8 +398,7 @@ export class TitanGame {
   }
 
   async doMoveCreature({ getters, commit }: ActionContext, payload: BattleMovePayload): Promise<void> {
-    assert(this.activeBattle?.phase === BattlePhase.DEFENDER_MOVE ||
-      this.activeBattle?.phase === BattlePhase.ATTACKER_MOVE, "Not in movement phase")
+    assert(getters.battlePhaseType === BattlePhaseType.MOVE, "Not in movement phase")
     assert(payload.creature.player === this.getBattleActivePlayer(), "Incorrect player")
     commit("moveCreature", payload)
     await this.persist()
@@ -395,6 +406,14 @@ export class TitanGame {
 
   async doNextBattlePhase({ getters, commit }: ActionContext): Promise<void> {
     commit("nextBattlePhase")
+    await this.persist()
+  }
+
+  async doAttackCreature({ getters, commit }: ActionContext, payload: AttackPayload): Promise<void> {
+    if (this.activeBattle === undefined) { throw new Error("Must be in a battle!") }
+    assert(getters.battlePhaseType !== BattlePhaseType.MOVE, "Cannot strike in movement phase")
+    assert(payload.attacker.player === this.getBattleActivePlayer(), "Incorrect player")
+    commit("attackCreature", payload)
     await this.persist()
   }
 
