@@ -159,7 +159,7 @@ export default defineComponent({
       }
     },
     currentTheme() {
-      return this.$vuetify.theme.getTheme(this.$vuetify.theme.current)
+      return this.$vuetify.theme.current
     },
     filter() {
       let color = this.currentTheme.colors[STANDARD_CREATURE_COLORS[this.type ?? 0]]

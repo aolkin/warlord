@@ -4,7 +4,7 @@
       <text x="0" y="0">No Active Battle!</text>
     </svg>
     <template v-else>
-      <v-card absolute top left class="ma-3">
+      <v-card position="absolute" location="top left" class="ma-3">
         <v-card-title>Battle Land: {{ Terrain[terrain] }}</v-card-title>
         <v-card-title>
           Round: {{ activeBattle.round + 1 }} - {{ BATTLE_PHASE_TITLES[activeBattle.phase] }}
@@ -58,8 +58,8 @@
           @click.stop="targetCreature(creature)"
         />
       </svg>
-      <CreaturePanel absolute top right />
-      <ActionPanel absolute bottom right />
+      <CreaturePanel position="absolute" location="top right" />
+      <ActionPanel position="absolute" location="bottom right" />
 
       <v-dialog v-model="attackCreatureDialog">
         <v-card>

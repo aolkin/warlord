@@ -37,7 +37,7 @@
     "eslint-plugin-standard": "^4.0.0",
     "eslint-plugin-vue": "^8.3.0",
     "lint-staged": "^9.5.0",
-    "nuxt3": "latest",
+    "nuxt3": "^3.0.0-rc.4-27600153.ad42023",
     "sass": "^1.38.0",
     "sass-loader": "^10.0.0",
     "typescript": "<4.5.0",

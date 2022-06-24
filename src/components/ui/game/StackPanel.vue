@@ -3,9 +3,8 @@
     <v-card
       v-if="focusedStack === undefined"
       class="ma-3"
-      absolute
-      top
-      right
+      position="absolute"
+      location="top right"
       border
       width="342"
     >
@@ -17,9 +16,8 @@
       v-else
       :elevation="focusedStack === selectedStack ? 24 : 0"
       class="ma-3 root-card"
-      absolute
-      top
-      right
+      position="absolute"
+      location="top right"
       border
       width="342"
     >

@@ -58,7 +58,7 @@ export class Creature {
     return this.strength * this.skill
   }
 
-  getStrength(score: number) {
+  getStrength(score: number): number {
     return this.type === CreatureType.TITAN ? 6 + div(score, 100) : this.strength
   }
 }

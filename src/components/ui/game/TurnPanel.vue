@@ -1,5 +1,5 @@
 <template>
-  <v-card class="ma-3" absolute bottom right border width="300">
+  <v-card class="ma-3" position="absolute" location="bottom right" border width="300">
     <v-card-header>
       <v-card-header-text>{{ activePlayer.name }}'s Turn</v-card-header-text>
       <v-card-avatar>

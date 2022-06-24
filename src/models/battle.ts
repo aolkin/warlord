@@ -410,9 +410,8 @@ export class Battle {
       }
     } else if (edgeHazard === EdgeHazard.WALL) {
       return { toHit: strikingUp ? 1 : -1, dice: 0 }
-    } else {
-      return { toHit: 0, dice: 0 }
     }
+    return { toHit: 0, dice: 0 }
   }
 
   strikeAdjustment(striker: BattleCreature, target: BattleCreature): Strike {
