@@ -58,47 +58,29 @@
           @click.stop="targetCreature(creature)"
         />
       </svg>
+
       <CreaturePanel position="absolute" location="top right" />
       <ActionPanel position="absolute" location="bottom right" />
+      <ActiveStrikePanel position="absolute" location="bottom left" />
 
-      <v-dialog v-model="attackCreatureDialog">
-        <v-card>
-          <v-card-title>
-            Attack {{ targetedCreatureName }} with {{ selectedCreatureName }}?
-          </v-card-title>
-          <v-card-text>
-            Are you sure you want to attack this {{ targetedCreatureName }}
-            ({{ targetedCreature?.wounds }} hits taken) with your {{ selectedCreatureName }}?
-          </v-card-text>
-          <v-card-text>
-            You will roll {{ targetedStrike.dice }} {{ targetedStrike.dice > 1 ? "dice" : "die" }}
-            and must roll {{ targetedStrike.toHit }}s or better to hit your opponent.
-            <span v-if="targetedStrikeWasAdjusted">
-              This has been adjusted due to terrain and would otherwise have been
-              {{ targetedStrikeUnadjusted.dice }} {{ targetedStrikeUnadjusted.dice > 1 ? "dice" : "die" }}
-              needing {{ targetedStrikeUnadjusted.toHit }}s or better.
-            </span>
-          </v-card-text>
-          <v-card-text v-if="tougherCarryovers.length > 0">
-            You may choose to roll with a higher "to hit" requirement to enable your attack to carry over to
-            these creatures it would otherwise be unable to: {{ tougherCarryovers }}.
-          </v-card-text>
-          <v-card-actions>
-            <v-spacer />
-            <v-btn variant="text" color="secondary" @click="resetAttack">Cancel</v-btn>
-            <v-btn color="primary" class="float-right" @click="attackTargetedCreature">Attack</v-btn>
-          </v-card-actions>
-        </v-card>
-      </v-dialog>
+      <StrikeConfirmation
+        v-model="attackCreatureDialog"
+        :targeted-creature="targetedCreature"
+        :targeted-strike="targetedStrike"
+        :targeted-strike-unadjusted="targetedStrikeUnadjusted"
+        :tougher-carryovers="tougherCarryovers"
+        @attack="attackTargetedCreature"
+        @cancel="resetAttack"
+      />
     </template>
   </div>
 </template>
 
 <script lang="ts">
 import { defineComponent } from "@vue/runtime-core"
-import _ from "lodash"
 import { mapActions, mapGetters, mapMutations, mapState } from "vuex"
 import {
+  ActiveStrike,
   BATTLE_BOARD_ADJACENCIES,
   BATTLE_BOARD_HEXES,
   BATTLE_BOARDS,
@@ -112,19 +94,28 @@ import {
   relationToHex,
   Strike
 } from "~/models/battle"
-import { CREATURE_DATA, CreatureType } from "~/models/creature"
 import { Terrain } from "~/models/masterboard"
 import { PlayerId } from "~/models/player"
 import Creature from "../Creature.vue"
 import EngageIcon from "../masterboard/EngageIcon.vue"
 import ActionPanel from "./ActionPanel.vue"
+import ActiveStrikePanel from "./ActiveStrikePanel.vue"
 import BattleBoardHex from "./BattleBoardHex.vue"
 import CreaturePanel from "./CreaturePanel.vue"
+import StrikeConfirmation from "./StrikeConfirmation.vue"
 import { hexTransformStr } from "./utils"
 
 export default defineComponent({
   name: "BattleBoard",
-  components: { EngageIcon, ActionPanel, CreaturePanel, Creature, BattleBoardHex },
+  components: {
+    StrikeConfirmation,
+    EngageIcon,
+    ActionPanel,
+    CreaturePanel,
+    Creature,
+    BattleBoardHex,
+    ActiveStrikePanel
+  },
   inject: ["diceRoller"],
   data: (): any | { targetedCreature: BattleCreature } => ({
     Terrain,
@@ -196,14 +187,13 @@ export default defineComponent({
       return (creature: BattleCreature) => ({
         "active-player": creature.player === this.battleActivePlayer,
         interactive: (creature.player === this.battleActivePlayer && this.creatureEnabled(creature)),
-        selected: creature === this.selectedCreature
+        selected: creature === this.selectedCreature,
+        attacker: this.activeStrike?.attacker === creature.hex,
+        target: this.activeStrike?.target === creature.hex
       })
     },
-    selectedCreatureName(): string {
-      return this.selectedCreature ? CREATURE_DATA[this.selectedCreature.type as CreatureType].name : ""
-    },
-    targetedCreatureName(): string {
-      return this.targetedCreature ? CREATURE_DATA[this.targetedCreature.type as CreatureType].name : ""
+    activeStrike(): ActiveStrike {
+      return this.activeBattle.activeStrike
     },
     targetedStrikeUnadjusted(): Strike {
       if (this.selectedCreature && this.targetedCreature) {
@@ -221,9 +211,6 @@ export default defineComponent({
           this.activeBattle.strikeAdjustment(this.selectedCreature, this.targetedCreature))
         : { toHit: 0, dice: 0 }
       return this.optionalToHit !== undefined ? { ...strike, toHit: this.optionalToHit } : strike
-    },
-    targetedStrikeWasAdjusted(): boolean {
-      return !_.isEqual(this.targetedStrikeUnadjusted, this.targetedStrike)
     },
     tougherCarryovers(): BattleCreature[] {
       if (
@@ -319,6 +306,12 @@ export default defineComponent({
     cursor: pointer
   &.selected
     outline: solid rgb(var(--v-theme-secondary)) 3px
+    outline-offset: -1px
+  &.attacker
+    outline: solid rgb(var(--v-theme-info)) 4px
+    outline-offset: -1px
+  &.target
+    outline: solid rgb(var(--v-theme-error)) 4px
     outline-offset: -1px
 
 .debug-hex-id

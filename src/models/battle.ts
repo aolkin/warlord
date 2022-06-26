@@ -100,6 +100,10 @@ export class BattleCreature {
     })
   }
 
+  name(): string {
+    return CREATURE_DATA[this.type].name
+  }
+
   getStrength(): number {
     return CREATURE_DATA[this.type].getStrength(this.playerScore)
   }
@@ -170,10 +174,11 @@ export const BATTLE_PHASE_TITLES: Record<BattlePhase, string> = {
   [BattlePhase.ATTACKER_STRIKEBACK]: "Attacker's Strikebacks"
 }
 
-interface ActiveStrike {
+export interface ActiveStrike {
   attacker: number
   target: number
   rolls: number[]
+  toHit: number
   totalHits: number
   carryoverHits: number
 }
@@ -262,6 +267,8 @@ export class Battle {
   nextPhase(): void {
     if (BATTLE_PHASE_TYPES[this.phase] === BattlePhaseType.MOVE) {
       this.phaseExitMove()
+    } else if (BATTLE_PHASE_TYPES[this.phase] === BattlePhaseType.STRIKE) {
+      this.phaseExitStrike()
     } else if (BATTLE_PHASE_TYPES[this.phase] === BattlePhaseType.STRIKEBACK) {
       this.phaseExitStrikeback()
     }
@@ -296,7 +303,12 @@ export class Battle {
     }
   }
 
+  phaseExitStrike(): void {
+    this.activeStrike = undefined
+  }
+
   phaseExitStrikeback(): void {
+    this.activeStrike = undefined
     this.creatures.forEach(creature => creature.phaseExitStrikeback())
   }
 
@@ -462,6 +474,7 @@ export class Battle {
       target: defender.hex,
       totalHits: hits,
       carryoverHits: carryover,
+      toHit,
       rolls
     }
   }
