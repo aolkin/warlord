@@ -464,6 +464,18 @@ export class Battle {
     ).toHit
   }
 
+  getRawStrike(attacker: BattleCreature, defender: BattleCreature): Strike {
+    return {
+      toHit: this.toHitRaw(attacker, defender),
+      dice: attacker.getStrength()
+    }
+  }
+
+  getAdjustedStrike(attacker: BattleCreature, defender: BattleCreature): Strike {
+    return combineStrikes(this.getRawStrike(attacker, defender),
+      this.strikeAdjustment(attacker, defender))
+  }
+
   strike(attacker: BattleCreature, defender: BattleCreature,
     rolls: number[], optionalToHit?: number): void {
     let toHit = this.toHitAdjusted(attacker, defender)

@@ -47,6 +47,8 @@
            rotate(${120 * (activeBattle.attackerEdge - 1) + (creature.player === defender ? 180 : 0)})`"
           in-svg
           @click.stop="chooseCreature(creature)"
+          @mouseenter="enterCreature(creature)"
+          @mouseleave="leaveCreature(creature)"
         />
         <EngageIcon
           v-for="(creature) in engagements"
@@ -56,6 +58,8 @@
           :transform="`${hexTransformStr(creature.hex)} scale(0.9)
            rotate(${120 * (activeBattle.attackerEdge - 1) + (creature.player === defender ? 180 : 0)})`"
           @click.stop="targetCreature(creature)"
+          @mouseenter="enterCreature(creature)"
+          @mouseleave="leaveCreature(creature)"
         />
       </svg>
 
@@ -89,7 +93,6 @@ import {
   BattleCreature,
   BattlePhase,
   BattlePhaseType,
-  combineStrikes,
   EdgeHazard,
   relationToHex,
   Strike
@@ -197,18 +200,13 @@ export default defineComponent({
     },
     targetedStrikeUnadjusted(): Strike {
       if (this.selectedCreature && this.targetedCreature) {
-        return {
-          toHit: this.activeBattle.toHitRaw(this.selectedCreature, this.targetedCreature),
-          dice: this.selectedCreature.getStrength()
-        }
+        return this.activeBattle.getRawStrike(this.selectedCreature, this.targetedCreature)
       }
       return { toHit: 0, dice: 0 }
     },
     targetedStrike(): Strike {
       const strike = this.selectedCreature && this.targetedCreature
-        ? combineStrikes(
-          this.targetedStrikeUnadjusted,
-          this.activeBattle.strikeAdjustment(this.selectedCreature, this.targetedCreature))
+        ? this.activeBattle.getAdjustedStrike(this.selectedCreature, this.targetedCreature)
         : { toHit: 0, dice: 0 }
       return this.optionalToHit !== undefined ? { ...strike, toHit: this.optionalToHit } : strike
     },
@@ -230,7 +228,8 @@ export default defineComponent({
   },
   methods: {
     ...mapMutations("ui/selections", [
-      "enterBattleHex", "leaveBattleHex", "selectCreature", "deselectCreature"
+      "enterBattleHex", "leaveBattleHex", "selectCreature", "deselectCreature",
+      "enterCreature", "leaveCreature"
     ]),
     ...mapActions("game", ["moveCreature", "attackCreature"]),
     moveSelected(hex: number): void {
