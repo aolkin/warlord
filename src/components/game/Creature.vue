@@ -239,7 +239,7 @@ export default defineComponent({
 .archangel .name
   letter-spacing: -0.025em
 
-.titan .annotation
+.titan .annotation:not(.wounds)
   fill: rgb(var(--v-theme-titan-white))
   font-size: 16pt
 

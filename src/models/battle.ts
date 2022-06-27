@@ -209,12 +209,12 @@ export class Battle {
         type,
         player: attacking.owner,
         playerScore: game.getPlayerById()(attacking.owner)?.score ?? 0,
-        hex: 37
+        hex: 37 + this.attackerEdge * 2
       })).concat(defending.creatures.map(type => new BattleCreature({
         type,
         player: defending.owner,
         playerScore: game.getPlayerById()(defending.owner)?.score ?? 0,
-        hex: 36
+        hex: 36 + this.attackerEdge * 2
       })))
     } else {
       // These will be overwritten during hydration, but satisfy TypeScript
@@ -528,12 +528,12 @@ export const BATTLE_BOARD_ADJACENCIES = Object.freeze(Object.assign(Object.fromE
       .map(dist => hex + dist)]
   })
 ), {
-  36: [2, 3, 4],
-  37: [31, 32, 33, 34],
-  38: [23, 29, 34],
-  39: [2, 7, 13, 18],
-  40: [18, 25, 31],
-  41: [4, 10, 17, 23]
+  36: [18, 25, 31],
+  37: [4, 10, 17, 23],
+  38: [2, 3, 4],
+  39: [31, 32, 33, 34],
+  40: [23, 29, 34],
+  41: [2, 7, 13, 18]
 }))
 
 export class BattleBoard {
