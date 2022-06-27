@@ -18,9 +18,14 @@
       {{ pendingCreatures > 1 ? 'have' : 'has' }} not entered the battle board. If they do
       not do so this round, they will be eliminated.
     </v-card-text>
+    <v-card-text v-if="pendingStrikes.length > 0">
+      You have {{ pendingStrikes.length }} creature{{ pendingStrikes.length > 1 ? 's' : '' }} that
+      {{ pendingStrikes.length > 1 ? 'have' : 'has' }} not yet struck. Every creature that can strike
+      must do so.
+    </v-card-text>
     <v-fade-transition leave absolute>
       <v-card-actions>
-        <v-btn block variant="outlined" @click="nextPhase">
+        <v-btn block variant="outlined" :disabled="!mayProceed" @click="nextPhase">
           End {{ phaseTypeTitle }}
         </v-btn>
       </v-card-actions>
@@ -74,6 +79,17 @@ export default defineComponent({
         default:
           return ""
       }
+    },
+    pendingStrikes(): BattleCreature[] {
+      if (this.battlePhaseType === BattlePhaseType.STRIKE ||
+        this.battlePhaseType === BattlePhaseType.STRIKEBACK) {
+        return this.activeBattle.getPendingStrikes()
+      } else {
+        return []
+      }
+    },
+    mayProceed(): boolean {
+      return this.pendingStrikes.length === 0
     },
     roundIcon(): string {
       const name = `mdi-numeric-${this.activeBattle.round + 1}-box`

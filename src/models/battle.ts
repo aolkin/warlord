@@ -262,6 +262,11 @@ export class Battle {
     return this.getActivePlayer() === this.attacker ? this.getOffense() : this.getDefense()
   }
 
+  getPendingStrikes(): BattleCreature[] {
+    return this.getActiveCreatures()
+      .filter(creature => !creature.hasStruck && creature.hex > 0 && this.engagedWith(creature).length > 0)
+  }
+
   /** Battle Phase Maintenance **/
 
   nextPhase(): void {
@@ -304,11 +309,12 @@ export class Battle {
   }
 
   phaseExitStrike(): void {
+    assert(this.getPendingStrikes().length === 0, "All eligible creatures must strike")
     this.activeStrike = undefined
   }
 
   phaseExitStrikeback(): void {
-    this.activeStrike = undefined
+    this.phaseExitStrike()
     this.creatures.forEach(creature => creature.phaseExitStrikeback())
   }
 
