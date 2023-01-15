@@ -48,7 +48,7 @@
       <BattleBoard v-show="view === View.BATTLEBOARD" />
       <DiceRoller ref="diceRoller" />
     </v-main>
-    <v-app-bar color="grey-darken-3" height="30" location="bottom">Status</v-app-bar>
+    <v-footer app color="grey-darken-3" location="bottom" height="32" class="px-2 py-1">Status</v-footer>
   </v-app>
 </template>
 

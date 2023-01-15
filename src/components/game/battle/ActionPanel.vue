@@ -1,18 +1,16 @@
 <template>
-  <v-card v-bind="$props" class="ma-3" width="300">
-    <v-card-title>
+  <v-card
+    width="300"
+    :title="`${playerById(battleActivePlayer).name}'s Turn`"
+  >
+    <template #prepend>
+      <v-icon :icon="roundIcon" size="x-large" :title="`Round ${activeBattle.round + 1}`" />
+      <v-icon :icon="phaseIcon" size="large" :title="phaseTypeTitle" />
+    </template>
+    <v-card-subtitle v-if="debugUi">
       Hex: {{ focusedBattleHex }} ({{ Hazard[land.getHazard(focusedBattleHex)] }})
       <span v-if="land.getElevation(focusedBattleHex) > 0">+{{ land.getElevation(focusedBattleHex) }}</span>
-    </v-card-title>
-    <v-card-header>
-      <v-card-header-text>{{ playerById(battleActivePlayer).name }}'s Turn</v-card-header-text>
-      <v-card-avatar>
-        <v-icon :icon="phaseIcon" size="large" />
-      </v-card-avatar>
-      <v-card-avatar>
-        <v-icon :icon="roundIcon" size="x-large" />
-      </v-card-avatar>
-    </v-card-header>
+    </v-card-subtitle>
     <v-card-text v-if="battlePhaseType === BattlePhaseType.MOVE && pendingCreatures > 0">
       You have {{ pendingCreatures }} creature{{ pendingCreatures > 1 ? 's' : '' }} that
       {{ pendingCreatures > 1 ? 'have' : 'has' }} not entered the battle board. If they do
@@ -54,6 +52,7 @@ export default defineComponent({
   }),
   computed: {
     ...mapState("game", ["activeBattle"]),
+    ...mapState("ui/preferences", ["debugUi"]),
     ...mapGetters("ui/selections", ["focusedBattleHex"]),
     ...mapGetters("game", ["battlePhaseType", "battleActivePlayer", "playerById"]),
     phaseTypeTitle(): string {

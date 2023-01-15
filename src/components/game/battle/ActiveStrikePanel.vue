@@ -1,34 +1,30 @@
 <template>
   <v-fade-transition>
-    <v-card v-if="strike" v-bind="$props" class="ma-3" width="300">
+    <v-card v-if="strike" v-bind="$props" width="300">
       <v-card-title>
         <span :class="`text-player-${attacker.player}`">
           {{ attacker.name() }}
-          <span v-if="attackerHazard !== Hazard.NONE">({{ Hazard[attackerHazard].toLowerCase() }})</span>
+          <span v-if="attackerHazard !== Hazard.NONE">({{ Hazard[attackerHazard].toLowerCase() }}) </span>
         </span>
-        <span>&nbsp;vs&nbsp;</span>
+        <span>vs </span>
         <span :class="`text-player-${target.player}`">
           {{ target.name() }}
           <span v-if="targetHazard !== Hazard.NONE">({{ Hazard[targetHazard].toLowerCase() }})</span>
         </span>
       </v-card-title>
-      <v-card-header>
-        <v-card-header-text v-if="activeStrike">
-          <v-icon
-            v-for="(roll, index) in activeStrike.rolls"
-            :key="index"
-            size="x-large"
-            :class="{'text-secondary': roll >= activeStrike.toHit, 'no-hit': roll < activeStrike.toHit}"
-            :icon="`mdi-dice-${roll}`"
-          />
-        </v-card-header-text>
-      </v-card-header>
-      <v-card-header v-if="(activeStrike?.carryoverHits ?? 0) > 0">
-        <v-card-header-text>
-          The {{ target.name() }} is dead.
-          {{ activeStrike.carryoverHits }} hit{{ activeStrike.carryoverHits === 1 ? "" : "s" }} may carry over.
-        </v-card-header-text>
-      </v-card-header>
+      <v-card-item v-if="activeStrike" class="pt-1">
+        <v-icon
+          v-for="(roll, index) in activeStrike.rolls"
+          :key="index"
+          size="x-large"
+          :class="{'text-secondary': roll >= activeStrike.toHit, 'no-hit': roll < activeStrike.toHit}"
+          :icon="`mdi-dice-${roll}`"
+        />
+      </v-card-item>
+      <v-card-item v-if="(activeStrike?.carryoverHits ?? 0) > 0">
+        The {{ target.name() }} is dead.
+        {{ activeStrike.carryoverHits }} hit{{ activeStrike.carryoverHits === 1 ? "" : "s" }} may carry over.
+      </v-card-item>
       <v-card-text>
         {{ activeStrike ? "Rolled " : "" }}{{ strike.dice }} {{ strike === 1 ? "die" : "dice" }},
         {{ activeStrike ? "needed" : "needing" }} {{ strike.toHit }}s or better to hit.

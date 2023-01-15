@@ -1,55 +1,67 @@
 <template>
-  <v-card v-bind="$props" class="ma-3" width="342">
-    <div class="d-flex flex-column" :class="orderingClasses">
-      <div
-        v-if="pendingOffense.length > 0 ||
-          (activeBattle.phase === BattlePhase.ATTACKER_MOVE && selectedCreature?.initialHex >= 36)"
-      >
-        <v-card-title>{{ attacker.name }}'s Pending Creatures</v-card-title>
-        <PendingCreatures
-          :creatures="pendingOffense"
-          :expected-phase="BattlePhase.ATTACKER_MOVE"
-          class="px-2 pb-1"
-        />
-      </div>
-      <div
-        v-if="pendingDefense.length > 0 ||
-          (activeBattle.phase === BattlePhase.DEFENDER_MOVE && selectedCreature?.initialHex >= 36)"
-      >
-        <v-card-title>{{ defender.name }}'s Pending Creatures</v-card-title>
-        <PendingCreatures
-          :creatures="pendingDefense"
-          :expected-phase="BattlePhase.DEFENDER_MOVE"
-          class="px-2 pb-1"
-        />
-      </div>
-    </div>
-    <div>
-      <div v-if="deadOffense.length > 0">
-        <v-card-title>{{ attacker.name }}'s Dead Creatures</v-card-title>
-        <div class="px-2 pb-1">
-          <Creature
-            v-for="(creature, index) in deadOffense"
-            :key="index"
-            :type="creature.type"
-            :player="attacker"
-            class="ma-1 dead"
-          />
+  <v-card v-bind="$props" width="342" :title="minimized ? 'View off-board creatures' : undefined">
+    <v-btn
+      position="absolute"
+      location="top right"
+      variant="plain"
+      :rounded="0"
+      icon="mdi-window-minimize"
+      @click="minimized = !minimized"
+    />
+    <v-expand-transition>
+      <div v-if="!minimized">
+        <div class="d-flex flex-column" :class="orderingClasses">
+          <div
+            v-if="pendingOffense.length > 0 ||
+              (activeBattle.phase === BattlePhase.ATTACKER_MOVE && selectedCreature?.initialHex >= 36)"
+          >
+            <v-card-title>{{ attacker.name }}'s Pending Creatures</v-card-title>
+            <PendingCreatures
+              :creatures="pendingOffense"
+              :expected-phase="BattlePhase.ATTACKER_MOVE"
+              class="px-2 pb-1"
+            />
+          </div>
+          <div
+            v-if="pendingDefense.length > 0 ||
+              (activeBattle.phase === BattlePhase.DEFENDER_MOVE && selectedCreature?.initialHex >= 36)"
+          >
+            <v-card-title>{{ defender.name }}'s Pending Creatures</v-card-title>
+            <PendingCreatures
+              :creatures="pendingDefense"
+              :expected-phase="BattlePhase.DEFENDER_MOVE"
+              class="px-2 pb-1"
+            />
+          </div>
+        </div>
+        <div>
+          <div v-if="deadOffense.length > 0">
+            <v-card-title>{{ attacker.name }}'s Dead Creatures</v-card-title>
+            <div class="px-2 pb-1">
+              <Creature
+                v-for="(creature, index) in deadOffense"
+                :key="index"
+                :type="creature.type"
+                :player="attacker"
+                class="ma-1 dead"
+              />
+            </div>
+          </div>
+          <div v-if="deadDefense.length > 0">
+            <v-card-title>{{ defender.name }}'s Dead Creatures</v-card-title>
+            <div class="px-2 pb-1">
+              <Creature
+                v-for="(creature, index) in deadDefense"
+                :key="index"
+                :type="creature.type"
+                :player="defender"
+                class="ma-1 dead"
+              />
+            </div>
+          </div>
         </div>
       </div>
-      <div v-if="deadDefense.length > 0">
-        <v-card-title>{{ defender.name }}'s Dead Creatures</v-card-title>
-        <div class="px-2 pb-1">
-          <Creature
-            v-for="(creature, index) in deadDefense"
-            :key="index"
-            :type="creature.type"
-            :player="defender"
-            class="ma-1 dead"
-          />
-        </div>
-      </div>
-    </div>
+    </v-expand-transition>
   </v-card>
 </template>
 <script lang="ts">
@@ -65,7 +77,8 @@ export default defineComponent({
   components: { PendingCreatures, Creature },
   data() {
     return {
-      BattlePhase
+      BattlePhase,
+      minimized: false
     }
   },
   computed: {

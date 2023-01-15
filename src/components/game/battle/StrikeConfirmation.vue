@@ -1,9 +1,6 @@
 <template>
-  <v-dialog>
-    <v-card>
-      <v-card-title>
-        Attack {{ targetedCreatureName }} with {{ selectedCreatureName }}?
-      </v-card-title>
+  <v-dialog max-width="540">
+    <v-card :title="`Attack ${targetedCreatureName} with ${selectedCreatureName}`">
       <v-card-text>
         Are you sure you want to attack this {{ targetedCreatureName }}
         ({{ targetedCreature?.wounds }} hits taken) with your {{ selectedCreatureName }}?

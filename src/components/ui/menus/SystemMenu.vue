@@ -1,26 +1,27 @@
 <template>
-  <v-list>
+  <v-list density="compact">
     <v-list-item>
-      <v-list-item-header>Fancy Graphics</v-list-item-header>
       <v-switch
         v-model="fancyGraphics"
+        label="Fancy Graphics"
         inset
       />
     </v-list-item>
     <v-list-item>
-      <v-list-item-header>Quick Dice</v-list-item-header>
       <v-switch
         v-model="quickDice"
+        label="Quick Dice"
         inset
       />
     </v-list-item>
     <v-list-item>
-      <v-list-item-header>Free Teleportation</v-list-item-header>
       <v-switch
         v-model="freeMovement"
+        label="Free Teleportation"
         inset
       />
     </v-list-item>
+    <v-divider />
     <v-list-item>
       <v-btn block @click="reset">Reset Game</v-btn>
     </v-list-item>
@@ -36,32 +37,37 @@
         hide-details
         :rows="2"
         density="compact"
-        variant="contained"
+        variant="outlined"
       />
     </v-list-item>
     <v-list-item>
-      <v-btn @click="loadSave">Load from Save</v-btn>
-      <v-btn @click="loadJson">Load JSON</v-btn>
+      <v-row>
+        <v-col>
+          <v-btn block @click="loadSave">Load from Save</v-btn>
+        </v-col>
+        <v-col>
+          <v-btn block @click="loadJson">Load JSON</v-btn>
+        </v-col>
+      </v-row>
     </v-list-item>
+    <v-divider />
     <v-list-item>
-      <v-list-item-header>Local Player</v-list-item-header>
-      <v-slider v-model="uiPlayer" min="1" :max="players.length" step="1" />
+      <v-slider v-model="uiPlayer" label="Local Player" min="1" :max="players.length" step="1" />
     </v-list-item>
+    <v-divider />
     <v-list-item>
-      <v-list-item-header>Dice to Roll</v-list-item-header>
-      <v-slider v-model="diceQuantity" min="1" :max="18" step="1" />
-    </v-list-item>
-    <v-list-item>
+      <v-slider v-model="diceQuantity" label="Dice to Roll" min="1" :max="18" step="1" />
       <v-btn block @click="roll">Roll Dice</v-btn>
     </v-list-item>
+    <v-divider />
     <v-list-item>
-      <v-list-item-header>Creature Color Mode</v-list-item-header>
-      <v-radio-group v-model="creatureColorMode">
+      <v-radio-group v-model="creatureColorMode" label="Creature Color Mode">
         <v-radio v-for="(label, id) in colorModes" :key="id" :label="label" :value="id" />
       </v-radio-group>
     </v-list-item>
+    <v-divider />
     <v-list-item>
-      <v-list-item-header>Add Creature to Selected Stack</v-list-item-header>
+      <v-list-item-title>Add Creature to Selected Stack</v-list-item-title>
     </v-list-item>
     <v-list-item v-for="(creature, type) in CREATURE_LIST" :key="type">
       <v-btn block color="primary" @click="summon(creature)" v-text="creature.name" />

@@ -2,38 +2,29 @@
   <v-expand-transition>
     <v-card
       v-if="focusedStack === undefined"
-      class="ma-3"
-      position="absolute"
-      location="top right"
       border
       width="342"
-    >
-      <v-card-header>
-        <v-card-subtitle>Hover over a stack to view details...</v-card-subtitle>
-      </v-card-header>
-    </v-card>
+      subtitle="Hover over a stack to view details..."
+      v-bind="$props"
+    />
     <v-card
       v-else
       :elevation="focusedStack === selectedStack ? 24 : 0"
-      class="ma-3 root-card"
-      position="absolute"
-      location="top right"
+      class="root-card"
       border
       width="342"
+      v-bind="$props"
     >
       <v-card-actions v-if="selectedStack === focusedStack" class="justify-space-between">
         <v-btn @click="cycleStacks(-1)">Previous Stack</v-btn>
         <v-btn @click="cycleStacks(1)">Next Stack</v-btn>
       </v-card-actions>
-      <v-card-header>
-        <v-card-avatar>
+      <v-card-item :title="`${stackPlayer.name} (${focusedStack.creatures.length} creatures)`">
+        <template #prepend>
           <Marker :color="focusedStack.owner" :marker="focusedStack.marker" width="50" height="50" />
-        </v-card-avatar>
-        <v-card-header-text>
-          {{ stackPlayer.name }}
-          ({{ focusedStack.creatures.length }} creatures)
-        </v-card-header-text>
-      </v-card-header>
+        </template>
+      </v-card-item>
+
       <div class="px-2 pb-1">
         <Creature
           v-for="(creature, index) in focusedStack.creatures"

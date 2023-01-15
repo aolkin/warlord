@@ -26,8 +26,8 @@
         <MasterboardStack v-for="stack in sortedStacks" :key="stack.guid" :stack="stack" />
       </g>
     </svg>
-    <StackPanel />
-    <TurnPanel />
+    <StackPanel class="ma-3" position="fixed" location="top right" />
+    <TurnPanel class="ma-3 mb-10" position="fixed" location="bottom right" />
   </div>
 </template>
 

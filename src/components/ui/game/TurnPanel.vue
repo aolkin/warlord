@@ -1,11 +1,13 @@
 <template>
-  <v-card class="ma-3" position="absolute" location="bottom right" border width="300">
-    <v-card-header>
-      <v-card-header-text>{{ activePlayer.name }}'s Turn</v-card-header-text>
-      <v-card-avatar>
-        <v-icon :icon="icon" size="x-large" />
-      </v-card-avatar>
-    </v-card-header>
+  <v-card
+    border
+    width="300"
+    :prepend-icon="icon"
+    :title="`${activePlayer.name}'s Turn`"
+  >
+    <template #prepend>
+      <v-icon size="x-large" />
+    </template>
     <v-card-text v-if="activePhase === MasterboardPhase.SPLIT">
       <span v-if="mayProceed">
         Split stacks if desired, or proceed to roll.
