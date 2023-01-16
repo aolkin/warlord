@@ -65,7 +65,10 @@
 
       <CreaturePanel position="fixed" location="top right" class="ma-3" />
       <ActionPanel position="fixed" location="bottom right" class="ma-3 mb-10" />
-      <ActiveStrikePanel position="fixed" location="bottom left" class="ma-3 ml-14 mb-10" />
+      <v-sheet position="fixed" location="bottom left" class="ma-3 ml-14 mb-10" rounded>
+        <FocusedStrikePanel rounded />
+        <ActiveStrikePanel rounded />
+      </v-sheet>
 
       <StrikeConfirmation
         v-model="attackCreatureDialog"
@@ -107,6 +110,7 @@ import ActionPanel from "./ActionPanel.vue"
 import ActiveStrikePanel from "./ActiveStrikePanel.vue"
 import BattleBoardHex from "./BattleBoardHex.vue"
 import CreaturePanel from "./CreaturePanel.vue"
+import FocusedStrikePanel from "./FocusedStrikePanel.vue"
 import StrikeConfirmation from "./StrikeConfirmation.vue"
 import { hexTransformStr } from "./utils"
 
@@ -119,7 +123,8 @@ export default defineComponent({
     CreaturePanel,
     Creature,
     BattleBoardHex,
-    ActiveStrikePanel
+    ActiveStrikePanel,
+    FocusedStrikePanel
   },
   inject: ["diceRoller"],
   data: (): any | { targetedCreature: BattleCreature } => ({
