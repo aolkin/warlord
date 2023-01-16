@@ -1,5 +1,5 @@
 <template>
-  <v-dialog max-width="540">
+  <v-dialog max-width="600">
     <v-card :title="`Attack ${targetedCreatureName} with ${selectedCreatureName}`">
       <v-card-text>
         Are you sure you want to attack this {{ targetedCreatureName }}
@@ -15,8 +15,31 @@
         </span>
       </v-card-text>
       <v-card-text v-if="tougherCarryovers.length > 0">
-        You may choose to roll with a higher "to hit" requirement to enable your attack to carry over to
-        these creatures it would otherwise be unable to: {{ tougherCarryovers }}.
+        If you kill the {{ targetedCreatureName }}, you may carry over the excess hits to other creatures
+        you are engaged with that have the same "to hit" requirement. You may also select a higher
+        "to hit" requirement for the entire roll to potentially carry over to other creatures,
+        as follows:
+        <v-list
+          v-model:selected="selectedOptionalToHit"
+          active-color="primary"
+          mandatory
+          select-strategy="single-leaf"
+        >
+          <v-list-item
+            :prepend-icon="`mdi-dice-${targetedStrike.toHit}`"
+            :value="targetedStrike.toHit"
+          >
+            {{ normalCarryovers.map(creature => creature.name()).join(", ") }}
+          </v-list-item>
+          <v-list-item
+            v-for="(creatures, toHit) in toHitAdjustments"
+            :key="toHit"
+            :prepend-icon="`mdi-dice-${toHit}`"
+            :value="Number(toHit)"
+          >
+            {{ [...normalCarryovers, ...creatures].map(creature => creature.name()).join(", ") }}
+          </v-list-item>
+        </v-list>
       </v-card-text>
       <v-card-actions>
         <v-spacer />
@@ -50,13 +73,23 @@ export default defineComponent({
       required: false,
       default: () => ({ dice: 0, toHit: 0 })
     },
+    normalCarryovers: {
+      type: Array as PropType<BattleCreature[]>,
+      required: false,
+      default: () => []
+    },
     tougherCarryovers: {
       type: Array as PropType<BattleCreature[]>,
       required: false,
       default: () => []
+    },
+    optionalToHit: {
+      type: Number,
+      required: false,
+      default: undefined
     }
   },
-  emits: ["cancel", "attack"],
+  emits: ["cancel", "attack", "update:optionalToHit"],
   computed: {
     ...mapState("game", ["activeBattle"]),
     ...mapGetters("ui/selections", ["movementHexes", "selectedCreature", "engagements"]),
@@ -64,10 +97,27 @@ export default defineComponent({
       return this.selectedCreature?.name()
     },
     targetedCreatureName(): string {
-      return this.targetedCreature?.name()
+      return this.targetedCreature?.name() ?? ""
     },
     targetedStrikeWasAdjusted(): boolean {
       return !_.isEqual(this.targetedStrikeUnadjusted, this.targetedStrike)
+    },
+    toHitAdjustments(): Record<number, BattleCreature[]> {
+      return this.tougherCarryovers.reduce((adjustments: Record<number, BattleCreature[]>, creature) => {
+        const toHit = this.activeBattle.toHitAdjusted(this.selectedCreature, creature)
+        _.range(toHit, 7).forEach(numToUpdate =>
+          adjustments[numToUpdate] = [...(adjustments[numToUpdate] ?? []), creature])
+        return adjustments
+      }, {})
+    },
+    selectedOptionalToHit: {
+      get() {
+        return [this.optionalToHit ?? this.targetedStrike.toHit]
+      },
+      set(values: number[]) {
+        const value = values[0]
+        this.$emit("update:optionalToHit", value === this.targetedStrike.toHit ? undefined : value)
+      }
     }
   }
 })
@@ -76,5 +126,11 @@ export default defineComponent({
 @import "@/styles/terrain-colors.sass"
 
 @include battlemap-colors(".board :deep(.hex)", fill)
+
+.v-btn-group.card-action-toggle .v-btn:not(:first-child)
+  margin-inline-start: initial
+
+.to-hit--selected
+  color: rgb(var(--v-theme-secondary))
 
 </style>

@@ -1,6 +1,6 @@
 import * as assertBuiltin from "assert"
 
-export const assert = (condition: boolean, msg: string): void => {
+export function assert(condition: boolean, msg: string): asserts condition {
   if (typeof assertBuiltin === "function") {
     assertBuiltin(condition, msg)
   } else {

@@ -54,7 +54,8 @@ export default defineComponent({
     ...mapState("game", ["activeBattle"]),
     ...mapState("ui/preferences", ["debugUi"]),
     ...mapGetters("ui/selections", ["focusedBattleHex"]),
-    ...mapGetters("game", ["battlePhaseType", "battleActivePlayer", "playerById"]),
+    ...mapGetters("game", ["battlePhaseType", "battleActivePlayer", "playerById",
+      "battleCarryoverTargets"]),
     phaseTypeTitle(): string {
       switch (this.battlePhaseType) {
         case BattlePhaseType.MOVE:
@@ -88,7 +89,7 @@ export default defineComponent({
       }
     },
     mayProceed(): boolean {
-      return this.pendingStrikes.length === 0
+      return this.pendingStrikes.length === 0 && !this.battleCarryoverTargets
     },
     roundIcon(): string {
       const name = `mdi-numeric-${this.activeBattle.round + 1}-box`

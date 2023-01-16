@@ -43,6 +43,7 @@ rules:
         max: 1
   # General ECMAScript rules
   space-before-function-paren: [ warn, never ]
-  no-unused-vars: off
+  no-unused-vars: warn
   quotes: [ warn, double, avoid-escape ]
   no-return-assign: off
+  multiline-ternary: off

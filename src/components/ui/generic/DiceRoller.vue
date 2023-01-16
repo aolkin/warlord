@@ -17,6 +17,12 @@ interface ComponentData {
   reject?: (_: Error) => void
 }
 
+const DebugDice: { nextRolls?: number[] } = {
+  nextRolls: undefined
+}
+// @ts-ignore
+window.DebugDice = DebugDice
+
 export default defineComponent({
   name: "DiceRoller",
   data(): ComponentData {
@@ -60,6 +66,9 @@ export default defineComponent({
   methods: {
     async roll(quantity?: number) {
       return new Promise((resolve, reject) => {
+        if (DebugDice.nextRolls) {
+          return resolve(DebugDice.nextRolls)
+        }
         if (!this.ready) {
           return reject(new Error("not ready"))
         } else if (this.resolve !== undefined && this.reject !== undefined) {

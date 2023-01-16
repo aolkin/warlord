@@ -198,6 +198,10 @@ export class TitanGame {
     }
   }
 
+  getBattleCarryoverTargets(): BattleCreature[] | undefined {
+    return this.activeBattle?.carryoverTargets()
+  }
+
   getMayProceed(getters: Getters): boolean {
     switch (this.activePhase) {
       case MasterboardPhase.SPLIT:
@@ -307,7 +311,7 @@ export class TitanGame {
 
   mInitiateBattle({ attacking, defending }: BattlePayload): void {
     assert(attacking.attackEdge !== undefined, "Cannot attack without coming from somewhere")
-    this.activeBattle = new Battle(attacking.hex, attacking.attackEdge as HexEdge, this, attacking, defending)
+    this.activeBattle = new Battle(attacking.hex, attacking.attackEdge, this, attacking, defending)
   }
 
   mNextBattlePhase(): void {
@@ -324,6 +328,15 @@ export class TitanGame {
     assert(this.activeBattle?.creatures.some(_.matches(attacker)) ?? false, "Unexpected attacker")
     assert(this.activeBattle?.creatures.some(_.matches(target)) ?? false, "Unexpected defender")
     this.activeBattle?.strike(attacker, target, rolls, optionalToHit)
+  }
+
+  mAssignCarryover(target: BattleCreature): void {
+    assert(this.activeBattle?.creatures.some(_.matches(target)) ?? false, "Unexpected target")
+    this.activeBattle?.carryover(target)
+  }
+
+  mSkipCarryover(): void {
+    this.activeBattle?.activeStrike?.skipCarryover()
   }
 
   // Actions
@@ -414,6 +427,21 @@ export class TitanGame {
     assert(getters.battlePhaseType !== BattlePhaseType.MOVE, "Cannot strike in movement phase")
     assert(payload.attacker.player === this.getBattleActivePlayer(), "Incorrect player")
     commit("attackCreature", payload)
+    await this.persist()
+  }
+
+  async doAssignCarryover({ getters, commit }: ActionContext, payload: BattleCreature): Promise<void> {
+    if (this.activeBattle === undefined) { throw new Error("Must be in a battle!") }
+    assert(getters.battlePhaseType !== BattlePhaseType.MOVE, "Cannot carryover in movement phase")
+    commit("assignCarryover", payload)
+    await this.persist()
+  }
+
+  async doSkipCarryover({ getters, commit }: ActionContext): Promise<void> {
+    if (this.activeBattle === undefined) { throw new Error("Must be in a battle!") }
+    if (this.activeBattle.activeStrike === undefined) { throw new Error("Must have an active strike!") }
+    assert(getters.battlePhaseType !== BattlePhaseType.MOVE, "Cannot carryover in movement phase")
+    commit("skipCarryover")
     await this.persist()
   }
 

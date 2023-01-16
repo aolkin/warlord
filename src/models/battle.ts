@@ -1,4 +1,4 @@
-import _ from "lodash"
+import _, { omit, sum } from "lodash"
 import { assert } from "~/utils/assert"
 import { div } from "~/utils/math"
 import { CREATURE_DATA, CreatureType } from "./creature"
@@ -174,13 +174,52 @@ export const BATTLE_PHASE_TITLES: Record<BattlePhase, string> = {
   [BattlePhase.ATTACKER_STRIKEBACK]: "Attacker's Strikebacks"
 }
 
-export interface ActiveStrike {
+export interface IActiveStrike {
   attacker: number
-  target: number
+  targets: number[]
+  targetHits: number[]
   rolls: number[]
   toHit: number
   totalHits: number
-  carryoverHits: number
+  carryoverSkipped: boolean
+}
+export interface ActiveStrikeHit {
+  target: number
+  hits: number
+}
+type InitialActiveStrike = Omit<IActiveStrike, "targets" | "targetHits" | "carryoverSkipped"> & ActiveStrikeHit
+
+export interface ActiveStrike extends IActiveStrike {}
+export class ActiveStrike {
+  constructor(props: IActiveStrike | InitialActiveStrike) {
+    Object.assign(this, "targets" in props ? props : {
+      ...omit(props, "target", "hits"),
+      targets: [props.target],
+      targetHits: [props.hits],
+      carryoverSkipped: false
+    })
+  }
+
+  get target(): number {
+    return this.targets[0]
+  }
+
+  getCarryoverHits(): number {
+    return this.totalHits - sum(this.targetHits)
+  }
+
+  get canCarryover(): boolean {
+    return !this.carryoverSkipped && this.getCarryoverHits() > 0
+  }
+
+  carryover(strike: ActiveStrikeHit): void {
+    this.targets.push(strike.target)
+    this.targetHits.push(strike.hits)
+  }
+
+  skipCarryover(): void {
+    this.carryoverSkipped = true
+  }
 }
 
 export class Battle {
@@ -228,7 +267,8 @@ export class Battle {
     const hydrated = new Battle(battle.hex, battle.attackerEdge, game)
     Object.assign(hydrated, {
       ...battle,
-      creatures: battle.creatures.map(creature => new BattleCreature(creature))
+      creatures: battle.creatures.map(creature => new BattleCreature(creature)),
+      activeStrike: battle.activeStrike === undefined ? undefined : new ActiveStrike(battle.activeStrike)
     })
     return hydrated
   }
@@ -287,6 +327,14 @@ export class Battle {
       this.phaseEnterMove()
     } else if (BATTLE_PHASE_TYPES[this.phase] === BattlePhaseType.STRIKE) {
       this.phaseEnterStrike()
+    }
+
+    // Skip phase if possible
+    if (BATTLE_PHASE_TYPES[this.phase] !== BattlePhaseType.MOVE) {
+      if (this.getPendingStrikes().length === 0) {
+        console.log(`Skipping phase ${this.phase} thanks to no pending strikes`)
+        this.nextPhase()
+      }
     }
   }
 
@@ -407,6 +455,17 @@ export class Battle {
       this.getBoard().getEdgeHazard(whom.hex, creature.hex) !== EdgeHazard.CLIFF)
   }
 
+  carryoverTargets(): BattleCreature[] | undefined {
+    if (this.activeStrike === undefined || !this.activeStrike.canCarryover) {
+      return undefined
+    }
+    const attacker = this.creatureOnHex(this.activeStrike.attacker) as BattleCreature
+    const toHit = this.activeStrike.toHit
+    const targets = this.engagedWith(attacker)
+      .filter(creature => this.toHitAdjusted(attacker, creature) <= toHit)
+    return targets.length > 0 ? targets : undefined
+  }
+
   private strikeAdjustmentEdge(striker: BattleCreature, target: BattleCreature): Strike {
     const board = this.getBoard()
     const strikingUp = board.getElevation(striker.hex) <= board.getElevation(target.hex)
@@ -483,18 +542,28 @@ export class Battle {
       assert(optionalToHit >= toHit, "Cannot choose a lower to-hit")
       toHit = optionalToHit
     }
-    const hits = rolls.filter(roll => roll >= toHit).length
-    const carryover = Math.max(hits - defender.getRemainingHp(), 0)
+    const totalHits = rolls.filter(roll => roll >= toHit).length
+    const hits = Math.min(totalHits, defender.getRemainingHp())
     attacker.performStrike()
-    defender.wound(hits - carryover)
-    this.activeStrike = {
+    defender.wound(hits)
+    this.activeStrike = new ActiveStrike({
       attacker: attacker.hex,
       target: defender.hex,
-      totalHits: hits,
-      carryoverHits: carryover,
+      totalHits,
+      hits,
       toHit,
       rolls
-    }
+    })
+  }
+
+  carryover(target: BattleCreature): void {
+    // Using an optional chain prevents typescript from learning that this.activeStrike is present
+    // eslint-disable-next-line @typescript-eslint/prefer-optional-chain
+    assert(this.activeStrike !== undefined &&
+      this.activeStrike.canCarryover, "Cannot carryover")
+    const hits = Math.min(this.activeStrike.getCarryoverHits(), target.getRemainingHp())
+    this.activeStrike.carryover({ hits, target: target.hex })
+    target.wound(hits)
   }
 }
 

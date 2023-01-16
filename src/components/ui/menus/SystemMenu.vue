@@ -79,6 +79,7 @@
 import { defineComponent } from "@vue/runtime-core"
 import { mapActions, mapGetters, mapMutations, mapState } from "vuex"
 import { Creature, CREATURE_LIST } from "~/models/creature"
+import { MasterboardPhase } from "~/models/game"
 import { CreatureColorMode } from "~/store/ui/preferences"
 
 export default defineComponent({
@@ -91,7 +92,7 @@ export default defineComponent({
   }),
   computed: {
     ...mapState("ui", ["preferences", "selections", "localPlayer"]),
-    ...mapGetters("game", ["players"]),
+    ...mapGetters("game", ["players", "activePhase"]),
     colorModes() {
       return {
         [CreatureColorMode.STANDARD]: "Standard",
@@ -151,10 +152,14 @@ export default defineComponent({
     ...mapActions("game", ["persist", "restore"]),
     summon(creature: Creature) {
       if (this.selections.stack !== undefined) {
-        this.$store.commit("game/muster", {
-          stack: this.selections.stack,
-          creature: creature.type
-        })
+        if (this.activePhase === MasterboardPhase.MUSTER) {
+          this.$store.commit("game/muster", {
+            stack: this.selections.stack,
+            creature: creature.type
+          })
+        } else {
+          this.selections.stack.creatures.push(creature.type)
+        }
       }
     },
     roll() {

@@ -51,7 +51,7 @@
           @mouseleave="leaveCreature(creature)"
         />
         <EngageIcon
-          v-for="(creature) in engagements"
+          v-for="(creature) in (battleCarryoverTargets ?? engagements)"
           :key="creature.hex"
           interactive
           transparent-hover
@@ -69,9 +69,11 @@
 
       <StrikeConfirmation
         v-model="attackCreatureDialog"
+        v-model:optionalToHit="optionalToHit"
         :targeted-creature="targetedCreature"
         :targeted-strike="targetedStrike"
         :targeted-strike-unadjusted="targetedStrikeUnadjusted"
+        :normal-carryovers="normalCarryovers"
         :tougher-carryovers="tougherCarryovers"
         @attack="attackTargetedCreature"
         @cancel="resetAttack"
@@ -133,7 +135,8 @@ export default defineComponent({
   computed: {
     ...mapState("ui/preferences", ["debugUi"]),
     ...mapState("game", ["activeBattle"]),
-    ...mapGetters("game", ["playerById", "battleActivePlayer", "battlePhaseType", "battleEngagements"]),
+    ...mapGetters("game", ["playerById", "battleActivePlayer", "battlePhaseType", "battleEngagements",
+      "battleCarryoverTargets"]),
     ...mapGetters("ui/selections", ["movementHexes", "selectedCreature", "engagements"]),
     attackCreatureDialog: {
       get(): boolean {
@@ -173,14 +176,16 @@ export default defineComponent({
     },
     creatureEnabled(): (creature: BattleCreature) => boolean {
       return (creature) => {
+        if (creature.player !== this.battleActivePlayer) {
+          return false
+        }
         const engagements = this.battleEngagements(creature).length
         switch (this.battlePhaseType) {
           case BattlePhaseType.MOVE:
             return engagements === 0
           case BattlePhaseType.STRIKE:
-            return !creature.hasStruck && engagements > 0
           case BattlePhaseType.STRIKEBACK:
-            return !creature.hasStruck && engagements > 0
+            return this.battleCarryoverTargets === undefined && !creature.hasStruck && engagements > 0
           default:
             return false
         }
@@ -189,13 +194,13 @@ export default defineComponent({
     creatureClasses(): (creature: BattleCreature) => object {
       return (creature: BattleCreature) => ({
         "active-player": creature.player === this.battleActivePlayer,
-        interactive: (creature.player === this.battleActivePlayer && this.creatureEnabled(creature)),
+        interactive: this.creatureEnabled(creature),
         selected: creature === this.selectedCreature,
         attacker: this.activeStrike?.attacker === creature.hex,
         target: this.activeStrike?.target === creature.hex
       })
     },
-    activeStrike(): ActiveStrike {
+    activeStrike(): ActiveStrike | undefined {
       return this.activeBattle.activeStrike
     },
     targetedStrikeUnadjusted(): Strike {
@@ -205,21 +210,24 @@ export default defineComponent({
       return { toHit: 0, dice: 0 }
     },
     targetedStrike(): Strike {
-      const strike = this.selectedCreature && this.targetedCreature
+      return this.selectedCreature && this.targetedCreature
         ? this.activeBattle.getAdjustedStrike(this.selectedCreature, this.targetedCreature)
         : { toHit: 0, dice: 0 }
-      return this.optionalToHit !== undefined ? { ...strike, toHit: this.optionalToHit } : strike
     },
-    tougherCarryovers(): BattleCreature[] {
-      if (
-        this.selectedCreature === undefined ||
+    carryoversImpossible(): boolean {
+      return this.selectedCreature === undefined ||
         this.targetedCreature === undefined ||
         this.engagements.length < 2 ||
         this.targetedStrike.dice - this.targetedCreature.getRemainingHp() <= 0
-      ) {
-        return []
-      }
-      return this.engagements.filter((target: BattleCreature) =>
+    },
+    normalCarryovers(): BattleCreature[] {
+      return this.carryoversImpossible ? [] : this.engagements
+        .filter((target: BattleCreature) =>
+          this.activeBattle.toHitAdjusted(this.selectedCreature, target) <= this.targetedStrike.toHit)
+        .filter((target: BattleCreature) => this.targetedCreature !== target)
+    },
+    tougherCarryovers(): BattleCreature[] {
+      return this.carryoversImpossible ? [] : this.engagements.filter((target: BattleCreature) =>
         this.activeBattle.toHitAdjusted(this.selectedCreature, target) > this.targetedStrike.toHit)
     },
     debugHexAdjacencies(): number[] {
@@ -231,24 +239,30 @@ export default defineComponent({
       "enterBattleHex", "leaveBattleHex", "selectCreature", "deselectCreature",
       "enterCreature", "leaveCreature"
     ]),
-    ...mapActions("game", ["moveCreature", "attackCreature"]),
+    ...mapActions("game", ["moveCreature", "attackCreature", "assignCarryover"]),
     moveSelected(hex: number): void {
       if (this.selectedCreature && this.movementHexes.has(hex)) {
         this.moveCreature({ creature: this.selectedCreature, hex })
       }
     },
     chooseCreature(creature: BattleCreature): void {
-      if (creature.player === this.battleActivePlayer && this.creatureEnabled(creature)) {
+      if (this.creatureEnabled(creature)) {
         this.selectCreature(creature)
       }
     },
     targetCreature(creature: BattleCreature): void {
-      this.targetedCreature = creature
+      if (this.activeStrike?.canCarryover && this.battleCarryoverTargets) {
+        if (this.battleCarryoverTargets.includes(creature)) {
+          this.assignCarryover(creature)
+        }
+      } else {
+        this.targetedCreature = creature
+      }
     },
     async attackTargetedCreature(): Promise<void> {
       console.log(this.selectedCreature, this.targetedCreature)
       const rolls = await this.diceRoller.roll(this.targetedStrike.dice)
-      this.attackCreature({
+      await this.attackCreature({
         attacker: this.selectedCreature,
         target: this.targetedCreature,
         optionalToHit: this.optionalToHit,
