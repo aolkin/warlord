@@ -55,7 +55,7 @@
         <v-btn
           v-else
           block
-          :variant="movedCount === activeStacks.length ? 'outlined' : 'contained' "
+          :variant="movedCount === activeStacks.length ? 'outlined' : 'tonal' "
           :disabled="!mayProceed"
           @click="nextPhase"
         >

@@ -9,7 +9,7 @@
       @click="chosen = undefined"
     />
     <template v-for="([creature, musterBasis], index) in musterable" :key="creature">
-      <v-dialog v-model="dialogState[index]">
+      <v-dialog v-model="dialogState[index]" max-width="640">
         <template #activator="{ props }">
           <Creature
             :type="creature"

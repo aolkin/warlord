@@ -21,7 +21,7 @@ export interface Selections {
 export default {
   namespaced: true,
   state: () => ({
-    view: View.BATTLEBOARD,
+    view: View.MASTERBOARD,
     focusedStacks: [],
     focusedHexes: [],
     focusedCreatures: [],

@@ -85,6 +85,7 @@ export default defineComponent({
   }),
   computed: {
     ...mapState("ui", ["selections"]),
+    ...mapState("game", ["activeBattle"]),
     view: {
       get(): View {
         return this.selections.view
@@ -92,6 +93,11 @@ export default defineComponent({
       set(value: View) {
         this.setView(value)
       }
+    }
+  },
+  beforeMount() {
+    if (this.activeBattle !== undefined) {
+      this.setView(View.BATTLEBOARD)
     }
   },
   methods: {

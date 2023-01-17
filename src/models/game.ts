@@ -86,6 +86,8 @@ export class TitanGame {
     this.round = 0
     this.mulliganTaken = false
     this.activePlayer = 0
+    this.activeRoll = undefined
+    this.activeBattle = undefined
     this.activePhase = MasterboardPhase.SPLIT
     const colors = _.shuffle(_.range(0, 5))
     this.players = _.range(0, numPlayers).map(i => new Player(colors[i], `Player ${i + 1}`))
