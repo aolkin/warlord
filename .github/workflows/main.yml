@@ -1,6 +1,6 @@
 # This is a basic workflow to help you get started with Actions
 
-name: CD
+name: Build and Deploy Latest
 
 # Controls when the workflow will run
 on:
@@ -11,35 +11,94 @@ on:
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
+# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow one concurrent deployment
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  # This workflow contains a single job called "build"
+  # Build the site
   build:
     # The type of runner that the job will run on
     runs-on: ubuntu-latest
-    container:
-      image: node:18
-      options: --user root
+    # container:
+    #   image: node:18
+    #   options: --user root
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - uses: actions/checkout@v2
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Detect package manager
+        id: detect-package-manager
+        run: |
+          if [ -f "${{ github.workspace }}/yarn.lock" ]; then
+            echo "manager=yarn" >> $GITHUB_OUTPUT
+            echo "command=install" >> $GITHUB_OUTPUT
+            exit 0
+          elif [ -f "${{ github.workspace }}/package.json" ]; then
+            echo "manager=npm" >> $GITHUB_OUTPUT
+            echo "command=ci" >> $GITHUB_OUTPUT
+            exit 0
+          else
+            echo "Unable to determine packager manager"
+            exit 1
+          fi
+      - name: Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: "18"
+          cache: ${{ steps.detect-package-manager.outputs.manager }}
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v2
+
+      - name: Restore cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            dist
+            .nuxt
+          key: ${{ runner.os }}-nuxt-build-${{ hashFiles('dist') }}
+          restore-keys: |
+            ${{ runner.os }}-nuxt-build-
 
       - run: mv tsconfig.json tsconfig.unused
-      - uses: borales/actions-yarn@v3.0.0
-        with:
-          cmd: install # will run `yarn install` command
-      - uses: borales/actions-yarn@v3.0.0
-        with:
-          cmd: build # will run `yarn build` command
 
-      - name: Install rsync
-        run: |
-          apt-get update && apt-get install -y rsync
+      - name: Install dependencies
+        run: ${{ steps.detect-package-manager.outputs.manager }} ${{ steps.detect-package-manager.outputs.command }}
+      - name: Vite static site build
+        run: ${{ steps.detect-package-manager.outputs.manager }} build
 
+      # - uses: borales/actions-yarn@v3.0.0
+      #   with:
+      #     cmd: install # will run `yarn install` command
+      # - uses: borales/actions-yarn@v3.0.0
+      #   with:
+      #     cmd: build # will run `yarn build` command
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v1
+        with:
+          path: ./dist
+
+  # Deployment job
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
       - name: Deploy to GitHub Pages
-        uses: JamesIves/github-pages-deploy-action@v4.2.2
-        with:
-          branch: gh-pages
-          folder: dist
+        id: deployment
+        uses: actions/deploy-pages@v1
