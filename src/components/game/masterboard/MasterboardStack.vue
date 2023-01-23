@@ -56,9 +56,9 @@ import masterboard, { HexEdge, MasterboardEdge, MasterboardHex } from "~/models/
 import { Player } from "~/models/player"
 import { Stack } from "~/models/stack"
 import { Transformation, Transformations, TransformationType } from "~/utils/svg"
+import EngageIcon from "../../ui/game/EngageIcon.vue"
 import Creature from "../Creature.vue"
 import Marker from "../Marker.vue"
-import EngageIcon from "./EngageIcon.vue"
 import { hexTransform, isHexInverted } from "./utils"
 
 const getEngageTransformForEdge = (edge: HexEdge, hex: number): Transformations => {

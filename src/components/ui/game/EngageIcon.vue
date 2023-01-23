@@ -1,6 +1,6 @@
 <template>
   <g class="engage-icon-root">
-    <g class="engage-icon-container" :class="{ interactive, transparentHover }">
+    <g class="rangestrike-icon-container" :class="{ interactive, transparentHover }">
       <rect v-if="interactive" width="24" height="24" class="interaction-target" />
       <!-- sword-cross from Material Design Icons -->
       <path
@@ -32,7 +32,7 @@ export default defineComponent({
 </script>
 
 <style lang="sass" scoped>
-.engage-icon-container
+.rangestrike-icon-container
   transform: scale(3) translate(-12px, -12px)
   opacity: 1
   transition: all 0.25s
@@ -48,9 +48,9 @@ export default defineComponent({
 .interactive
   cursor: pointer
 
-.engage-icon-container.interactive:hover
+.rangestrike-icon-container.interactive:hover
   transform: scale(4) translate(-12px, -12px)
 
-.engage-icon-container.transparentHover:hover
+.rangestrike-icon-container.transparentHover:hover
   opacity: 0.2
 </style>

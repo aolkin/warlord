@@ -236,6 +236,7 @@ export class Battle {
 
   // Parameters optional for Hydration
   constructor(hex: number, edge: HexEdge, game: TitanGame, attacking?: Stack, defending?: Stack) {
+    this.creatureOnHex = _.memoize(this.creatureOnHex)
     this.round = 0
     this.phase = BattlePhase.DEFENDER_MOVE
     this.hex = hex
@@ -317,6 +318,8 @@ export class Battle {
     } else if (BATTLE_PHASE_TYPES[this.phase] === BattlePhaseType.STRIKEBACK) {
       this.phaseExitStrikeback()
     }
+    // @ts-expect-error
+    this.creatureOnHex.cache.clear()
     if (this.phase === BattlePhase.DEFENDER_STRIKEBACK) {
       this.round += 1
       this.phase = BattlePhase.DEFENDER_MOVE
@@ -446,11 +449,11 @@ export class Battle {
     return new Set<number>(possibilities.keys())
   }
 
-  engagedWith(whom: BattleCreature): BattleCreature[] {
+  engagedWith(whom: BattleCreature, includeDead = false): BattleCreature[] {
     const hex = BATTLE_PHASE_TYPES[this.phase] === BattlePhaseType.MOVE ? whom.initialHex : whom.hex
     const adjacencies = BATTLE_BOARD_ADJACENCIES[hex]
     return this.creatures.filter(creature => creature.player !== whom.player &&
-      creature.getRemainingHp() > 0 &&
+      (includeDead || creature.getRemainingHp() > 0) &&
       adjacencies.includes(creature.hex) &&
       this.getBoard().getEdgeHazard(whom.hex, creature.hex) !== EdgeHazard.CLIFF)
   }
@@ -464,6 +467,177 @@ export class Battle {
     const targets = this.engagedWith(attacker)
       .filter(creature => this.toHitAdjusted(attacker, creature) <= toHit)
     return targets.length > 0 ? targets : undefined
+  }
+
+  // Returns Array<[target creature, hazard strike factor adjustment, long-distance]>
+  // TODO: Warlocks can rangestrike creatures at the base of cliffs if not otherwise engaged
+  //       This is very annoying, as it breaks the majority of the assumptions in this function
+  rangestrikeTargets(creature: BattleCreature): Array<[BattleCreature, number, boolean]> {
+    const creatureStats = CREATURE_DATA[creature.type]
+    if (creature.initialHex === 0 || !creatureStats.canRangestrike ||
+      this.engagedWith(creature, true).length > 0) {
+      return []
+    }
+    // Distance = 2
+    const startingHexes = BATTLE_BOARD_ADJACENCIES[creature.hex]
+    const paths: number[][] = startingHexes.flatMap(hex => {
+      const direction = relationToHex(creature.hex, hex)
+      // Distance = 3
+      const possibleTargets = [direction - 1, direction, direction + 1]
+        .map(relation => getAdjacentHexForRelation(hex, relation))
+      // Distance = 4
+      const longRange = creatureStats.skill < 4 ? [] : possibleTargets
+        .map(target => [target, target !== undefined ? getAdjacentHexForRelation(target, direction) : undefined])
+      return [...possibleTargets.map(target => [hex, target]), ...longRange.map(path => [hex, ...path])]
+    }).filter(path => {
+      const targetHex = path.at(-1)
+      if (targetHex !== undefined) {
+        const targetCreature = this.creatureOnHex(targetHex)
+        return targetCreature !== undefined && targetCreature.player !== creature.player &&
+          // Warlocks can rangestrike lords!
+          (creature.type === CreatureType.WARLOCK || !CREATURE_DATA[targetCreature.type].lord) &&
+          targetCreature.getRemainingHp() > 0
+      }
+      return false
+    }) as number[][]
+    if (creature.type === CreatureType.WARLOCK) {
+      // Warlock rangestrikes are unaffected by other creatures and hazards
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      return paths.map(path => [this.creatureOnHex(path.at(-1)!)!, 0, false])
+    }
+    const adjustedPaths = paths.map(path => [path, this.getRangestrikeAdjustmentForHazards(creature, path)])
+      .filter(([, adjustment]) => adjustment !== undefined) as Array<[number[], number]>
+
+    const bestPaths = new Map<number, [number[], number]>()
+    adjustedPaths.forEach(([path, adjustment]) => {
+      const target = path.at(-1)
+      assert(target !== undefined, "Path must have non-zero length")
+      if (!bestPaths.has(target) || (bestPaths.get(target)?.[1] ?? 0) < adjustment) {
+        bestPaths.set(target, [path, adjustment])
+      }
+    })
+
+    const results: Array<[BattleCreature, number, boolean]> = []
+    bestPaths.forEach(([path, adjustment]: [number[], number]) =>
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      results.push([this.creatureOnHex(path.at(-1)!)!, adjustment, path.length > 2]))
+    return results
+  }
+
+  private getRangestrikeAdjustmentForHazards(creature: BattleCreature, path: number[]): number | undefined {
+    const board = this.getBoard()
+    const targetHex = path.at(-1)
+    assert(targetHex !== undefined, "Path must have non-zero length")
+    const targetHazard = board.getHazard(targetHex)
+    const targetCreature = this.creatureOnHex(targetHex)
+    assert(targetCreature !== undefined, "Path must end in a creature")
+
+    const crossedHazards: Record<EdgeHazard, number> = {
+      [EdgeHazard.NONE]: 0,
+      [EdgeHazard.CLIFF]: 0,
+      [EdgeHazard.DUNE]: 0,
+      [EdgeHazard.SLOPE]: 0,
+      [EdgeHazard.WALL]: 0
+    }
+    let atopAtLeastOneEdge = false // Used for walls and slopes, which do not appear on the same maps
+    let adjustment = 0
+
+    if (targetHazard === Hazard.VOLCANO && targetCreature.type === CreatureType.DRAGON) {
+      // Dragons in volcanos have the strike number needed to hit them increased by one
+      // Dragons in volcanos get bonus dice when rangestriking out (not covered here)
+      adjustment -= 1
+    }
+
+    // Ensure path does not go through a creature or a tree
+    if (path.slice(0, -1).some(hex => this.creatureOnHex(hex) !== undefined ||
+      board.getHazard(hex) === Hazard.TREE)) {
+      return undefined
+    }
+
+    const attackerIsBrambleNative = isCreatureNative(creature.type, Hazard.BRAMBLE)
+    if (targetHazard === Hazard.BRAMBLE && isCreatureNative(targetCreature.type, Hazard.BRAMBLE) &&
+      !attackerIsBrambleNative) {
+      // A native character defending in brambles is harder to hit when attacked by a non-native
+      adjustment -= 1
+    }
+    if (!attackerIsBrambleNative) {
+    // A non-native rangestriker loses a skill factor for each intervening hex containing bramble
+      adjustment -= path.slice(0, -1).filter(hex => board.getHazard(hex) === Hazard.BRAMBLE).length
+    }
+
+    // Dunes, cliffs, slopes, and walls
+    for (let i = 0; i < path.length; ++i) {
+      const last = i === 0 ? creature.hex : path[i - 1]
+      const next = path[i]
+      const lastElevation = board.getElevation(last)
+      const nextElevation = board.getElevation(next)
+      let hazard = EdgeHazard.NONE
+      if (lastElevation > nextElevation) {
+        hazard = board.getEdgeHazard(next, last)
+      } else if (nextElevation > lastElevation) {
+        hazard = board.getEdgeHazard(last, next)
+      }
+      crossedHazards[hazard] += 1
+      if (hazard !== EdgeHazard.NONE) {
+        const rangestrikerOrTargetAtopHex = (i === 0 && lastElevation > nextElevation) ||
+          (i === path.length - 1 && lastElevation < nextElevation)
+        switch (hazard) {
+          case EdgeHazard.CLIFF:
+            // Rangestriker or target must be atop the cliff
+            // (and if that's the case, we pass the slope check)
+            atopAtLeastOneEdge = rangestrikerOrTargetAtopHex
+          // eslint-disable-next-line no-fallthrough
+          case EdgeHazard.DUNE:
+            // Rangestriker or target must occupy dune hex for each crossed dune
+            if (!rangestrikerOrTargetAtopHex) {
+              return undefined
+            }
+            break
+          case EdgeHazard.SLOPE:
+            if (crossedHazards[EdgeHazard.SLOPE] === 3 &&
+              !(atopAtLeastOneEdge && rangestrikerOrTargetAtopHex)) {
+              // For the third slope, we must have had the attacker on top of the first slope and the
+              // target atop the final slope, otherwise we fail the slope check
+              return undefined
+            }
+            atopAtLeastOneEdge = atopAtLeastOneEdge || rangestrikerOrTargetAtopHex
+            break
+          case EdgeHazard.WALL:
+            if (lastElevation < nextElevation) {
+              // Lose a skill factor for crossing a wall upwards
+              adjustment -= 1
+            }
+            atopAtLeastOneEdge = atopAtLeastOneEdge || rangestrikerOrTargetAtopHex
+            break
+        }
+      }
+    }
+    if (crossedHazards[EdgeHazard.WALL] > 0 || crossedHazards[EdgeHazard.SLOPE] > 0) {
+      if (!atopAtLeastOneEdge) {
+        return undefined
+      }
+      if (crossedHazards[EdgeHazard.WALL] === 2) {
+        // Target or attacker is in the center of the tower, this must be a long-distance
+        // rangestrike to ensure the other character isn't at the base of the tower
+        if (!((targetHex === 15 || creature.hex === 15) && path.length > 2)) {
+          return undefined
+        }
+      }
+    }
+    return adjustment
+  }
+
+  private rangestrikeImpact(sourceHex: number, hex: number): number | undefined {
+    const hazard = this.getBoard().getHazard(hex)
+    switch (hazard) {
+      case Hazard.BRAMBLE:
+        break
+      case Hazard.TREE:
+        return undefined
+      case Hazard.VOLCANO:
+        break
+    }
+    const edgeHazard = this.getBoard().getEdgeHazard(sourceHex, hex)
   }
 
   private strikeAdjustmentEdge(striker: BattleCreature, target: BattleCreature): Strike {
@@ -601,14 +775,15 @@ const getAdjacencyDists = (hex: number): number[] => {
 export const relationToHex = (hex: number, adjacent: number): number =>
   getAdjacencyDists(hex).indexOf(adjacent - hex)
 
-export const BATTLE_BOARD_ADJACENCIES = Object.freeze(Object.assign(Object.fromEntries(BATTLE_BOARD_HEXES
-  .map((hex: number) => {
+export const BATTLE_BOARD_ADJACENCIES = Object.freeze(Object.assign(Object.fromEntries(
+  BATTLE_BOARD_HEXES.map((hex: number) => {
     const adjacencies = getAdjacencyDists(hex)
     return [hex, adjacencies
       .filter(dist => BATTLE_BOARD_HEXES.includes(hex + dist))
       .map(dist => hex + dist)]
   })
 ), {
+  // Board edge entrance zones
   36: [18, 25, 31],
   37: [4, 10, 17, 23],
   38: [2, 3, 4],
@@ -616,6 +791,11 @@ export const BATTLE_BOARD_ADJACENCIES = Object.freeze(Object.assign(Object.fromE
   40: [23, 29, 34],
   41: [2, 7, 13, 18]
 }))
+
+function getAdjacentHexForRelation(hex: number, relation: number): number | undefined {
+  const result = hex + getAdjacencyDists(hex)[(relation + 6) % 6]
+  return BATTLE_BOARD_HEXES.includes(result) ? result : undefined
+}
 
 export class BattleBoard {
   readonly terrain: Terrain

@@ -56,7 +56,20 @@
           interactive
           transparent-hover
           :transform="`${hexTransformStr(creature.hex)} scale(0.9)
-           rotate(${120 * (activeBattle.attackerEdge - 1) + (creature.player === defender ? 180 : 0)})`"
+           rotate(${120 * (activeBattle.attackerEdge - 1) + (creature.player === defender ? 0 : 180)})`"
+          @click.stop="targetCreature(creature)"
+          @mouseenter="enterCreature(creature)"
+          @mouseleave="leaveCreature(creature)"
+        />
+        <RangestrikeIcon
+          v-for="([creature, adjustment, longDistance]) in rangestrikes"
+          :key="creature.hex"
+          interactive
+          transparent-hover
+          :long-distance="longDistance"
+          :adjustment="adjustment"
+          :transform="`${hexTransformStr(creature.hex)} scale(0.9)
+           rotate(${120 * (activeBattle.attackerEdge - 1) + (creature.player === defender ? 0 : 180)})`"
           @click.stop="targetCreature(creature)"
           @mouseenter="enterCreature(creature)"
           @mouseleave="leaveCreature(creature)"
@@ -104,8 +117,9 @@ import {
 } from "~/models/battle"
 import { Terrain } from "~/models/masterboard"
 import { PlayerId } from "~/models/player"
+import EngageIcon from "../../ui/game/EngageIcon.vue"
+import RangestrikeIcon from "../../ui/game/RangestrikeIcon.vue"
 import Creature from "../Creature.vue"
-import EngageIcon from "../masterboard/EngageIcon.vue"
 import ActionPanel from "./ActionPanel.vue"
 import ActiveStrikePanel from "./ActiveStrikePanel.vue"
 import BattleBoardHex from "./BattleBoardHex.vue"
@@ -117,6 +131,7 @@ import { hexTransformStr } from "./utils"
 export default defineComponent({
   name: "BattleBoard",
   components: {
+    RangestrikeIcon,
     StrikeConfirmation,
     EngageIcon,
     ActionPanel,
@@ -141,8 +156,8 @@ export default defineComponent({
     ...mapState("ui/preferences", ["debugUi"]),
     ...mapState("game", ["activeBattle"]),
     ...mapGetters("game", ["playerById", "battleActivePlayer", "battlePhaseType", "battleEngagements",
-      "battleCarryoverTargets"]),
-    ...mapGetters("ui/selections", ["movementHexes", "selectedCreature", "engagements"]),
+      "battleCarryoverTargets", "battleRangestrikeTargets"]),
+    ...mapGetters("ui/selections", ["movementHexes", "selectedCreature", "engagements", "rangestrikes"]),
     attackCreatureDialog: {
       get(): boolean {
         return this.targetedCreature !== undefined
@@ -185,10 +200,15 @@ export default defineComponent({
           return false
         }
         const engagements = this.battleEngagements(creature).length
+        const rangestrikes = this.battleRangestrikeTargets(creature).length
         switch (this.battlePhaseType) {
           case BattlePhaseType.MOVE:
             return engagements === 0
           case BattlePhaseType.STRIKE:
+            if (!creature.hasStruck && rangestrikes > 0) {
+              return true
+            }
+          // eslint-disable-next-line no-fallthrough
           case BattlePhaseType.STRIKEBACK:
             return this.battleCarryoverTargets === undefined && !creature.hasStruck && engagements > 0
           default:

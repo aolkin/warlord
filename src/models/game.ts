@@ -204,6 +204,12 @@ export class TitanGame {
     return this.activeBattle?.carryoverTargets()
   }
 
+  getBattleRangestrikeTargets(): (creature: BattleCreature) => Array<[BattleCreature, number]> {
+    return (creature: BattleCreature) => {
+      return this.activeBattle === undefined ? [] : this.activeBattle.rangestrikeTargets(creature)
+    }
+  }
+
   getMayProceed(getters: Getters): boolean {
     switch (this.activePhase) {
       case MasterboardPhase.SPLIT:

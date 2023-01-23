@@ -66,6 +66,9 @@ export default {
     },
     engagements(state: Selections, getters: any, rootState: any, rootGetters: any): BattleCreature[] {
       return state.creature === undefined ? [] : rootGetters["game/battleEngagements"](state.creature)
+    },
+    rangestrikes(state: Selections, getters: any, rootState: any, rootGetters: any): Array<[BattleCreature, number]> {
+      return state.creature === undefined ? [] : rootGetters["game/battleRangestrikeTargets"](state.creature)
     }
   },
   mutations: {
