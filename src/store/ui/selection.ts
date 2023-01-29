@@ -1,4 +1,4 @@
-import { BattleCreature } from "~/models/battle"
+import { BattleCreature, RangestrikeTarget } from "~/models/battle"
 import { Path } from "~/models/game"
 import masterboard, { MasterboardHex } from "~/models/masterboard"
 import { Stack } from "~/models/stack"
@@ -67,7 +67,7 @@ export default {
     engagements(state: Selections, getters: any, rootState: any, rootGetters: any): BattleCreature[] {
       return state.creature === undefined ? [] : rootGetters["game/battleEngagements"](state.creature)
     },
-    rangestrikes(state: Selections, getters: any, rootState: any, rootGetters: any): Array<[BattleCreature, number]> {
+    rangestrikes(state: Selections, getters: any, rootState: any, rootGetters: any): RangestrikeTarget[] {
       return state.creature === undefined ? [] : rootGetters["game/battleRangestrikeTargets"](state.creature)
     }
   },

@@ -53,35 +53,14 @@
 import { defineComponent, PropType } from "@vue/runtime-core"
 import _ from "lodash"
 import { mapGetters, mapState } from "vuex"
-import { BattleCreature, Strike } from "~/models/battle"
+import { BattleCreature, isRangestrike, Strike } from "~/models/battle"
 
 export default defineComponent({
   name: "StrikeConfirmation",
   props: {
     targetedCreature: {
-      type: BattleCreature,
-      required: false,
-      default: undefined
-    },
-    targetedStrike: {
-      type: Object as PropType<Strike>,
-      required: false,
-      default: () => ({ dice: 0, toHit: 0 })
-    },
-    targetedStrikeUnadjusted: {
-      type: Object as PropType<Strike>,
-      required: false,
-      default: () => ({ dice: 0, toHit: 0 })
-    },
-    normalCarryovers: {
-      type: Array as PropType<BattleCreature[]>,
-      required: false,
-      default: () => []
-    },
-    tougherCarryovers: {
-      type: Array as PropType<BattleCreature[]>,
-      required: false,
-      default: () => []
+      type: Object as PropType<BattleCreature>,
+      required: true
     },
     optionalToHit: {
       type: Number,
@@ -98,6 +77,13 @@ export default defineComponent({
     },
     targetedCreatureName(): string {
       return this.targetedCreature?.name() ?? ""
+    },
+    targetedStrike(): Strike {
+      return this.activeBattle.getTargetedStrike(this.selectedCreature, this.targetedCreature)
+    },
+    targetedStrikeUnadjusted(): Strike {
+      return this.activeBattle.getRawStrike(this.selectedCreature,
+        isRangestrike(this.targetedCreature) ? this.targetedCreature.creature : this.targetedCreature)
     },
     targetedStrikeWasAdjusted(): boolean {
       return !_.isEqual(this.targetedStrikeUnadjusted, this.targetedStrike)
@@ -118,6 +104,20 @@ export default defineComponent({
         const value = values[0]
         this.$emit("update:optionalToHit", value === this.targetedStrike.toHit ? undefined : value)
       }
+    },
+    carryoversImpossible(): boolean {
+      return this.engagements.length < 2 ||
+        this.targetedStrike.dice - this.targetedCreature.getRemainingHp() <= 0
+    },
+    normalCarryovers(): BattleCreature[] {
+      return this.carryoversImpossible ? [] : this.engagements
+        .filter((target: BattleCreature) =>
+          this.activeBattle.toHitAdjusted(this.selectedCreature, target) <= this.targetedStrike.toHit)
+        .filter((target: BattleCreature) => this.targetedCreature !== target)
+    },
+    tougherCarryovers(): BattleCreature[] {
+      return this.carryoversImpossible ? [] : this.engagements.filter((target: BattleCreature) =>
+        this.activeBattle.toHitAdjusted(this.selectedCreature, target) > this.targetedStrike.toHit)
     }
   }
 })

@@ -63,6 +63,16 @@ export interface Strike {
   readonly dice: number
 }
 
+export interface RangestrikeTarget {
+  readonly creature: BattleCreature
+  readonly adjustment: Strike
+  readonly longDistance: boolean
+}
+
+export function isRangestrike(arg: BattleCreature | RangestrikeTarget): arg is RangestrikeTarget {
+  return "creature" in arg && "adjustment" in arg && "longDistance" in arg
+}
+
 export const combineStrikes = (a: Strike, b: Strike, clamp?: boolean): Strike => ({
   toHit: clamp === false ? a.toHit + b.toHit : _.clamp(a.toHit + b.toHit, 2, 6),
   dice: a.dice + b.dice
@@ -182,6 +192,7 @@ export interface IActiveStrike {
   toHit: number
   totalHits: number
   carryoverSkipped: boolean
+  rangestrike: boolean
 }
 export interface ActiveStrikeHit {
   target: number
@@ -209,7 +220,7 @@ export class ActiveStrike {
   }
 
   get canCarryover(): boolean {
-    return !this.carryoverSkipped && this.getCarryoverHits() > 0
+    return !this.rangestrike && !this.carryoverSkipped && this.getCarryoverHits() > 0
   }
 
   carryover(strike: ActiveStrikeHit): void {
@@ -472,7 +483,7 @@ export class Battle {
   // Returns Array<[target creature, hazard strike factor adjustment, long-distance]>
   // TODO: Warlocks can rangestrike creatures at the base of cliffs if not otherwise engaged
   //       This is very annoying, as it breaks the majority of the assumptions in this function
-  rangestrikeTargets(creature: BattleCreature): Array<[BattleCreature, number, boolean]> {
+  rangestrikeTargets(creature: BattleCreature): RangestrikeTarget[] {
     const creatureStats = CREATURE_DATA[creature.type]
     if (creature.initialHex === 0 || !creatureStats.canRangestrike ||
       this.engagedWith(creature, true).length > 0) {
@@ -502,29 +513,37 @@ export class Battle {
     }) as number[][]
     if (creature.type === CreatureType.WARLOCK) {
       // Warlock rangestrikes are unaffected by other creatures and hazards
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      return paths.map(path => [this.creatureOnHex(path.at(-1)!)!, 0, false])
+      return paths.map(path => ({
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        creature: this.creatureOnHex(path.at(-1)!)!,
+        adjustment: { toHit: 0, dice: 0 },
+        longDistance: false
+      }))
     }
     const adjustedPaths = paths.map(path => [path, this.getRangestrikeAdjustmentForHazards(creature, path)])
-      .filter(([, adjustment]) => adjustment !== undefined) as Array<[number[], number]>
+      .filter(([, adjustment]) => adjustment !== undefined) as Array<[number[], Strike]>
 
-    const bestPaths = new Map<number, [number[], number]>()
-    adjustedPaths.forEach(([path, adjustment]) => {
+    const bestPaths = new Map<number, [number[], Strike]>()
+    adjustedPaths.forEach(([path, strike]) => {
       const target = path.at(-1)
       assert(target !== undefined, "Path must have non-zero length")
-      if (!bestPaths.has(target) || (bestPaths.get(target)?.[1] ?? 0) < adjustment) {
-        bestPaths.set(target, [path, adjustment])
+      if (!bestPaths.has(target) || (bestPaths.get(target)?.[1]?.toHit ?? 0) < strike.toHit) {
+        bestPaths.set(target, [path, strike])
       }
     })
 
-    const results: Array<[BattleCreature, number, boolean]> = []
-    bestPaths.forEach(([path, adjustment]: [number[], number]) =>
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      results.push([this.creatureOnHex(path.at(-1)!)!, adjustment, path.length > 2]))
+    const results: RangestrikeTarget[] = []
+    bestPaths.forEach(([path, adjustment]: [number[], Strike]) =>
+      results.push({
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        creature: this.creatureOnHex(path.at(-1)!)!,
+        adjustment,
+        longDistance: path.length > 2
+      }))
     return results
   }
 
-  private getRangestrikeAdjustmentForHazards(creature: BattleCreature, path: number[]): number | undefined {
+  private getRangestrikeAdjustmentForHazards(creature: BattleCreature, path: number[]): Strike | undefined {
     const board = this.getBoard()
     const targetHex = path.at(-1)
     assert(targetHex !== undefined, "Path must have non-zero length")
@@ -561,7 +580,7 @@ export class Battle {
       adjustment -= 1
     }
     if (!attackerIsBrambleNative) {
-    // A non-native rangestriker loses a skill factor for each intervening hex containing bramble
+      // A non-native rangestriker loses a skill factor for each intervening hex containing bramble
       adjustment -= path.slice(0, -1).filter(hex => board.getHazard(hex) === Hazard.BRAMBLE).length
     }
 
@@ -624,20 +643,12 @@ export class Battle {
         }
       }
     }
-    return adjustment
-  }
 
-  private rangestrikeImpact(sourceHex: number, hex: number): number | undefined {
-    const hazard = this.getBoard().getHazard(hex)
-    switch (hazard) {
-      case Hazard.BRAMBLE:
-        break
-      case Hazard.TREE:
-        return undefined
-      case Hazard.VOLCANO:
-        break
+    if (creature.type === CreatureType.DRAGON && board.getHazard(creature.hex) === Hazard.VOLCANO) {
+      return { toHit: adjustment, dice: 2 }
+    } else {
+      return { toHit: adjustment, dice: 0 }
     }
-    const edgeHazard = this.getBoard().getEdgeHazard(sourceHex, hex)
   }
 
   private strikeAdjustmentEdge(striker: BattleCreature, target: BattleCreature): Strike {
@@ -709,13 +720,24 @@ export class Battle {
       this.strikeAdjustment(attacker, defender))
   }
 
-  strike(attacker: BattleCreature, defender: BattleCreature,
-    rolls: number[], optionalToHit?: number): void {
-    let toHit = this.toHitAdjusted(attacker, defender)
-    if (optionalToHit !== undefined) {
-      assert(optionalToHit >= toHit, "Cannot choose a lower to-hit")
-      toHit = optionalToHit
+  getRangestrike(attacker: BattleCreature, target: RangestrikeTarget): Strike {
+    const rawStrike = this.getRawStrike(attacker, target.creature)
+    return combineStrikes({
+      toHit: target.longDistance ? rawStrike.toHit + 1 : rawStrike.toHit,
+      dice: div(rawStrike.dice, 2)
+    }, target.adjustment)
+  }
+
+  getTargetedStrike(attacker: BattleCreature, target: BattleCreature | RangestrikeTarget): Strike {
+    if (isRangestrike(target)) {
+      return this.getRangestrike(attacker, target)
+    } else {
+      return this.getAdjustedStrike(attacker, target)
     }
+  }
+
+  private performAttack(attacker: BattleCreature, defender: BattleCreature,
+    rolls: number[], toHit: number, rangestrike: boolean): void {
     const totalHits = rolls.filter(roll => roll >= toHit).length
     const hits = Math.min(totalHits, defender.getRemainingHp())
     attacker.performStrike()
@@ -726,8 +748,19 @@ export class Battle {
       totalHits,
       hits,
       toHit,
-      rolls
+      rolls,
+      rangestrike
     })
+  }
+
+  strike(attacker: BattleCreature, defender: BattleCreature,
+    rolls: number[], optionalToHit?: number): void {
+    let toHit = this.toHitAdjusted(attacker, defender)
+    if (optionalToHit !== undefined) {
+      assert(optionalToHit >= toHit, "Cannot choose a lower to-hit")
+      toHit = optionalToHit
+    }
+    this.performAttack(attacker, defender, rolls, toHit, false)
   }
 
   carryover(target: BattleCreature): void {
@@ -738,6 +771,11 @@ export class Battle {
     const hits = Math.min(this.activeStrike.getCarryoverHits(), target.getRemainingHp())
     this.activeStrike.carryover({ hits, target: target.hex })
     target.wound(hits)
+  }
+
+  rangestrike(attacker: BattleCreature, defender: RangestrikeTarget, rolls: number[]): void {
+    const strike = this.getRangestrike(attacker, defender)
+    this.performAttack(attacker, defender.creature, rolls, strike.toHit, true)
   }
 }
 

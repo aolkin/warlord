@@ -3,7 +3,7 @@ import { BaseActionContext } from "~/store/types"
 import { View } from "~/store/ui/selection"
 import { assert } from "~/utils/assert"
 import { compressAndEncode, decodeAndDecompress } from "~/utils/base64"
-import { Battle, BATTLE_PHASE_TYPES, BattleCreature, BattlePhaseType } from "./battle"
+import { Battle, BATTLE_PHASE_TYPES, BattleCreature, BattlePhaseType, RangestrikeTarget } from "./battle"
 import { CREATURE_DATA, CREATURE_LIST, CreatureType } from "./creature"
 import masterboard, { HexEdge, MasterboardHex } from "./masterboard"
 import { Player, PlayerId } from "./player"
@@ -56,12 +56,9 @@ interface MovePayload { stack: Stack, hex: number | MasterboardHex, edge?: HexEd
 interface BattleMovePayload { creature: BattleCreature, hex: number }
 interface MusterPayload { stack: Stack, recruit: MusterPossibility }
 interface BattlePayload { attacking: Stack, defending: Stack }
-interface AttackPayload {
-  attacker: BattleCreature
-  target: BattleCreature
-  optionalToHit?: number
-  rolls: number[]
-}
+interface IStrikePayload { attacker: BattleCreature, rolls: number[] }
+interface AttackPayload extends IStrikePayload { target: BattleCreature, optionalToHit?: number }
+interface RangestrikePayload extends IStrikePayload { target: RangestrikeTarget }
 
 interface ActionContext extends BaseActionContext {
   state: TitanGame
@@ -204,7 +201,7 @@ export class TitanGame {
     return this.activeBattle?.carryoverTargets()
   }
 
-  getBattleRangestrikeTargets(): (creature: BattleCreature) => Array<[BattleCreature, number]> {
+  getBattleRangestrikeTargets(): (creature: BattleCreature) => RangestrikeTarget[] {
     return (creature: BattleCreature) => {
       return this.activeBattle === undefined ? [] : this.activeBattle.rangestrikeTargets(creature)
     }
@@ -338,6 +335,12 @@ export class TitanGame {
     this.activeBattle?.strike(attacker, target, rolls, optionalToHit)
   }
 
+  mRangestrikeCreature({ attacker, target, rolls }: RangestrikePayload): void {
+    assert(this.activeBattle?.creatures.some(_.matches(attacker)) ?? false, "Unexpected attacker")
+    assert(this.activeBattle?.creatures.some(_.matches(target.creature)) ?? false, "Unexpected defender")
+    this.activeBattle?.rangestrike(attacker, target, rolls)
+  }
+
   mAssignCarryover(target: BattleCreature): void {
     assert(this.activeBattle?.creatures.some(_.matches(target)) ?? false, "Unexpected target")
     this.activeBattle?.carryover(target)
@@ -435,6 +438,14 @@ export class TitanGame {
     assert(getters.battlePhaseType !== BattlePhaseType.MOVE, "Cannot strike in movement phase")
     assert(payload.attacker.player === this.getBattleActivePlayer(), "Incorrect player")
     commit("attackCreature", payload)
+    await this.persist()
+  }
+
+  async doRangestrikeCreature({ getters, commit }: ActionContext, payload: RangestrikePayload): Promise<void> {
+    if (this.activeBattle === undefined) { throw new Error("Must be in a battle!") }
+    assert(getters.battlePhaseType !== BattlePhaseType.MOVE, "Cannot strike in movement phase")
+    assert(payload.attacker.player === this.getBattleActivePlayer(), "Incorrect player")
+    commit("rangestrikeCreature", payload)
     await this.persist()
   }
 

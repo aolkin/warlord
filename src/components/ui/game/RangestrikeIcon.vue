@@ -19,7 +19,8 @@
 </template>
 
 <script lang="ts">
-import { defineComponent } from "@vue/runtime-core"
+import { defineComponent, PropType } from "@vue/runtime-core"
+import { Strike } from "~/models/battle"
 
 export default defineComponent({
   name: "RangestrikeIcon",
@@ -40,9 +41,9 @@ export default defineComponent({
       default: false
     },
     adjustment: {
-      type: Number,
+      type: Object as PropType<Strike>,
       required: false,
-      default: 0
+      default: undefined
     }
   },
   computed: {

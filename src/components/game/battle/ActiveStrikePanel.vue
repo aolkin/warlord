@@ -16,7 +16,8 @@
         />
       </v-card-item>
       <v-card-item v-for="([creature, hits], index) in targets" :key="creature.guid">
-        {{ index === 0 ? "Dealt" : "Carried over" }} {{ hitsString(hits) }} to a {{ creature.name() }}.
+        {{ index === 0 ? "Dealt" : "Carried over" }} {{ hitsString(hits) }} to a
+        {{ creature.name() }}{{ activeStrike.rangestrike ? " with a rangestrike" : "" }}.
         <span v-if="creature.getRemainingHp() < 1">The {{ creature.name() }} is dead.</span>
       </v-card-item>
       <v-card-text v-if="activeStrike">
@@ -29,7 +30,7 @@
         <span v-else-if="activeStrike?.carryoverSkipped">
           Carrying over excess hits was skipped.
         </span>
-        <span v-else>
+        <span v-else-if="!activeStrike?.rangestrike">
           No hits remain to carry over.
         </span>
       </v-card-text>

@@ -62,17 +62,18 @@
           @mouseleave="leaveCreature(creature)"
         />
         <RangestrikeIcon
-          v-for="([creature, adjustment, longDistance]) in rangestrikes"
-          :key="creature.hex"
+          v-for="(rangestrikeTarget) in rangestrikes"
+          :key="rangestrikeTarget.creature.hex"
           interactive
           transparent-hover
-          :long-distance="longDistance"
-          :adjustment="adjustment"
-          :transform="`${hexTransformStr(creature.hex)} scale(0.9)
-           rotate(${120 * (activeBattle.attackerEdge - 1) + (creature.player === defender ? 0 : 180)})`"
-          @click.stop="targetCreature(creature)"
-          @mouseenter="enterCreature(creature)"
-          @mouseleave="leaveCreature(creature)"
+          :long-distance="rangestrikeTarget.longDistance"
+          :adjustment="rangestrikeTarget.adjustment"
+          :transform="`${hexTransformStr(rangestrikeTarget.creature.hex)} scale(0.9)
+           rotate(${120 * (activeBattle.attackerEdge - 1) +
+          (rangestrikeTarget.creature.player === defender ? 0 : 180)})`"
+          @click.stop="targetCreature(rangestrikeTarget)"
+          @mouseenter="enterCreature(rangestrikeTarget.creature)"
+          @mouseleave="leaveCreature(rangestrikeTarget.creature)"
         />
       </svg>
 
@@ -83,17 +84,23 @@
         <ActiveStrikePanel rounded />
       </v-sheet>
 
-      <StrikeConfirmation
-        v-model="attackCreatureDialog"
-        v-model:optionalToHit="optionalToHit"
-        :targeted-creature="targetedCreature"
-        :targeted-strike="targetedStrike"
-        :targeted-strike-unadjusted="targetedStrikeUnadjusted"
-        :normal-carryovers="normalCarryovers"
-        :tougher-carryovers="tougherCarryovers"
-        @attack="attackTargetedCreature"
-        @cancel="resetAttack"
-      />
+      <template v-if="selectedCreature && target">
+        <StrikeConfirmation
+          v-if="!isRangestrike(target)"
+          v-model="attackCreatureDialog"
+          v-model:optionalToHit="optionalToHit"
+          :targeted-creature="target"
+          @attack="attackTargetedCreature"
+          @cancel="resetAttack"
+        />
+        <RangestrikeConfirmation
+          v-else
+          v-model="attackCreatureDialog"
+          :target="target"
+          @attack="attackTargetedCreature"
+          @cancel="resetAttack"
+        />
+      </template>
     </template>
   </div>
 </template>
@@ -112,6 +119,8 @@ import {
   BattlePhase,
   BattlePhaseType,
   EdgeHazard,
+  isRangestrike,
+  RangestrikeTarget,
   relationToHex,
   Strike
 } from "~/models/battle"
@@ -125,6 +134,7 @@ import ActiveStrikePanel from "./ActiveStrikePanel.vue"
 import BattleBoardHex from "./BattleBoardHex.vue"
 import CreaturePanel from "./CreaturePanel.vue"
 import FocusedStrikePanel from "./FocusedStrikePanel.vue"
+import RangestrikeConfirmation from "./RangestrikeConfirmation.vue"
 import StrikeConfirmation from "./StrikeConfirmation.vue"
 import { hexTransformStr } from "./utils"
 
@@ -133,6 +143,7 @@ export default defineComponent({
   components: {
     RangestrikeIcon,
     StrikeConfirmation,
+    RangestrikeConfirmation,
     EngageIcon,
     ActionPanel,
     CreaturePanel,
@@ -142,13 +153,13 @@ export default defineComponent({
     FocusedStrikePanel
   },
   inject: ["diceRoller"],
-  data: (): any | { targetedCreature: BattleCreature } => ({
+  data: (): any & { target?: BattleCreature | RangestrikeTarget } => ({
     Terrain,
     BattlePhase,
     BattlePhaseType,
     BATTLE_PHASE_TITLES,
     hexTransformStr,
-    targetedCreature: undefined,
+    target: undefined,
     optionalToHit: undefined,
     debugHex: 0
   }),
@@ -160,11 +171,11 @@ export default defineComponent({
     ...mapGetters("ui/selections", ["movementHexes", "selectedCreature", "engagements", "rangestrikes"]),
     attackCreatureDialog: {
       get(): boolean {
-        return this.targetedCreature !== undefined
+        return this.target !== undefined
       },
       set(val: boolean): void {
         if (!val) {
-          this.targetedCreature = undefined
+          this.target = undefined
         }
       }
     },
@@ -228,43 +239,22 @@ export default defineComponent({
     activeStrike(): ActiveStrike | undefined {
       return this.activeBattle.activeStrike
     },
-    targetedStrikeUnadjusted(): Strike {
-      if (this.selectedCreature && this.targetedCreature) {
-        return this.activeBattle.getRawStrike(this.selectedCreature, this.targetedCreature)
-      }
-      return { toHit: 0, dice: 0 }
-    },
     targetedStrike(): Strike {
-      return this.selectedCreature && this.targetedCreature
-        ? this.activeBattle.getAdjustedStrike(this.selectedCreature, this.targetedCreature)
+      return this.selectedCreature && this.target
+        ? this.activeBattle.getTargetedStrike(this.selectedCreature, this.target)
         : { toHit: 0, dice: 0 }
-    },
-    carryoversImpossible(): boolean {
-      return this.selectedCreature === undefined ||
-        this.targetedCreature === undefined ||
-        this.engagements.length < 2 ||
-        this.targetedStrike.dice - this.targetedCreature.getRemainingHp() <= 0
-    },
-    normalCarryovers(): BattleCreature[] {
-      return this.carryoversImpossible ? [] : this.engagements
-        .filter((target: BattleCreature) =>
-          this.activeBattle.toHitAdjusted(this.selectedCreature, target) <= this.targetedStrike.toHit)
-        .filter((target: BattleCreature) => this.targetedCreature !== target)
-    },
-    tougherCarryovers(): BattleCreature[] {
-      return this.carryoversImpossible ? [] : this.engagements.filter((target: BattleCreature) =>
-        this.activeBattle.toHitAdjusted(this.selectedCreature, target) > this.targetedStrike.toHit)
     },
     debugHexAdjacencies(): number[] {
       return BATTLE_BOARD_ADJACENCIES[this.debugHex] ?? []
     }
   },
   methods: {
+    isRangestrike,
     ...mapMutations("ui/selections", [
       "enterBattleHex", "leaveBattleHex", "selectCreature", "deselectCreature",
       "enterCreature", "leaveCreature"
     ]),
-    ...mapActions("game", ["moveCreature", "attackCreature", "assignCarryover"]),
+    ...mapActions("game", ["moveCreature", "attackCreature", "rangestrikeCreature", "assignCarryover"]),
     moveSelected(hex: number): void {
       if (this.selectedCreature && this.movementHexes.has(hex)) {
         this.moveCreature({ creature: this.selectedCreature, hex })
@@ -275,21 +265,21 @@ export default defineComponent({
         this.selectCreature(creature)
       }
     },
-    targetCreature(creature: BattleCreature): void {
-      if (this.activeStrike?.canCarryover && this.battleCarryoverTargets) {
+    targetCreature(creature: BattleCreature | RangestrikeTarget): void {
+      if (!("creature" in creature) && this.activeStrike?.canCarryover && this.battleCarryoverTargets) {
         if (this.battleCarryoverTargets.includes(creature)) {
           this.assignCarryover(creature)
         }
       } else {
-        this.targetedCreature = creature
+        this.target = creature
       }
     },
     async attackTargetedCreature(): Promise<void> {
-      console.log(this.selectedCreature, this.targetedCreature)
+      console.log(this.selectedCreature, this.target)
       const rolls = await this.diceRoller.roll(this.targetedStrike.dice)
-      await this.attackCreature({
+      await this[isRangestrike(this.target) ? "rangestrikeCreature" : "attackCreature"]({
         attacker: this.selectedCreature,
-        target: this.targetedCreature,
+        target: this.target,
         optionalToHit: this.optionalToHit,
         rolls
       })
@@ -298,7 +288,7 @@ export default defineComponent({
       this.deselectCreature()
     },
     resetAttack(): void {
-      this.targetedCreature = undefined
+      this.target = undefined
       this.optionalToHit = undefined
     }
   }
