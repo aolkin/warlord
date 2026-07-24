@@ -1,0 +1,34 @@
+# Modernization Proposals
+
+Written July 2026. The last feature commit landed January 2023 and the last dependency bump July 2023, so essentially every layer of the toolchain is two or more major versions behind. Each document in this folder covers one category, lists concrete proposals, and notes trade-offs and alternatives. Version claims were checked against npm, the Node.js release schedule, and upstream release pages in July 2026.
+
+## Current state, briefly
+
+- Vue 3.2.45 (transitive only — `vue` is not even a direct dependency), Options API components
+- Vuex 4 wired to plain TypeScript model classes via runtime reflection over method-name prefixes
+- Vuetify 3.1, Vite 2.9, TypeScript pinned `<4.5.0`, ESLint 7 with `.eslintrc`, yarn classic
+- Vestigial Nuxt 3 RC and Vue CLI dependencies that are not part of the actual build
+- CI builds on EOL Node 18 with outdated actions and deploys to GitHub Pages; no lint, typecheck, or test steps
+- No tests of any kind
+- Rendering is SVG generated from Vue templates; game state persists to localStorage as JSON
+
+## Documents
+
+| Doc | Category |
+|---|---|
+| [01-toolchain-and-dependencies.md](01-toolchain-and-dependencies.md) | Node, package manager, build tool, TypeScript, linting, dead dependencies |
+| [02-ci-and-deployment.md](02-ci-and-deployment.md) | GitHub Actions, deploy pipeline, automation |
+| [03-framework-and-rendering.md](03-framework-and-rendering.md) | Vue vs. Svelte, SVG vs. canvas, rendering performance |
+| [04-state-management.md](04-state-management.md) | Vuex → Pinia, decoupling game logic from the store |
+| [05-multiplayer-architecture.md](05-multiplayer-architecture.md) | Preparing for server-mediated multiplayer |
+| [06-ui-chrome.md](06-ui-chrome.md) | Vuetify 4, fonts, icons |
+| [07-testing-and-code-quality.md](07-testing-and-code-quality.md) | Test infrastructure, type strictness, cleanup |
+
+## Suggested sequencing
+
+1. **Toolchain first** (doc 01): everything else is easier on current Vite/TS/ESLint, and none of it changes app behavior.
+2. **CI** (doc 02): cheap, and gives a safety net (lint + typecheck + build on PRs) for the riskier work below.
+3. **Tests around game logic** (doc 07): the models are pure TypeScript and testable today; do this before refactoring them.
+4. **State management** (doc 04): the Vuex-reflection layer is the biggest structural obstacle to both performance work and multiplayer.
+5. **Multiplayer groundwork** (doc 05): action-log refactor while touching the store anyway.
+6. **UI chrome / rendering** (docs 06, 03): Vuetify 4 upgrade, then measure rendering before deciding on Vapor/Svelte/canvas.
