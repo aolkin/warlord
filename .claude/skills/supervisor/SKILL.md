@@ -16,14 +16,7 @@ You are a supervisor. Your job is to keep a continuous stream of PRs flowing tow
 
 ## Task source
 
-Take tasks from, in order of preference:
-1. Tasks named in the skill invocation args.
-2. A backlog the user has pointed to previously (e.g. the `proposals/` docs in this repo — each proposal item is roughly one PR).
-3. Open GitHub issues.
-
-If none of these yields a task, ask the user for a backlog — that is the one thing worth blocking on.
-
-Prefer tasks whose file footprints don't overlap when running in parallel; sequence dependent tasks.
+The user provides the tasks when invoking this skill. If the invocation names no tasks, ask — that is the one thing worth blocking on. Prefer tasks whose file footprints don't overlap when running in parallel; sequence dependent tasks.
 
 ## Model ladder
 
@@ -36,14 +29,14 @@ Starting rung by task type:
 - **sonnet**: typical implementation — a feature slice, a contained refactor, fixing a CI failure, addressing review comments.
 - **opus**: design-heavy or cross-cutting work — multi-file refactors with judgment calls, gnarly debugging, anything a sonnet agent already failed.
 
-On escalation: spawn a **fresh** agent one rung up, in a fresh worktree, and include the failed agent's report (what it tried, what blocked it) in the new prompt. Never resume the stuck agent at the same rung. If the top model fails, report the blocker to the user, park the task, and move to the next one.
+On escalation: spawn a **fresh** agent one rung up. It should reuse the stuck agent's worktree and work so far — point it at that worktree path (no new worktree isolation) and include the failed agent's report (what it tried, what blocked it, state of the working tree) in the new prompt. The escalated agent decides whether to build on the partial work or reset it. Never resume the stuck agent itself at the same rung. If the top model fails, report the blocker to the user, park the task, and move to the next one.
 
 ## Subagent contract
 
 Include this in every subagent prompt, adapted to the task:
 
 - The task, its acceptance criteria, and the branch name to use.
-- **Escalation rule**: "If you get stuck — requirements unclear, repeated failures, missing access, anything you cannot resolve — STOP. Do not thrash, do not push broken or half-done work. Return a short report: what you attempted, what is blocking, and anything you learned that a retry should know."
+- **Escalation rule**: "If you get stuck — requirements unclear, repeated failures, missing access, anything you cannot resolve — STOP. Do not thrash, do not push broken or half-done work; leave your worktree as-is for a successor to build on. Return a short report: your worktree path, what you attempted, what is blocking, and anything you learned that a retry should know."
 - **Definition of done** (implementers): tests/lint/build pass locally, branch pushed, PR created with a clear description, and the final message reports: PR number/URL, branch, one-line summary, and any caveats.
 - **Report format**: final message ≤ 10 lines. No file dumps, no diffs — the supervisor only needs outcomes and identifiers.
 
@@ -53,7 +46,7 @@ Include this in every subagent prompt, adapted to the task:
 2. **Implement** via a subagent in a worktree at the appropriate model rung. It codes, verifies, pushes, opens the PR.
 3. **Watch** the PR: call `subscribe_pr_activity` so CI failures and review comments arrive as events, and schedule a fallback check-in (`send_later`, ~1 hour) in case events are missed. If neither tool is available, have a haiku subagent poll the PR state and return one line.
 4. **Respond** to every event via subagent, never yourself:
-   - CI failure → responder subagent in a worktree on the PR branch: diagnose, fix, push. Start at sonnet; escalate per the ladder.
+   - CI failure → responder subagent in a worktree on the PR branch: diagnose, fix, push. Start at haiku — much of CI red is formatting, lint, or a missed file — and escalate per the ladder if it's something deeper.
    - Review comments / change requests → responder subagent addresses them or drafts a reply explaining why not.
    - Your own comments echoed back, or events already handled → skip.
 5. **On merge** (by the user, never you): unsubscribe, cancel check-ins, record the task done, and immediately start the next task.
