@@ -19,10 +19,8 @@ jobs:
           node-version: "24"
           cache: "yarn"
 
-      - run: mv tsconfig.json tsconfig.unused
-
       - name: Install dependencies
-        run: yarn install --ignore-engines
+        run: yarn install
 
       - name: Build
         run: yarn build
