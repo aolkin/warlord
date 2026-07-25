@@ -84,7 +84,7 @@
 </template>
 
 <script lang="ts">
-import { defineComponent } from "@vue/runtime-core"
+import { defineComponent } from "vue"
 import _ from "lodash"
 import { mapActions, mapGetters, mapMutations, mapState } from "vuex"
 import { CREATURE_DATA, CreatureType } from "~/models/creature"

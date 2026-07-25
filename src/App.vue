@@ -53,7 +53,7 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, provide, readonly, ref } from "@vue/runtime-core"
+import { defineComponent, provide, readonly, ref } from "vue"
 import { mapMutations, mapState } from "vuex"
 import BattleBoard from "~/components/game/battle/BattleBoard"
 import Masterboard from "~/components/game/masterboard/Masterboard"

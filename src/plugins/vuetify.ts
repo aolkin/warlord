@@ -4,6 +4,7 @@ import _ from "lodash"
 
 // Vuetify
 import { createVuetify } from "vuetify"
+import * as components from "vuetify/components"
 import { Intersect, Resize } from "vuetify/directives"
 import "vuetify/styles"
 import { PlayerId } from "~/models/player"
@@ -27,6 +28,7 @@ const playerColors = Object.fromEntries(_.map(titanColors,
 
 // https://vuetifyjs.com/en/introduction/why-vuetify/#feature-guides
 export default createVuetify({
+  components,
   directives: { Intersect, Resize },
   theme: {
     defaultTheme: "dark",

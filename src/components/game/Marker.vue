@@ -13,7 +13,7 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, PropType } from "@vue/runtime-core"
+import { defineComponent, PropType } from "vue"
 import _ from "lodash"
 import { PlayerId } from "~/models/player"
 

@@ -12,7 +12,7 @@
   </v-card-title>
 </template>
 <script lang="ts">
-import { defineComponent } from "@vue/runtime-core"
+import { defineComponent } from "vue"
 import { mapState } from "vuex"
 import { BattleBoard, BattleCreature, Hazard } from "~/models/battle"
 

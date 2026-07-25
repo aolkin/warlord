@@ -42,7 +42,7 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, PropType } from "@vue/runtime-core"
+import { defineComponent, PropType } from "vue"
 import { mapState } from "vuex"
 import { Creature, CREATURE_DATA, CreatureType } from "~/models/creature"
 import { Player } from "~/models/player"

@@ -42,7 +42,7 @@
 </template>
 
 <script lang="ts">
-import { defineComponent } from "@vue/runtime-core"
+import { defineComponent } from "vue"
 import { mapActions, mapGetters, mapState } from "vuex"
 import { ActiveStrike, BattleCreature, Hazard, Strike } from "~/models/battle"
 import StrikePanelTitle from "./StrikePanelTitle.vue"
