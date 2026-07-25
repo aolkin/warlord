@@ -26,9 +26,9 @@ Written July 2026. The last feature commit landed January 2023 and the last depe
 
 ## Suggested sequencing
 
-1. **Toolchain first** (doc 01): everything else is easier on current Vite/TS/ESLint, and none of it changes app behavior.
-2. **CI** (doc 02): cheap, and gives a safety net (lint + typecheck + build on PRs) for the riskier work below.
-3. **Tests around game logic** (doc 07): the models are pure TypeScript and testable today; do this before refactoring them.
+1. **Minimal CI gate first** (doc 02): a PR workflow running just the build, on current Node — cheapest possible safety net, and lint/typecheck can't run until the toolchain is fixed anyway. Grow it to lint + typecheck + test as step 2 delivers them.
+2. **Toolchain** (doc 01): everything else is easier on current Vite/TS/ESLint, and none of it changes app behavior.
+3. **Mechanical model split + tests around game logic** (doc 07): the models are pure TypeScript and testable today; do this before refactoring them.
 4. **State management** (doc 04): the Vuex-reflection layer is the biggest structural obstacle to both performance work and multiplayer.
-5. **Multiplayer groundwork** (doc 05): action-log refactor while touching the store anyway.
+5. **Multiplayer groundwork** (doc 05): engine extraction behind a local-server interface while touching the store anyway.
 6. **UI chrome / rendering** (docs 06, 03): Vuetify 4 upgrade, then measure rendering before deciding on Vapor/Svelte/canvas.

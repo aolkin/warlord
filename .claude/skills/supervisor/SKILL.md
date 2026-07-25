@@ -1,6 +1,6 @@
 ---
 name: supervisor
-description: Orchestrate a continuous stream of PRs by delegating all work to subagents in worktrees, escalating to stronger models when subagents get stuck. Use when the user asks to run the supervisor, work through a backlog autonomously, or keep PRs flowing.
+description: Produce a continuous stream of PRs via subagents in worktrees, escalating models when stuck. Use when asked to run the supervisor or work a backlog autonomously.
 ---
 
 # Supervisor

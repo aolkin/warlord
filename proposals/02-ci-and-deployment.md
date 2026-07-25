@@ -11,7 +11,7 @@ Every action in the workflow is several majors behind: `actions/checkout` v3 →
 
 ## Add a PR quality gate
 
-There is no lint, typecheck, or test job anywhere. Add a workflow on pull requests running install → lint → `vue-tsc` typecheck → test → build.
+There is no lint, typecheck, or test job anywhere. Add a workflow on pull requests running install → lint → typecheck → test → build, where each step invokes a package script (`lint`, `typecheck`, `test`, `build`) so CI and local runs are the same commands.
 
 - **Pros:** the safety net every other proposal in this folder wants; catches the class of breakage dependabot PRs currently merge blind.
 - **Cons:** a few minutes of CI per PR.
@@ -23,16 +23,19 @@ The workflow renames `tsconfig.json` out of the way before building (a symptom o
 - **Pros:** the workflow becomes ~20 honest lines; build caching of `dist` keyed on `hashFiles('dist')` is doing nothing useful today anyway.
 - **Cons:** none.
 
-## Dependency automation: dependabot → Renovate (or grouped dependabot)
+## Dependency automation: dependabot → Renovate
 
-History shows dependabot security bumps merged one-at-a-time with no CI validation. Renovate groups updates, schedules them, and can auto-merge patch bumps once the PR gate exists; dependabot's own `groups` config is the lighter-touch alternative.
+**Decided: Renovate.** History shows dependabot security bumps merged one-at-a-time with no CI validation. Renovate groups updates, schedules them, and can auto-merge patch bumps once the PR gate exists.
 
 - **Pros:** less merge noise; updates actually validated by CI.
-- **Cons:** Renovate is another config surface; grouped dependabot is nearly as good for a repo this size.
+- **Cons:** another config surface.
 
 ## Preview deploys
 
-Optional: deploy PR branches to a preview URL. GitHub Pages doesn't do per-PR previews natively, so this would mean Cloudflare Pages or Netlify — which could also replace Pages for the main deploy.
+Optional: deploy PR branches to a preview URL. GitHub Pages doesn't do per-PR previews natively. Two routes:
 
-- **Pros:** visual review of UI changes before merge; Cloudflare Pages is free-tier friendly and becomes relevant again if multiplayer lands on Cloudflare (doc 05).
-- **Cons:** ties deployment to a third-party account; GitHub Pages is working fine for a static SPA.
+- **Stay on GitHub Pages with `rossjrw/pr-preview-action`**: it commits previews into a `gh-pages` branch under `pr-preview/pr-N/`, which requires switching the Pages source from "GitHub Actions" back to deploy-from-branch (its README explicitly says the Actions source doesn't work with it). The main deploy would then also move to pushing `dist` to that branch — a workable but backwards-feeling swap of the current artifact-based deploy.
+- **Cloudflare Pages or Netlify**: per-PR previews natively, and could replace Pages for the main deploy too; Cloudflare becomes relevant again if multiplayer lands on Cloudflare (doc 05). Cons: ties deployment to a third-party account.
+
+- **Pros:** visual review of UI changes before merge.
+- **Cons:** GitHub Pages is working fine for a static SPA; neither route is free of churn.

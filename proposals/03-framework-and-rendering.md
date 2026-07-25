@@ -20,11 +20,13 @@ The inefficiency is suspected, not measured. Profile first (Vue devtools flamegr
 - **Pro:** may make the framework question moot.
 - **Con:** delays the fun rewrite.
 
-## Option A — stay Vue, migrate to `<script setup>` Composition API (recommended first step)
+## Option A — stay Vue, migrate to `<script setup>` Composition API (decided: do regardless)
 
-All components use Options API with `mapState`/`mapGetters`. Migrating to `<script setup>` is mechanical, doesn't change markup, and is a prerequisite for both Vapor mode and any future extraction of logic into composables.
+All components use Options API with `mapState`/`mapGetters`. Migrating to `<script setup>` is mechanical, doesn't change markup, and is the current mainstream Vue API.
 
-- **Pros:** better TS inference (props are currently typed via runtime constructors); pairs naturally with Pinia (doc 04); no visual change.
+What it buys on its own: better TS inference (props are currently typed via runtime constructors), smaller compiled output, and eligibility for Vapor (Option B) — Vapor requires Composition API. What it does **not** buy: runtime performance. Computed caching works the same in both APIs, and the non-cacheable getters come from the Vuex reflection bridge, which survives an API migration untouched. The performance items above land with the store refactor (doc 04), not with this one — which is why doing the two together per component is the efficient path.
+
+- **Pros:** as above; pairs naturally with Pinia (doc 04); no visual change.
 - **Cons:** touches every component; no immediate user-visible payoff.
 
 ## Option B — Vue 3.6 Vapor mode for the board components
