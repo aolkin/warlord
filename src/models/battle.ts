@@ -1,4 +1,4 @@
-import _, { omit, sum } from "lodash"
+import { clamp, memoize, omit, sum } from "lodash-es"
 import { assert } from "~/utils/assert"
 import { div } from "~/utils/math"
 import { CREATURE_DATA, CreatureType } from "./creature"
@@ -73,8 +73,8 @@ export function isRangestrike(arg: BattleCreature | RangestrikeTarget): arg is R
   return "creature" in arg && "adjustment" in arg && "longDistance" in arg
 }
 
-export const combineStrikes = (a: Strike, b: Strike, clamp?: boolean): Strike => ({
-  toHit: clamp === false ? a.toHit + b.toHit : _.clamp(a.toHit + b.toHit, 2, 6),
+export const combineStrikes = (a: Strike, b: Strike, clampVal?: boolean): Strike => ({
+  toHit: clampVal === false ? a.toHit + b.toHit : clamp(a.toHit + b.toHit, 2, 6),
   dice: a.dice + b.dice
 })
 
@@ -247,7 +247,7 @@ export class Battle {
 
   // Parameters optional for Hydration
   constructor(hex: number, edge: HexEdge, game: TitanGame, attacking?: Stack, defending?: Stack) {
-    this.creatureOnHex = _.memoize(this.creatureOnHex)
+    this.creatureOnHex = memoize(this.creatureOnHex)
     this.round = 0
     this.phase = BattlePhase.DEFENDER_MOVE
     this.hex = hex

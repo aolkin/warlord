@@ -33,7 +33,7 @@
 
 <script lang="ts">
 import { defineComponent } from "vue"
-import _ from "lodash"
+import { range, sortBy } from "lodash-es"
 import { mapActions, mapGetters, mapMutations, mapState } from "vuex"
 import { MasterboardPhase, Path } from "~/models/game"
 import { MasterboardHex } from "~/models/masterboard"
@@ -54,12 +54,12 @@ export default defineComponent({
     ...mapState("game", ["activePhase", "stacks", "activeRoll"]),
     ...mapGetters("ui/selections", ["paths", "focusedStack", "selectedStack"]),
     sortedStacks(): Stack[] {
-      lastSortedStacks = _.sortBy(this.stacks, stack =>
+      lastSortedStacks = sortBy(this.stacks, stack =>
         stack === this.selectedStack ? 999 : lastSortedStacks.indexOf(stack))
       return lastSortedStacks
     },
     interleavedPaths(): [boolean, MasterboardHex][] {
-      return _.range(this.paths[0].path.length).map((colIndex: number) =>
+      return range(this.paths[0].path.length).map((colIndex: number) =>
         this.paths.map((row: Path) => [row.foe !== undefined, row.path[colIndex]])).slice(1)
     },
     canFreeMove(): boolean {

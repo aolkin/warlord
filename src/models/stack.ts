@@ -1,4 +1,4 @@
-import _ from "lodash"
+import { range, remove, sum } from "lodash-es"
 import { assert } from "~/utils/assert"
 import { CREATURE_DATA, CreatureType, MUSTER_DATA } from "./creature"
 import { HexEdge, Terrain } from "./masterboard"
@@ -27,7 +27,7 @@ export class Stack {
       CreatureType.CENTAUR, CreatureType.CENTAUR,
       CreatureType.OGRE, CreatureType.OGRE,
       CreatureType.GARGOYLE, CreatureType.GARGOYLE]
-    this.split = _.range(8).map(i => false)
+    this.split = range(8).map(i => false)
     this.hex = start
     this.origin = start
     this.marker = marker
@@ -35,7 +35,7 @@ export class Stack {
   }
 
   numSplitting(): number {
-    return _.sum(this.split.map(i => i ? 1 : 0))
+    return sum(this.split.map(i => i ? 1 : 0))
   }
 
   hasMoved(): boolean {
@@ -52,7 +52,7 @@ export class Stack {
       if (numSplitting !== 4) {
         return false
       }
-      const splitLords: number = _.sum(this.creatures.map((creature, index) =>
+      const splitLords: number = sum(this.creatures.map((creature, index) =>
         this.split[index] && CREATURE_DATA[creature].lord))
       if (splitLords !== 1) {
         return false
@@ -67,7 +67,7 @@ export class Stack {
   }
 
   getValue(): number {
-    return _.sum(this.creatures.map(creature => CREATURE_DATA[creature].getValue()))
+    return sum(this.creatures.map(creature => CREATURE_DATA[creature].getValue()))
   }
 
   musterable(terrain: Terrain): MusterPossibility[] {
@@ -119,7 +119,7 @@ export class Stack {
     assert(this.isValidSplit(), "Invalid split")
     assert(marker >= 0, "Invalid marker")
     const creatures = this.getCreaturesSplit(true)
-    _.remove(this.creatures, (creature, index) => this.split[index])
+    remove(this.creatures, (creature, index) => this.split[index])
     this.split.fill(false)
     return new Stack(this.owner, this.hex, marker, creatures)
   }

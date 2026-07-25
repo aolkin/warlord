@@ -1,4 +1,4 @@
-import _ from "lodash"
+import { random } from "lodash-es"
 import { createApp } from "vue"
 import App from "~/App.vue"
 import vuetify from "~/plugins/vuetify"
@@ -6,7 +6,7 @@ import vuex from "~/plugins/vuex"
 import { loadFonts } from "~/plugins/webfontloader"
 
 (() => {
-  let idCounter = _.random(Number.MIN_SAFE_INTEGER, Number.MAX_SAFE_INTEGER)
+  let idCounter = random(Number.MIN_SAFE_INTEGER, Number.MAX_SAFE_INTEGER)
   // eslint-disable-next-line no-extend-native
   Object.defineProperty(Object.prototype, "__guid", {
     writable: true

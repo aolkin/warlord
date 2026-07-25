@@ -85,7 +85,7 @@
 
 <script lang="ts">
 import { defineComponent } from "vue"
-import _ from "lodash"
+import { capitalize } from "lodash-es"
 import { mapActions, mapGetters, mapMutations, mapState } from "vuex"
 import { CREATURE_DATA, CreatureType } from "~/models/creature"
 import { MasterboardPhase } from "~/models/game"
@@ -121,7 +121,7 @@ export default defineComponent({
         : this.focusedHex?.terrain
     },
     musteringTerrainName(): string {
-      return _.capitalize(Terrain[this.musteringTerrain])
+      return capitalize(Terrain[this.musteringTerrain])
     },
     musterable(): MusterPossibility[] {
       return this.focusedStack?.musterable(this.musteringTerrain)

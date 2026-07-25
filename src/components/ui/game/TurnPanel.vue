@@ -78,7 +78,7 @@
 
 <script lang="ts">
 import { defineComponent } from "vue"
-import _ from "lodash"
+import { sum } from "lodash-es"
 import { mapActions, mapGetters, mapMutations, mapState } from "vuex"
 import { MasterboardPhase } from "~/models/game"
 import { Stack } from "~/models/stack"
@@ -109,13 +109,13 @@ export default defineComponent({
       }
     },
     sevenHighCount(): number {
-      return _.sum(this.activeStacks.map((stack: Stack) => stack.creatures.length === 7))
+      return sum(this.activeStacks.map((stack: Stack) => stack.creatures.length === 7))
     },
     movedCount(): number {
-      return _.sum(this.activeStacks.map((stack: Stack) => stack.hasMoved()))
+      return sum(this.activeStacks.map((stack: Stack) => stack.hasMoved()))
     },
     musteredCount(): number {
-      return _.sum(this.activeStacks.map((stack: Stack) => stack.currentMuster !== undefined))
+      return sum(this.activeStacks.map((stack: Stack) => stack.currentMuster !== undefined))
     },
     engagementsMessage(): string {
       if (this.engagedStacks.length < 1) {
