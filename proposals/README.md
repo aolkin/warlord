@@ -30,5 +30,6 @@ Written July 2026. The last feature commit landed January 2023 and the last depe
 2. **Toolchain** (doc 01): everything else is easier on current Vite/TS/ESLint, and none of it changes app behavior.
 3. **Mechanical model split + tests around game logic** (doc 07): the models are pure TypeScript and testable today; do this before refactoring them.
 4. **State management** (doc 04): the Vuex-reflection layer is the biggest structural obstacle to both performance work and multiplayer.
-5. **Multiplayer groundwork** (doc 05): engine extraction behind a local-server interface while touching the store anyway.
-6. **UI chrome / rendering** (docs 06, 03): Vuetify 4 upgrade, then measure rendering before deciding on Vapor/Svelte/canvas.
+5. **UI chrome** (doc 06): Vuetify 4 upgrade. Feasible in parallel with step 6 — it touches chrome components and the Vuetify plugin while multiplayer groundwork lives in models/store, so the file overlap is small.
+6. **Multiplayer groundwork** (doc 05): engine extraction behind a local-server interface while touching the store anyway.
+7. **Rendering** (doc 03): measure once the store refactor has landed, then decide on Vapor/canvas.
