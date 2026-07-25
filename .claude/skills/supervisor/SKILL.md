@@ -42,7 +42,7 @@ Include this in every subagent prompt, adapted to the task:
 
 ## The loop
 
-1. **Pick** the next task. If it needs scoping, spawn a cheap scout subagent to size it and propose acceptance criteria — don't scope it yourself.
+1. **Pick** the next task. If it needs scoping, spawn a cheap scout subagent to size it and propose acceptance criteria — don't scope it yourself. Scope every PR to be **human-reviewable**: one coherent change a reviewer can hold in their head, roughly a few hundred lines of meaningful diff (mechanical churn like lockfiles or renames doesn't count against this). If a task won't fit, have the scout split it into a sequence of PR-sized slices, each independently landable and leaving the codebase working; refactor-then-behavior-change is the usual split. Err small — two quick reviews beat one slog, and the goal is a steady stream of merges, not big batches.
 2. **Implement** via a subagent in a worktree at the appropriate model rung. It codes, verifies, pushes, opens the PR.
 3. **Watch** the PR: call `subscribe_pr_activity` so CI failures and review comments arrive as events, and schedule a fallback check-in (`send_later`, ~1 hour) in case events are missed. If neither tool is available, have a haiku subagent poll the PR state and return one line.
 4. **Respond** to every event via subagent, never yourself:
