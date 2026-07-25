@@ -1,8 +1,36 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 
-import deepFreeze from "deep-freeze"
 import { assert } from "~/utils/assert"
 import { div, mod } from "~/utils/math"
+
+/**
+ * Recursively freeze an object and all its nested properties.
+ * Handles Maps, objects, and nested structures.
+ */
+function deepFreeze<T>(obj: T): T {
+  if (obj === null || typeof obj !== 'object') {
+    return obj
+  }
+
+  // Maps don't enumerate values like objects, so iterate explicitly
+  if (obj instanceof Map) {
+    Object.freeze(obj)
+    obj.forEach((value) => {
+      deepFreeze(value)
+    })
+    return obj
+  }
+
+  Object.freeze(obj)
+  Object.getOwnPropertyNames(obj).forEach((prop) => {
+    const value = (obj as Record<string, unknown>)[prop]
+    if (value !== null && (typeof value === 'object' || typeof value === 'function')) {
+      deepFreeze(value)
+    }
+  })
+
+  return obj
+}
 
 export enum MovementRule {
   NONE, // for backwards edges
