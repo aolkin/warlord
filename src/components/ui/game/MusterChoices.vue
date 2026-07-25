@@ -41,13 +41,13 @@
   </div>
 </template>
 <script lang="ts">
-import { defineComponent } from "vue"
+import { defineComponent, PropType } from "vue"
 import { fill } from "lodash-es"
 import { mapState } from "vuex"
 import { CREATURE_DATA } from "~/models/creature"
 import { MasterboardPhase } from "~/models/game"
 import { Player } from "~/models/player"
-import { MusterPossibility } from "~/models/stack"
+import { MusterChoice, MusterPossibility } from "~/models/stack"
 import Creature from "../../game/Creature.vue"
 
 export default defineComponent({
@@ -55,7 +55,7 @@ export default defineComponent({
   components: { Creature },
   props: {
     musterable: {
-      type: Array,
+      type: Array as PropType<MusterPossibility[]>,
       required: false,
       default: () => []
     },
@@ -65,7 +65,7 @@ export default defineComponent({
       default: undefined
     },
     modelValue: {
-      type: Array, // MusterPossibility
+      type: Array as unknown as PropType<MusterChoice>,
       required: false,
       default: undefined
     }
@@ -84,7 +84,7 @@ export default defineComponent({
       get() {
         return this.modelValue
       },
-      set(value: MusterPossibility) {
+      set(value: MusterChoice) {
         this.$emit("update:modelValue", value)
       }
     }
@@ -95,7 +95,7 @@ export default defineComponent({
     }
   },
   methods: {
-    choose(possibility: MusterPossibility) {
+    choose(possibility: MusterChoice) {
       this.chosen = possibility
       fill(this.dialogState, false)
     }

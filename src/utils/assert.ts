@@ -1,4 +1,4 @@
-import * as assertBuiltin from "assert"
+import assertBuiltin from "assert"
 
 export function assert(condition: boolean, msg: string): asserts condition {
   if (typeof assertBuiltin === "function") {

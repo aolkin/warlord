@@ -106,8 +106,8 @@ export default defineComponent({
         [CLIP_TRIANGLE_SIDE / 2 - TRIANGLE_SIDE / 2, TRIANGLE_HEIGHT / 2 - CLIP_TRIANGLE_HEIGHT]
       ].map(([x, y]) => `${x},${y}`)
     },
-    transform() {
-      return hexTransform(this.hex.id)
+    transform(): string {
+      return hexTransform(this.hex.id).toString()
     },
     inverted() {
       return isHexInverted(this.hex.id)

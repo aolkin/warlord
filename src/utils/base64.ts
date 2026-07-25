@@ -218,7 +218,6 @@ function strToUTF8Arr(sDOMStr: string): Uint8Array {
 }
 
 export async function compressAndEncode(stringified: string): Promise<string | undefined> {
-  // @ts-expect-error
   if (window.CompressionStream !== undefined) {
     const stringStream = new ReadableStream({
       start(controller) {
@@ -227,7 +226,6 @@ export async function compressAndEncode(stringified: string): Promise<string | u
         controller.close()
       }
     })
-    // @ts-expect-error
     const compressedStream = stringStream.pipeThrough(new CompressionStream("gzip"))
     const reader = compressedStream.getReader()
     const result = { value: new Uint8Array(0), done: false }
@@ -239,13 +237,12 @@ export async function compressAndEncode(stringified: string): Promise<string | u
       result.done = read.done
       result.value = newValue
     }
-    return base64ArrayBuffer(result.value)
+    return base64ArrayBuffer(result.value.buffer)
   }
 }
 
 export async function decodeAndDecompress(encoded: string): Promise<string | undefined> {
   const binArray = base64DecToArr(encoded)
-  // @ts-expect-error
   if (window.DecompressionStream === undefined) {
     throw new Error("Unable to decompress, DecompressionStream API missing")
   }
@@ -255,7 +252,6 @@ export async function decodeAndDecompress(encoded: string): Promise<string | und
       controller.close()
     }
   })
-  // @ts-expect-error
   const compressedStream = binStream.pipeThrough(new DecompressionStream("gzip"))
   const reader = compressedStream.getReader()
   const result = { value: "", done: false }

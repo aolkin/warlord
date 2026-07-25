@@ -7,14 +7,15 @@
 <script lang="ts">
 import DiceBox from "@3d-dice/dice-box"
 import { defineComponent } from "vue"
-import { random, range, set } from "lodash-es"
+import { random, range } from "lodash-es"
 import { mapState } from "vuex"
 
 interface ComponentData {
   ready: boolean,
   rolling: boolean,
   resolve?: (_: number[]) => void,
-  reject?: (_: Error) => void
+  reject?: (_: Error) => void,
+  diceBox?: DiceBox
 }
 
 const DebugDice: { nextRolls?: number[] } = {
@@ -30,7 +31,8 @@ export default defineComponent({
       ready: false,
       rolling: false,
       resolve: undefined,
-      reject: undefined
+      reject: undefined,
+      diceBox: undefined
     }
   },
   computed: {
@@ -61,11 +63,11 @@ export default defineComponent({
       this.resolve = undefined
       this.rolling = false
     }
-    set(this, "diceBox", diceBox)
+    this.diceBox = diceBox
   },
   methods: {
-    async roll(quantity?: number) {
-      return new Promise((resolve, reject) => {
+    async roll(quantity?: number): Promise<number[]> {
+      return new Promise<number[]>((resolve, reject) => {
         if (DebugDice.nextRolls) {
           return resolve(DebugDice.nextRolls)
         }
@@ -79,7 +81,7 @@ export default defineComponent({
         try {
           this.rolling = true
           this.$forceUpdate()
-          this.diceBox.roll(`${quantity ?? 1}d6`)
+          this.diceBox?.roll(`${quantity ?? 1}d6`)
           if (this.quickDice) {
             setTimeout(() => {
               this.resolve?.(range(quantity ?? 1).map(i => random(1, 6)))

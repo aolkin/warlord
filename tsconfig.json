@@ -2,11 +2,16 @@
   "compilerOptions": {
     "target": "esnext",
     "module": "esnext",
+    "moduleResolution": "node10",
+    "ignoreDeprecations": "6.0",
     "lib": ["esnext", "dom", "dom.iterable"],
     "strict": true,
     "jsx": "preserve",
-    "baseUrl": ".",
+    "allowJs": true,
     "paths": {
+      "~/*": [
+        "./src/*"
+      ],
       "~/components/*": [
         "./src/components/*.vue"
       ],
@@ -26,8 +31,6 @@
         "./src/*"
       ]
     },
-    "declaration": true,
-    "declarationMap": true,
     "sourceMap": true,
     "skipLibCheck": true,
     "esModuleInterop": true

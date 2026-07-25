@@ -7,7 +7,7 @@ import { Battle, BATTLE_PHASE_TYPES, BattleCreature, BattlePhaseType, Rangestrik
 import { CREATURE_DATA, CREATURE_LIST, CreatureType } from "./creature"
 import masterboard, { HexEdge, MasterboardHex } from "./masterboard"
 import { Player, PlayerId } from "./player"
-import { MusterPossibility, Stack } from "./stack"
+import { MusterChoice, Stack } from "./stack"
 
 const INITIAL_HEXES: Record<number, number[]> = {
   2: [100, 400],
@@ -54,7 +54,7 @@ interface Getters {
 
 interface MovePayload { stack: Stack, hex: number | MasterboardHex, edge?: HexEdge }
 interface BattleMovePayload { creature: BattleCreature, hex: number }
-interface MusterPayload { stack: Stack, recruit: MusterPossibility }
+interface MusterPayload { stack: Stack, recruit: MusterChoice }
 interface BattlePayload { attacking: Stack, defending: Stack }
 interface IStrikePayload { attacker: BattleCreature, rolls: number[] }
 interface AttackPayload extends IStrikePayload { target: BattleCreature, optionalToHit?: number }

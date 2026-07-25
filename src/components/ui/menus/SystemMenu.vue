@@ -78,6 +78,7 @@
 <script lang="ts">
 import { defineComponent } from "vue"
 import { mapActions, mapGetters, mapMutations, mapState } from "vuex"
+import DiceRoller from "~/components/ui/generic/DiceRoller"
 import { Creature, CREATURE_LIST } from "~/models/creature"
 import { CreatureColorMode } from "~/store/ui/preferences"
 
@@ -156,7 +157,8 @@ export default defineComponent({
       }
     },
     roll() {
-      this.diceRoller.roll(this.diceQuantity)
+      const diceRoller = this.diceRoller as InstanceType<typeof DiceRoller>
+      diceRoller.roll(this.diceQuantity)
     },
     async persistToClipboard() {
       const value = await this.persist()

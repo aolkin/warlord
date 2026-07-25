@@ -7,19 +7,22 @@ import { PlayerId } from "./player"
 export type StackRef = number
 
 export type MusterBasis = [CreatureType, number]
+// One recruitable creature and the ways it can currently be mustered.
 export type MusterPossibility = [CreatureType, MusterBasis[]]
+// A recruit that has actually been chosen: the creature and the single basis used to muster it.
+export type MusterChoice = [CreatureType, MusterBasis]
 
 export class Stack {
   readonly owner: PlayerId
   readonly creatures: CreatureType[]
   readonly marker: number
   readonly split: boolean[]
-  readonly recruits: Record<number, MusterPossibility>
+  readonly recruits: Record<number, MusterChoice>
 
   origin: number
   hex: number
   attackEdge: HexEdge | undefined
-  currentMuster: MusterPossibility | undefined
+  currentMuster: MusterChoice | undefined
 
   constructor(owner: PlayerId, start: number, marker: number, initial?: CreatureType[]) {
     this.owner = owner

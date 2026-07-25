@@ -28,6 +28,4 @@ const app = createApp(App)
   .use(vuetify)
   .use(vuex)
 
-app.config.unwrapInjectedRef = true
-
 app.mount("#app")

@@ -64,8 +64,8 @@ export default defineComponent({
         !this.edge.hex.getEdges().some(edge =>
           edge.rule !== MovementRule.NONE && edge.hex.id === this.hex.id)
     },
-    hexTransform() {
-      return hexTransform(this.hex.id)
+    hexTransform(): string {
+      return hexTransform(this.hex.id).toString()
     },
     transform() {
       return `rotate(${isHexInverted(this.hex.id) ? 180 : 0})

@@ -23,7 +23,7 @@ const titanColors = {
 
 const playerColors = Object.fromEntries(map(titanColors,
   // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
-  (color, name) => [`player-${PlayerId[name.split("-")[1].toUpperCase()]}`, color])
+  (color, name) => [`player-${PlayerId[name.split("-")[1].toUpperCase() as keyof typeof PlayerId]}`, color])
   .filter(entry => entry[0] !== "player-undefined"))
 
 // https://vuetifyjs.com/en/introduction/why-vuetify/#feature-guides
