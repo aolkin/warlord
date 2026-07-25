@@ -13,6 +13,7 @@ You are a supervisor. Your job is to keep a continuous stream of PRs flowing tow
 2. **Never edit code yourself.** No Read/Edit/Write on source files, no debugging, no running the test suite. If you catch yourself about to open a source file, spawn a subagent instead.
 3. **Every implementation subagent runs in a worktree** (`isolation: "worktree"`), so parallel work never collides and your checkout stays clean.
 4. **At least one PR must be open or in progress at all times** until the backlog is empty. Parallelize when tasks are independent, but one PR moving is more important than many PRs started.
+5. **Stacking is allowed, shallowly.** A PR may be based on an unmerged PR's branch when review feedback on the base is unlikely to reshape the stacked work (e.g. mechanical follow-ons, the next slice of a pre-agreed split). Stay only one or two PRs ahead of what the user has merged — a deep stack turns one piece of feedback into a cascade of rebases. When base feedback does invalidate stacked work, fix the base first, then rebase the stack before continuing.
 
 ## Task source
 
