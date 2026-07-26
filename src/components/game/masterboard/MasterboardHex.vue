@@ -35,7 +35,7 @@
 </template>
 
 <script lang="ts">
-import { defineComponent } from "@vue/runtime-core"
+import { defineComponent } from "vue"
 import { mapMutations, mapState } from "vuex"
 import { MasterboardHex, Terrain } from "~/models/masterboard"
 import { Preferences } from "~/store/ui/preferences"

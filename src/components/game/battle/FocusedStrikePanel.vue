@@ -10,7 +10,7 @@
 </template>
 
 <script lang="ts">
-import { defineComponent } from "@vue/runtime-core"
+import { defineComponent } from "vue"
 import { mapGetters, mapState } from "vuex"
 import { BattleCreature, Hazard, RangestrikeTarget, Strike } from "~/models/battle"
 import StrikePanelTitle from "./StrikePanelTitle.vue"

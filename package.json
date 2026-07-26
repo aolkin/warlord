@@ -1,5 +1,6 @@
 {
   "private": true,
+  "packageManager": "pnpm@8.15.0",
   "engines": {
     "node": "24"
   },
@@ -26,7 +27,6 @@
     "@typescript-eslint/parser": "^5.10.0",
     "@vitejs/plugin-vue": "^1.2.4",
     "@vue/eslint-config-standard": "^5.1.2",
-    "@vuetify/vite-plugin": "^1.0.0-alpha.3",
     "eslint": "^7.12.1",
     "eslint-config-standard-with-typescript": "^21.0.1",
     "eslint-plugin-import": "^2.22.1",

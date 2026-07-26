@@ -33,7 +33,7 @@
   </g>
 </template>
 <script lang="ts">
-import { defineComponent } from "@vue/runtime-core"
+import { defineComponent } from "vue"
 import { MasterboardEdge, MasterboardHex, MovementRule, Terrain } from "~/models/masterboard"
 import { hexTransform, isHexInverted, TRIANGLE_HEIGHT } from "./utils"
 

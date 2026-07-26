@@ -6,7 +6,7 @@
 
 <script lang="ts">
 import DiceBox from "@3d-dice/dice-box"
-import { defineComponent } from "@vue/runtime-core"
+import { defineComponent } from "vue"
 import _ from "lodash"
 import { mapState } from "vuex"
 

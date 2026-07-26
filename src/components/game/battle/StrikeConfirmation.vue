@@ -50,7 +50,7 @@
   </v-dialog>
 </template>
 <script lang="ts">
-import { defineComponent, PropType } from "@vue/runtime-core"
+import { defineComponent, PropType } from "vue"
 import _ from "lodash"
 import { mapGetters, mapState } from "vuex"
 import { BattleCreature, isRangestrike, Strike } from "~/models/battle"

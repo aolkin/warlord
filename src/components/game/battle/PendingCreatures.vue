@@ -20,7 +20,7 @@
   </div>
 </template>
 <script lang="ts">
-import { defineComponent, PropType } from "@vue/runtime-core"
+import { defineComponent, PropType } from "vue"
 import { mapActions, mapGetters, mapMutations, mapState } from "vuex"
 import { BattlePhase } from "~/models/battle"
 import Creature from "../Creature.vue"

@@ -65,7 +65,7 @@
   </v-card>
 </template>
 <script lang="ts">
-import { defineComponent } from "@vue/runtime-core"
+import { defineComponent } from "vue"
 import { mapGetters, mapMutations, mapState } from "vuex"
 import { BattleCreature, BattlePhase } from "~/models/battle"
 import { Player } from "~/models/player"

@@ -18,7 +18,7 @@
   </g>
 </template>
 <script lang="ts">
-import { defineComponent } from "@vue/runtime-core"
+import { defineComponent } from "vue"
 import board, { Masterboard, MasterboardEdge, MasterboardHex, MovementRule } from "~/models/masterboard"
 import HexEdge from "./HexEdge.vue"
 
