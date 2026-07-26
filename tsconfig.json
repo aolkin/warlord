@@ -1,9 +1,8 @@
 {
-  // https://v3.nuxtjs.org/concepts/typescript
-  "extends": "./.nuxt/tsconfig.json",
   "compilerOptions": {
     "target": "esnext",
     "module": "esnext",
+    "lib": ["esnext", "dom", "dom.iterable"],
     "strict": true,
     "jsx": "preserve",
     "baseUrl": ".",
@@ -26,6 +25,13 @@
       "@/*": [
         "./src/*"
       ]
-    }
-  }
+    },
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules"]
 }
