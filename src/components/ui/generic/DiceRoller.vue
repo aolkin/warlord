@@ -44,10 +44,11 @@ export default defineComponent({
     ...mapState("ui/preferences", ["quickDice"])
   },
   mounted() {
-    const diceBox = new DiceBox("#dicebox-container", {
+    const diceBox = new DiceBox({
+      container: "#dicebox-container",
       assetPath: "/assets/dice-box/",
       theme: "diceOfRolling",
-      zoomLevel: 2,
+      scale: 6,
       restitution: 0.6,
       friction: 0.9,
       linearDamping: 0.5,
@@ -59,9 +60,9 @@ export default defineComponent({
     diceBox.init().then(() => {
       this.ready = true
     })
-    diceBox.onRollComplete = (): void => {
-      const result = diceBox.rollData.flatMap(i => i.rolls.map(roll => roll.result))
-      console.log("Dice roll complete", diceBox.rollData, result)
+    diceBox.onRollComplete = (rollResult): void => {
+      const result = rollResult.flatMap(group => group.rolls.map(roll => roll.value))
+      console.log("Dice roll complete", rollResult, result)
       this.resolve?.(result)
       this.reject = undefined
       this.resolve = undefined

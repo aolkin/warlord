@@ -15,10 +15,9 @@ declare module "assert" {
 
 declare module "@3d-dice/dice-box" {
   export default class DiceBox {
-    constructor(selector: string, options?: Record<string, unknown>)
+    constructor(options?: Record<string, unknown>)
     init(): Promise<void>
     roll(notation: string): void
-    onRollComplete: () => void
-    rollData: Array<{ rolls: Array<{ result: number }> }>
+    onRollComplete: (rollResult: Array<{ rolls: Array<{ value: number }> }>) => void
   }
 }
