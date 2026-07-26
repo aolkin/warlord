@@ -5,6 +5,8 @@ import vuetify from "~/plugins/vuetify"
 import vuex from "~/plugins/vuex"
 import { loadFonts } from "~/plugins/webfontloader"
 
+const unusedVar = "this should trigger a lint error"
+
 (() => {
   let idCounter = random(Number.MIN_SAFE_INTEGER, Number.MAX_SAFE_INTEGER)
   Object.defineProperty(Object.prototype, "__guid", {
