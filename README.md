@@ -1,29 +1,40 @@
-# Nuxt 3 Minimal Starter
+# Warlord
 
-We recommend to look at the [documentation](https://v3.nuxtjs.org).
+A digital implementation of the classic Titan board game.
 
-## Setup
+## Getting Started
 
-Make sure to install the dependencies
-
-```bash
-yarn install
-```
-
-## Development
-
-Start the development server on http://localhost:3000
+### Install dependencies
 
 ```bash
-yarn dev
+pnpm install
 ```
 
-## Production
-
-Build the application for production:
+### Development server
 
 ```bash
-yarn build
+pnpm dev
 ```
 
-Checkout the [deployment documentation](https://v3.nuxtjs.org/docs/deployment).
+Start the dev server at `http://localhost:5173`.
+
+### Build
+
+```bash
+pnpm build
+```
+
+### Lint and typecheck
+
+```bash
+pnpm lint
+pnpm typecheck
+```
+
+## Architecture
+
+The project is organized into three main layers:
+
+- **Models** (`src/models/`) — Plain TypeScript game engine. Contains the core `TitanGame` class and supporting types (Player, Stack, Battle, etc.) with no UI dependencies.
+- **Store** (`src/store/`) — Vuex state management layer. Wraps TitanGame's getter/mutation/action methods (prefixed with `get*`, `m*`, `do*`) as Vuex actions and getters to make state reactive and accessible to components.
+- **Components** (`src/components/`) — Vue UI layer. Renders the game state, handles user input, and dispatches store actions.
