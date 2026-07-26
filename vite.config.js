@@ -26,5 +26,8 @@ export default defineConfig({
       ".tsx",
       ".vue"
     ]
+  },
+  test: {
+    include: ["src/**/*.test.ts"]
   }
 })
