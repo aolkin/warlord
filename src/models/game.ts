@@ -1,10 +1,10 @@
-import { assign, matches, range } from "lodash-es"
+import { range } from "lodash-es"
 import { BaseActionContext } from "~/store/types"
-import { View } from "~/store/ui/selection"
 import { assert } from "~/utils/assert"
-import { compressAndEncode, decodeAndDecompress } from "~/utils/base64"
-import { Battle, BATTLE_PHASE_TYPES, BattleCreature, BattlePhaseType, RangestrikeTarget } from "./battle"
+import { Battle, BattleCreature, BattlePhaseType } from "./battle"
 import { CREATURE_DATA, CREATURE_LIST, CreatureType } from "./creature"
+import { GameBattle, gameBattle } from "./game/battle"
+import { GamePersistence, gamePersistence, GAME_PERSISTENCE_KEY } from "./game/persistence"
 import masterboard, { HexEdge, MasterboardHex } from "./masterboard"
 import { Player, PlayerId } from "./player"
 import { defaultRandom, Random } from "./random"
@@ -31,7 +31,7 @@ export interface Path {
   path: MasterboardHex[]
 }
 
-interface Getters {
+export interface Getters {
   readonly round: number // 1-indexed
   readonly firstRound: boolean
   readonly players: Player[]
@@ -54,20 +54,20 @@ interface Getters {
 }
 
 interface MovePayload { stack: Stack, hex: number | MasterboardHex, edge?: HexEdge }
-interface BattleMovePayload { creature: BattleCreature, hex: number }
 interface MusterPayload { stack: Stack, recruit: MusterChoice }
-interface BattlePayload { attacking: Stack, defending: Stack }
-interface IStrikePayload { attacker: BattleCreature, rolls: number[] }
-interface AttackPayload extends IStrikePayload { target: BattleCreature, optionalToHit?: number }
-interface RangestrikePayload extends IStrikePayload { target: RangestrikeTarget }
 
-interface ActionContext extends BaseActionContext {
+export interface ActionContext extends BaseActionContext {
   state: TitanGame
   getters: Getters
 }
 
-const GAME_PERSISTENCE_KEY = "warlord-v1"
-
+// Methods contributed by gameBattle/gamePersistence are assigned onto TitanGame.prototype via
+// Object.assign below rather than declared in the class body, so the store's
+// Object.getOwnPropertyNames(TitanGame.prototype) reflection still finds them; this interface
+// makes those methods visible to the type checker.
+// eslint-disable-next-line @typescript-eslint/no-unsafe-declaration-merging
+export interface TitanGame extends GameBattle, GamePersistence {}
+// eslint-disable-next-line @typescript-eslint/no-unsafe-declaration-merging
 export class TitanGame {
   readonly players: Player[]
   readonly stacks: Stack[]
@@ -179,36 +179,6 @@ export class TitanGame {
     return getters.activePlayer.id
   }
 
-  getBattleActivePlayer(): PlayerId | undefined {
-    return this.activeBattle?.getActivePlayer()
-  }
-
-  getBattlePhaseType(): BattlePhaseType | undefined {
-    return this.activeBattle === undefined ? undefined : BATTLE_PHASE_TYPES[this.activeBattle.phase]
-  }
-
-  getBattleMoves(): (creature: BattleCreature) => Set<number> {
-    return (creature: BattleCreature) => {
-      return this.activeBattle === undefined ? new Set<number>() : this.activeBattle.movementFor(creature)
-    }
-  }
-
-  getBattleEngagements(): (creature: BattleCreature) => BattleCreature[] {
-    return (creature: BattleCreature) => {
-      return this.activeBattle === undefined ? [] : this.activeBattle.engagedWith(creature)
-    }
-  }
-
-  getBattleCarryoverTargets(): BattleCreature[] | undefined {
-    return this.activeBattle?.carryoverTargets()
-  }
-
-  getBattleRangestrikeTargets(): (creature: BattleCreature) => RangestrikeTarget[] {
-    return (creature: BattleCreature) => {
-      return this.activeBattle === undefined ? [] : this.activeBattle.rangestrikeTargets(creature)
-    }
-  }
-
   getMayProceed(getters: Getters): boolean {
     switch (this.activePhase) {
       case MasterboardPhase.SPLIT:
@@ -316,42 +286,6 @@ export class TitanGame {
     stack.currentMuster = recruit
   }
 
-  mInitiateBattle({ attacking, defending }: BattlePayload): void {
-    assert(attacking.attackEdge !== undefined, "Cannot attack without coming from somewhere")
-    this.activeBattle = new Battle(attacking.hex, attacking.attackEdge, this, attacking, defending)
-  }
-
-  mNextBattlePhase(): void {
-    assert(this.activeBattle !== undefined, "No active battle!")
-    this.activeBattle?.nextPhase()
-  }
-
-  mMoveCreature({ creature, hex }: BattleMovePayload): void {
-    assert(this.activeBattle?.creatures.some(matches(creature)) ?? false, "Unexpected creature")
-    creature.hex = hex
-  }
-
-  mAttackCreature({ attacker, target, rolls, optionalToHit }: AttackPayload): void {
-    assert(this.activeBattle?.creatures.some(matches(attacker)) ?? false, "Unexpected attacker")
-    assert(this.activeBattle?.creatures.some(matches(target)) ?? false, "Unexpected defender")
-    this.activeBattle?.strike(attacker, target, rolls, optionalToHit)
-  }
-
-  mRangestrikeCreature({ attacker, target, rolls }: RangestrikePayload): void {
-    assert(this.activeBattle?.creatures.some(matches(attacker)) ?? false, "Unexpected attacker")
-    assert(this.activeBattle?.creatures.some(matches(target.creature)) ?? false, "Unexpected defender")
-    this.activeBattle?.rangestrike(attacker, target, rolls)
-  }
-
-  mAssignCarryover(target: BattleCreature): void {
-    assert(this.activeBattle?.creatures.some(matches(target)) ?? false, "Unexpected target")
-    this.activeBattle?.carryover(target)
-  }
-
-  mSkipCarryover(): void {
-    this.activeBattle?.activeStrike?.skipCarryover()
-  }
-
   // Actions
 
   async doNextPhase({ getters, commit, dispatch }: ActionContext): Promise<void> {
@@ -409,98 +343,6 @@ export class TitanGame {
     await this.persist()
   }
 
-  /*
-   *** BATTLE FUNCTIONS ***
-   */
-
-  async doInitiateBattle({ commit, getters }: ActionContext, attacking: Stack): Promise<void> {
-    const defending = getters.stacksForHex(attacking.hex)
-      .find(stack => stack.owner !== getters.activePlayerId) as Stack
-    assert(defending !== undefined,
-      `No engagement present on hex ${attacking.hex}!`)
-    commit("initiateBattle", { attacking, defending })
-    commit("ui/selections/setView", View.BATTLEBOARD, { root: true })
-    await this.persist()
-  }
-
-  async doMoveCreature({ getters, commit }: ActionContext, payload: BattleMovePayload): Promise<void> {
-    assert(getters.battlePhaseType === BattlePhaseType.MOVE, "Not in movement phase")
-    assert(payload.creature.player === this.getBattleActivePlayer(), "Incorrect player")
-    commit("moveCreature", payload)
-    await this.persist()
-  }
-
-  async doNextBattlePhase({ commit }: ActionContext): Promise<void> {
-    commit("nextBattlePhase")
-    await this.persist()
-  }
-
-  async doAttackCreature({ getters, commit }: ActionContext, payload: AttackPayload): Promise<void> {
-    if (this.activeBattle === undefined) { throw new Error("Must be in a battle!") }
-    assert(getters.battlePhaseType !== BattlePhaseType.MOVE, "Cannot strike in movement phase")
-    assert(payload.attacker.player === this.getBattleActivePlayer(), "Incorrect player")
-    commit("attackCreature", payload)
-    await this.persist()
-  }
-
-  async doRangestrikeCreature({ getters, commit }: ActionContext, payload: RangestrikePayload): Promise<void> {
-    if (this.activeBattle === undefined) { throw new Error("Must be in a battle!") }
-    assert(getters.battlePhaseType !== BattlePhaseType.MOVE, "Cannot strike in movement phase")
-    assert(payload.attacker.player === this.getBattleActivePlayer(), "Incorrect player")
-    commit("rangestrikeCreature", payload)
-    await this.persist()
-  }
-
-  async doAssignCarryover({ getters, commit }: ActionContext, payload: BattleCreature): Promise<void> {
-    if (this.activeBattle === undefined) { throw new Error("Must be in a battle!") }
-    assert(getters.battlePhaseType !== BattlePhaseType.MOVE, "Cannot carryover in movement phase")
-    commit("assignCarryover", payload)
-    await this.persist()
-  }
-
-  async doSkipCarryover({ getters, commit }: ActionContext): Promise<void> {
-    if (this.activeBattle === undefined) { throw new Error("Must be in a battle!") }
-    if (this.activeBattle.activeStrike === undefined) { throw new Error("Must have an active strike!") }
-    assert(getters.battlePhaseType !== BattlePhaseType.MOVE, "Cannot carryover in movement phase")
-    commit("skipCarryover")
-    await this.persist()
-  }
-
-  /*
-   *** PERSISTENCE FUNCTIONS ***
-   */
-
-  async doPersist({ commit }: ActionContext): Promise<string | undefined> {
-    const b64 = await this.persist()
-    commit("setEncodedSaveData", b64, { root: true })
-    return b64
-  }
-
-  async persist(): Promise<string | undefined> {
-    const stringified = JSON.stringify(this)
-    localStorage[GAME_PERSISTENCE_KEY] = stringified
-    return await compressAndEncode(stringified)
-  }
-
-  mRehydrate(hydration: TitanGame): void {
-    assign(this, {
-      ...hydration,
-      players: hydration.players.map((player: Player) =>
-        assign(new Player(player.id, player.name), player)),
-      stacks: hydration.stacks.map((stack: Stack) =>
-        assign(new Stack(stack.owner, stack.hex, stack.marker, stack.creatures), stack)),
-      activeBattle: hydration.activeBattle !== undefined ? Battle.hydrate(hydration.activeBattle, this) : undefined
-    })
-  }
-
-  async doRestore({ commit }: ActionContext, encoded: string): Promise<void> {
-    const hydration = await decodeAndDecompress(encoded)
-    if (hydration === undefined) {
-      throw new Error("Failed to load save data")
-    }
-    commit("rehydrate", JSON.parse(hydration))
-  }
-
   static hydrate(): TitanGame {
     const game = new TitanGame(2)
     try {
@@ -515,3 +357,5 @@ export class TitanGame {
     return game
   }
 }
+
+Object.assign(TitanGame.prototype, gameBattle, gamePersistence)
