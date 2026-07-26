@@ -470,7 +470,6 @@ export class TitanGame {
    */
 
   async doPersist({ commit }: ActionContext): Promise<string | undefined> {
-    console.log(localStorage[GAME_PERSISTENCE_KEY])
     const b64 = await this.persist()
     commit("setEncodedSaveData", b64, { root: true })
     return b64
