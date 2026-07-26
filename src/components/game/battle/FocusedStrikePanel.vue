@@ -1,7 +1,14 @@
 <template>
   <v-expand-transition>
-    <v-card v-if="strike" v-bind="$props as any" width="300">
-      <StrikePanelTitle :attacker="selectedCreature" :target="(target ?? rangedTarget)!" />
+    <v-card
+      v-if="strike"
+      v-bind="$props as any"
+      width="300"
+    >
+      <StrikePanelTitle
+        :attacker="selectedCreature"
+        :target="(target ?? rangedTarget)!"
+      />
       <v-card-text>
         {{ strike.dice }} {{ strike.dice === 1 ? "die" : "dice" }}, needing {{ strike.toHit }}s or better to hit.
       </v-card-text>

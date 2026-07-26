@@ -13,7 +13,10 @@
       class="hex"
     />
     <template v-if="!path">
-      <clipPath v-if="shadows" :id="`hex-${hex.id}-clip`">
+      <clipPath
+        v-if="shadows"
+        :id="`hex-${hex.id}-clip`"
+      >
         <polygon
           :points="points.join(' ')"
         />
@@ -25,11 +28,29 @@
         :transform="inverted ? 'rotate(180) scale(0.99)' : 'scale(0.99)'"
         class="outline"
       />
-      <text :y="inverted ? 15 : -10" class="id" text-anchor="middle" v-text="hex.id" />
-      <text :y="inverted ? -25 : 35" class="label" text-anchor="middle" v-text="terrain" />
+      <text
+        :y="inverted ? 15 : -10"
+        class="id"
+        text-anchor="middle"
+      >
+        {{ hex.id }}
+      </text>
+      <text
+        :y="inverted ? -25 : 35"
+        class="label"
+        text-anchor="middle"
+      >
+        {{ terrain }}
+      </text>
     </template>
     <template v-else>
-      <text :y="inverted ? -10 : 20" class="label" text-anchor="middle" v-text="pathCount" />
+      <text
+        :y="inverted ? -10 : 20"
+        class="label"
+        text-anchor="middle"
+      >
+        {{ pathCount }}
+      </text>
     </template>
   </g>
 </template>
@@ -38,7 +59,6 @@
 import { defineComponent } from "vue"
 import { mapMutations, mapState } from "vuex"
 import { MasterboardHex, Terrain } from "~/models/masterboard"
-import { Preferences } from "~/store/ui/preferences"
 import {
   CLIP_TRIANGLE_HEIGHT,
   CLIP_TRIANGLE_SIDE,

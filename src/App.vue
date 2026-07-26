@@ -7,7 +7,11 @@
       width="48"
     >
       <div>
-        <v-btn icon="mdi-menu" variant="plain" @click="menuVisible = !menuVisible" />
+        <v-btn
+          icon="mdi-menu"
+          variant="plain"
+          @click="menuVisible = !menuVisible"
+        />
         <v-btn
           :variant="view === View.MASTERBOARD ? 'text' : 'plain'"
           icon="mdi-dots-hexagon"
@@ -21,9 +25,21 @@
       </div>
       <PlayerStatus />
       <div>
-        <v-btn icon="mdi-code-tags" variant="plain" @click="toggleDebugUi" />
-        <v-btn icon="mdi-shimmer" variant="plain" @click="toggleFancyGraphics" />
-        <v-btn icon="mdi-cog" variant="plain" @click="prefsPaneVisible = !prefsPaneVisible" />
+        <v-btn
+          icon="mdi-code-tags"
+          variant="plain"
+          @click="toggleDebugUi"
+        />
+        <v-btn
+          icon="mdi-shimmer"
+          variant="plain"
+          @click="toggleFancyGraphics"
+        />
+        <v-btn
+          icon="mdi-cog"
+          variant="plain"
+          @click="prefsPaneVisible = !prefsPaneVisible"
+        />
       </div>
     </v-navigation-drawer>
     <v-navigation-drawer
@@ -48,7 +64,15 @@
       <BattleBoard v-show="view === View.BATTLEBOARD" />
       <DiceRoller ref="diceRoller" />
     </v-main>
-    <v-footer app color="grey-darken-3" location="bottom" height="32" class="px-2 py-1">Status</v-footer>
+    <v-footer
+      app
+      color="grey-darken-3"
+      location="bottom"
+      height="32"
+      class="px-2 py-1"
+    >
+      Status
+    </v-footer>
   </v-app>
 </template>
 
