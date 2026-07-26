@@ -33,10 +33,5 @@
     "typescript": "6.0.3",
     "vite": "^8.1.5",
     "vue-tsc": "^3.3.8"
-  },
-  "pnpm": {
-    "patchedDependencies": {
-      "@vitejs/plugin-vue@6.0.8": "patches/@vitejs__plugin-vue@6.0.8.patch"
-    }
   }
 }

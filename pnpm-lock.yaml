@@ -4,11 +4,6 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
-patchedDependencies:
-  '@vitejs/plugin-vue@6.0.8':
-    hash: lkzjajcoxgmdhz3fkad73p64qa
-    path: patches/@vitejs__plugin-vue@6.0.8.patch
-
 dependencies:
   '@3d-dice/dice-box':
     specifier: ^1.1.4
@@ -38,7 +33,7 @@ devDependencies:
     version: 4.17.12
   '@vitejs/plugin-vue':
     specifier: ^6.0.8
-    version: 6.0.8(patch_hash=lkzjajcoxgmdhz3fkad73p64qa)(vite@8.1.5)(vue@3.5.40)
+    version: 6.0.8(vite@8.1.5)(vue@3.5.40)
   '@vue/eslint-config-typescript':
     specifier: ^14.9.0
     version: 14.9.0(eslint-plugin-vue@10.10.0)(eslint@10.8.0)(typescript@6.0.3)
@@ -719,7 +714,7 @@ packages:
       eslint-visitor-keys: 5.0.1
     dev: true
 
-  /@vitejs/plugin-vue@6.0.8(patch_hash=lkzjajcoxgmdhz3fkad73p64qa)(vite@8.1.5)(vue@3.5.40):
+  /@vitejs/plugin-vue@6.0.8(vite@8.1.5)(vue@3.5.40):
     resolution: {integrity: sha512-0ZjgOg7oO6farnNGup7yvoM/YXZV84OZxHAwtflItNa/6zzQyVb5LNxyea3FEKEX2XlagIKzrlH7wwxkKgtiew==}
     engines: {node: ^20.19.0 || >=22.12.0}
     peerDependencies:
@@ -730,7 +725,6 @@ packages:
       vite: 8.1.5(sass@1.102.0)
       vue: 3.5.40(typescript@6.0.3)
     dev: true
-    patched: true
 
   /@volar/language-core@2.4.28:
     resolution: {integrity: sha512-w4qhIJ8ZSitgLAkVay6AbcnC7gP3glYM3fYwKV3srj8m494E3xtrCv6E+bWviiK/8hs6e6t1ij1s2Endql7vzQ==}
