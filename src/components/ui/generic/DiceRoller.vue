@@ -11,7 +11,7 @@
 
 <script lang="ts">
 import DiceBox from "@3d-dice/dice-box"
-import { defineComponent } from "vue"
+import { defineComponent, markRaw } from "vue"
 import { random, range } from "lodash-es"
 import { mapState } from "vuex"
 
@@ -68,7 +68,7 @@ export default defineComponent({
       this.resolve = undefined
       this.rolling = false
     }
-    this.diceBox = diceBox
+    this.diceBox = markRaw(diceBox)
   },
   methods: {
     async roll(quantity?: number): Promise<number[]> {
