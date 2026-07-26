@@ -1,7 +1,8 @@
-import { range, shuffle } from "lodash-es"
+import { range } from "lodash-es"
 import { Battle } from "~/models/battle"
 import { CREATURE_LIST, CreatureType } from "~/models/creature"
 import { Player } from "~/models/player"
+import { defaultRandom, Random } from "~/models/random"
 import { Stack } from "~/models/stack"
 import { GameActions, gameActions } from "./actions"
 import { GameGetters, gameGetters } from "./getters"
@@ -39,14 +40,14 @@ export class TitanGame {
   activePhase: MasterboardPhase
   activeBattle?: Battle
 
-  constructor(numPlayers: number) {
+  constructor(numPlayers: number, random: Random = defaultRandom) {
     this.round = 0
     this.mulliganTaken = false
     this.activePlayer = 0
     this.activeRoll = undefined
     this.activeBattle = undefined
     this.activePhase = MasterboardPhase.SPLIT
-    const colors = shuffle(range(0, 5))
+    const colors = random.shuffle(range(0, 5))
     this.players = range(0, numPlayers).map(i => new Player(colors[i], `Player ${i + 1}`))
     this.stacks = this.players.map((player: Player, i: number) =>
       new Stack(player?.id, INITIAL_HEXES[numPlayers][i], 0))
