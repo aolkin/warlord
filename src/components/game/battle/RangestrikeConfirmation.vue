@@ -29,7 +29,7 @@
 </template>
 <script lang="ts">
 import { defineComponent, PropType } from "vue"
-import _ from "lodash"
+import { isEqual } from "lodash-es"
 import { mapGetters, mapState } from "vuex"
 import { BattleCreature, RangestrikeTarget, Strike } from "~/models/battle"
 import { div } from "~/utils/math"
@@ -66,7 +66,7 @@ export default defineComponent({
       }
     },
     targetedStrikeWasAdjusted(): boolean {
-      return !_.isEqual(this.targetedStrikeUnadjusted, this.targetedStrike)
+      return !isEqual(this.targetedStrikeUnadjusted, this.targetedStrike)
     }
   }
 })

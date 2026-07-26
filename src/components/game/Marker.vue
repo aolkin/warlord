@@ -14,7 +14,7 @@
 
 <script lang="ts">
 import { defineComponent, PropType } from "vue"
-import _ from "lodash"
+import { padStart } from "lodash-es"
 import { PlayerId } from "~/models/player"
 
 export default defineComponent({
@@ -40,7 +40,7 @@ export default defineComponent({
   },
   computed: {
     imageUrl() {
-      const id = _.padStart(String(this.color * 12 + this.marker + 1), 2, "0")
+      const id = padStart(String(this.color * 12 + this.marker + 1), 2, "0")
       return new URL(`../../assets/markers/marker-${id}.svg`, import.meta.url).href
     },
     fullTransform() {

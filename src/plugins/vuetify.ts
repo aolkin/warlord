@@ -1,6 +1,6 @@
 // Styles
 import "@mdi/font/css/materialdesignicons.css"
-import _ from "lodash"
+import { map } from "lodash-es"
 
 // Vuetify
 import { createVuetify } from "vuetify"
@@ -21,7 +21,7 @@ const titanColors = {
   "titan-purple": "#bd0cbd"
 }
 
-const playerColors = Object.fromEntries(_.map(titanColors,
+const playerColors = Object.fromEntries(map(titanColors,
   // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
   (color, name) => [`player-${PlayerId[name.split("-")[1].toUpperCase()]}`, color])
   .filter(entry => entry[0] !== "player-undefined"))

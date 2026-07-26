@@ -1,9 +1,9 @@
-import _ from "lodash"
+import { lowerFirst } from "lodash-es"
 import { TitanGame } from "~/models/game"
 
 const titanGameMethods = Object.getOwnPropertyNames(TitanGame.prototype)
 
-const mapStateMethod = (prefixLen: number) => (name: string) => [_.lowerFirst(name.slice(prefixLen)),
+const mapStateMethod = (prefixLen: number) => (name: string) => [lowerFirst(name.slice(prefixLen)),
   (state: any, ...args: any[]) => state[name](...args)]
 const titanGameGetters = Object.fromEntries(titanGameMethods
   .filter(name => name.startsWith("get")).map(mapStateMethod(3)))
@@ -11,7 +11,7 @@ const titanGameGetters = Object.fromEntries(titanGameMethods
 const titanGameMutations = Object.fromEntries(titanGameMethods
   .filter(name => name.startsWith("m")).map(mapStateMethod(1)))
 
-const mapStateAction = (prefixLen: number) => (name: string) => [_.lowerFirst(name.slice(prefixLen)),
+const mapStateAction = (prefixLen: number) => (name: string) => [lowerFirst(name.slice(prefixLen)),
   (context: any, ...args: any[]) => context.state[name](context, ...args)]
 const titanGameActions = Object.fromEntries(titanGameMethods
   .filter(name => name.startsWith("do")).map(mapStateAction(2)))

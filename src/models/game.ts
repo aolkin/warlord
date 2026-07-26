@@ -1,4 +1,4 @@
-import _ from "lodash"
+import { assign, matches, range, shuffle } from "lodash-es"
 import { BaseActionContext } from "~/store/types"
 import { View } from "~/store/ui/selection"
 import { assert } from "~/utils/assert"
@@ -86,8 +86,8 @@ export class TitanGame {
     this.activeRoll = undefined
     this.activeBattle = undefined
     this.activePhase = MasterboardPhase.SPLIT
-    const colors = _.shuffle(_.range(0, 5))
-    this.players = _.range(0, numPlayers).map(i => new Player(colors[i], `Player ${i + 1}`))
+    const colors = shuffle(range(0, 5))
+    this.players = range(0, numPlayers).map(i => new Player(colors[i], `Player ${i + 1}`))
     this.stacks = this.players.map((player: Player, i: number) =>
       new Stack(player?.id, INITIAL_HEXES[numPlayers][i], 0))
 
@@ -122,7 +122,7 @@ export class TitanGame {
 
   getNextMarker(getters: Getters): number | undefined {
     const usedMarkers = getters.activeStacks.map(stack => stack.marker)
-    return _.range(0, 12).find(marker => !usedMarkers.includes(marker))
+    return range(0, 12).find(marker => !usedMarkers.includes(marker))
   }
 
   getStacksForHex() {
@@ -325,24 +325,24 @@ export class TitanGame {
   }
 
   mMoveCreature({ creature, hex }: BattleMovePayload): void {
-    assert(this.activeBattle?.creatures.some(_.matches(creature)) ?? false, "Unexpected creature")
+    assert(this.activeBattle?.creatures.some(matches(creature)) ?? false, "Unexpected creature")
     creature.hex = hex
   }
 
   mAttackCreature({ attacker, target, rolls, optionalToHit }: AttackPayload): void {
-    assert(this.activeBattle?.creatures.some(_.matches(attacker)) ?? false, "Unexpected attacker")
-    assert(this.activeBattle?.creatures.some(_.matches(target)) ?? false, "Unexpected defender")
+    assert(this.activeBattle?.creatures.some(matches(attacker)) ?? false, "Unexpected attacker")
+    assert(this.activeBattle?.creatures.some(matches(target)) ?? false, "Unexpected defender")
     this.activeBattle?.strike(attacker, target, rolls, optionalToHit)
   }
 
   mRangestrikeCreature({ attacker, target, rolls }: RangestrikePayload): void {
-    assert(this.activeBattle?.creatures.some(_.matches(attacker)) ?? false, "Unexpected attacker")
-    assert(this.activeBattle?.creatures.some(_.matches(target.creature)) ?? false, "Unexpected defender")
+    assert(this.activeBattle?.creatures.some(matches(attacker)) ?? false, "Unexpected attacker")
+    assert(this.activeBattle?.creatures.some(matches(target.creature)) ?? false, "Unexpected defender")
     this.activeBattle?.rangestrike(attacker, target, rolls)
   }
 
   mAssignCarryover(target: BattleCreature): void {
-    assert(this.activeBattle?.creatures.some(_.matches(target)) ?? false, "Unexpected target")
+    assert(this.activeBattle?.creatures.some(matches(target)) ?? false, "Unexpected target")
     this.activeBattle?.carryover(target)
   }
 
@@ -482,12 +482,12 @@ export class TitanGame {
   }
 
   mRehydrate(hydration: TitanGame): void {
-    _.assign(this, {
+    assign(this, {
       ...hydration,
       players: hydration.players.map((player: Player) =>
-        _.assign(new Player(player.id, player.name), player)),
+        assign(new Player(player.id, player.name), player)),
       stacks: hydration.stacks.map((stack: Stack) =>
-        _.assign(new Stack(stack.owner, stack.hex, stack.marker, stack.creatures), stack)),
+        assign(new Stack(stack.owner, stack.hex, stack.marker, stack.creatures), stack)),
       activeBattle: hydration.activeBattle !== undefined ? Battle.hydrate(hydration.activeBattle, this) : undefined
     })
   }

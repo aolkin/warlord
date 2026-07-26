@@ -42,7 +42,7 @@
 </template>
 <script lang="ts">
 import { defineComponent } from "vue"
-import _ from "lodash"
+import { fill } from "lodash-es"
 import { mapState } from "vuex"
 import { CREATURE_DATA } from "~/models/creature"
 import { MasterboardPhase } from "~/models/game"
@@ -97,7 +97,7 @@ export default defineComponent({
   methods: {
     choose(possibility: MusterPossibility) {
       this.chosen = possibility
-      _.fill(this.dialogState, false)
+      fill(this.dialogState, false)
     }
   }
 })

@@ -51,7 +51,7 @@
 </template>
 <script lang="ts">
 import { defineComponent, PropType } from "vue"
-import _ from "lodash"
+import { isEqual, range } from "lodash-es"
 import { mapGetters, mapState } from "vuex"
 import { BattleCreature, isRangestrike, Strike } from "~/models/battle"
 
@@ -86,12 +86,12 @@ export default defineComponent({
         isRangestrike(this.targetedCreature) ? this.targetedCreature.creature : this.targetedCreature)
     },
     targetedStrikeWasAdjusted(): boolean {
-      return !_.isEqual(this.targetedStrikeUnadjusted, this.targetedStrike)
+      return !isEqual(this.targetedStrikeUnadjusted, this.targetedStrike)
     },
     toHitAdjustments(): Record<number, BattleCreature[]> {
       return this.tougherCarryovers.reduce((adjustments: Record<number, BattleCreature[]>, creature) => {
         const toHit = this.activeBattle.toHitAdjusted(this.selectedCreature, creature)
-        _.range(toHit, 7).forEach(numToUpdate =>
+        range(toHit, 7).forEach(numToUpdate =>
           adjustments[numToUpdate] = [...(adjustments[numToUpdate] ?? []), creature])
         return adjustments
       }, {})

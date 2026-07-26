@@ -1,4 +1,4 @@
-import _ from "lodash"
+import { capitalize } from "lodash-es"
 import { assert } from "~/utils/assert"
 import { div } from "~/utils/math"
 import { Terrain } from "./masterboard"
@@ -44,7 +44,7 @@ export class Creature {
     flying?: boolean, ranged?: boolean, lord?: boolean) {
     this.type = type
     this.initialQuantity = quantity ?? 0
-    this.name = _.capitalize(CreatureType[type])
+    this.name = capitalize(CreatureType[type])
     assert(strength >= 3 && strength <= 18, "Invalid creature strength")
     this.strength = strength
     assert(skill >= 2 && skill <= 4, "Invalid creature skill")
