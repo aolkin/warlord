@@ -83,7 +83,7 @@ export function base64DecToArr(sBase64: string, nBlocksSize?: number): Uint8Arra
     : nInLen * 3 + 1 >> 2
   const taBytes = new Uint8Array(nOutLen)
 
-  for (var nMod3, nMod4, nUint24 = 0, nOutIdx = 0, nInIdx = 0; nInIdx < nInLen; nInIdx++) {
+  for (let nMod3, nMod4, nUint24 = 0, nOutIdx = 0, nInIdx = 0; nInIdx < nInLen; nInIdx++) {
     nMod4 = nInIdx & 3
     nUint24 |= b64ToUint6(sB64Enc.charCodeAt(nInIdx)) << 6 * (3 - nMod4)
     if (nMod4 === 3 || nInLen - nInIdx === 1) {
@@ -132,7 +132,7 @@ export function base64EncArr(aBytes: Uint8Array): string {
 function UTF8ArrToStr(aBytes: Uint8Array): string {
   let sView = ""
 
-  for (var nPart, nLen = aBytes.length, nIdx = 0; nIdx < nLen; nIdx++) {
+  for (let nPart, nLen = aBytes.length, nIdx = 0; nIdx < nLen; nIdx++) {
     nPart = aBytes[nIdx]
     sView += String.fromCodePoint(
       nPart > 251 && nPart < 254 && nIdx + 5 < nLen /* six bytes */

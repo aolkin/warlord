@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-non-null-assertion */
-
 import { assert } from "~/utils/assert"
 import { div, mod } from "~/utils/math"
 

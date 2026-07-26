@@ -43,8 +43,20 @@
       </v-card-text>
       <v-card-actions>
         <v-spacer />
-        <v-btn variant="text" color="secondary" @click="$emit('cancel')">Cancel</v-btn>
-        <v-btn color="primary" class="float-right" @click="$emit('attack')">Attack</v-btn>
+        <v-btn
+          variant="text"
+          color="secondary"
+          @click="$emit('cancel')"
+        >
+          Cancel
+        </v-btn>
+        <v-btn
+          color="primary"
+          class="float-right"
+          @click="$emit('attack')"
+        >
+          Attack
+        </v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>

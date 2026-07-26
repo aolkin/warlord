@@ -4,8 +4,16 @@
     :title="`${playerById(battleActivePlayer).name}'s Turn`"
   >
     <template #prepend>
-      <v-icon :icon="roundIcon" size="x-large" :title="`Round ${activeBattle.round + 1}`" />
-      <v-icon :icon="phaseIcon" size="large" :title="phaseTypeTitle" />
+      <v-icon
+        :icon="roundIcon"
+        size="x-large"
+        :title="`Round ${activeBattle.round + 1}`"
+      />
+      <v-icon
+        :icon="phaseIcon"
+        size="large"
+        :title="phaseTypeTitle"
+      />
     </template>
     <v-card-subtitle v-if="debugUi">
       Hex: {{ focusedBattleHex }} ({{ Hazard[land.getHazard(focusedBattleHex)] }})
@@ -21,9 +29,17 @@
       {{ pendingStrikes.length > 1 ? 'have' : 'has' }} not yet struck. Every creature that can strike
       must do so.
     </v-card-text>
-    <v-fade-transition leave absolute>
+    <v-fade-transition
+      leave
+      absolute
+    >
       <v-card-actions>
-        <v-btn block variant="outlined" :disabled="!mayProceed" @click="nextPhase">
+        <v-btn
+          block
+          variant="outlined"
+          :disabled="!mayProceed"
+          @click="nextPhase"
+        >
           End {{ phaseTypeTitle }}
         </v-btn>
       </v-card-actions>

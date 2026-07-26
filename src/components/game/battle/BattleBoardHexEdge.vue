@@ -1,6 +1,10 @@
 <template>
   <g>
-    <polygon class="hex" :class="hexClasses" points="-50,-29 -50,29 0,58 50,29 50,-29 0,-58 " />
+    <polygon
+      class="hex"
+      :class="hexClasses"
+      points="-50,-29 -50,29 0,58 50,29 50,-29 0,-58 "
+    />
     <image
       v-if="hazard !== 0"
       :href="hazardImg"

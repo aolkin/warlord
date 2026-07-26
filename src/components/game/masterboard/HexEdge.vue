@@ -1,5 +1,8 @@
 <template>
-  <g :class="classes" :transform="hexTransform">
+  <g
+    :class="classes"
+    :transform="hexTransform"
+  >
     <rect
       v-for="x in shadowMaskXs"
       :key="x"
@@ -10,25 +13,57 @@
       width="8"
       y="-10"
     />
-    <g v-if="edge.rule === MovementRule.SQUARE" :transform="transform">
+    <g
+      v-if="edge.rule === MovementRule.SQUARE"
+      :transform="transform"
+    >
       <polyline points="-4,-4 -4,4 4,4 4,-4" />
     </g>
-    <g v-else-if="edge.rule === MovementRule.CIRCLE" :transform="transform">
-      <path d="M4,-4 v4 a4,4 0 1,1 -8,0 v-4" fill-rule="nonzero" />
+    <g
+      v-else-if="edge.rule === MovementRule.CIRCLE"
+      :transform="transform"
+    >
+      <path
+        d="M4,-4 v4 a4,4 0 1,1 -8,0 v-4"
+        fill-rule="nonzero"
+      />
     </g>
-    <g v-else-if="edge.rule === MovementRule.ARROW && multiArrow" :transform="transform">
+    <g
+      v-else-if="edge.rule === MovementRule.ARROW && multiArrow"
+      :transform="transform"
+    >
       <polyline points="-24,-3.25 -20,3 -16,-3.25" />
       <polyline points="-14,-3.25 -10,3  -6,-3.25" />
       <polyline points=" -4,-3.25   0,3   4,-3.25" />
-      <polyline v-if="shadows" class="no-shadow" points="-16.5,-3.25, -13.5,-3.25" />
-      <polyline v-if="shadows" class="no-shadow" points="-26.5,-3.25, -23.5,-3.25" />
+      <polyline
+        v-if="shadows"
+        class="no-shadow"
+        points="-16.5,-3.25, -13.5,-3.25"
+      />
+      <polyline
+        v-if="shadows"
+        class="no-shadow"
+        points="-26.5,-3.25, -23.5,-3.25"
+      />
     </g>
-    <g v-else :transform="transform">
+    <g
+      v-else
+      :transform="transform"
+    >
       <polyline points="-4,-4 0,3 4,-4" />
     </g>
-    <g v-if="shadows" :transform="transform">
-      <polyline class="no-shadow" points="-6.5,-3.25, -3.5,-3.25" />
-      <polyline class="no-shadow" points="3.5,-3.25, 6.5,-3.25" />
+    <g
+      v-if="shadows"
+      :transform="transform"
+    >
+      <polyline
+        class="no-shadow"
+        points="-6.5,-3.25, -3.5,-3.25"
+      />
+      <polyline
+        class="no-shadow"
+        points="3.5,-3.25, 6.5,-3.25"
+      />
     </g>
   </g>
 </template>

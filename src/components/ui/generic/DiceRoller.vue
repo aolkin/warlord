@@ -1,6 +1,11 @@
 <template>
-  <div id="dicebox-container" :class="{ rolling, quickDice }">
-    <div class="bg">&nbsp;</div>
+  <div
+    id="dicebox-container"
+    :class="{ rolling, quickDice }"
+  >
+    <div class="bg">
+&nbsp;
+    </div>
   </div>
 </template>
 
@@ -21,7 +26,7 @@ interface ComponentData {
 const DebugDice: { nextRolls?: number[] } = {
   nextRolls: undefined
 }
-// @ts-ignore
+// @ts-expect-error window.DebugDice is a debug hook with no declared type
 window.DebugDice = DebugDice
 
 export default defineComponent({
@@ -55,8 +60,7 @@ export default defineComponent({
       this.ready = true
     })
     diceBox.onRollComplete = (): void => {
-      const result = diceBox.rollData.flatMap(
-        (i: any) => i.rolls.map((roll: any) => roll.result)) as number[]
+      const result = diceBox.rollData.flatMap(i => i.rolls.map(roll => roll.result))
       console.log("Dice roll complete", diceBox.rollData, result)
       this.resolve?.(result)
       this.reject = undefined
@@ -84,7 +88,7 @@ export default defineComponent({
           this.diceBox?.roll(`${quantity ?? 1}d6`)
           if (this.quickDice) {
             setTimeout(() => {
-              this.resolve?.(range(quantity ?? 1).map(i => random(1, 6)))
+              this.resolve?.(range(quantity ?? 1).map(() => random(1, 6)))
               this.reject = undefined
               this.resolve = undefined
               this.rolling = false

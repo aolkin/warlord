@@ -7,8 +7,20 @@
     :viewBox="!inSvg ? '0 0 100 100' : ''"
     class="root"
   >
-    <rect width="100" height="100" x="0" y="0" class="background" />
-    <image :href="imageUrl" width="98" height="98" x="1" y="1" />
+    <rect
+      width="100"
+      height="100"
+      x="0"
+      y="0"
+      class="background"
+    />
+    <image
+      :href="imageUrl"
+      width="98"
+      height="98"
+      x="1"
+      y="1"
+    />
   </component>
 </template>
 
@@ -18,7 +30,7 @@ import { padStart } from "lodash-es"
 import { PlayerId } from "~/models/player"
 
 export default defineComponent({
-  name: "Marker",
+  name: "PlayerMarker",
   props: {
     color: {
       type: Number as PropType<PlayerId>,

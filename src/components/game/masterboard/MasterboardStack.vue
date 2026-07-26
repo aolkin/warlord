@@ -18,13 +18,24 @@
       :filter="`brightness(${100 - 5 * (stack.creatures.length - i)}%)`"
       class="creature"
     />
-    <Marker
+    <PlayerMarker
       :color="stack.owner"
       :marker="stack.marker"
       in-svg
     />
-    <text x="44" y="45" class="annotation stack-size" v-text="stackSize" />
-    <text v-if="!selected && stacksOnHex.length > 1 && !engaged" x="0" y="0" class="annotation stack-count">
+    <text
+      x="44"
+      y="45"
+      class="annotation stack-size"
+    >
+      {{ stackSize }}
+    </text>
+    <text
+      v-if="!selected && stacksOnHex.length > 1 && !engaged"
+      x="0"
+      y="0"
+      class="annotation stack-count"
+    >
       x{{ stacksOnHex.length }}
     </text>
     <EngageIcon v-if="engaged" />
@@ -36,7 +47,10 @@
       @click="attack(edge)"
     />
     <transition name="muster">
-      <g v-if="stack.currentMuster !== undefined" class="recruited-creature">
+      <g
+        v-if="stack.currentMuster !== undefined"
+        class="recruited-creature"
+      >
         <Creature
           :type="stack.currentMuster[0]"
           :player="stackPlayer"
@@ -58,10 +72,10 @@ import { Stack } from "~/models/stack"
 import { Transformation, Transformations, TransformationType } from "~/utils/svg"
 import EngageIcon from "../../ui/game/EngageIcon.vue"
 import Creature from "../Creature.vue"
-import Marker from "../Marker.vue"
+import PlayerMarker from "../Marker.vue"
 import { hexTransform, isHexInverted } from "./utils"
 
-const getEngageTransformForEdge = (edge: HexEdge, hex: number): Transformations => {
+const getEngageTransformForEdge = (edge: HexEdge): Transformations => {
   const transforms = new Transformations()
   transforms.push(new Transformation(TransformationType.ROTATE, [edge * 120 + 60]))
   transforms.push(new Transformation(TransformationType.TRANSLATE,
@@ -72,7 +86,7 @@ const getEngageTransformForEdge = (edge: HexEdge, hex: number): Transformations 
 
 export default defineComponent({
   name: "MasterboardStack",
-  components: { EngageIcon, Creature, Marker },
+  components: { EngageIcon, Creature, PlayerMarker },
   props: {
     stack: {
       type: Stack,
@@ -133,7 +147,7 @@ export default defineComponent({
       }
     },
     engageable(): [HexEdge, Transformations][] {
-      return this.potentialEngagements.map(edge => [edge, getEngageTransformForEdge(edge, this.stack.hex)])
+      return this.potentialEngagements.map(edge => [edge, getEngageTransformForEdge(edge)])
     },
     engaged(): boolean {
       return this.isActivePlayer && this.stacksForHex(this.stack.hex)

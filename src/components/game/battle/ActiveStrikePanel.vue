@@ -1,12 +1,22 @@
 <template>
   <v-expand-transition>
-    <v-card v-if="strike" v-bind="$props as any" width="300">
-      <StrikePanelTitle :attacker="attacker!" :target="target!" />
+    <v-card
+      v-if="strike"
+      v-bind="$props as any"
+      width="300"
+    >
+      <StrikePanelTitle
+        :attacker="attacker!"
+        :target="target!"
+      />
       <v-card-text>
         {{ activeStrike ? "Rolled " : "" }}{{ strike.dice }} {{ strike.dice === 1 ? "die" : "dice" }},
         {{ activeStrike ? "needed" : "needing" }} {{ strike.toHit }}s or better to hit.
       </v-card-text>
-      <v-card-item v-if="activeStrike" class="pt-1">
+      <v-card-item
+        v-if="activeStrike"
+        class="pt-1"
+      >
         <v-icon
           v-for="(roll, index) in activeStrike.rolls"
           :key="index"
@@ -15,7 +25,10 @@
           :icon="`mdi-dice-${roll}`"
         />
       </v-card-item>
-      <v-card-item v-for="([creature, hits], index) in targets" :key="creature.guid">
+      <v-card-item
+        v-for="([creature, hits], index) in targets"
+        :key="creature.guid"
+      >
         {{ index === 0 ? "Dealt" : "Carried over" }} {{ hitsString(hits) }} to a
         {{ creature.name() }}{{ activeStrike?.rangestrike ? " with a rangestrike" : "" }}.
         <span v-if="creature.getRemainingHp() < 1">The {{ creature.name() }} is dead.</span>
@@ -35,7 +48,13 @@
         </span>
       </v-card-text>
       <v-card-actions v-if="battleCarryoverTargets">
-        <v-btn block variant="outlined" @click="skipCarryover">Skip Carry Over</v-btn>
+        <v-btn
+          block
+          variant="outlined"
+          @click="skipCarryover"
+        >
+          Skip Carry Over
+        </v-btn>
       </v-card-actions>
     </v-card>
   </v-expand-transition>

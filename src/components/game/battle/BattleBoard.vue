@@ -1,16 +1,34 @@
 <template>
-  <div class="battleboard-root" :class="activeBattle === undefined ? 'inactive' : Terrain[terrain].toLowerCase()">
-    <svg v-if="activeBattle === undefined" class="no-active-battle" viewBox="-100 -50 200 100">
-      <text x="0" y="0">No Active Battle!</text>
+  <div
+    class="battleboard-root"
+    :class="activeBattle === undefined ? 'inactive' : Terrain[terrain].toLowerCase()"
+  >
+    <svg
+      v-if="activeBattle === undefined"
+      class="no-active-battle"
+      viewBox="-100 -50 200 100"
+    >
+      <text
+        x="0"
+        y="0"
+      >No Active Battle!</text>
     </svg>
     <template v-else>
-      <v-card position="absolute" location="top left" class="ma-3 ml-14">
+      <v-card
+        position="absolute"
+        location="top left"
+        class="ma-3 ml-14"
+      >
         <v-card-title>Battle Land: {{ Terrain[terrain] }}</v-card-title>
         <v-card-title>
           Round: {{ activeBattle.round + 1 }} - {{ BATTLE_PHASE_TITLES[activeBattle.phase] }}
         </v-card-title>
       </v-card>
-      <svg class="board" viewBox="-450 -450 800 800" @click="deselectCreature">
+      <svg
+        class="board"
+        viewBox="-450 -450 800 800"
+        @click="deselectCreature"
+      >
         <BattleBoardHex
           v-for="hex in hexes"
           :key="hex"
@@ -24,7 +42,10 @@
           @mouseenter="enterBattleHex(hex)"
           @mouseleave="leaveBattleHex(hex)"
         />
-        <g v-if="debugUi" class="debug-ui">
+        <g
+          v-if="debugUi"
+          class="debug-ui"
+        >
           <text
             v-for="hex in hexes"
             :key="hex"
@@ -77,9 +98,22 @@
         />
       </svg>
 
-      <CreaturePanel position="fixed" location="top right" class="ma-3" />
-      <ActionPanel position="fixed" location="bottom right" class="ma-3 mb-10" />
-      <v-sheet position="fixed" location="bottom left" class="ma-3 ml-14 mb-10" rounded>
+      <CreaturePanel
+        position="fixed"
+        location="top right"
+        class="ma-3"
+      />
+      <ActionPanel
+        position="fixed"
+        location="bottom right"
+        class="ma-3 mb-10"
+      />
+      <v-sheet
+        position="fixed"
+        location="bottom left"
+        class="ma-3 ml-14 mb-10"
+        rounded
+      >
         <FocusedStrikePanel rounded />
         <ActiveStrikePanel rounded />
       </v-sheet>
@@ -88,7 +122,7 @@
         <StrikeConfirmation
           v-if="!isRangestrike(target)"
           v-model="attackCreatureDialog"
-          v-model:optionalToHit="optionalToHit"
+          v-model:optional-to-hit="optionalToHit"
           :targeted-creature="target"
           @attack="attackTargetedCreature"
           @cancel="resetAttack"
@@ -153,6 +187,10 @@ export default defineComponent({
     FocusedStrikePanel
   },
   inject: ["diceRoller"],
+  // The static imports mixed into this data() defeat precise typing without a
+  // broader rework of how the template consumes them; see the ESLint migration
+  // PR description for details.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   data: (): any & { target?: BattleCreature | RangestrikeTarget } => ({
     Terrain,
     BattlePhase,
@@ -219,7 +257,7 @@ export default defineComponent({
             if (!creature.hasStruck && rangestrikes > 0) {
               return true
             }
-          // eslint-disable-next-line no-fallthrough
+           
           case BattlePhaseType.STRIKEBACK:
             return this.battleCarryoverTargets === undefined && !creature.hasStruck && engagements > 0
           default:

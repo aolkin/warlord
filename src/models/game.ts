@@ -141,7 +141,8 @@ export class TitanGame {
       const stack: pathing[] = initialHex.getMovement(true).map(edge => [[initialHex], undefined, edge.hex])
       let entry: pathing | undefined
       while ((entry = stack.pop()) !== undefined) {
-        let [path, foe, hex] = entry
+        const [path, , hex] = entry
+        let foe = entry[1]
         const occupants: Stack[] = getters.stacksForHex(hex.id)
         if (foe === undefined) {
           const foes = occupants.filter((stack: Stack) => stack.owner !== getters.activePlayerId)
@@ -252,18 +253,18 @@ export class TitanGame {
     this.mulliganTaken = false
   }
 
-  mPhaseExitMove(getters: Getters): void {
+  mPhaseExitMove(_getters: Getters): void {
     this.activeRoll = undefined
     // TODO: recombine splits that failed to move
   }
 
-  mPhaseEnterBattle(getters: Getters): void {
+  mPhaseEnterBattle(_getters: Getters): void {
   }
 
-  mPhaseExitBattle(getters: Getters): void {
+  mPhaseExitBattle(_getters: Getters): void {
   }
 
-  mPhaseEnterMuster(getters: Getters): void {
+  mPhaseEnterMuster(_getters: Getters): void {
   }
 
   mPhaseExitMuster(getters: Getters): void {
@@ -428,7 +429,7 @@ export class TitanGame {
     await this.persist()
   }
 
-  async doNextBattlePhase({ getters, commit }: ActionContext): Promise<void> {
+  async doNextBattlePhase({ commit }: ActionContext): Promise<void> {
     commit("nextBattlePhase")
     await this.persist()
   }

@@ -95,11 +95,15 @@ export interface IBattleCreature {
   hasStruck?: boolean
 }
 
+// The interface/class pair is merged so the class type picks up these members,
+// which are actually assigned at runtime via Object.assign in the constructor below.
+// eslint-disable-next-line @typescript-eslint/no-unsafe-declaration-merging
 export interface BattleCreature extends IBattleCreature {
   wounds: number
   initialHex: number
   hasStruck: boolean
 }
+// eslint-disable-next-line @typescript-eslint/no-unsafe-declaration-merging
 export class BattleCreature {
   constructor(props: IBattleCreature) {
     Object.assign(this, {
@@ -200,7 +204,11 @@ export interface ActiveStrikeHit {
 }
 type InitialActiveStrike = Omit<IActiveStrike, "targets" | "targetHits" | "carryoverSkipped"> & ActiveStrikeHit
 
+// Merged with the class below so its type picks up IActiveStrike's members,
+// which are assigned at runtime via Object.assign in the constructor.
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type, @typescript-eslint/no-unsafe-declaration-merging
 export interface ActiveStrike extends IActiveStrike {}
+// eslint-disable-next-line @typescript-eslint/no-unsafe-declaration-merging
 export class ActiveStrike {
   constructor(props: IActiveStrike | InitialActiveStrike) {
     Object.assign(this, "targets" in props ? props : {
@@ -329,7 +337,7 @@ export class Battle {
     } else if (BATTLE_PHASE_TYPES[this.phase] === BattlePhaseType.STRIKEBACK) {
       this.phaseExitStrikeback()
     }
-    // @ts-expect-error
+    // @ts-expect-error memoize's .cache is not part of the method's declared type
     this.creatureOnHex.cache.clear()
     if (this.phase === BattlePhase.DEFENDER_STRIKEBACK) {
       this.round += 1
@@ -514,7 +522,6 @@ export class Battle {
     if (creature.type === CreatureType.WARLOCK) {
       // Warlock rangestrikes are unaffected by other creatures and hazards
       return paths.map(path => ({
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         creature: this.creatureOnHex(path.at(-1)!)!,
         adjustment: { toHit: 0, dice: 0 },
         longDistance: false
@@ -535,7 +542,6 @@ export class Battle {
     const results: RangestrikeTarget[] = []
     bestPaths.forEach(([path, adjustment]: [number[], Strike]) =>
       results.push({
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         creature: this.creatureOnHex(path.at(-1)!)!,
         adjustment,
         longDistance: path.length > 2
@@ -605,7 +611,6 @@ export class Battle {
             // Rangestriker or target must be atop the cliff
             // (and if that's the case, we pass the slope check)
             atopAtLeastOneEdge = rangestrikerOrTargetAtopHex
-          // eslint-disable-next-line no-fallthrough
           case EdgeHazard.DUNE:
             // Rangestriker or target must occupy dune hex for each crossed dune
             if (!rangestrikerOrTargetAtopHex) {
@@ -765,7 +770,6 @@ export class Battle {
 
   carryover(target: BattleCreature): void {
     // Using an optional chain prevents typescript from learning that this.activeStrike is present
-    // eslint-disable-next-line @typescript-eslint/prefer-optional-chain
     assert(this.activeStrike !== undefined &&
       this.activeStrike.canCarryover, "Cannot carryover")
     const hits = Math.min(this.activeStrike.getCarryoverHits(), target.getRemainingHp())

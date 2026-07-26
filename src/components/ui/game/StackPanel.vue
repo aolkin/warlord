@@ -15,13 +15,25 @@
       width="342"
       v-bind="$props as any"
     >
-      <v-card-actions v-if="selectedStack === focusedStack" class="justify-space-between">
-        <v-btn @click="cycleStacks(-1)">Previous Stack</v-btn>
-        <v-btn @click="cycleStacks(1)">Next Stack</v-btn>
+      <v-card-actions
+        v-if="selectedStack === focusedStack"
+        class="justify-space-between"
+      >
+        <v-btn @click="cycleStacks(-1)">
+          Previous Stack
+        </v-btn>
+        <v-btn @click="cycleStacks(1)">
+          Next Stack
+        </v-btn>
       </v-card-actions>
       <v-card-item :title="`${stackPlayer?.name} (${focusedStack.creatures.length} creatures)`">
         <template #prepend>
-          <Marker :color="focusedStack.owner" :marker="focusedStack.marker" width="50" height="50" />
+          <PlayerMarker
+            :color="focusedStack.owner"
+            :marker="focusedStack.marker"
+            width="50"
+            height="50"
+          />
         </template>
       </v-card-item>
 
@@ -38,11 +50,17 @@
         />
       </div>
       <template v-if="activePlayerId === focusedStack.owner">
-        <v-card-actions v-if="activePhase === MasterboardPhase.SPLIT" class="split-guide">
+        <v-card-actions
+          v-if="activePhase === MasterboardPhase.SPLIT"
+          class="split-guide"
+        >
           <v-card-text v-if="firstRound">
             You must split your starting creatures. Please select four creatures (including one lord) above
             to split into a separate stack.
-            <div v-if="focusedStack?.isValidSplit(firstRound)" class="first-round-success">
+            <div
+              v-if="focusedStack?.isValidSplit(firstRound)"
+              class="first-round-success"
+            >
               You have selected a valid split and may roll the die
               to start your turn!
             </div>
@@ -53,7 +71,10 @@
           <v-card-text v-else>
             You may select at least 2 and at most {{ focusedStack.creatures.length - 2 }} creatures to split
             into a new stack.
-            <div v-if="focusedStack.getCreaturesSplit(true).length > 0" class="text-left mt-5">
+            <div
+              v-if="focusedStack.getCreaturesSplit(true).length > 0"
+              class="text-left mt-5"
+            >
               <p>Remaining: {{ focusedStack.getCreaturesSplit(false).map((c: CreatureType) => CREATURES[c].name).join(", ") }}</p>
               <p>Splitting: {{ focusedStack.getCreaturesSplit(true).map((c: CreatureType) => CREATURES[c].name).join(", ") }}</p>
             </div>
@@ -75,8 +96,9 @@
           <v-card-subtitle
             v-if="activePhase === MasterboardPhase.MUSTER"
             class="mb-3"
-            v-text="musteringCaption"
-          />
+          >
+            {{ musteringCaption }}
+          </v-card-subtitle>
         </template>
       </template>
     </v-card>
@@ -94,12 +116,12 @@ import { Player } from "~/models/player"
 import { MusterChoice, MusterPossibility, Stack } from "~/models/stack"
 import { mod } from "~/utils/math"
 import Creature from "../../game/Creature.vue"
-import Marker from "../../game/Marker.vue"
+import PlayerMarker from "../../game/Marker.vue"
 import MusterChoices from "./MusterChoices.vue"
 
 export default defineComponent({
   name: "StackPanel",
-  components: { MusterChoice: MusterChoices, Creature, Marker },
+  components: { MusterChoice: MusterChoices, Creature, PlayerMarker },
   data: () => ({
     MasterboardPhase,
     Terrain,

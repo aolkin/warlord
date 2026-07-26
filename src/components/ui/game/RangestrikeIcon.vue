@@ -1,7 +1,15 @@
 <template>
   <g class="rangestrike-icon-root">
-    <g class="rangestrike-icon-container" :class="{ interactive, transparentHover, longDistance }">
-      <rect v-if="interactive" width="24" height="24" class="interaction-target" />
+    <g
+      class="rangestrike-icon-container"
+      :class="{ interactive, transparentHover, longDistance }"
+    >
+      <rect
+        v-if="interactive"
+        width="24"
+        height="24"
+        class="interaction-target"
+      />
       <!-- bow-arrow from Material Design Icons -->
       <path
         class="rangestrike-graphic"
@@ -12,8 +20,9 @@
         class="rangestrike-graphic"
         x="7"
         y="28"
-        v-text="totalAdjustment"
-      />
+      >
+        {{ totalAdjustment }}
+      </text>
     </g>
   </g>
 </template>

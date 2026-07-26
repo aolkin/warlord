@@ -8,8 +8,15 @@
     >
       <MasterboardHexes :can-free-move="canFreeMove" />
       <v-fade-transition>
-        <g v-if="paths.length > 0" :key="selectedStack.hex" class="paths">
-          <g v-for="(step, distance) in interleavedPaths" :key="distance">
+        <g
+          v-if="paths.length > 0"
+          :key="selectedStack.hex"
+          class="paths"
+        >
+          <g
+            v-for="(step, distance) in interleavedPaths"
+            :key="distance"
+          >
             <MasterboardHex
               v-for="([foe, hex], index) in step"
               :key="hex.id"
@@ -22,12 +29,27 @@
           </g>
         </g>
       </v-fade-transition>
-      <g v-if="stacks.length > 0" class="stacks">
-        <MasterboardStack v-for="stack in sortedStacks" :key="stack.guid" :stack="stack" />
+      <g
+        v-if="stacks.length > 0"
+        class="stacks"
+      >
+        <MasterboardStack
+          v-for="stack in sortedStacks"
+          :key="stack.guid"
+          :stack="stack"
+        />
       </g>
     </svg>
-    <StackPanel class="ma-3" position="fixed" location="top right" />
-    <TurnPanel class="ma-3 mb-10" position="fixed" location="bottom right" />
+    <StackPanel
+      class="ma-3"
+      position="fixed"
+      location="top right"
+    />
+    <TurnPanel
+      class="ma-3 mb-10"
+      position="fixed"
+      location="bottom right"
+    />
   </div>
 </template>
 

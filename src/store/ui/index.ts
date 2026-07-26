@@ -19,8 +19,7 @@ export default {
     localPlayer: 0
   }),
   getters: {
-    localPlayer(state: UiState, getters: any, rootState: any, rootGetters: any): Player {
-      // return rootGetters["game/playerById"](state.localPlayer)
+    localPlayer(state: UiState, getters: any, rootState: any): Player {
       return rootState.game.players[state.localPlayer]
     }
   },

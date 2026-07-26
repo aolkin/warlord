@@ -7,11 +7,9 @@ import { loadFonts } from "~/plugins/webfontloader"
 
 (() => {
   let idCounter = random(Number.MIN_SAFE_INTEGER, Number.MAX_SAFE_INTEGER)
-  // eslint-disable-next-line no-extend-native
   Object.defineProperty(Object.prototype, "__guid", {
     writable: true
   })
-  // eslint-disable-next-line no-extend-native
   Object.defineProperty(Object.prototype, "guid", {
     get: function() {
       if (this.__guid === undefined) {

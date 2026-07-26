@@ -30,7 +30,7 @@ export class Stack {
       CreatureType.CENTAUR, CreatureType.CENTAUR,
       CreatureType.OGRE, CreatureType.OGRE,
       CreatureType.GARGOYLE, CreatureType.GARGOYLE]
-    this.split = range(8).map(i => false)
+    this.split = range(8).map(() => false)
     this.hex = start
     this.origin = start
     this.marker = marker

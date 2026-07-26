@@ -154,7 +154,7 @@ class Color {
 }
 
 class Solver {
-  constructor(target, baseColor) {
+  constructor(target) {
     this.target = target
     this.targetHSL = target.hsl()
     this.reusedColor = new Color(0, 0, 0)
