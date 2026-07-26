@@ -7,16 +7,23 @@ import { div, mod } from "~/utils/math"
  * Recursively freeze an object and all its nested properties.
  * Handles Maps, objects, and nested structures.
  */
-function deepFreeze<T>(obj: T): T {
+function deepFreeze<T>(obj: T, seen: WeakSet<object> = new WeakSet()): T {
   if (obj === null || typeof obj !== 'object') {
     return obj
   }
+
+  // Reference cycles (e.g. MasterboardHex.addEdge linking hexes back to each
+  // other) would otherwise cause unbounded recursion here.
+  if (seen.has(obj)) {
+    return obj
+  }
+  seen.add(obj)
 
   // Maps don't enumerate values like objects, so iterate explicitly
   if (obj instanceof Map) {
     Object.freeze(obj)
     obj.forEach((value) => {
-      deepFreeze(value)
+      deepFreeze(value, seen)
     })
     return obj
   }
@@ -25,7 +32,7 @@ function deepFreeze<T>(obj: T): T {
   Object.getOwnPropertyNames(obj).forEach((prop) => {
     const value = (obj as Record<string, unknown>)[prop]
     if (value !== null && (typeof value === 'object' || typeof value === 'function')) {
-      deepFreeze(value)
+      deepFreeze(value, seen)
     }
   })
 
