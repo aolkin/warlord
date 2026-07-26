@@ -1,5 +1,5 @@
 <template>
-  <v-card v-bind="$props" width="342" :title="minimized ? 'View off-board creatures' : undefined">
+  <v-card v-bind="$props as any" width="342" :title="minimized ? 'View off-board creatures' : undefined">
     <v-btn
       position="absolute"
       location="top right"

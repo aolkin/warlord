@@ -58,9 +58,10 @@ export default defineComponent({
         stack === this.selectedStack ? 999 : lastSortedStacks.indexOf(stack))
       return lastSortedStacks
     },
-    interleavedPaths(): [boolean, MasterboardHex][] {
+    interleavedPaths(): [boolean, MasterboardHex][][] {
       return range(this.paths[0].path.length).map((colIndex: number) =>
-        this.paths.map((row: Path) => [row.foe !== undefined, row.path[colIndex]])).slice(1)
+        this.paths.map((row: Path): [boolean, MasterboardHex] =>
+          [row.foe !== undefined, row.path[colIndex]])).slice(1)
     },
     canFreeMove(): boolean {
       return this.activePhase === MasterboardPhase.MOVE &&

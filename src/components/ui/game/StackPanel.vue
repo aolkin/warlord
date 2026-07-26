@@ -5,7 +5,7 @@
       border
       width="342"
       subtitle="Hover over a stack to view details..."
-      v-bind="$props"
+      v-bind="$props as any"
     />
     <v-card
       v-else
@@ -13,13 +13,13 @@
       class="root-card"
       border
       width="342"
-      v-bind="$props"
+      v-bind="$props as any"
     >
       <v-card-actions v-if="selectedStack === focusedStack" class="justify-space-between">
         <v-btn @click="cycleStacks(-1)">Previous Stack</v-btn>
         <v-btn @click="cycleStacks(1)">Next Stack</v-btn>
       </v-card-actions>
-      <v-card-item :title="`${stackPlayer.name} (${focusedStack.creatures.length} creatures)`">
+      <v-card-item :title="`${stackPlayer?.name} (${focusedStack.creatures.length} creatures)`">
         <template #prepend>
           <Marker :color="focusedStack.owner" :marker="focusedStack.marker" width="50" height="50" />
         </template>
@@ -27,7 +27,7 @@
 
       <div class="px-2 pb-1">
         <Creature
-          v-for="(creature, index) in focusedStack.creatures"
+          v-for="(creature, index) in (focusedStack.creatures as CreatureType[])"
           :key="index"
           :type="creature"
           :player="stackPlayer"
@@ -54,8 +54,8 @@
             You may select at least 2 and at most {{ focusedStack.creatures.length - 2 }} creatures to split
             into a new stack.
             <div v-if="focusedStack.getCreaturesSplit(true).length > 0" class="text-left mt-5">
-              <p>Remaining: {{ focusedStack.getCreaturesSplit(false).map(c => CREATURES[c].name).join(", ") }}</p>
-              <p>Splitting: {{ focusedStack.getCreaturesSplit(true).map(c => CREATURES[c].name).join(", ") }}</p>
+              <p>Remaining: {{ focusedStack.getCreaturesSplit(false).map((c: CreatureType) => CREATURES[c].name).join(", ") }}</p>
+              <p>Splitting: {{ focusedStack.getCreaturesSplit(true).map((c: CreatureType) => CREATURES[c].name).join(", ") }}</p>
             </div>
           </v-card-text>
         </v-card-actions>
@@ -91,7 +91,7 @@ import { CREATURE_DATA, CreatureType } from "~/models/creature"
 import { MasterboardPhase } from "~/models/game"
 import masterboard, { Terrain } from "~/models/masterboard"
 import { Player } from "~/models/player"
-import { MusterPossibility, Stack } from "~/models/stack"
+import { MusterChoice, MusterPossibility, Stack } from "~/models/stack"
 import { mod } from "~/utils/math"
 import Creature from "../../game/Creature.vue"
 import Marker from "../../game/Marker.vue"
@@ -130,7 +130,7 @@ export default defineComponent({
       get() {
         return this.focusedStack?.currentMuster
       },
-      set(value: MusterPossibility) {
+      set(value: MusterChoice) {
         if (this.activePhase !== MasterboardPhase.MUSTER) {
           return
         }

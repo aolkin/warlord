@@ -80,6 +80,7 @@
 import { defineComponent } from "vue"
 import { sum } from "lodash-es"
 import { mapActions, mapGetters, mapMutations, mapState } from "vuex"
+import DiceRoller from "~/components/ui/generic/DiceRoller"
 import { MasterboardPhase } from "~/models/game"
 import { Stack } from "~/models/stack"
 
@@ -134,7 +135,8 @@ export default defineComponent({
       if (this.activeRoll !== undefined) {
         this.setRoll(undefined)
       }
-      this.diceRoller.roll().then(async(roll: number[]) => await this.setRoll(roll[0]))
+      const diceRoller = this.diceRoller as InstanceType<typeof DiceRoller>
+      diceRoller.roll().then(async(roll: number[]) => await this.setRoll(roll[0]))
     },
     proceedToRoll() {
       this.deselectStack()

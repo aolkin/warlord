@@ -22,7 +22,7 @@
 <script lang="ts">
 import { defineComponent, PropType } from "vue"
 import { mapActions, mapGetters, mapMutations, mapState } from "vuex"
-import { BattlePhase } from "~/models/battle"
+import { BattleCreature, BattlePhase } from "~/models/battle"
 import Creature from "../Creature.vue"
 
 export default defineComponent({
@@ -30,7 +30,7 @@ export default defineComponent({
   components: { Creature },
   props: {
     creatures: {
-      type: Array,
+      type: Array as PropType<BattleCreature[]>,
       required: true
     },
     expectedPhase: {
