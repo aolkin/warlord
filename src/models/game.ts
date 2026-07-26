@@ -1,4 +1,4 @@
-import { assign, matches, range, shuffle } from "lodash-es"
+import { assign, matches, range } from "lodash-es"
 import { BaseActionContext } from "~/store/types"
 import { View } from "~/store/ui/selection"
 import { assert } from "~/utils/assert"
@@ -7,6 +7,7 @@ import { Battle, BATTLE_PHASE_TYPES, BattleCreature, BattlePhaseType, Rangestrik
 import { CREATURE_DATA, CREATURE_LIST, CreatureType } from "./creature"
 import masterboard, { HexEdge, MasterboardHex } from "./masterboard"
 import { Player, PlayerId } from "./player"
+import { defaultRandom, Random } from "./random"
 import { MusterChoice, Stack } from "./stack"
 
 const INITIAL_HEXES: Record<number, number[]> = {
@@ -79,14 +80,14 @@ export class TitanGame {
   activePhase: MasterboardPhase
   activeBattle?: Battle
 
-  constructor(numPlayers: number) {
+  constructor(numPlayers: number, random: Random = defaultRandom) {
     this.round = 0
     this.mulliganTaken = false
     this.activePlayer = 0
     this.activeRoll = undefined
     this.activeBattle = undefined
     this.activePhase = MasterboardPhase.SPLIT
-    const colors = shuffle(range(0, 5))
+    const colors = random.shuffle(range(0, 5))
     this.players = range(0, numPlayers).map(i => new Player(colors[i], `Player ${i + 1}`))
     this.stacks = this.players.map((player: Player, i: number) =>
       new Stack(player?.id, INITIAL_HEXES[numPlayers][i], 0))
