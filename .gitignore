@@ -7,4 +7,3 @@ nuxt.d.ts
 .env
 *.iml
 .idea/*
-*.pdf
