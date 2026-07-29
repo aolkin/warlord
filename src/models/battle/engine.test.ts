@@ -188,6 +188,74 @@ describe("Rangestrike targets", () => {
     expect(targets).toHaveLength(1)
     expect(targets[0].adjustment).toEqual({ toHit: 1, dice: 0 })
   })
+
+  // A Dragon defending in a volcano is harder to hit: the strike number needed to hit
+  // it is raised by one, per the in-code comment on this case.
+  it("raises the to-hit for a Dragon defending in its native volcano", () => {
+    expect(masterboard.getHex(1000).terrain).toBe(Terrain.MOUNTAINS)
+    const attacking = new Stack(PlayerId.RED, 1000, 0, [CreatureType.RANGER])
+    const defending = new Stack(PlayerId.BLUE, 1000, 0, [CreatureType.DRAGON])
+    const battle = new Battle(1000, HexEdge.FIRST, newGame(), attacking, defending)
+    battle.phase = BattlePhase.ATTACKER_STRIKE
+    const ranger = battle.getOffense()[0]
+    const dragon = battle.getDefense()[0]
+    ranger.hex = 2
+    ranger.initialHex = 2
+    dragon.hex = 15
+    dragon.initialHex = 15
+
+    const targets = battle.rangestrikeTargets(ranger)
+    expect(targets).toHaveLength(1)
+    expect(targets[0].adjustment).toEqual({ toHit: 1, dice: 0 })
+  })
+
+  // A non-native rangestriker loses a skill factor for each intervening hex containing
+  // bramble, which - like every other hazard adjustment here - raises toHit (harder to
+  // hit) rather than lowering it.
+  it("raises the to-hit by one per intervening bramble hex crossed", () => {
+    // masterboard hex 5 is Terrain.JUNGLE, whose battle board has bramble hazards
+    // including battle-hexes 15 and 20, both crossed on the long-range path from
+    // battle-hex 8 to battle-hex 27.
+    expect(masterboard.getHex(5).terrain).toBe(Terrain.JUNGLE)
+    const attacking = new Stack(PlayerId.RED, 5, 0, [CreatureType.RANGER])
+    const defending = new Stack(PlayerId.BLUE, 5, 0, [CreatureType.CENTAUR])
+    const battle = new Battle(5, HexEdge.FIRST, newGame(), attacking, defending)
+    battle.phase = BattlePhase.ATTACKER_STRIKE
+    const ranger = battle.getOffense()[0]
+    const centaur = battle.getDefense()[0]
+    ranger.hex = 8
+    ranger.initialHex = 8
+    centaur.hex = 27
+    centaur.initialHex = 27
+
+    const targets = battle.rangestrikeTargets(ranger)
+    expect(targets).toHaveLength(1)
+    expect(targets[0].longDistance).toBe(true)
+    expect(targets[0].adjustment).toEqual({ toHit: 2, dice: 0 })
+  })
+
+  // Crossing a wall upwards costs a skill factor, raising toHit the same way as the
+  // other hazard adjustments above.
+  it("raises the to-hit for a rangestrike that crosses a wall upwards", () => {
+    // masterboard hex 100 is Terrain.TOWER, whose battle board has a wall edge between
+    // battle-hexes 7 (elevation 0) and 8 (elevation 1).
+    expect(masterboard.getHex(100).terrain).toBe(Terrain.TOWER)
+    const attacking = new Stack(PlayerId.RED, 100, 0, [CreatureType.RANGER])
+    const defending = new Stack(PlayerId.BLUE, 100, 0, [CreatureType.CENTAUR])
+    const battle = new Battle(100, HexEdge.FIRST, newGame(), attacking, defending)
+    battle.phase = BattlePhase.ATTACKER_STRIKE
+    const ranger = battle.getOffense()[0]
+    const centaur = battle.getDefense()[0]
+    ranger.hex = 13
+    ranger.initialHex = 13
+    centaur.hex = 8
+    centaur.initialHex = 8
+
+    const targets = battle.rangestrikeTargets(ranger)
+    expect(targets).toHaveLength(1)
+    expect(targets[0].longDistance).toBe(false)
+    expect(targets[0].adjustment).toEqual({ toHit: 1, dice: 0 })
+  })
 })
 
 describe("Carryover", () => {
