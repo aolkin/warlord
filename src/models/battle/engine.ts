@@ -372,7 +372,7 @@ export class Battle {
     if (targetHazard === Hazard.BRAMBLE && isCreatureNative(targetCreature.type, Hazard.BRAMBLE) &&
       !attackerIsBrambleNative) {
       // A native character defending in brambles is harder to hit when attacked by a non-native
-      adjustment -= 1
+      adjustment += 1
     }
     if (!attackerIsBrambleNative) {
       // A non-native rangestriker loses a skill factor for each intervening hex containing bramble

@@ -165,13 +165,10 @@ describe("Rangestrike targets", () => {
     expect(targets[0].adjustment).toEqual({ toHit: 0, dice: 2 })
   })
 
-  // NOTE: this pins the current, observed output of getRangestrikeAdjustmentForHazards
-  // for a bramble-native defender rangestruck by a non-native attacker. The in-code
-  // comment ("harder to hit") and the melee equivalent (strikeAdjustment, which adds
-  // +1 toHit for the same situation) both imply this should raise toHit, but this
-  // path *subtracts* 1 instead - the opposite direction. Flagging as a likely sign bug
-  // rather than asserting it is correct; see final report.
-  it("documents the current (possibly inverted) bramble-native-defender adjustment", () => {
+  // A bramble-native defender rangestruck by a non-native attacker is harder to hit:
+  // the rulebook (Hazard Chart, Bramble/Rangestriking) raises the Strike-number by 1,
+  // matching the melee equivalent (strikeAdjustment adds +1 toHit for the same case).
+  it("raises the to-hit for a bramble-native defender rangestruck by a non-native", () => {
     // masterboard hex 24 is Terrain.BRUSH, whose battle board has bramble hazard
     // hexes including battle-hex 16; Gargoyles are bramble-native.
     const brushHex = 24
@@ -189,7 +186,7 @@ describe("Rangestrike targets", () => {
 
     const targets = battle.rangestrikeTargets(ranger)
     expect(targets).toHaveLength(1)
-    expect(targets[0].adjustment).toEqual({ toHit: -1, dice: 0 })
+    expect(targets[0].adjustment).toEqual({ toHit: 1, dice: 0 })
   })
 })
 
