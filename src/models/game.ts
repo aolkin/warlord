@@ -291,17 +291,22 @@ export class TitanGame {
   async doNextPhase({ getters, commit, dispatch }: ActionContext): Promise<void> {
     switch (this.activePhase) {
       case MasterboardPhase.SPLIT:
+        // TODO: check getters.mayProceed before advancing — round-1 split rule (exactly 4 creatures with 1 lord) not yet enforced
         commit("phaseExitSplit", getters)
         commit("phaseEnterMove", getters)
         break
       case MasterboardPhase.MOVE:
+        // TODO: handle 2+ simultaneous engagements — no UI yet exists to let the player choose
+        // which battle to resolve first. Refusing to advance keeps the game out of a battle
+        // phase with no battle to resolve.
+        assert(getters.engagedStacks.length <= 1, "Multiple simultaneous engagements are unsupported")
         commit("phaseExitMove", getters)
         commit("phaseEnterBattle", getters)
         if (getters.engagedStacks.length === 0) {
           commit("nextPhase", getters)
           commit("phaseExitBattle", getters)
           commit("phaseEnterMuster", getters)
-        } else if (getters.engagedStacks.length === 1) {
+        } else {
           dispatch("initiateBattle", getters.engagedStacks[0])
         }
         break
