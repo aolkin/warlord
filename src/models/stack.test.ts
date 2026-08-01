@@ -101,10 +101,10 @@ describe("Stack mustering eligibility", () => {
   })
 
   it("cannot muster once the stack is at its 7-creature cap", () => {
-    const stack = new Stack(PlayerId.RED, 5, 0) // 8 creatures, over the cap
+    const stack = new Stack(PlayerId.RED, 5, 0, new Array(7).fill(CreatureType.CENTAUR))
     stack.hex = 6
     expect(stack.hasMoved()).toBe(true)
-    expect(stack.creatures.length).toBe(8)
+    expect(stack.creatures.length).toBe(7)
     expect(stack.canMuster()).toBe(false)
   })
 
