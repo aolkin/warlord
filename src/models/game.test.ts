@@ -117,10 +117,9 @@ describe("TitanGame movement legality", () => {
     expect(toEnemyHex?.foe?.owner).toBe(game.players[1].id)
   })
 
-  it("only allows a square/circle entry edge on the first step, not the plain arrow exit", () => {
+  it("replaces the arrow exits of a hex with a square edge on the first step", () => {
     const game = newGame()
-    // Hex 4 has both a square entry edge (to 103) and a plain arrow edge (to 5); the
-    // square edge is only usable as the very first step of a move.
+    // Hex 4 has a square edge (to 103) alongside its arrow edge (to 5).
     game.stacks[0].hex = 4
     game.activePhase = MasterboardPhase.MOVE
     game.activeRoll = 1
@@ -128,6 +127,18 @@ describe("TitanGame movement legality", () => {
 
     const destinations = getters.pathsForHex(4).map(p => p.path.at(-1)!.id)
     expect(destinations).toEqual([103])
+  })
+
+  it("adds a circle edge to the arrow exits on the first step", () => {
+    const game = newGame()
+    // Hex 1 has a circle edge (to 1000) alongside its arrow edge (to 2), and no square edge.
+    game.stacks[0].hex = 1
+    game.activePhase = MasterboardPhase.MOVE
+    game.activeRoll = 1
+    const getters = createGetters(game)
+
+    const destinations = getters.pathsForHex(1).map(p => p.path.at(-1)!.id).sort((a, b) => a - b)
+    expect(destinations).toEqual([2, 1000])
   })
 
   it("continues from the entry hex using normal arrow movement on later steps", () => {
@@ -190,13 +201,15 @@ describe("TitanGame mayProceed for the split phase", () => {
 describe("TitanGame turn and phase transitions", () => {
   it("advances from split to move, finalizing pending splits and resetting per-turn movement state", async () => {
     const game = newGame()
-    game.mulliganTaken = true // stale from a previous turn; move entry should clear it
     const original = game.stacks[0]
-    original.attackEdge = HexEdge.FIRST // stale from a previous turn's battle
-    original.setPendingSplit(0, true)
-    original.setPendingSplit(2, true)
-    original.setPendingSplit(4, true)
-    original.setPendingSplit(6, true)
+    // Stale state from a previous turn, all of which move entry clears.
+    game.mulliganTaken = true
+    original.attackEdge = HexEdge.FIRST
+    original.origin = 3
+    original.setPendingSplit(0, true) // TITAN
+    original.setPendingSplit(2, true) // CENTAUR
+    original.setPendingSplit(4, true) // OGRE
+    original.setPendingSplit(6, true) // GARGOYLE
     const context = createActionContext(game)
 
     await game.doNextPhase(context)
@@ -205,19 +218,19 @@ describe("TitanGame turn and phase transitions", () => {
     expect(game.stacks).toHaveLength(3)
     const sibling = game.stacks.find(s => s !== original && s.owner === original.owner)!
     expect(sibling.hex).toBe(original.hex)
+    expect(sibling.creatures).toEqual([CreatureType.TITAN, CreatureType.CENTAUR,
+      CreatureType.OGRE, CreatureType.GARGOYLE])
+    expect(original.creatures).toEqual([CreatureType.ANGEL, CreatureType.CENTAUR,
+      CreatureType.OGRE, CreatureType.GARGOYLE])
     expect(original.origin).toBe(original.hex)
     expect(original.attackEdge).toBeUndefined()
     expect(game.mulliganTaken).toBe(false)
   })
 
-  // doNextPhase never checks getters.mayProceed itself - that gating is advisory,
-  // presumably left to the UI's "next phase" button. A round-1 split that never
-  // satisfies the exactly-4-with-one-lord rule (isValidSplit(true)) is still accepted
-  // here because mPhaseExitSplit only finalizes stacks with numSplitting > 0, and
-  // finalizeSplit's own assertion checks the generic split rule (isValidSplit()),
-  // not the round-1-specific one. Flagging as a rules-enforcement gap rather than
-  // fixing it - see final report.
-  it("documents that a round-1 split can be skipped entirely without being blocked", async () => {
+  // The round-1 split rule (exactly 4 creatures, one of them a lord) is unenforced: doNextPhase
+  // does not consult getters.mayProceed, and mPhaseExitSplit skips stacks with nothing pending.
+  // See the TODO in doNextPhase.
+  it("advances from split to move in round 1 even when no stack has split", async () => {
     const game = newGame()
     expect(game.round).toBe(0)
     const context = createActionContext(game)
@@ -240,10 +253,10 @@ describe("TitanGame turn and phase transitions", () => {
     expect(game.activeRoll).toBeUndefined()
   })
 
-  it("initiates a battle when the mover ends adjacent to exactly one enemy stack, without auto-resolving the phase", async () => {
+  it("initiates a battle and stays in the battle phase when one stack ends on an enemy hex", async () => {
     const game = newGame()
     const attacker = game.stacks[0]
-    attacker.hex = game.stacks[1].hex // engage the other player directly
+    attacker.hex = game.stacks[1].hex // stacks are engaged by sharing a hex
     game.activePhase = MasterboardPhase.MOVE
     game.activeRoll = 1
     let dispatched: [string, unknown] | undefined
@@ -255,13 +268,10 @@ describe("TitanGame turn and phase transitions", () => {
     expect(game.activePhase).toBe(MasterboardPhase.BATTLE)
   })
 
-  // Real Titan rules allow multiple simultaneous engagements, resolved one battle at a
-  // time; this switch only branches on exactly 0 or exactly 1 engaged stack. With 2+
-  // engagements it falls through to the bottom's single `commit("nextPhase")` without
-  // ever dispatching a battle, leaving the game stuck in BATTLE with no activeBattle
-  // (the next doNextPhase call would then throw on the "Incomplete battle!" assertion).
-  // Flagging as a likely rules gap rather than fixing it - see final report.
-  it("documents that doNextPhase drops multiple simultaneous engagements without initiating any battle", async () => {
+  // Real Titan rules allow multiple simultaneous engagements, resolved one battle at a time.
+  // Until a player can choose the resolution order, doNextPhase refuses to leave the move
+  // phase rather than advancing into a battle phase with no battle. See its TODO.
+  it("refuses to leave the move phase with multiple simultaneous engagements", async () => {
     const game = newGame(3) // BLUE @ 100, GREEN @ 300, RED @ 500
     const original = game.stacks[0]
     original.setPendingSplit(0, true)
@@ -275,13 +285,11 @@ describe("TitanGame turn and phase transitions", () => {
     sibling.hex = game.stacks[2].hex // engage RED
     game.activePhase = MasterboardPhase.MOVE
     game.activeRoll = 1
-    const context = createActionContext(game, () => {
-      throw new Error("dispatch should not be called for 2+ simultaneous engagements")
-    })
+    const context = createActionContext(game)
 
-    await game.doNextPhase(context)
+    await expect(game.doNextPhase(context)).rejects.toThrow("Multiple simultaneous engagements")
 
-    expect(game.activePhase).toBe(MasterboardPhase.BATTLE)
+    expect(game.activePhase).toBe(MasterboardPhase.MOVE)
     expect(game.activeBattle).toBeUndefined()
   })
 

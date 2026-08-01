@@ -296,16 +296,19 @@ export class TitanGame {
         commit("phaseEnterMove", getters)
         break
       case MasterboardPhase.MOVE:
+        // TODO: handle 2+ simultaneous engagements — no UI yet exists to let the player choose
+        // which battle to resolve first. Refusing to advance keeps the game out of a battle
+        // phase with no battle to resolve.
+        assert(getters.engagedStacks.length <= 1, "Multiple simultaneous engagements are unsupported")
         commit("phaseExitMove", getters)
         commit("phaseEnterBattle", getters)
         if (getters.engagedStacks.length === 0) {
           commit("nextPhase", getters)
           commit("phaseExitBattle", getters)
           commit("phaseEnterMuster", getters)
-        } else if (getters.engagedStacks.length === 1) {
+        } else {
           dispatch("initiateBattle", getters.engagedStacks[0])
         }
-        // TODO: handle 2+ simultaneous engagements — no UI yet exists to let the player choose which battle to resolve first
         break
       case MasterboardPhase.BATTLE:
         assert(this.activeBattle !== undefined, "Incomplete battle!")
