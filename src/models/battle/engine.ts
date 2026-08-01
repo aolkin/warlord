@@ -359,7 +359,7 @@ export class Battle {
     if (targetHazard === Hazard.VOLCANO && targetCreature.type === CreatureType.DRAGON) {
       // Dragons in volcanos have the strike number needed to hit them increased by one
       // Dragons in volcanos get bonus dice when rangestriking out (not covered here)
-      adjustment -= 1
+      adjustment += 1
     }
 
     // Ensure path does not go through a creature or a tree
@@ -372,11 +372,11 @@ export class Battle {
     if (targetHazard === Hazard.BRAMBLE && isCreatureNative(targetCreature.type, Hazard.BRAMBLE) &&
       !attackerIsBrambleNative) {
       // A native character defending in brambles is harder to hit when attacked by a non-native
-      adjustment -= 1
+      adjustment += 1
     }
     if (!attackerIsBrambleNative) {
       // A non-native rangestriker loses a skill factor for each intervening hex containing bramble
-      adjustment -= path.slice(0, -1).filter(hex => board.getHazard(hex) === Hazard.BRAMBLE).length
+      adjustment += path.slice(0, -1).filter(hex => board.getHazard(hex) === Hazard.BRAMBLE).length
     }
 
     // Dunes, cliffs, slopes, and walls
@@ -418,7 +418,7 @@ export class Battle {
           case EdgeHazard.WALL:
             if (lastElevation < nextElevation) {
               // Lose a skill factor for crossing a wall upwards
-              adjustment -= 1
+              adjustment += 1
             }
             atopAtLeastOneEdge = atopAtLeastOneEdge || rangestrikerOrTargetAtopHex
             break
