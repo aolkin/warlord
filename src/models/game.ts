@@ -291,6 +291,7 @@ export class TitanGame {
   async doNextPhase({ getters, commit, dispatch }: ActionContext): Promise<void> {
     switch (this.activePhase) {
       case MasterboardPhase.SPLIT:
+        // TODO: check getters.mayProceed before advancing — round-1 split rule (exactly 4 creatures with 1 lord) not yet enforced
         commit("phaseExitSplit", getters)
         commit("phaseEnterMove", getters)
         break
@@ -304,6 +305,7 @@ export class TitanGame {
         } else if (getters.engagedStacks.length === 1) {
           dispatch("initiateBattle", getters.engagedStacks[0])
         }
+        // TODO: handle 2+ simultaneous engagements — no UI yet exists to let the player choose which battle to resolve first
         break
       case MasterboardPhase.BATTLE:
         assert(this.activeBattle !== undefined, "Incomplete battle!")
