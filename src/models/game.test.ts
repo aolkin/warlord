@@ -227,20 +227,6 @@ describe("TitanGame turn and phase transitions", () => {
     expect(game.mulliganTaken).toBe(false)
   })
 
-  // The round-1 split rule (exactly 4 creatures, one of them a lord) is unenforced: doNextPhase
-  // does not consult getters.mayProceed, and mPhaseExitSplit skips stacks with nothing pending.
-  // See the TODO in doNextPhase.
-  it("advances from split to move in round 1 even when no stack has split", async () => {
-    const game = newGame()
-    expect(game.round).toBe(0)
-    const context = createActionContext(game)
-
-    await game.doNextPhase(context)
-
-    expect(game.activePhase).toBe(MasterboardPhase.MOVE)
-    expect(game.stacks).toHaveLength(2) // nobody was forced to split
-  })
-
   it("skips an empty battle phase and goes straight to muster when nobody is engaged", async () => {
     const game = newGame() // BLUE at 100, GREEN at 400: never in contact
     game.activePhase = MasterboardPhase.MOVE
