@@ -6,9 +6,6 @@ on:
     branches:
       - main
 
-env:
-  WRANGLER_VERSION: 4.118.0
-
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -18,6 +15,9 @@ jobs:
     concurrency:
       group: ${{ github.event_name == 'pull_request' && format('preview-{0}', github.event.number) || 'cloudflare-production-deploy' }}
       cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -67,22 +67,21 @@ jobs:
 
       - name: Upload worker version
         id: deploy
-        uses: cloudflare/wrangler-action@v4
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          packageManager: npm
-          wranglerVersion: ${{ env.WRANGLER_VERSION }}
-          command: >-
-            versions upload
-            --tag "${{ steps.version-meta.outputs.tag }}"
-            --message "${{ steps.version-meta.outputs.message }}"
+        env:
+          TAG: ${{ steps.version-meta.outputs.tag }}
+          MESSAGE: ${{ steps.version-meta.outputs.message }}
+        run: |
+          output=$(pnpm exec wrangler versions upload --tag "$TAG" --message "$MESSAGE" 2>&1)
+          echo "$output"
+          echo "output<<EOF" >> "$GITHUB_OUTPUT"
+          echo "$output" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
 
       - name: Extract version ID
         id: version
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         env:
-          UPLOAD_OUTPUT: ${{ steps.deploy.outputs.command-output }}
+          UPLOAD_OUTPUT: ${{ steps.deploy.outputs.output }}
         run: |
           version_id=$(echo "$UPLOAD_OUTPUT" | grep "Worker Version ID:" | awk '{print $4}')
           if [ -z "$version_id" ]; then
@@ -90,6 +89,15 @@ jobs:
             exit 1
           fi
           echo "id=$version_id" >> "$GITHUB_OUTPUT"
+
+      - name: Extract preview URL
+        id: preview-url
+        if: github.event_name == 'pull_request'
+        env:
+          UPLOAD_OUTPUT: ${{ steps.deploy.outputs.output }}
+        run: |
+          preview_url=$(echo "$UPLOAD_OUTPUT" | grep "Version Preview URL:" | awk '{print $4}')
+          echo "url=$preview_url" >> "$GITHUB_OUTPUT"
 
       - name: Hide previous preview comments
         if: ${{ !cancelled() && github.event_name == 'pull_request' && steps.build.outcome == 'success' }}
@@ -137,7 +145,7 @@ jobs:
         with:
           script: |
             const headSha = '${{ github.event.pull_request.head.sha }}';
-            const deploymentUrl = '${{ steps.deploy.outputs.deployment-url }}';
+            const deploymentUrl = '${{ steps.preview-url.outputs.url }}';
             const body = deploymentUrl
               ? `Preview deployment for ${headSha}: ${deploymentUrl}`
               : `Preview deployment for ${headSha} did not produce a URL; check the [workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}).`;
@@ -150,10 +158,4 @@ jobs:
 
       - name: Deploy worker version to production
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        uses: cloudflare/wrangler-action@v4
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          packageManager: npm
-          wranglerVersion: ${{ env.WRANGLER_VERSION }}
-          command: versions deploy ${{ steps.version.outputs.id }}@100% --yes
+        run: pnpm exec wrangler versions deploy ${{ steps.version.outputs.id }}@100% --yes
