@@ -1,28 +1,22 @@
 import { describe, expect, it } from "vitest"
 import { CreatureType } from "~/models/creature"
-import masterboard, { HexEdge, Terrain } from "~/models/masterboard"
+import { HexEdge, Terrain } from "~/models/masterboard"
 import { PlayerId } from "~/models/player"
 import { UNATTAINABLE_MOVEMENT_COST } from "./board"
 import { Battle, BattleSide } from "./engine"
 import { BattlePhase } from "./strike"
 
-// Battle-hex ids below (e.g. 1, 7, 8, 16, 20, 26, 32) are positions on the terrain's
-// battle board (see board.ts) and are unrelated to the masterboard hex ids (e.g. 1, 8,
-// 24, 1000) used to pick which terrain/battle-board a Battle is fought on.
-
-function newBattle(masterboardHex: number, edge: HexEdge, attacking: BattleSide, defending: BattleSide): Battle {
-  return new Battle(masterboard.getHex(masterboardHex).terrain, edge, attacking, defending)
+function newBattle(terrain: Terrain, edge: HexEdge, attacking: BattleSide, defending: BattleSide): Battle {
+  return new Battle(terrain, edge, attacking, defending)
 }
 
-// masterboard hex 1 is Terrain.PLAINS: no hazards, so movement/strike math below is
-// unaffected by terrain adjustments.
-const PLAINS_HEX = 1
+const PLAINS_TERRAIN = Terrain.PLAINS
 
 describe("Battle engagement", () => {
   it("starts with no engagements or pending strikes before anyone has moved", () => {
     const attacking: BattleSide = { player: PlayerId.RED, score: 0, creatures: [CreatureType.LION] }
     const defending: BattleSide = { player: PlayerId.BLUE, score: 0, creatures: [CreatureType.CENTAUR] }
-    const battle = newBattle(PLAINS_HEX, HexEdge.FIRST, attacking, defending)
+    const battle = newBattle(PLAINS_TERRAIN, HexEdge.FIRST, attacking, defending)
 
     expect(battle.phase).toBe(BattlePhase.DEFENDER_MOVE)
     expect(battle.getPendingStrikes()).toEqual([])
@@ -32,7 +26,7 @@ describe("Battle engagement", () => {
   it("moves into contact, resolves a strike, and inflicts casualties", () => {
     const attacking: BattleSide = { player: PlayerId.RED, score: 0, creatures: [CreatureType.LION] }
     const defending: BattleSide = { player: PlayerId.BLUE, score: 0, creatures: [CreatureType.CENTAUR] }
-    const battle = newBattle(PLAINS_HEX, HexEdge.FIRST, attacking, defending)
+    const battle = newBattle(PLAINS_TERRAIN, HexEdge.FIRST, attacking, defending)
     const lion = battle.getOffense()[0]
     const centaur = battle.getDefense()[0]
 
@@ -65,7 +59,7 @@ describe("Battle engagement", () => {
   it("computes to-hit purely from the skill difference on hazard-free terrain", () => {
     const attacking: BattleSide = { player: PlayerId.RED, score: 0, creatures: [CreatureType.OGRE] }
     const defending: BattleSide = { player: PlayerId.BLUE, score: 0, creatures: [CreatureType.TROLL] }
-    const battle = newBattle(PLAINS_HEX, HexEdge.FIRST, attacking, defending)
+    const battle = newBattle(PLAINS_TERRAIN, HexEdge.FIRST, attacking, defending)
     const ogre = battle.getOffense()[0]
     const troll = battle.getDefense()[0]
 
@@ -85,7 +79,7 @@ describe("Rangestrike targets", () => {
   } {
     const attacking: BattleSide = { player: PlayerId.RED, score: 0, creatures: [attackerType] }
     const defending: BattleSide = { player: PlayerId.BLUE, score: 0, creatures: [CreatureType.CENTAUR] }
-    const battle = newBattle(PLAINS_HEX, HexEdge.FIRST, attacking, defending)
+    const battle = newBattle(PLAINS_TERRAIN, HexEdge.FIRST, attacking, defending)
     battle.phase = BattlePhase.ATTACKER_STRIKE
     const attacker = battle.getOffense()[0]
     const target = battle.getDefense()[0]
@@ -139,12 +133,10 @@ describe("Rangestrike targets", () => {
   })
 
   it("gives a Dragon bonus dice when rangestriking out of its native volcano hazard", () => {
-    // masterboard hex 1000 is Terrain.MOUNTAINS, whose battle board has a volcano
-    // hazard at battle-hex 15 (Dragons are volcano-native).
-    expect(masterboard.getHex(1000).terrain).toBe(Terrain.MOUNTAINS)
+    // Terrain.MOUNTAINS' battle board has a volcano hazard at battle-hex 15 (Dragons are volcano-native).
     const attacking: BattleSide = { player: PlayerId.RED, score: 0, creatures: [CreatureType.DRAGON] }
     const defending: BattleSide = { player: PlayerId.BLUE, score: 0, creatures: [CreatureType.CENTAUR] }
-    const battle = newBattle(1000, HexEdge.FIRST, attacking, defending)
+    const battle = newBattle(Terrain.MOUNTAINS, HexEdge.FIRST, attacking, defending)
     battle.phase = BattlePhase.ATTACKER_STRIKE
     const dragon = battle.getOffense()[0]
     const centaur = battle.getDefense()[0]
@@ -162,13 +154,10 @@ describe("Rangestrike targets", () => {
   // the rulebook (Hazard Chart, Bramble/Rangestriking) raises the Strike-number by 1,
   // matching the melee equivalent (strikeAdjustment adds +1 toHit for the same case).
   it("raises the to-hit for a bramble-native defender rangestruck by a non-native", () => {
-    // masterboard hex 24 is Terrain.BRUSH, whose battle board has bramble hazard
-    // hexes including battle-hex 16; Gargoyles are bramble-native.
-    const brushHex = 24
-    expect(masterboard.getHex(brushHex).terrain).toBe(Terrain.BRUSH)
+    // Terrain.BRUSH's battle board has bramble hazard hexes including battle-hex 16; Gargoyles are bramble-native.
     const attacking: BattleSide = { player: PlayerId.RED, score: 0, creatures: [CreatureType.RANGER] }
     const defending: BattleSide = { player: PlayerId.BLUE, score: 0, creatures: [CreatureType.GARGOYLE] }
-    const battle = newBattle(brushHex, HexEdge.FIRST, attacking, defending)
+    const battle = newBattle(Terrain.BRUSH, HexEdge.FIRST, attacking, defending)
     battle.phase = BattlePhase.ATTACKER_STRIKE
     const ranger = battle.getOffense()[0]
     const gargoyle = battle.getDefense()[0]
@@ -185,10 +174,9 @@ describe("Rangestrike targets", () => {
   // A Dragon defending in a volcano is harder to hit: the strike number needed to hit
   // it is raised by one, per the in-code comment on this case.
   it("raises the to-hit for a Dragon defending in its native volcano", () => {
-    expect(masterboard.getHex(1000).terrain).toBe(Terrain.MOUNTAINS)
     const attacking: BattleSide = { player: PlayerId.RED, score: 0, creatures: [CreatureType.RANGER] }
     const defending: BattleSide = { player: PlayerId.BLUE, score: 0, creatures: [CreatureType.DRAGON] }
-    const battle = newBattle(1000, HexEdge.FIRST, attacking, defending)
+    const battle = newBattle(Terrain.MOUNTAINS, HexEdge.FIRST, attacking, defending)
     battle.phase = BattlePhase.ATTACKER_STRIKE
     const ranger = battle.getOffense()[0]
     const dragon = battle.getDefense()[0]
@@ -206,13 +194,10 @@ describe("Rangestrike targets", () => {
   // bramble, which - like every other hazard adjustment here - raises toHit (harder to
   // hit) rather than lowering it.
   it("raises the to-hit by one per intervening bramble hex crossed", () => {
-    // masterboard hex 5 is Terrain.JUNGLE, whose battle board has bramble hazards
-    // including battle-hexes 15 and 20, both crossed on the long-range path from
-    // battle-hex 8 to battle-hex 27.
-    expect(masterboard.getHex(5).terrain).toBe(Terrain.JUNGLE)
+    // Terrain.JUNGLE's battle board has bramble hazards at battle-hexes 15 and 20, both crossed here.
     const attacking: BattleSide = { player: PlayerId.RED, score: 0, creatures: [CreatureType.RANGER] }
     const defending: BattleSide = { player: PlayerId.BLUE, score: 0, creatures: [CreatureType.CENTAUR] }
-    const battle = newBattle(5, HexEdge.FIRST, attacking, defending)
+    const battle = newBattle(Terrain.JUNGLE, HexEdge.FIRST, attacking, defending)
     battle.phase = BattlePhase.ATTACKER_STRIKE
     const ranger = battle.getOffense()[0]
     const centaur = battle.getDefense()[0]
@@ -230,12 +215,10 @@ describe("Rangestrike targets", () => {
   // Crossing a wall upwards costs a skill factor, raising toHit the same way as the
   // other hazard adjustments above.
   it("raises the to-hit for a rangestrike that crosses a wall upwards", () => {
-    // masterboard hex 100 is Terrain.TOWER, whose battle board has a wall edge between
-    // battle-hexes 7 (elevation 0) and 8 (elevation 1).
-    expect(masterboard.getHex(100).terrain).toBe(Terrain.TOWER)
+    // Terrain.TOWER's battle board has a wall edge between battle-hexes 7 (elevation 0) and 8 (elevation 1).
     const attacking: BattleSide = { player: PlayerId.RED, score: 0, creatures: [CreatureType.RANGER] }
     const defending: BattleSide = { player: PlayerId.BLUE, score: 0, creatures: [CreatureType.CENTAUR] }
-    const battle = newBattle(100, HexEdge.FIRST, attacking, defending)
+    const battle = newBattle(Terrain.TOWER, HexEdge.FIRST, attacking, defending)
     battle.phase = BattlePhase.ATTACKER_STRIKE
     const ranger = battle.getOffense()[0]
     const centaur = battle.getDefense()[0]
@@ -260,7 +243,7 @@ describe("Carryover", () => {
   } {
     const attacking: BattleSide = { player: PlayerId.RED, score: 0, creatures: [CreatureType.LION] }
     const defending: BattleSide = { player: PlayerId.BLUE, score: 0, creatures: [CreatureType.CENTAUR, CreatureType.CENTAUR] }
-    const battle = newBattle(PLAINS_HEX, HexEdge.FIRST, attacking, defending)
+    const battle = newBattle(PLAINS_TERRAIN, HexEdge.FIRST, attacking, defending)
     battle.phase = BattlePhase.ATTACKER_STRIKE
     const lion = battle.getOffense()[0]
     const [centaur1, centaur2] = battle.getDefense()
@@ -304,13 +287,10 @@ describe("Carryover", () => {
 
 describe("Battle board movement cost", () => {
   it("makes a bog hazard impassable for non-native, non-flying creatures but not for natives", () => {
-    // masterboard hex 8 is Terrain.MARSH, whose battle board has a bog hazard at
-    // battle-hex 8 (Trolls are bog-native, Centaurs are not).
-    const marshHex = 8
-    expect(masterboard.getHex(marshHex).terrain).toBe(Terrain.MARSH)
+    // Terrain.MARSH's battle board has a bog hazard at battle-hex 8 (Trolls are bog-native, Centaurs are not).
     const attacking: BattleSide = { player: PlayerId.RED, score: 0, creatures: [CreatureType.TROLL] }
     const defending: BattleSide = { player: PlayerId.BLUE, score: 0, creatures: [CreatureType.CENTAUR] }
-    const battle = newBattle(marshHex, HexEdge.FIRST, attacking, defending)
+    const battle = newBattle(Terrain.MARSH, HexEdge.FIRST, attacking, defending)
     const troll = battle.getOffense()[0]
     const centaur = battle.getDefense()[0]
 
