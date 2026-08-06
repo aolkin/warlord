@@ -8,7 +8,7 @@
       :class="{ interactive: activeBattle.phase === expectedPhase,
                 selected: creature === selectionStore.selectedCreature }"
       class="ma-1 pending"
-      @click="activeBattle.phase === expectedPhase && selectCreature(creature)"
+      @click="activeBattle.phase === expectedPhase && selectionStore.selectCreature(creature)"
     />
     <Creature
       v-if="showRemove"
@@ -42,10 +42,6 @@ const battleActivePlayer = computed(() => store.getters["game/battleActivePlayer
 const showRemove = computed(() => activeBattle.value.phase === props.expectedPhase &&
   (selectionStore.selectedCreature?.initialHex ?? -1) >= 36 &&
   (selectionStore.selectedCreature?.hex ?? -1) < 36)
-
-function selectCreature(creature: BattleCreature): void {
-  selectionStore.selectCreature(creature)
-}
 
 function removeSelected(): void {
   void store.dispatch("game/moveCreature",

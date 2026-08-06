@@ -39,8 +39,8 @@
           :transform="hexTransformStr(hex)"
           :class="{ [`hex-${hex}`]: true, 'available-move': movementHexes.has(hex) }"
           @click="moveSelected(hex)"
-          @mouseenter="enterBattleHex(hex)"
-          @mouseleave="leaveBattleHex(hex)"
+          @mouseenter="selectionStore.enterBattleHex(hex)"
+          @mouseleave="selectionStore.leaveBattleHex(hex)"
         />
         <g
           v-if="preferencesStore.debugUi"
@@ -262,18 +262,6 @@ const targetedStrike = computed((): Strike =>
 
 const debugHexAdjacencies = computed((): number[] => BATTLE_BOARD_ADJACENCIES[debugHex.value] ?? [])
 
-function enterBattleHex(hex: number): void {
-  selectionStore.enterBattleHex(hex)
-}
-
-function leaveBattleHex(hex: number): void {
-  selectionStore.leaveBattleHex(hex)
-}
-
-function selectCreature(creature: BattleCreature): void {
-  selectionStore.selectCreature(creature)
-}
-
 function deselectCreature(): void {
   selectionStore.deselectCreature()
 }
@@ -294,7 +282,7 @@ function moveSelected(hex: number): void {
 
 function chooseCreature(creature: BattleCreature): void {
   if (creatureEnabled(creature)) {
-    selectCreature(creature)
+    selectionStore.selectCreature(creature)
   }
 }
 
