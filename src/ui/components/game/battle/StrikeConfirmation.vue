@@ -29,7 +29,7 @@
             :prepend-icon="`mdi-dice-${targetedStrike.toHit}`"
             :value="targetedStrike.toHit"
           >
-            {{ normalCarryovers.map(creature => creature.name()).join(", ") }}
+            {{ normalCarryovers.map(creature => creature.name).join(", ") }}
           </v-list-item>
           <v-list-item
             v-for="(creatures, toHit) in toHitAdjustments"
@@ -37,7 +37,7 @@
             :prepend-icon="`mdi-dice-${toHit}`"
             :value="Number(toHit)"
           >
-            {{ [...normalCarryovers, ...creatures].map(creature => creature.name()).join(", ") }}
+            {{ [...normalCarryovers, ...creatures].map(creature => creature.name).join(", ") }}
           </v-list-item>
         </v-list>
       </v-card-text>
@@ -83,8 +83,8 @@ const store = useStore()
 const selectionStore = useSelectionStore()
 
 const activeBattle = computed(() => store.state.game.activeBattle)
-const selectedCreatureName = computed(() => selectionStore.selectedCreature?.name() ?? "")
-const targetedCreatureName = computed(() => props.targetedCreature?.name() ?? "")
+const selectedCreatureName = computed(() => selectionStore.selectedCreature?.name ?? "")
+const targetedCreatureName = computed(() => props.targetedCreature?.name ?? "")
 const targetedStrike = computed<Strike>(() =>
   activeBattle.value.getTargetedStrike(selectionStore.selectedCreature, props.targetedCreature))
 const targetedStrikeUnadjusted = computed<Strike>(() =>
@@ -93,7 +93,7 @@ const targetedStrikeUnadjusted = computed<Strike>(() =>
 const targetedStrikeWasAdjusted = computed(() =>
   !isEqual(targetedStrikeUnadjusted.value, targetedStrike.value))
 const carryoversImpossible = computed(() => selectionStore.engagements.length < 2 ||
-  targetedStrike.value.dice - props.targetedCreature.getRemainingHp() <= 0)
+  targetedStrike.value.dice - props.targetedCreature.remainingHp <= 0)
 const normalCarryovers = computed<BattleCreature[]>(() => carryoversImpossible.value
   ? []
   : selectionStore.engagements
