@@ -55,8 +55,8 @@ import {
   Hazard
 } from "~/models/battle"
 import { useTypedStore } from "~/plugins/vuex"
-import { useSelectionStore } from "~/stores/selection"
 import { usePreferencesStore } from "~/stores/ui/preferences"
+import { useSelectionStore } from "~/stores/ui/selection"
 
 const store = useTypedStore()
 const selectionStore = useSelectionStore()

@@ -23,7 +23,7 @@
 import { computed } from "vue"
 import { useStore } from "vuex"
 import { BattleCreature, BattlePhase } from "~/models/battle"
-import { useSelectionStore } from "~/stores/selection"
+import { useSelectionStore } from "~/stores/ui/selection"
 import Creature from "../Creature.vue"
 
 defineOptions({ name: "PendingCreatures" })

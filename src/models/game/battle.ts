@@ -1,6 +1,6 @@
 import { matches } from "lodash-es"
 import { assert } from "~/utils/assert"
-import { useSelectionStore, View } from "~/stores/selection"
+import { useSelectionStore, View } from "~/stores/ui/selection"
 import { Battle, BATTLE_PHASE_TYPES, BattleCreature, BattlePhaseType, BattleSide, RangestrikeTarget } from "../battle"
 import masterboard from "../masterboard"
 import { PlayerId } from "../player"

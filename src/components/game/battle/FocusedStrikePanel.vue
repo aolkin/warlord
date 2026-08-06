@@ -20,7 +20,7 @@
 import { computed } from "vue"
 import { useStore } from "vuex"
 import { BattleCreature, RangestrikeTarget, Strike } from "~/models/battle"
-import { useSelectionStore } from "~/stores/selection"
+import { useSelectionStore } from "~/stores/ui/selection"
 import StrikePanelTitle from "./StrikePanelTitle.vue"
 
 defineOptions({ name: "FocusedStrikePanel" })

@@ -60,8 +60,8 @@ import { MasterboardPhase, Path } from "~/models/game"
 import { MasterboardHex } from "~/models/masterboard"
 import { Stack } from "~/models/stack"
 import { useTypedStore } from "~/plugins/vuex"
-import { useSelectionStore } from "~/stores/selection"
 import { usePreferencesStore } from "~/stores/ui/preferences"
+import { useSelectionStore } from "~/stores/ui/selection"
 import StackPanel from "../../ui/game/StackPanel.vue"
 import TurnPanel from "../../ui/game/TurnPanel.vue"
 import MasterboardHexComponent from "./MasterboardHex.vue"
@@ -80,7 +80,7 @@ const activePhase = computed(() => store.state.game.activePhase)
 const stacks = computed(() => store.state.game.stacks)
 // activeRoll is only read from template branches that are only rendered once the
 // selection store's "paths" getter is non-empty, which itself requires activeRoll
-// to be defined - see src/stores/selection.ts.
+// to be defined - see src/stores/ui/selection.ts.
 const activeRoll = computed(() => store.state.game.activeRoll!)
 
 const sortedStacks = computed((): Stack[] => {

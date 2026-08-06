@@ -2,7 +2,7 @@ import { createStore, Store, useStore } from "vuex"
 import { TitanGame } from "~/models/game"
 import game from "~/store/game"
 import ui, { UiState } from "~/store/ui"
-import { provideVuexStore } from "~/stores/selection"
+import { provideVuexStore } from "~/stores/ui/selection"
 
 export interface State {
   game: TitanGame
@@ -37,7 +37,7 @@ const store = createStore({
   }
 })
 
-// The selection store's cross-module reads of "game" (see src/stores/selection.ts) can't
+// The selection store's cross-module reads of "game" (see src/stores/ui/selection.ts) can't
 // import this module directly - this module's own module graph already leads back to
 // TitanGame (via ~/store/game), which the selection store also imports, so a static import
 // here would cycle. Handing over the created instance at runtime breaks that cycle.

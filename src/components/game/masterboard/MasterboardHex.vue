@@ -59,8 +59,8 @@
 import { computed } from "vue"
 import { MasterboardHex, Terrain } from "~/models/masterboard"
 import { useTypedStore } from "~/plugins/vuex"
-import { useSelectionStore } from "~/stores/selection"
 import { usePreferencesStore } from "~/stores/ui/preferences"
+import { useSelectionStore } from "~/stores/ui/selection"
 import {
   CLIP_TRIANGLE_HEIGHT,
   CLIP_TRIANGLE_SIDE,
@@ -122,7 +122,7 @@ const inverted = computed(() => isHexInverted(props.hex.id))
 // Only read in the "path" branch (path === true), which only occurs when this
 // hex was given a distanceToDest by Masterboard's path rendering, itself only
 // populated once the selection store's "paths" getter is non-empty and therefore
-// activeRoll is defined - see src/stores/selection.ts.
+// activeRoll is defined - see src/stores/ui/selection.ts.
 const pathCount = computed((): number =>
   store.state.game.activeRoll! - (props.distanceToDest ?? 0) + 1)
 

@@ -78,7 +78,7 @@ import { computed, ref } from "vue"
 import { useStore } from "vuex"
 import { BattleCreature, BattlePhase } from "~/models/battle"
 import { Player } from "~/models/player"
-import { useSelectionStore } from "~/stores/selection"
+import { useSelectionStore } from "~/stores/ui/selection"
 import Creature from "../Creature.vue"
 import PendingCreatures from "./PendingCreatures.vue"
 

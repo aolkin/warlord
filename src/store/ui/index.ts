@@ -1,5 +1,5 @@
 import { Player } from "~/models/player"
-import { useSelectionStore } from "~/stores/selection"
+import { useSelectionStore } from "~/stores/ui/selection"
 
 export interface UiState {
   localPlayer: number

@@ -9,7 +9,7 @@ import masterboard, { HexEdge, MasterboardHex } from "./masterboard"
 import { Player, PlayerId } from "./player"
 import { defaultRandom, Random } from "./random"
 import { MusterChoice, Stack } from "./stack"
-import { useSelectionStore } from "~/stores/selection"
+import { useSelectionStore } from "~/stores/ui/selection"
 
 const INITIAL_HEXES: Record<number, number[]> = {
   2: [100, 400],

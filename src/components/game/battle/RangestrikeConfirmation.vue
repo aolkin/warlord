@@ -44,7 +44,7 @@ import { computed } from "vue"
 import { isEqual } from "lodash-es"
 import { useStore } from "vuex"
 import { BattleCreature, RangestrikeTarget, Strike } from "~/models/battle"
-import { useSelectionStore } from "~/stores/selection"
+import { useSelectionStore } from "~/stores/ui/selection"
 import { div } from "~/utils/math"
 
 defineOptions({ name: "RangestrikeConfirmation" })

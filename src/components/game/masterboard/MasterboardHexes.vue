@@ -15,7 +15,7 @@
 import { computed } from "vue"
 import { useStore } from "vuex"
 import masterboard from "~/models/masterboard"
-import { useSelectionStore } from "~/stores/selection"
+import { useSelectionStore } from "~/stores/ui/selection"
 import MasterboardEdges from "./MasterboardEdges.vue"
 import MasterboardHex from "./MasterboardHex.vue"
 

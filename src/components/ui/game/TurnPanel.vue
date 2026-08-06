@@ -83,7 +83,7 @@ import { useStore } from "vuex"
 import DiceRoller from "~/components/ui/generic/DiceRoller"
 import { MasterboardPhase } from "~/models/game"
 import { Stack } from "~/models/stack"
-import { useSelectionStore } from "~/stores/selection"
+import { useSelectionStore } from "~/stores/ui/selection"
 
 defineOptions({ name: "TurnPanel" })
 
