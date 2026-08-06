@@ -6,7 +6,7 @@
       width="300"
     >
       <StrikePanelTitle
-        :attacker="selectedCreature"
+        :attacker="selectedCreature!"
         :target="(target ?? rangedTarget)!"
       />
       <v-card-text>
@@ -16,42 +16,41 @@
   </v-expand-transition>
 </template>
 
-<script lang="ts">
-import { defineComponent } from "vue"
-import { mapGetters, mapState } from "vuex"
-import { BattleCreature, Hazard, RangestrikeTarget, Strike } from "~/models/battle"
+<script setup lang="ts">
+import { computed } from "vue"
+import { useStore } from "vuex"
+import { BattleCreature, RangestrikeTarget, Strike } from "~/models/battle"
+import { useSelectionStore } from "~/stores/selection"
 import StrikePanelTitle from "./StrikePanelTitle.vue"
 
-export default defineComponent({
-  name: "FocusedStrikePanel",
-  components: { StrikePanelTitle },
-  data: () => ({
-    Hazard
-  }),
-  computed: {
-    ...mapState("game", ["activeBattle"]),
-    ...mapGetters("ui/selections", ["selectedCreature", "focusedCreature", "engagements", "rangestrikes"]),
-    target(): BattleCreature | undefined {
-      return this.engagements?.includes(this.focusedCreature) ? this.focusedCreature : undefined
-    },
-    rangedFocus(): RangestrikeTarget | undefined {
-      return this.focusedCreature && this.rangestrikes?.filter(
-        (rangestrike: RangestrikeTarget) => rangestrike.creature === this.focusedCreature)[0]
-    },
-    rangedTarget(): BattleCreature | undefined {
-      return this.rangedFocus?.creature
-    },
-    strike(): Strike | undefined {
-      if (this.selectedCreature) {
-        if (this.target) {
-          return this.activeBattle.getAdjustedStrike(this.selectedCreature, this.target)
-        } else if (this.rangedFocus) {
-          return this.activeBattle.getRangestrike(this.selectedCreature, this.rangedFocus)
-        }
-      }
-      return undefined
+defineOptions({ name: "FocusedStrikePanel" })
+
+const store = useStore()
+const selectionStore = useSelectionStore()
+
+const activeBattle = computed(() => store.state.game.activeBattle)
+const selectedCreature = computed<BattleCreature | undefined>(() => selectionStore.selectedCreature)
+const focusedCreature = computed<BattleCreature | undefined>(() => selectionStore.focusedCreature)
+const engagements = computed<BattleCreature[]>(() => selectionStore.engagements)
+const rangestrikes = computed<RangestrikeTarget[]>(() => selectionStore.rangestrikes)
+
+const target = computed<BattleCreature | undefined>(() =>
+  focusedCreature.value !== undefined && engagements.value.includes(focusedCreature.value)
+    ? focusedCreature.value
+    : undefined)
+const rangedFocus = computed<RangestrikeTarget | undefined>(() =>
+  focusedCreature.value && rangestrikes.value.filter(
+    (rangestrike: RangestrikeTarget) => rangestrike.creature === focusedCreature.value)[0])
+const rangedTarget = computed<BattleCreature | undefined>(() => rangedFocus.value?.creature)
+const strike = computed<Strike | undefined>(() => {
+  if (selectedCreature.value) {
+    if (target.value) {
+      return activeBattle.value.getAdjustedStrike(selectedCreature.value, target.value)
+    } else if (rangedFocus.value) {
+      return activeBattle.value.getRangestrike(selectedCreature.value, rangedFocus.value)
     }
   }
+  return undefined
 })
 </script>
 

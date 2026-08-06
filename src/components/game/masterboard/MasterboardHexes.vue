@@ -11,34 +11,30 @@
     <MasterboardEdges />
   </g>
 </template>
-<script lang="ts">
-import { defineComponent } from "vue"
-import { mapActions, mapGetters } from "vuex"
-import board, { Masterboard } from "~/models/masterboard"
+<script setup lang="ts">
+import { computed } from "vue"
+import { useStore } from "vuex"
+import masterboard from "~/models/masterboard"
+import { useSelectionStore } from "~/stores/selection"
 import MasterboardEdges from "./MasterboardEdges.vue"
 import MasterboardHex from "./MasterboardHex.vue"
 
-export default defineComponent({
-  name: "MasterboardHexes",
-  components: { MasterboardHex, MasterboardEdges },
-  props: {
-    canFreeMove: {
-      type: Boolean,
-      required: false,
-      default: false
-    }
-  },
-  computed: {
-    ...mapGetters("ui/selections", ["selectedStack"]),
-    board(): Masterboard {
-      return board
-    },
-    hexes(): number[] {
-      return this.board.getHexIds()
-    }
-  },
-  methods: {
-    ...mapActions("game", ["move"])
-  }
+defineOptions({ name: "MasterboardHexes" })
+
+withDefaults(defineProps<{
+  canFreeMove?: boolean
+}>(), {
+  canFreeMove: false
 })
+
+const store = useStore()
+const selectionStore = useSelectionStore()
+
+const selectedStack = computed(() => selectionStore.selectedStack)
+const board = masterboard
+const hexes = computed(() => board.getHexIds())
+
+function move(payload: unknown): void {
+  void store.dispatch("game/move", payload)
+}
 </script>

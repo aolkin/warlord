@@ -76,75 +76,77 @@
   </v-card>
 </template>
 
-<script lang="ts">
-import { defineComponent } from "vue"
+<script setup lang="ts">
+import { computed, inject, Ref } from "vue"
 import { sum } from "lodash-es"
-import { mapActions, mapGetters, mapMutations, mapState } from "vuex"
+import { useStore } from "vuex"
 import DiceRoller from "~/components/ui/generic/DiceRoller"
 import { MasterboardPhase } from "~/models/game"
 import { Stack } from "~/models/stack"
+import { useSelectionStore } from "~/stores/selection"
 
-export default defineComponent({
-  name: "TurnPanel",
-  inject: ["diceRoller"],
-  data: () => ({
-    MasterboardPhase
-  }),
-  computed: {
-    ...mapState("game", ["activeRoll", "activePhase"]),
-    ...mapGetters("game", [
-      "activePlayer", "activeStacks", "mayProceed", "mulliganAvailable", "engagedStacks", "firstRound"
-    ]),
-    icon(): string {
-      switch (this.activePhase) {
-        case MasterboardPhase.SPLIT:
-          return "mdi-call-split"
-        case MasterboardPhase.MOVE:
-          return `mdi-dice-${this.activeRoll ?? "multiple"}`
-        case MasterboardPhase.BATTLE:
-          return "mdi-sword-cross"
-        case MasterboardPhase.MUSTER:
-          return "mdi-account-multiple-plus"
-        default:
-          return "mdi-dice-multiple"
-      }
-    },
-    sevenHighCount(): number {
-      return sum(this.activeStacks.map((stack: Stack) => stack.creatures.length === 7))
-    },
-    movedCount(): number {
-      return sum(this.activeStacks.map((stack: Stack) => stack.hasMoved()))
-    },
-    musteredCount(): number {
-      return sum(this.activeStacks.map((stack: Stack) => stack.currentMuster !== undefined))
-    },
-    engagementsMessage(): string {
-      if (this.engagedStacks.length < 1) {
-        return ""
-      } else if (this.engagedStacks.length === 1) {
-        return "1 pending battle."
-      } else {
-        return `${this.engagedStacks.length} pending battles.`
-      }
-    }
-  },
-  methods: {
-    ...mapActions("game", ["setRoll", "nextPhase"]),
-    ...mapMutations("ui/selections", ["deselectStack"]),
-    roll() {
-      if (this.activeRoll !== undefined) {
-        this.setRoll(undefined)
-      }
-      const diceRoller = this.diceRoller as InstanceType<typeof DiceRoller>
-      diceRoller.roll().then(async(roll: number[]) => await this.setRoll(roll[0]))
-    },
-    proceedToRoll() {
-      this.deselectStack()
-      this.nextPhase()
-      this.roll()
-    }
+defineOptions({ name: "TurnPanel" })
+
+const diceRoller = inject<Readonly<Ref<InstanceType<typeof DiceRoller> | null>>>("diceRoller")
+
+const store = useStore()
+const selectionStore = useSelectionStore()
+
+const activeRoll = computed<number | undefined>(() => store.state.game.activeRoll)
+const activePhase = computed<MasterboardPhase>(() => store.state.game.activePhase)
+const activePlayer = computed(() => store.getters["game/activePlayer"])
+const activeStacks = computed<Stack[]>(() => store.getters["game/activeStacks"])
+const mayProceed = computed<boolean>(() => store.getters["game/mayProceed"])
+const mulliganAvailable = computed<boolean>(() => store.getters["game/mulliganAvailable"])
+const engagedStacks = computed<Stack[]>(() => store.getters["game/engagedStacks"])
+
+const icon = computed(() => {
+  switch (activePhase.value) {
+    case MasterboardPhase.SPLIT:
+      return "mdi-call-split"
+    case MasterboardPhase.MOVE:
+      return `mdi-dice-${activeRoll.value ?? "multiple"}`
+    case MasterboardPhase.BATTLE:
+      return "mdi-sword-cross"
+    case MasterboardPhase.MUSTER:
+      return "mdi-account-multiple-plus"
+    default:
+      return "mdi-dice-multiple"
   }
 })
+const sevenHighCount = computed(() => sum(activeStacks.value.map(stack => stack.creatures.length === 7)))
+const movedCount = computed(() => sum(activeStacks.value.map(stack => stack.hasMoved())))
+const musteredCount = computed(() => sum(activeStacks.value.map(stack => stack.currentMuster !== undefined)))
+const engagementsMessage = computed(() => {
+  if (engagedStacks.value.length < 1) {
+    return ""
+  } else if (engagedStacks.value.length === 1) {
+    return "1 pending battle."
+  } else {
+    return `${engagedStacks.value.length} pending battles.`
+  }
+})
+
+function setRoll(payload?: number): Promise<void> {
+  return store.dispatch("game/setRoll", payload)
+}
+
+function nextPhase(): void {
+  void store.dispatch("game/nextPhase")
+}
+
+function roll(): void {
+  if (activeRoll.value !== undefined) {
+    void setRoll(undefined)
+  }
+  diceRoller?.value?.roll().then(async(rolled: number[]) => await setRoll(rolled[0]))
+}
+
+function proceedToRoll(): void {
+  selectionStore.deselectStack()
+  nextPhase()
+  roll()
+}
 </script>
 
 <style scoped lang="sass">

@@ -9,6 +9,7 @@ import masterboard, { HexEdge, MasterboardHex } from "./masterboard"
 import { Player, PlayerId } from "./player"
 import { defaultRandom, Random } from "./random"
 import { MusterChoice, Stack } from "./stack"
+import { useSelectionStore } from "~/stores/selection"
 
 const INITIAL_HEXES: Record<number, number[]> = {
   2: [100, 400],
@@ -321,7 +322,7 @@ export class TitanGame {
         commit("phaseExitMuster", getters)
     }
     commit("nextPhase", getters)
-    commit("ui/selections/deselectStack", null, { root: true })
+    useSelectionStore().deselectStack()
     await this.persist()
   }
 

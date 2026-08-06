@@ -1,17 +1,12 @@
 import { Player } from "~/models/player"
-import { BaseActionContext } from "../types"
-import selections, { Selections } from "./selection"
+import { useSelectionStore } from "~/stores/selection"
 
 export interface UiState {
-  selections: Selections
   localPlayer: number
 }
 
 export default {
   namespaced: true,
-  modules: {
-    selections
-  },
   state: () => ({
     localPlayer: 0
   }),
@@ -26,8 +21,8 @@ export default {
     }
   },
   actions: {
-    reset({ commit }: BaseActionContext) {
-      commit("selections/reset")
+    reset() {
+      useSelectionStore().reset()
     }
   }
 }

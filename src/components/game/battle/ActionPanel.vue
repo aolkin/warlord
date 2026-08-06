@@ -16,8 +16,8 @@
       />
     </template>
     <v-card-subtitle v-if="preferencesStore.debugUi">
-      Hex: {{ focusedBattleHex }} ({{ Hazard[land.getHazard(focusedBattleHex)] }})
-      <span v-if="land.getElevation(focusedBattleHex) > 0">+{{ land.getElevation(focusedBattleHex) }}</span>
+      Hex: {{ focusedBattleHex }} ({{ Hazard[land.getHazard(focusedBattleHex!)] }})
+      <span v-if="land.getElevation(focusedBattleHex!) > 0">+{{ land.getElevation(focusedBattleHex!) }}</span>
     </v-card-subtitle>
     <v-card-text v-if="battlePhaseType === BattlePhaseType.MOVE && pendingCreatures > 0">
       You have {{ pendingCreatures }} creature{{ pendingCreatures > 1 ? 's' : '' }} that
@@ -54,15 +54,17 @@ import {
   BattlePhaseType,
   Hazard
 } from "~/models/battle"
-import { usePreferencesStore } from "~/stores/ui/preferences"
 import { useTypedStore } from "~/plugins/vuex"
+import { useSelectionStore } from "~/stores/selection"
+import { usePreferencesStore } from "~/stores/ui/preferences"
 
-const preferencesStore = usePreferencesStore()
 const store = useTypedStore()
+const selectionStore = useSelectionStore()
+const preferencesStore = usePreferencesStore()
 
 // ActionPanel only renders inside BattleBoard's v-else branch (active battle present).
 const activeBattle = computed(() => store.state.game.activeBattle!)
-const focusedBattleHex = computed(() => store.getters["ui/selections/focusedBattleHex"])
+const focusedBattleHex = computed(() => selectionStore.focusedBattleHex)
 const battlePhaseType = computed((): BattlePhaseType => store.getters["game/battlePhaseType"])
 const battleActivePlayer = computed(() => store.getters["game/battleActivePlayer"])
 const playerById = computed(() => store.getters["game/playerById"])
@@ -117,12 +119,8 @@ const pendingCreatures = computed((): number =>
   activeBattle.value.creatures.filter((creature: BattleCreature) =>
     creature.player === battleActivePlayer.value && creature.hex >= 36).length)
 
-function deselectCreature(): void {
-  store.commit("ui/selections/deselectCreature")
-}
-
 function nextPhase(): void {
-  deselectCreature()
+  selectionStore.deselectCreature()
   store.dispatch("game/nextBattlePhase")
 }
 </script>

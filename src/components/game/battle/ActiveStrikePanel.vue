@@ -75,7 +75,6 @@ export default defineComponent({
   computed: {
     ...mapState("game", ["activeBattle"]),
     ...mapGetters("game", ["battleCarryoverTargets"]),
-    ...mapGetters("ui/selections", ["selectedCreature", "focusedCreature", "engagements"]),
     activeStrike(): ActiveStrike | undefined {
       return this.activeBattle.activeStrike
     },

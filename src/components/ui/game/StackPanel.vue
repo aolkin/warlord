@@ -108,12 +108,13 @@
 <script lang="ts">
 import { defineComponent } from "vue"
 import { capitalize } from "lodash-es"
-import { mapActions, mapGetters, mapMutations, mapState } from "vuex"
+import { mapActions, mapGetters, mapState } from "vuex"
 import { CREATURE_DATA, CreatureType } from "~/models/creature"
 import { MasterboardPhase } from "~/models/game"
-import masterboard, { Terrain } from "~/models/masterboard"
+import masterboard, { MasterboardHex, Terrain } from "~/models/masterboard"
 import { Player } from "~/models/player"
 import { MusterChoice, MusterPossibility, Stack } from "~/models/stack"
+import { useSelectionStore } from "~/stores/selection"
 import { mod } from "~/utils/math"
 import Creature from "../../game/Creature.vue"
 import PlayerMarker from "../../game/Marker.vue"
@@ -122,6 +123,9 @@ import MusterChoices from "./MusterChoices.vue"
 export default defineComponent({
   name: "StackPanel",
   components: { MusterChoice: MusterChoices, Creature, PlayerMarker },
+  setup() {
+    return { selectionStore: useSelectionStore() }
+  },
   data: () => ({
     MasterboardPhase,
     Terrain,
@@ -130,7 +134,15 @@ export default defineComponent({
   computed: {
     ...mapState("game", ["activePhase", "round"]),
     ...mapGetters("game", ["activePlayerId", "playerById", "firstRound", "activeStacks"]),
-    ...mapGetters("ui/selections", ["focusedStack", "focusedHex", "selectedStack"]),
+    focusedStack(): Stack | undefined {
+      return this.selectionStore.focusedStack
+    },
+    focusedHex(): MasterboardHex | undefined {
+      return this.selectionStore.focusedHex
+    },
+    selectedStack(): Stack | undefined {
+      return this.selectionStore.selectedStack
+    },
     owned(): boolean {
       return this.activePlayerId === this.focusedStack?.owner
     },
@@ -139,14 +151,14 @@ export default defineComponent({
     },
     musteringTerrain(): Terrain {
       return this.activePhase === MasterboardPhase.MUSTER
-        ? masterboard.getHex(this.focusedStack?.hex).terrain
-        : this.focusedHex?.terrain
+        ? masterboard.getHex(this.focusedStack?.hex as number).terrain
+        : this.focusedHex?.terrain as Terrain
     },
     musteringTerrainName(): string {
       return capitalize(Terrain[this.musteringTerrain])
     },
     musterable(): MusterPossibility[] {
-      return this.focusedStack?.musterable(this.musteringTerrain)
+      return this.focusedStack?.musterable(this.musteringTerrain) as MusterPossibility[]
     },
     mustering: {
       get() {
@@ -160,24 +172,25 @@ export default defineComponent({
       }
     },
     musteringCaption() {
-      if (!this.focusedStack.canMuster()) {
-        if (!this.focusedStack?.hasMoved()) {
+      const stack = this.focusedStack!
+      if (!stack.canMuster()) {
+        if (!stack.hasMoved()) {
           return "You cannot muster in a stack that did not move this turn."
-        } else if (this.focusedStack?.creatures.length > 6) {
+        } else if (stack.creatures.length > 6) {
           return "This stack is already full and cannot muster."
         } else {
           return "This stack cannot muster."
         }
-      } else if (this.focusedStack.currentMuster === undefined) {
+      } else if (stack.currentMuster === undefined) {
         return "No recruit chosen."
       } else {
-        let caption = "Mustering " + CREATURE_DATA[this.focusedStack?.currentMuster[0] as CreatureType].name
-        if (this.focusedStack.currentMuster[1][1] > 0) {
+        let caption = "Mustering " + CREATURE_DATA[stack.currentMuster[0] as CreatureType].name
+        if (stack.currentMuster[1][1] > 0) {
           caption += " with "
-          if (this.focusedStack.currentMuster[1][1] > 1) {
-            caption += `${this.focusedStack.currentMuster[1][1]}x `
+          if (stack.currentMuster[1][1] > 1) {
+            caption += `${stack.currentMuster[1][1]}x `
           }
-          caption += CREATURE_DATA[this.focusedStack.currentMuster[1][0] as CreatureType].name
+          caption += CREATURE_DATA[stack.currentMuster[1][0] as CreatureType].name
         }
         return caption
       }
@@ -185,10 +198,9 @@ export default defineComponent({
   },
   methods: {
     ...mapActions("game", ["setRecruit"]),
-    ...mapMutations("ui/selections", ["selectStack"]),
     toggleSplit(index: number) {
-      if (this.activePhase === MasterboardPhase.SPLIT && this.focusedStack?.creatures.length > 2) {
-        this.focusedStack.split[index] = !this.focusedStack?.split[index]
+      if (this.activePhase === MasterboardPhase.SPLIT && (this.focusedStack?.creatures.length ?? 0) > 2) {
+        this.focusedStack!.split[index] = !this.focusedStack!.split[index]
       }
     },
     cycleStacks(by: number) {
@@ -199,7 +211,7 @@ export default defineComponent({
         candidateStack = this.activeStacks[mod(index, this.activeStacks.length)]
       } while ((this.activePhase === MasterboardPhase.MOVE && candidateStack.hasMoved()) ||
       (this.activePhase === MasterboardPhase.MUSTER && !candidateStack.canMuster()))
-      this.selectStack(candidateStack)
+      this.selectionStore.selectStack(candidateStack)
     }
   }
 })

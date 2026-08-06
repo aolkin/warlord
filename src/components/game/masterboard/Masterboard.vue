@@ -21,7 +21,7 @@
               v-for="([foe, hex], index) in step"
               :key="hex.id"
               :path-index="index"
-              :distance-to-dest="activeRoll - distance"
+              :distance-to-dest="activeRoll! - distance"
               :hex="hex"
               :contains-enemy="foe"
               @click.stop="moveStack(distance, foe, hex)"
@@ -59,35 +59,38 @@ import { range, sortBy } from "lodash-es"
 import { MasterboardPhase, Path } from "~/models/game"
 import { MasterboardHex } from "~/models/masterboard"
 import { Stack } from "~/models/stack"
-import { usePreferencesStore } from "~/stores/ui/preferences"
 import { useTypedStore } from "~/plugins/vuex"
+import { useSelectionStore } from "~/stores/selection"
+import { usePreferencesStore } from "~/stores/ui/preferences"
 import StackPanel from "../../ui/game/StackPanel.vue"
 import TurnPanel from "../../ui/game/TurnPanel.vue"
 import MasterboardHexComponent from "./MasterboardHex.vue"
 import MasterboardHexes from "./MasterboardHexes.vue"
 import MasterboardStack from "./MasterboardStack.vue"
 
+defineOptions({ name: "Masterboard" })
+
 let lastSortedStacks: Stack[] = []
 
 const preferencesStore = usePreferencesStore()
+const selectionStore = useSelectionStore()
 const store = useTypedStore()
 
 const activePhase = computed(() => store.state.game.activePhase)
 const stacks = computed(() => store.state.game.stacks)
 // activeRoll and selectedStack are only read from template branches that are
-// only rendered once ui/selections' "paths" getter is non-empty, which itself
-// requires both to be defined - see src/store/ui/selection.ts.
+// only rendered once the selection store's "paths" getter is non-empty, which itself
+// requires both to be defined - see src/stores/selection.ts.
 const activeRoll = computed(() => store.state.game.activeRoll!)
-const paths = computed((): Path[] => store.getters["ui/selections/paths"])
-const focusedStack = computed((): Stack | undefined => store.getters["ui/selections/focusedStack"])
-const selectedStack = computed((): Stack | undefined => store.getters["ui/selections/selectedStack"])
+const paths = computed((): Path[] => selectionStore.paths)
+const focusedStack = computed((): Stack | undefined => selectionStore.focusedStack)
+const selectedStack = computed((): Stack | undefined => selectionStore.selectedStack)
 
 const sortedStacks = computed((): Stack[] => {
   lastSortedStacks = sortBy(stacks.value, stack =>
     stack === selectedStack.value ? 999 : lastSortedStacks.indexOf(stack))
   return lastSortedStacks
 })
-
 const interleavedPaths = computed((): [boolean, MasterboardHex][][] =>
   range(paths.value[0].path.length).map((colIndex: number) =>
     paths.value.map((row: Path): [boolean, MasterboardHex] =>
@@ -98,7 +101,7 @@ const canFreeMove = computed((): boolean =>
   focusedStack.value !== undefined && preferencesStore.freeMovement)
 
 function deselectStack(): void {
-  store.commit("ui/selections/deselectStack")
+  selectionStore.deselectStack()
 }
 
 function moveStack(distance: number, foe: boolean, hex: MasterboardHex): void {

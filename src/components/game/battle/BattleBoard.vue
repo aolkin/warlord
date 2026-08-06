@@ -158,8 +158,9 @@ import {
 } from "~/models/battle"
 import { Terrain } from "~/models/masterboard"
 import { PlayerId } from "~/models/player"
-import { usePreferencesStore } from "~/stores/ui/preferences"
 import { useTypedStore } from "~/plugins/vuex"
+import { useSelectionStore } from "~/stores/selection"
+import { usePreferencesStore } from "~/stores/ui/preferences"
 import type DiceRoller from "~/components/ui/generic/DiceRoller"
 import EngageIcon from "../../ui/game/EngageIcon.vue"
 import RangestrikeIcon from "../../ui/game/RangestrikeIcon.vue"
@@ -176,6 +177,7 @@ import { hexTransformStr } from "./utils"
 const diceRoller = inject<Readonly<Ref<InstanceType<typeof DiceRoller> | null>>>("diceRoller")
 
 const preferencesStore = usePreferencesStore()
+const selectionStore = useSelectionStore()
 const store = useTypedStore()
 
 const target = ref<BattleCreature | RangestrikeTarget | undefined>(undefined)
@@ -189,11 +191,10 @@ const battlePhaseType = computed((): BattlePhaseType => store.getters["game/batt
 const battleEngagements = computed(() => store.getters["game/battleEngagements"])
 const battleCarryoverTargets = computed(() => store.getters["game/battleCarryoverTargets"])
 const battleRangestrikeTargets = computed(() => store.getters["game/battleRangestrikeTargets"])
-const movementHexes = computed(() => store.getters["ui/selections/movementHexes"])
-const selectedCreature = computed((): BattleCreature | undefined =>
-  store.getters["ui/selections/selectedCreature"])
-const engagements = computed(() => store.getters["ui/selections/engagements"])
-const rangestrikes = computed(() => store.getters["ui/selections/rangestrikes"])
+const movementHexes = computed(() => selectionStore.movementHexes)
+const selectedCreature = computed((): BattleCreature | undefined => selectionStore.selectedCreature)
+const engagements = computed(() => selectionStore.engagements)
+const rangestrikes = computed(() => selectionStore.rangestrikes)
 
 const attackCreatureDialog = computed({
   get: (): boolean => target.value !== undefined,
@@ -262,27 +263,27 @@ const targetedStrike = computed((): Strike =>
 const debugHexAdjacencies = computed((): number[] => BATTLE_BOARD_ADJACENCIES[debugHex.value] ?? [])
 
 function enterBattleHex(hex: number): void {
-  store.commit("ui/selections/enterBattleHex", hex)
+  selectionStore.enterBattleHex(hex)
 }
 
 function leaveBattleHex(hex: number): void {
-  store.commit("ui/selections/leaveBattleHex", hex)
+  selectionStore.leaveBattleHex(hex)
 }
 
 function selectCreature(creature: BattleCreature): void {
-  store.commit("ui/selections/selectCreature", creature)
+  selectionStore.selectCreature(creature)
 }
 
 function deselectCreature(): void {
-  store.commit("ui/selections/deselectCreature")
+  selectionStore.deselectCreature()
 }
 
 function enterCreature(creature: BattleCreature): void {
-  store.commit("ui/selections/enterCreature", creature)
+  selectionStore.enterCreature(creature)
 }
 
 function leaveCreature(creature: BattleCreature): void {
-  store.commit("ui/selections/leaveCreature", creature)
+  selectionStore.leaveCreature(creature)
 }
 
 function moveSelected(hex: number): void {

@@ -63,12 +63,13 @@
 
 <script lang="ts">
 import { defineComponent } from "vue"
-import { mapActions, mapGetters, mapMutations, mapState } from "vuex"
+import { mapActions, mapGetters, mapState } from "vuex"
 import { CreatureType } from "~/models/creature"
 import { MasterboardPhase, Path } from "~/models/game"
 import masterboard, { HexEdge, MasterboardEdge, MasterboardHex } from "~/models/masterboard"
 import { Player } from "~/models/player"
 import { Stack } from "~/models/stack"
+import { useSelectionStore } from "~/stores/selection"
 import { Transformation, Transformations, TransformationType } from "~/utils/svg"
 import EngageIcon from "../../ui/game/EngageIcon.vue"
 import Creature from "../Creature.vue"
@@ -93,11 +94,16 @@ export default defineComponent({
       required: true
     }
   },
+  setup() {
+    return { selectionStore: useSelectionStore() }
+  },
   computed: {
-    ...mapState("ui/selections", {
-      selectedStack: "stack"
-    }),
-    ...mapGetters("ui/selections", ["paths"]),
+    selectedStack(): Stack | undefined {
+      return this.selectionStore.selectedStack
+    },
+    paths(): Path[] {
+      return this.selectionStore.paths
+    },
     ...mapState("game", ["activePhase", "activeRoll"]),
     ...mapGetters("game", [
       "activePlayerId", "activePlayer", "mandatoryMoves", "stacksForHex", "firstRound", "playerById"
@@ -207,10 +213,6 @@ export default defineComponent({
     }
   },
   methods: {
-    ...mapMutations("ui/selections", [
-      "selectStack", "deselectStack", "enterStack", "leaveStack",
-      "enterHex", "leaveHex"
-    ]),
     ...mapActions("game", ["move"]),
     select() {
       if (!(this.isActivePlayer)) {
@@ -222,24 +224,24 @@ export default defineComponent({
         }
       }
       if (this.selected) {
-        this.deselectStack()
+        this.selectionStore.deselectStack()
       } else {
         if (!this.isDisabled) {
-          this.selectStack(this.stack)
+          this.selectionStore.selectStack(this.stack)
         }
       }
     },
     attack(edge: HexEdge) {
       this.move({ stack: this.selectedStack, hex: this.stack.hex, edge })
-      this.deselectStack()
+      this.selectionStore.deselectStack()
     },
     enter() {
-      this.enterStack(this.stack)
-      this.enterHex(masterboard.getHex(this.stack.hex))
+      this.selectionStore.enterStack(this.stack)
+      this.selectionStore.enterHex(masterboard.getHex(this.stack.hex))
     },
     leave() {
-      this.leaveStack(this.stack)
-      this.leaveHex(masterboard.getHex(this.stack.hex))
+      this.selectionStore.leaveStack(this.stack)
+      this.selectionStore.leaveHex(masterboard.getHex(this.stack.hex))
     }
   }
 })

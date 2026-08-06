@@ -2,6 +2,7 @@ import { createStore, Store, useStore } from "vuex"
 import { TitanGame } from "~/models/game"
 import game from "~/store/game"
 import ui, { UiState } from "~/store/ui"
+import { provideVuexStore } from "~/stores/selection"
 
 export interface State {
   game: TitanGame
@@ -16,7 +17,7 @@ interface LocalState {
   encodedSave?: string
 }
 
-export default createStore({
+const store = createStore({
   state: (): LocalState => ({
     encodedSave: undefined
   }),
@@ -35,6 +36,14 @@ export default createStore({
     }
   }
 })
+
+// The selection store's cross-module reads of "game" (see src/stores/selection.ts) can't
+// import this module directly - this module's own module graph already leads back to
+// TitanGame (via ~/store/game), which the selection store also imports, so a static import
+// here would cycle. Handing over the created instance at runtime breaks that cycle.
+provideVuexStore(store)
+
+export default store
 
 declare module "vue" {
   interface ComponentCustomProperties {
