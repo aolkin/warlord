@@ -23,6 +23,7 @@ Written July 2026. The last feature commit landed January 2023 and the last depe
 | [05-multiplayer-architecture.md](05-multiplayer-architecture.md) | Preparing for server-mediated multiplayer |
 | [06-ui-chrome.md](06-ui-chrome.md) | Vuetify 4, fonts, icons |
 | [07-testing-and-code-quality.md](07-testing-and-code-quality.md) | Test infrastructure, type strictness, cleanup |
+| [08-bundle-size.md](08-bundle-size.md) | Production bundle size: dice-box chunking, lazy-loading, Vuetify/icon tree-shaking |
 
 ## Suggested sequencing
 
@@ -33,3 +34,5 @@ Written July 2026. The last feature commit landed January 2023 and the last depe
 5. **UI chrome** (doc 06): Vuetify 4 upgrade. Feasible in parallel with step 6 — it touches chrome components and the Vuetify plugin while multiplayer groundwork lives in models/store, so the file overlap is small.
 6. **Multiplayer groundwork** (doc 05): engine extraction behind a local-server interface while touching the store anyway.
 7. **Rendering** (doc 03): measure once the store refactor has landed, then decide on Vapor/canvas.
+
+Doc 08 (bundle size) doesn't depend on anything above and can land whenever, including alongside or before step 1 — including the Vuetify/icon tree-shaking, which is worth doing ahead of step 5 rather than folded into it, since it doesn't need the v4 upgrade to land first.
