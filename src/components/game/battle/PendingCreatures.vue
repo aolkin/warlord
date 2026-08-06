@@ -6,9 +6,9 @@
       :type="creature.type"
       :player="playerById(creature.player)"
       :class="{ interactive: activeBattle.phase === expectedPhase,
-                selected: creature === selectedCreature }"
+                selected: creature === selectionStore.selectedCreature }"
       class="ma-1 pending"
-      @click="activeBattle.phase === expectedPhase && selectCreature(creature)"
+      @click="activeBattle.phase === expectedPhase && selectionStore.selectCreature(creature)"
     />
     <Creature
       v-if="showRemove"
@@ -19,47 +19,32 @@
     />
   </div>
 </template>
-<script lang="ts">
-import { defineComponent, PropType } from "vue"
-import { mapActions, mapGetters, mapMutations, mapState } from "vuex"
+<script setup lang="ts">
+import { computed } from "vue"
+import { useStore } from "vuex"
 import { BattleCreature, BattlePhase } from "~/models/battle"
+import { useSelectionStore } from "~/stores/ui/selection"
 import Creature from "../Creature.vue"
 
-export default defineComponent({
-  name: "PendingCreatures",
-  components: { Creature },
-  props: {
-    creatures: {
-      type: Array as PropType<BattleCreature[]>,
-      required: true
-    },
-    expectedPhase: {
-      type: Number as PropType<BattlePhase>,
-      required: true
-    }
-  },
-  data: () => ({
-    BattlePhase
-  }),
-  computed: {
-    ...mapState("ui", ["localPlayer"]),
-    ...mapState("game", ["activeBattle", "players"]),
-    ...mapGetters("ui/selections", ["selectedCreature"]),
-    ...mapGetters("game", ["playerById", "battleActivePlayer"]),
-    showRemove(): boolean {
-      return this.activeBattle.phase === this.expectedPhase &&
-        this.selectedCreature?.initialHex >= 36 &&
-        this.selectedCreature.hex < 36
-    }
-  },
-  methods: {
-    ...mapMutations("ui/selections", ["selectCreature"]),
-    ...mapActions("game", ["moveCreature"]),
-    removeSelected(): void {
-      this.moveCreature({ creature: this.selectedCreature, hex: this.selectedCreature.initialHex })
-    }
-  }
-})
+const props = defineProps<{
+  creatures: BattleCreature[]
+  expectedPhase: BattlePhase
+}>()
+
+const store = useStore()
+const selectionStore = useSelectionStore()
+
+const activeBattle = computed(() => store.state.game.activeBattle)
+const playerById = computed(() => store.getters["game/playerById"])
+const battleActivePlayer = computed(() => store.getters["game/battleActivePlayer"])
+const showRemove = computed(() => activeBattle.value.phase === props.expectedPhase &&
+  (selectionStore.selectedCreature?.initialHex ?? -1) >= 36 &&
+  (selectionStore.selectedCreature?.hex ?? -1) < 36)
+
+function removeSelected(): void {
+  void store.dispatch("game/moveCreature",
+    { creature: selectionStore.selectedCreature, hex: selectionStore.selectedCreature!.initialHex })
+}
 </script>
 <style scoped lang="sass">
 .interactive

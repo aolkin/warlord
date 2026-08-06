@@ -61,76 +61,65 @@
     </v-card>
   </v-dialog>
 </template>
-<script lang="ts">
-import { defineComponent, PropType } from "vue"
+<script setup lang="ts">
+import { computed } from "vue"
 import { isEqual, range } from "lodash-es"
-import { mapGetters, mapState } from "vuex"
+import { useStore } from "vuex"
 import { BattleCreature, isRangestrike, Strike } from "~/models/battle"
+import { useSelectionStore } from "~/stores/ui/selection"
 
-export default defineComponent({
-  name: "StrikeConfirmation",
-  props: {
-    targetedCreature: {
-      type: Object as PropType<BattleCreature>,
-      required: true
-    },
-    optionalToHit: {
-      type: Number,
-      required: false,
-      default: undefined
-    }
+const props = defineProps<{
+  targetedCreature: BattleCreature
+  optionalToHit?: number
+}>()
+
+const emit = defineEmits<{
+  cancel: []
+  attack: []
+  "update:optionalToHit": [value: number | undefined]
+}>()
+
+const store = useStore()
+const selectionStore = useSelectionStore()
+
+const activeBattle = computed(() => store.state.game.activeBattle)
+const selectedCreatureName = computed(() => selectionStore.selectedCreature?.name() ?? "")
+const targetedCreatureName = computed(() => props.targetedCreature?.name() ?? "")
+const targetedStrike = computed<Strike>(() =>
+  activeBattle.value.getTargetedStrike(selectionStore.selectedCreature, props.targetedCreature))
+const targetedStrikeUnadjusted = computed<Strike>(() =>
+  activeBattle.value.getRawStrike(selectionStore.selectedCreature,
+    isRangestrike(props.targetedCreature) ? props.targetedCreature.creature : props.targetedCreature))
+const targetedStrikeWasAdjusted = computed(() =>
+  !isEqual(targetedStrikeUnadjusted.value, targetedStrike.value))
+const carryoversImpossible = computed(() => selectionStore.engagements.length < 2 ||
+  targetedStrike.value.dice - props.targetedCreature.getRemainingHp() <= 0)
+const normalCarryovers = computed<BattleCreature[]>(() => carryoversImpossible.value
+  ? []
+  : selectionStore.engagements
+    .filter((target: BattleCreature) =>
+      activeBattle.value.toHitAdjusted(selectionStore.selectedCreature, target) <= targetedStrike.value.toHit)
+    .filter((target: BattleCreature) => props.targetedCreature !== target))
+const tougherCarryovers = computed<BattleCreature[]>(() => carryoversImpossible.value
+  ? []
+  : selectionStore.engagements
+    .filter((target: BattleCreature) =>
+      activeBattle.value.toHitAdjusted(selectionStore.selectedCreature, target) > targetedStrike.value.toHit))
+const toHitAdjustments = computed<Record<number, BattleCreature[]>>(() =>
+  tougherCarryovers.value.reduce((adjustments: Record<number, BattleCreature[]>, creature) => {
+    const toHit = activeBattle.value.toHitAdjusted(selectionStore.selectedCreature, creature)
+    range(toHit, 7).forEach(numToUpdate =>
+      adjustments[numToUpdate] = [...(adjustments[numToUpdate] ?? []), creature])
+    return adjustments
+  }, {}))
+
+const selectedOptionalToHit = computed<number[]>({
+  get() {
+    return [props.optionalToHit ?? targetedStrike.value.toHit]
   },
-  emits: ["cancel", "attack", "update:optionalToHit"],
-  computed: {
-    ...mapState("game", ["activeBattle"]),
-    ...mapGetters("ui/selections", ["movementHexes", "selectedCreature", "engagements"]),
-    selectedCreatureName(): string {
-      return this.selectedCreature?.name()
-    },
-    targetedCreatureName(): string {
-      return this.targetedCreature?.name() ?? ""
-    },
-    targetedStrike(): Strike {
-      return this.activeBattle.getTargetedStrike(this.selectedCreature, this.targetedCreature)
-    },
-    targetedStrikeUnadjusted(): Strike {
-      return this.activeBattle.getRawStrike(this.selectedCreature,
-        isRangestrike(this.targetedCreature) ? this.targetedCreature.creature : this.targetedCreature)
-    },
-    targetedStrikeWasAdjusted(): boolean {
-      return !isEqual(this.targetedStrikeUnadjusted, this.targetedStrike)
-    },
-    toHitAdjustments(): Record<number, BattleCreature[]> {
-      return this.tougherCarryovers.reduce((adjustments: Record<number, BattleCreature[]>, creature) => {
-        const toHit = this.activeBattle.toHitAdjusted(this.selectedCreature, creature)
-        range(toHit, 7).forEach(numToUpdate =>
-          adjustments[numToUpdate] = [...(adjustments[numToUpdate] ?? []), creature])
-        return adjustments
-      }, {})
-    },
-    selectedOptionalToHit: {
-      get() {
-        return [this.optionalToHit ?? this.targetedStrike.toHit]
-      },
-      set(values: number[]) {
-        const value = values[0]
-        this.$emit("update:optionalToHit", value === this.targetedStrike.toHit ? undefined : value)
-      }
-    },
-    carryoversImpossible(): boolean {
-      return this.engagements.length < 2 ||
-        this.targetedStrike.dice - this.targetedCreature.getRemainingHp() <= 0
-    },
-    normalCarryovers(): BattleCreature[] {
-      return this.carryoversImpossible ? [] : this.engagements
-        .filter((target: BattleCreature) =>
-          this.activeBattle.toHitAdjusted(this.selectedCreature, target) <= this.targetedStrike.toHit)
-        .filter((target: BattleCreature) => this.targetedCreature !== target)
-    },
-    tougherCarryovers(): BattleCreature[] {
-      return this.carryoversImpossible ? [] : this.engagements.filter((target: BattleCreature) =>
-        this.activeBattle.toHitAdjusted(this.selectedCreature, target) > this.targetedStrike.toHit)
-    }
+  set(values: number[]) {
+    const value = values[0]
+    emit("update:optionalToHit", value === targetedStrike.value.toHit ? undefined : value)
   }
 })
 </script>

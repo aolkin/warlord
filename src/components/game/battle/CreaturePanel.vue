@@ -1,6 +1,5 @@
 <template>
   <v-card
-    v-bind="$props as any"
     width="342"
     :title="minimized ? 'View off-board creatures' : undefined"
   >
@@ -20,7 +19,8 @@
         >
           <div
             v-if="pendingOffense.length > 0 ||
-              (activeBattle.phase === BattlePhase.ATTACKER_MOVE && selectedCreature?.initialHex >= 36)"
+              (activeBattle.phase === BattlePhase.ATTACKER_MOVE &&
+                (selectionStore.selectedCreature?.initialHex ?? -1) >= 36)"
           >
             <v-card-title>{{ attacker.name }}'s Pending Creatures</v-card-title>
             <PendingCreatures
@@ -31,7 +31,8 @@
           </div>
           <div
             v-if="pendingDefense.length > 0 ||
-              (activeBattle.phase === BattlePhase.DEFENDER_MOVE && selectedCreature?.initialHex >= 36)"
+              (activeBattle.phase === BattlePhase.DEFENDER_MOVE &&
+                (selectionStore.selectedCreature?.initialHex ?? -1) >= 36)"
           >
             <v-card-title>{{ defender.name }}'s Pending Creatures</v-card-title>
             <PendingCreatures
@@ -71,54 +72,37 @@
     </v-expand-transition>
   </v-card>
 </template>
-<script lang="ts">
-import { defineComponent } from "vue"
-import { mapGetters, mapMutations, mapState } from "vuex"
+<script setup lang="ts">
+import { computed, ref } from "vue"
+import { useStore } from "vuex"
 import { BattleCreature, BattlePhase } from "~/models/battle"
 import { Player } from "~/models/player"
+import { useSelectionStore } from "~/stores/ui/selection"
 import Creature from "../Creature.vue"
 import PendingCreatures from "./PendingCreatures.vue"
 
-export default defineComponent({
-  name: "CreaturePanel",
-  components: { PendingCreatures, Creature },
-  data() {
-    return {
-      BattlePhase,
-      minimized: false
-    }
-  },
-  computed: {
-    ...mapState("ui", ["localPlayer"]),
-    ...mapState("game", ["activeBattle", "players"]),
-    ...mapGetters("ui/selections", ["selectedCreature"]),
-    ...mapGetters("game", ["playerById"]),
-    orderingClasses(): object {
-      return { "flex-column-reverse": this.activeBattle.defender === this.players[this.localPlayer].id }
-    },
-    attacker(): Player {
-      return this.playerById(this.activeBattle.attacker)
-    },
-    defender(): Player {
-      return this.playerById(this.activeBattle.defender)
-    },
-    pendingOffense(): BattleCreature[] {
-      return this.activeBattle.getOffense().filter((creature: BattleCreature) => creature.hex >= 36)
-    },
-    pendingDefense(): BattleCreature[] {
-      return this.activeBattle.getDefense().filter((creature: BattleCreature) => creature.hex >= 36)
-    },
-    deadOffense(): BattleCreature[] {
-      return this.activeBattle.getOffense().filter((creature: BattleCreature) => creature.hex === 0)
-    },
-    deadDefense(): BattleCreature[] {
-      return this.activeBattle.getDefense().filter((creature: BattleCreature) => creature.hex === 0)
-    }
-  },
-  methods: {
-    ...mapMutations("ui/selections", ["selectCreature"])
-  }
-})
+const store = useStore()
+const selectionStore = useSelectionStore()
+
+const minimized = ref(false)
+
+const localPlayer = computed<number>(() => store.state.ui.localPlayer)
+const activeBattle = computed(() => store.state.game.activeBattle)
+const players = computed<Player[]>(() => store.state.game.players)
+const playerById = computed(() => store.getters["game/playerById"])
+
+const orderingClasses = computed(() =>
+  ({ "flex-column-reverse": activeBattle.value.defender === players.value[localPlayer.value].id }))
+const attacker = computed<Player>(() => playerById.value(activeBattle.value.attacker))
+const defender = computed<Player>(() => playerById.value(activeBattle.value.defender))
+const pendingOffense = computed<BattleCreature[]>(() =>
+  activeBattle.value.getOffense().filter((creature: BattleCreature) => creature.hex >= 36))
+const pendingDefense = computed<BattleCreature[]>(() =>
+  activeBattle.value.getDefense().filter((creature: BattleCreature) => creature.hex >= 36))
+const deadOffense = computed<BattleCreature[]>(() =>
+  activeBattle.value.getOffense().filter((creature: BattleCreature) => creature.hex === 0))
+const deadDefense = computed<BattleCreature[]>(() =>
+  activeBattle.value.getDefense().filter((creature: BattleCreature) => creature.hex === 0))
 </script>
 <style scoped lang="sass">
 .interactive

@@ -27,7 +27,7 @@
       <svg
         class="board"
         viewBox="-450 -450 800 800"
-        @click="deselectCreature"
+        @click="selectionStore.deselectCreature"
       >
         <BattleBoardHex
           v-for="hex in BATTLE_BOARD_HEXES"
@@ -39,8 +39,8 @@
           :transform="hexTransformStr(hex)"
           :class="{ [`hex-${hex}`]: true, 'available-move': movementHexes.has(hex) }"
           @click="moveSelected(hex)"
-          @mouseenter="enterBattleHex(hex)"
-          @mouseleave="leaveBattleHex(hex)"
+          @mouseenter="selectionStore.enterBattleHex(hex)"
+          @mouseleave="selectionStore.leaveBattleHex(hex)"
         />
         <g
           v-if="preferencesStore.debugUi"
@@ -68,8 +68,8 @@
            rotate(${120 * (activeBattle.attackerEdge - 1) + (creature.player === defender ? 180 : 0)})`"
           in-svg
           @click.stop="chooseCreature(creature)"
-          @mouseenter="enterCreature(creature)"
-          @mouseleave="leaveCreature(creature)"
+          @mouseenter="selectionStore.enterCreature(creature)"
+          @mouseleave="selectionStore.leaveCreature(creature)"
         />
         <EngageIcon
           v-for="(creature) in (battleCarryoverTargets ?? engagements)"
@@ -79,8 +79,8 @@
           :transform="`${hexTransformStr(creature.hex)} scale(0.9)
            rotate(${120 * (activeBattle.attackerEdge - 1) + (creature.player === defender ? 0 : 180)})`"
           @click.stop="targetCreature(creature)"
-          @mouseenter="enterCreature(creature)"
-          @mouseleave="leaveCreature(creature)"
+          @mouseenter="selectionStore.enterCreature(creature)"
+          @mouseleave="selectionStore.leaveCreature(creature)"
         />
         <RangestrikeIcon
           v-for="(rangestrikeTarget) in rangestrikes"
@@ -93,8 +93,8 @@
            rotate(${120 * (activeBattle.attackerEdge - 1) +
           (rangestrikeTarget.creature.player === defender ? 0 : 180)})`"
           @click.stop="targetCreature(rangestrikeTarget)"
-          @mouseenter="enterCreature(rangestrikeTarget.creature)"
-          @mouseleave="leaveCreature(rangestrikeTarget.creature)"
+          @mouseenter="selectionStore.enterCreature(rangestrikeTarget.creature)"
+          @mouseleave="selectionStore.leaveCreature(rangestrikeTarget.creature)"
         />
       </svg>
 
@@ -158,8 +158,9 @@ import {
 } from "~/models/battle"
 import { Terrain } from "~/models/masterboard"
 import { PlayerId } from "~/models/player"
-import { usePreferencesStore } from "~/stores/ui/preferences"
 import { useTypedStore } from "~/plugins/vuex"
+import { usePreferencesStore } from "~/stores/ui/preferences"
+import { useSelectionStore } from "~/stores/ui/selection"
 import type DiceRoller from "~/components/ui/generic/DiceRoller"
 import EngageIcon from "../../ui/game/EngageIcon.vue"
 import RangestrikeIcon from "../../ui/game/RangestrikeIcon.vue"
@@ -176,6 +177,7 @@ import { hexTransformStr } from "./utils"
 const diceRoller = inject<Readonly<Ref<InstanceType<typeof DiceRoller> | null>>>("diceRoller")
 
 const preferencesStore = usePreferencesStore()
+const selectionStore = useSelectionStore()
 const store = useTypedStore()
 
 const target = ref<BattleCreature | RangestrikeTarget | undefined>(undefined)
@@ -189,11 +191,10 @@ const battlePhaseType = computed((): BattlePhaseType => store.getters["game/batt
 const battleEngagements = computed(() => store.getters["game/battleEngagements"])
 const battleCarryoverTargets = computed(() => store.getters["game/battleCarryoverTargets"])
 const battleRangestrikeTargets = computed(() => store.getters["game/battleRangestrikeTargets"])
-const movementHexes = computed(() => store.getters["ui/selections/movementHexes"])
-const selectedCreature = computed((): BattleCreature | undefined =>
-  store.getters["ui/selections/selectedCreature"])
-const engagements = computed(() => store.getters["ui/selections/engagements"])
-const rangestrikes = computed(() => store.getters["ui/selections/rangestrikes"])
+const movementHexes = computed(() => selectionStore.movementHexes)
+const selectedCreature = computed((): BattleCreature | undefined => selectionStore.selectedCreature)
+const engagements = computed(() => selectionStore.engagements)
+const rangestrikes = computed(() => selectionStore.rangestrikes)
 
 const attackCreatureDialog = computed({
   get: (): boolean => target.value !== undefined,
@@ -261,30 +262,6 @@ const targetedStrike = computed((): Strike =>
 
 const debugHexAdjacencies = computed((): number[] => BATTLE_BOARD_ADJACENCIES[debugHex.value] ?? [])
 
-function enterBattleHex(hex: number): void {
-  store.commit("ui/selections/enterBattleHex", hex)
-}
-
-function leaveBattleHex(hex: number): void {
-  store.commit("ui/selections/leaveBattleHex", hex)
-}
-
-function selectCreature(creature: BattleCreature): void {
-  store.commit("ui/selections/selectCreature", creature)
-}
-
-function deselectCreature(): void {
-  store.commit("ui/selections/deselectCreature")
-}
-
-function enterCreature(creature: BattleCreature): void {
-  store.commit("ui/selections/enterCreature", creature)
-}
-
-function leaveCreature(creature: BattleCreature): void {
-  store.commit("ui/selections/leaveCreature", creature)
-}
-
 function moveSelected(hex: number): void {
   if (selectedCreature.value && movementHexes.value.has(hex)) {
     store.dispatch("game/moveCreature", { creature: selectedCreature.value, hex })
@@ -293,7 +270,7 @@ function moveSelected(hex: number): void {
 
 function chooseCreature(creature: BattleCreature): void {
   if (creatureEnabled(creature)) {
-    selectCreature(creature)
+    selectionStore.selectCreature(creature)
   }
 }
 
@@ -323,7 +300,7 @@ async function attackTargetedCreature(): Promise<void> {
   })
   console.log(activeBattle.value!.activeStrike)
   resetAttack()
-  deselectCreature()
+  selectionStore.deselectCreature()
 }
 
 function resetAttack(): void {

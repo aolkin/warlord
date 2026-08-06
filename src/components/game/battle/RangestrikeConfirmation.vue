@@ -39,49 +39,40 @@
     </v-card>
   </v-dialog>
 </template>
-<script lang="ts">
-import { defineComponent, PropType } from "vue"
+<script setup lang="ts">
+import { computed } from "vue"
 import { isEqual } from "lodash-es"
-import { mapGetters, mapState } from "vuex"
+import { useStore } from "vuex"
 import { BattleCreature, RangestrikeTarget, Strike } from "~/models/battle"
+import { useSelectionStore } from "~/stores/ui/selection"
 import { div } from "~/utils/math"
 
-export default defineComponent({
-  name: "RangestrikeConfirmation",
-  props: {
-    target: {
-      type: Object as PropType<RangestrikeTarget>,
-      required: true
-    }
-  },
-  emits: ["cancel", "attack"],
-  computed: {
-    ...mapState("game", ["activeBattle"]),
-    ...mapGetters("ui/selections", ["selectedCreature"]),
-    selectedCreatureName(): string {
-      return this.selectedCreature?.name()
-    },
-    targetedCreature(): BattleCreature {
-      return this.target.creature
-    },
-    targetedCreatureName(): string {
-      return this.targetedCreature?.name() ?? ""
-    },
-    targetedStrike(): Strike {
-      return this.activeBattle.getTargetedStrike(this.selectedCreature, this.target)
-    },
-    targetedStrikeUnadjusted(): Strike {
-      const rawStrike = this.activeBattle.getRawStrike(this.selectedCreature, this.targetedCreature)
-      return {
-        toHit: this.target.longDistance ? rawStrike.toHit + 1 : rawStrike.toHit,
-        dice: div(rawStrike.dice, 2)
-      }
-    },
-    targetedStrikeWasAdjusted(): boolean {
-      return !isEqual(this.targetedStrikeUnadjusted, this.targetedStrike)
-    }
+const props = defineProps<{
+  target: RangestrikeTarget
+}>()
+
+defineEmits<{
+  cancel: []
+  attack: []
+}>()
+
+const store = useStore()
+const selectionStore = useSelectionStore()
+
+const activeBattle = computed(() => store.state.game.activeBattle)
+const selectedCreatureName = computed(() => selectionStore.selectedCreature?.name() ?? "")
+const targetedCreature = computed<BattleCreature>(() => props.target.creature)
+const targetedCreatureName = computed(() => targetedCreature.value?.name() ?? "")
+const targetedStrike = computed<Strike>(() =>
+  activeBattle.value.getTargetedStrike(selectionStore.selectedCreature, props.target))
+const targetedStrikeUnadjusted = computed<Strike>(() => {
+  const rawStrike = activeBattle.value.getRawStrike(selectionStore.selectedCreature, targetedCreature.value)
+  return {
+    toHit: props.target.longDistance ? rawStrike.toHit + 1 : rawStrike.toHit,
+    dice: div(rawStrike.dice, 2)
   }
 })
+const targetedStrikeWasAdjusted = computed(() => !isEqual(targetedStrikeUnadjusted.value, targetedStrike.value))
 </script>
 <style scoped lang="sass">
 @import "@/styles/terrain-colors.sass"

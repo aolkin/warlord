@@ -76,9 +76,9 @@
   </v-app>
 </template>
 
-<script lang="ts">
-import { defineComponent, provide, readonly, ref } from "vue"
-import { mapMutations, mapState } from "vuex"
+<script setup lang="ts">
+import { computed, onBeforeMount, provide, readonly, ref } from "vue"
+import { useStore } from "vuex"
 import BattleBoard from "~/components/game/battle/BattleBoard"
 import Masterboard from "~/components/game/masterboard/Masterboard"
 import PlayerStatus from "~/components/ui/game/PlayerStatus"
@@ -86,55 +86,41 @@ import DiceRoller from "~/components/ui/generic/DiceRoller"
 import GameMenu from "~/components/ui/menus/GameMenu"
 import SystemMenu from "~/components/ui/menus/SystemMenu"
 import { usePreferencesStore } from "~/stores/ui/preferences"
-import { View } from "~/store/ui/selection"
+import { useSelectionStore, View } from "~/stores/ui/selection"
 
-export default defineComponent({
-  name: "App",
-  components: {
-    BattleBoard,
-    DiceRoller,
-    PlayerStatus,
-    SystemMenu,
-    GameMenu,
-    Masterboard
+const diceRoller = ref<InstanceType<typeof DiceRoller> | null>(null)
+provide("diceRoller", readonly(diceRoller))
+
+const store = useStore()
+const selectionStore = useSelectionStore()
+const preferencesStore = usePreferencesStore()
+
+const menuVisible = ref(false)
+const prefsPaneVisible = ref(false)
+
+const activeBattle = computed(() => store.state.game.activeBattle)
+const view = computed<View>({
+  get() {
+    return selectionStore.view
   },
-  setup() {
-    const diceRoller = ref(null)
-    provide("diceRoller", readonly(diceRoller))
-    return { diceRoller, preferencesStore: usePreferencesStore() }
-  },
-  data: () => ({
-    View: View,
-    menuVisible: false,
-    prefsPaneVisible: false
-  }),
-  computed: {
-    ...mapState("ui", ["selections"]),
-    ...mapState("game", ["activeBattle"]),
-    view: {
-      get(): View {
-        return this.selections.view
-      },
-      set(value: View) {
-        this.setView(value)
-      }
-    }
-  },
-  beforeMount() {
-    if (this.activeBattle !== undefined) {
-      this.setView(View.BATTLEBOARD)
-    }
-  },
-  methods: {
-    ...mapMutations("ui/selections", ["setView"]),
-    toggleFancyGraphics() {
-      this.preferencesStore.setFancyGraphics(!this.preferencesStore.fancyGraphics)
-    },
-    toggleDebugUi() {
-      this.preferencesStore.setDebugUi(!this.preferencesStore.debugUi)
-    }
+  set(value: View) {
+    selectionStore.setView(value)
   }
 })
+
+onBeforeMount(() => {
+  if (activeBattle.value !== undefined) {
+    selectionStore.setView(View.BATTLEBOARD)
+  }
+})
+
+function toggleFancyGraphics(): void {
+  preferencesStore.setFancyGraphics(!preferencesStore.fancyGraphics)
+}
+
+function toggleDebugUi(): void {
+  preferencesStore.setDebugUi(!preferencesStore.debugUi)
+}
 </script>
 
 <style lang="sass" scoped>

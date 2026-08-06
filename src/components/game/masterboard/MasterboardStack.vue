@@ -61,14 +61,15 @@
   </g>
 </template>
 
-<script lang="ts">
-import { defineComponent } from "vue"
-import { mapActions, mapGetters, mapMutations, mapState } from "vuex"
+<script setup lang="ts">
+import { computed } from "vue"
 import { CreatureType } from "~/models/creature"
 import { MasterboardPhase, Path } from "~/models/game"
 import masterboard, { HexEdge, MasterboardEdge, MasterboardHex } from "~/models/masterboard"
 import { Player } from "~/models/player"
 import { Stack } from "~/models/stack"
+import { useTypedStore } from "~/plugins/vuex"
+import { useSelectionStore } from "~/stores/ui/selection"
 import { Transformation, Transformations, TransformationType } from "~/utils/svg"
 import EngageIcon from "../../ui/game/EngageIcon.vue"
 import Creature from "../Creature.vue"
@@ -84,165 +85,155 @@ const getEngageTransformForEdge = (edge: HexEdge): Transformations => {
   return transforms
 }
 
-export default defineComponent({
-  name: "MasterboardStack",
-  components: { EngageIcon, Creature, PlayerMarker },
-  props: {
-    stack: {
-      type: Stack,
-      required: true
-    }
-  },
-  computed: {
-    ...mapState("ui/selections", {
-      selectedStack: "stack"
-    }),
-    ...mapGetters("ui/selections", ["paths"]),
-    ...mapState("game", ["activePhase", "activeRoll"]),
-    ...mapGetters("game", [
-      "activePlayerId", "activePlayer", "mandatoryMoves", "stacksForHex", "firstRound", "playerById"
-    ]),
-    transform() {
-      const transform = hexTransform(this.stack.hex)
-      transform.push(new Transformation(TransformationType.TRANSLATE,
-        [0, isHexInverted(this.stack.hex) ? -12 : 13]))
-      if (this.stacksOnHex.length > 1) {
-        transform.push(new Transformation(TransformationType.ROTATE, [15 + 35 * this.stacksOnHexIndex]))
-      }
-      if (this.selected) {
-        transform.push(new Transformation(TransformationType.TRANSLATE, [2, -4]))
-      } else {
-        transform.push(new Transformation(TransformationType.TRANSLATE, [0, -1 * this.stack.creatures.length]))
-      }
-      transform.push(new Transformation(TransformationType.SCALE, [0.48]))
-      return transform.toString()
-    },
-    selected() {
-      return this.stack === this.selectedStack
-    },
-    isActivePlayer() {
-      return this.activePlayerId === this.stack.owner
-    },
-    stackPlayer(): Player {
-      return this.playerById(this.stack.owner)
-    },
-    potentialEngagements(): HexEdge[] {
-      if (this.selectedStack === undefined) {
-        return []
-      } else if (this.stacksForHex(this.stack.hex)
-        .some((stack: Stack) => stack.owner === this.activePlayerId)) {
-        return []
-      } else if (this.activeRoll === 6 && this.activePlayer.score >= 400 &&
-        this.selectedStack.creatures.includes(CreatureType.TITAN)) {
-        return [HexEdge.FIRST, HexEdge.SECOND, HexEdge.THIRD]
-      } else {
-        // For paths where this stack is the enemy...
-        return this.paths.filter((path: Path) => path.foe === this.stack).flatMap(({ path }: Path) =>
-          // Find the index on the path where this stack resides...
-          path.map((hex: MasterboardHex, i: number) => hex.id === this.stack.hex
-            // Figure out where the stack would enter this hex from
-            ? hex.getEdges().find((edge: MasterboardEdge) => edge.hex.id === path[i - 1].id)?.hexEdge
-            : undefined)
-        ).filter((item?: HexEdge) => item !== undefined)
-      }
-    },
-    engageable(): [HexEdge, Transformations][] {
-      return this.potentialEngagements.map(edge => [edge, getEngageTransformForEdge(edge)])
-    },
-    engaged(): boolean {
-      return this.isActivePlayer && this.stacksForHex(this.stack.hex)
-        .some((stack: Stack) => stack.owner !== this.activePlayerId)
-    },
-    isMandatory() {
-      if (!this.isActivePlayer) {
-        return false
-      }
-      switch (this.activePhase) {
-        case MasterboardPhase.SPLIT:
-          return !this.stack.isValidSplit(this.firstRound)
-        case MasterboardPhase.MOVE:
-          return this.mandatoryMoves.includes(this.stack)
-      }
-      return false
-    },
-    isDisabled() {
-      if (!this.isActivePlayer) {
-        return false
-      }
-      switch (this.activePhase) {
-        case MasterboardPhase.SPLIT:
-          return this.stack.creatures.length < 4
-        case MasterboardPhase.MOVE:
-          return this.stack.hasMoved()
-        case MasterboardPhase.MUSTER:
-          return !this.stack.canMuster()
-      }
-      return false
-    },
-    classes() {
-      return {
-        selected: this.selected,
-        owned: this.isActivePlayer,
-        mandatory: this.isMandatory,
-        disabled: this.isDisabled,
-        engageable: this.engageable.length > 0,
-        engaged: this.engaged,
-        [`player-${this.stack.owner}`]: true,
-        "multiple-stacks": this.stacksOnHex.length > 1,
-        [`stack-on-hex-${this.stacksOnHexIndex}`]: true,
-        [`phase-${MasterboardPhase[this.activePhase].toLowerCase()}`]: true
-      }
-    },
-    stackSize(): string {
-      if (this.stack.split.some(i => i)) {
-        return `${this.stack.creatures.length - this.stack.numSplitting()} / ${this.stack.numSplitting()}`
-      }
-      return `${this.stack.creatures.length}`
-    },
-    stacksOnHex(): Stack[] {
-      return this.stacksForHex(this.stack.hex)
-    },
-    stacksOnHexIndex(): number {
-      return this.stacksOnHex.indexOf(this.stack)
-    }
-  },
-  methods: {
-    ...mapMutations("ui/selections", [
-      "selectStack", "deselectStack", "enterStack", "leaveStack",
-      "enterHex", "leaveHex"
-    ]),
-    ...mapActions("game", ["move"]),
-    select() {
-      if (!(this.isActivePlayer)) {
-        return
-      }
-      if (this.activePhase === MasterboardPhase.MOVE && this.stack.hasMoved()) {
-        if (!this.stacksForHex(this.stack.origin).some((stack: Stack) => stack.hasMoved())) {
-          this.move({ stack: this.stack, hex: this.stack.origin })
-        }
-      }
-      if (this.selected) {
-        this.deselectStack()
-      } else {
-        if (!this.isDisabled) {
-          this.selectStack(this.stack)
-        }
-      }
-    },
-    attack(edge: HexEdge) {
-      this.move({ stack: this.selectedStack, hex: this.stack.hex, edge })
-      this.deselectStack()
-    },
-    enter() {
-      this.enterStack(this.stack)
-      this.enterHex(masterboard.getHex(this.stack.hex))
-    },
-    leave() {
-      this.leaveStack(this.stack)
-      this.leaveHex(masterboard.getHex(this.stack.hex))
-    }
+const props = defineProps<{
+  stack: Stack
+}>()
+
+const selectionStore = useSelectionStore()
+const store = useTypedStore()
+
+const activePhase = computed(() => store.state.game.activePhase)
+const activeRoll = computed(() => store.state.game.activeRoll)
+const activePlayerId = computed(() => store.getters["game/activePlayerId"])
+const activePlayer = computed(() => store.getters["game/activePlayer"])
+const mandatoryMoves = computed((): Stack[] => store.getters["game/mandatoryMoves"])
+const stacksForHex = computed(() => store.getters["game/stacksForHex"])
+const firstRound = computed(() => store.getters["game/firstRound"])
+const playerById = computed(() => store.getters["game/playerById"])
+
+const selected = computed(() => props.stack === selectionStore.selectedStack)
+
+const stacksOnHex = computed((): Stack[] => stacksForHex.value(props.stack.hex))
+
+const stacksOnHexIndex = computed((): number => stacksOnHex.value.indexOf(props.stack))
+
+const transform = computed((): string => {
+  const result = hexTransform(props.stack.hex)
+  result.push(new Transformation(TransformationType.TRANSLATE,
+    [0, isHexInverted(props.stack.hex) ? -12 : 13]))
+  if (stacksOnHex.value.length > 1) {
+    result.push(new Transformation(TransformationType.ROTATE, [15 + 35 * stacksOnHexIndex.value]))
+  }
+  if (selected.value) {
+    result.push(new Transformation(TransformationType.TRANSLATE, [2, -4]))
+  } else {
+    result.push(new Transformation(TransformationType.TRANSLATE, [0, -1 * props.stack.creatures.length]))
+  }
+  result.push(new Transformation(TransformationType.SCALE, [0.48]))
+  return result.toString()
+})
+
+const isActivePlayer = computed(() => activePlayerId.value === props.stack.owner)
+
+const stackPlayer = computed((): Player => playerById.value(props.stack.owner))
+
+const potentialEngagements = computed((): HexEdge[] => {
+  if (selectionStore.selectedStack === undefined) {
+    return []
+  } else if (stacksForHex.value(props.stack.hex)
+    .some((stack: Stack) => stack.owner === activePlayerId.value)) {
+    return []
+  } else if (activeRoll.value === 6 && activePlayer.value.score >= 400 &&
+    selectionStore.selectedStack.creatures.includes(CreatureType.TITAN)) {
+    return [HexEdge.FIRST, HexEdge.SECOND, HexEdge.THIRD]
+  } else {
+    // For paths where this stack is the enemy...
+    return selectionStore.paths.filter((path: Path) => path.foe === props.stack).flatMap(({ path }: Path) =>
+      // Find the index on the path where this stack resides...
+      path.map((hex: MasterboardHex, i: number) => hex.id === props.stack.hex
+        // Figure out where the stack would enter this hex from
+        ? hex.getEdges().find((edge: MasterboardEdge) => edge.hex.id === path[i - 1].id)?.hexEdge
+        : undefined)
+    ).filter((item?: HexEdge) => item !== undefined)
   }
 })
+
+const engageable = computed((): [HexEdge, Transformations][] =>
+  potentialEngagements.value.map(edge => [edge, getEngageTransformForEdge(edge)]))
+
+const engaged = computed((): boolean => isActivePlayer.value && stacksForHex.value(props.stack.hex)
+  .some((stack: Stack) => stack.owner !== activePlayerId.value))
+
+const isMandatory = computed(() => {
+  if (!isActivePlayer.value) {
+    return false
+  }
+  switch (activePhase.value) {
+    case MasterboardPhase.SPLIT:
+      return !props.stack.isValidSplit(firstRound.value)
+    case MasterboardPhase.MOVE:
+      return mandatoryMoves.value.includes(props.stack)
+  }
+  return false
+})
+
+const isDisabled = computed(() => {
+  if (!isActivePlayer.value) {
+    return false
+  }
+  switch (activePhase.value) {
+    case MasterboardPhase.SPLIT:
+      return props.stack.creatures.length < 4
+    case MasterboardPhase.MOVE:
+      return props.stack.hasMoved()
+    case MasterboardPhase.MUSTER:
+      return !props.stack.canMuster()
+  }
+  return false
+})
+
+const classes = computed(() => ({
+  selected: selected.value,
+  owned: isActivePlayer.value,
+  mandatory: isMandatory.value,
+  disabled: isDisabled.value,
+  engageable: engageable.value.length > 0,
+  engaged: engaged.value,
+  [`player-${props.stack.owner}`]: true,
+  "multiple-stacks": stacksOnHex.value.length > 1,
+  [`stack-on-hex-${stacksOnHexIndex.value}`]: true,
+  [`phase-${MasterboardPhase[activePhase.value].toLowerCase()}`]: true
+}))
+
+const stackSize = computed((): string => {
+  if (props.stack.split.some(i => i)) {
+    return `${props.stack.creatures.length - props.stack.numSplitting()} / ${props.stack.numSplitting()}`
+  }
+  return `${props.stack.creatures.length}`
+})
+
+function select(): void {
+  if (!isActivePlayer.value) {
+    return
+  }
+  if (activePhase.value === MasterboardPhase.MOVE && props.stack.hasMoved()) {
+    if (!stacksForHex.value(props.stack.origin).some((stack: Stack) => stack.hasMoved())) {
+      store.dispatch("game/move", { stack: props.stack, hex: props.stack.origin })
+    }
+  }
+  if (selected.value) {
+    selectionStore.deselectStack()
+  } else {
+    if (!isDisabled.value) {
+      selectionStore.selectStack(props.stack)
+    }
+  }
+}
+
+function attack(edge: HexEdge): void {
+  store.dispatch("game/move", { stack: selectionStore.selectedStack, hex: props.stack.hex, edge })
+  selectionStore.deselectStack()
+}
+
+function enter(): void {
+  selectionStore.enterStack(props.stack)
+  selectionStore.enterHex(masterboard.getHex(props.stack.hex))
+}
+
+function leave(): void {
+  selectionStore.leaveStack(props.stack)
+  selectionStore.leaveHex(masterboard.getHex(props.stack.hex))
+}
 </script>
 
 <style lang="sass" scoped>

@@ -1,4 +1,5 @@
-import { describe, expect, it } from "vitest"
+import { createPinia, setActivePinia } from "pinia"
+import { beforeEach, describe, expect, it } from "vitest"
 import { Battle } from "~/models/battle"
 import { CreatureType } from "~/models/creature"
 import { HexEdge } from "~/models/masterboard"
@@ -6,6 +7,10 @@ import { PlayerId } from "~/models/player"
 import { Random } from "~/models/random"
 import { Stack } from "~/models/stack"
 import { ActionContext, Getters, MasterboardPhase, TitanGame } from "./game"
+
+// doNextPhase deselects the selected stack via the Pinia selection store directly
+// (not through commit), so an active Pinia is needed for it to run at all.
+beforeEach(() => setActivePinia(createPinia()))
 
 const noShuffleRandom: Random = { shuffle: collection => [...collection] }
 
@@ -48,8 +53,6 @@ function createGetters(game: TitanGame): Getters {
  * Builds an ActionContext whose commit/dispatch forward to TitanGame's own mFoo/doFoo
  * methods - the same mapping src/store/game/index.ts sets up for the real Vuex module
  * (mutation "fooBar" -> method "mFooBar", action "fooBar" -> method "doFooBar").
- * Root-namespaced mutations (e.g. "ui/selections/...") are no-ops here since they
- * belong to unrelated UI-selection state, not the turn logic under test.
  */
 function createActionContext(
   game: TitanGame,
@@ -59,7 +62,6 @@ function createActionContext(
 ): ActionContext {
   const getters = createGetters(game)
   const commit: ActionContext["commit"] = (name, payload) => {
-    if (name.includes("/")) return
     const method = `m${name.charAt(0).toUpperCase()}${name.slice(1)}`
     ;(game as unknown as Record<string, (payload?: unknown) => void>)[method](payload)
   }
