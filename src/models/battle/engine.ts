@@ -28,9 +28,6 @@ import {
   isRangestrike
 } from "./strike"
 
-// What a Battle needs to know about one of its two participants - deliberately not the full
-// Stack, since a Battle has no other use for a Stack's masterboard position, marker, splits,
-// or muster state.
 export interface BattleSide {
   player: PlayerId
   score: number
