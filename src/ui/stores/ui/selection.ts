@@ -1,8 +1,8 @@
 import { defineStore } from "pinia"
-import { computed, ref, shallowReactive, shallowRef } from "vue"
+import { computed, ref, shallowReactive, shallowRef, watch } from "vue"
 import type { Store } from "vuex"
-import { BattleCreature, RangestrikeTarget } from "@/models/battle"
-import { Path } from "@/models/game"
+import { Battle, BattleCreature, RangestrikeTarget } from "@/models/battle"
+import { MasterboardPhase, Path } from "@/models/game"
 import masterboard, { MasterboardHex } from "@/models/masterboard"
 import { Stack } from "@/models/stack"
 
@@ -14,8 +14,9 @@ export enum View {
 // The "game" module (src/game/store/game) still lives in Vuex and is reflected off TitanGame's
 // prototype (see proposals/04-state-management.md), so its state and getters aren't typed
 // through Pinia. Importing the Vuex store instance directly here would cycle back through
-// store/game (which imports TitanGame, which imports this file for doNextPhase/doInitiateBattle),
-// so plugins/vuex.ts hands it to us at runtime via provideVuexStore instead of a static import.
+// plugins/vuex.ts, which itself imports this file (for provideVuexStore, and to call
+// useSelectionStore().reset() from its own "reset" action) - so plugins/vuex.ts hands us the
+// instance at runtime via provideVuexStore instead of a static import.
 // Vuex also types Store#getters as `any` and doesn't merge module state into Store#state's
 // type, so reads of the game module below go through a local cast to the shape TitanGame
 // actually exposes at runtime.
@@ -34,6 +35,10 @@ const requireVuexStore = (): Store<unknown> => {
 
 const activeRoll = (): number | undefined =>
   (requireVuexStore().state as unknown as { game: { activeRoll?: number } }).game.activeRoll
+const activePhase = (): MasterboardPhase =>
+  (requireVuexStore().state as unknown as { game: { activePhase: MasterboardPhase } }).game.activePhase
+const activeBattle = (): Battle | undefined =>
+  (requireVuexStore().state as unknown as { game: { activeBattle?: Battle } }).game.activeBattle
 const pathsForHex = (): (hex: number) => Path[] =>
   requireVuexStore().getters["game/pathsForHex"] as (hex: number) => Path[]
 const battleMoves = (): (creature: BattleCreature) => Set<number> =>
@@ -170,6 +175,16 @@ export const useSelectionStore = defineStore("selection", () => {
       focusedBattleHexes.splice(index)
     }
   }
+
+  watch(activePhase, deselectStack)
+
+  // Only the empty->present transition should navigate to the battle board - subsequent
+  // mutations within the same battle (strikes, wounds, etc.) also change activeBattle.
+  watch(() => activeBattle() !== undefined, (hasBattle, hadBattle) => {
+    if (hasBattle && !hadBattle) {
+      setView(View.BATTLEBOARD)
+    }
+  })
 
   return {
     view,
