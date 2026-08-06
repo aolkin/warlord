@@ -20,7 +20,7 @@
 <script setup lang="ts">
 import { computed } from "vue"
 import board, { MasterboardEdge, MasterboardHex, MovementRule } from "~/models/masterboard"
-import { usePreferencesStore } from "~/stores/preferences"
+import { usePreferencesStore } from "~/stores/ui/preferences"
 import HexEdge from "./HexEdge.vue"
 
 const preferencesStore = usePreferencesStore()

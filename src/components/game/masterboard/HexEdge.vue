@@ -70,7 +70,7 @@
 <script setup lang="ts">
 import { computed } from "vue"
 import { MasterboardEdge, MasterboardHex, MovementRule, Terrain } from "~/models/masterboard"
-import { usePreferencesStore } from "~/stores/preferences"
+import { usePreferencesStore } from "~/stores/ui/preferences"
 import { hexTransform, isHexInverted, TRIANGLE_HEIGHT } from "./utils"
 
 const props = withDefaults(defineProps<{

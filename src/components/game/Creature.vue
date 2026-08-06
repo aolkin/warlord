@@ -119,7 +119,7 @@ import { computed } from "vue"
 import { useTheme } from "vuetify"
 import { Creature, CREATURE_DATA, CreatureType } from "~/models/creature"
 import { Player } from "~/models/player"
-import { CreatureColorMode, usePreferencesStore } from "~/stores/preferences"
+import { CreatureColorMode, usePreferencesStore } from "~/stores/ui/preferences"
 import FilterCache from "./color-util"
 import { TitanColor } from "./types"
 

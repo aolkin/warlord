@@ -54,7 +54,7 @@ import {
   BattlePhaseType,
   Hazard
 } from "~/models/battle"
-import { usePreferencesStore } from "~/stores/preferences"
+import { usePreferencesStore } from "~/stores/ui/preferences"
 import { useTypedStore } from "~/plugins/vuex"
 
 const preferencesStore = usePreferencesStore()

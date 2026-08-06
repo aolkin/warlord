@@ -58,7 +58,7 @@
 <script setup lang="ts">
 import { computed } from "vue"
 import { MasterboardHex, Terrain } from "~/models/masterboard"
-import { usePreferencesStore } from "~/stores/preferences"
+import { usePreferencesStore } from "~/stores/ui/preferences"
 import { useTypedStore } from "~/plugins/vuex"
 import {
   CLIP_TRIANGLE_HEIGHT,

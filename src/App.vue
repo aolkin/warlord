@@ -85,7 +85,7 @@ import PlayerStatus from "~/components/ui/game/PlayerStatus"
 import DiceRoller from "~/components/ui/generic/DiceRoller"
 import GameMenu from "~/components/ui/menus/GameMenu"
 import SystemMenu from "~/components/ui/menus/SystemMenu"
-import { usePreferencesStore } from "~/stores/preferences"
+import { usePreferencesStore } from "~/stores/ui/preferences"
 import { View } from "~/store/ui/selection"
 
 export default defineComponent({

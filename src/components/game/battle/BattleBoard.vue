@@ -158,7 +158,7 @@ import {
 } from "~/models/battle"
 import { Terrain } from "~/models/masterboard"
 import { PlayerId } from "~/models/player"
-import { usePreferencesStore } from "~/stores/preferences"
+import { usePreferencesStore } from "~/stores/ui/preferences"
 import { useTypedStore } from "~/plugins/vuex"
 import type DiceRoller from "~/components/ui/generic/DiceRoller"
 import EngageIcon from "../../ui/game/EngageIcon.vue"

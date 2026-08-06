@@ -133,7 +133,7 @@
 import { computed, inject, Ref, ref } from "vue"
 import DiceRoller from "~/components/ui/generic/DiceRoller"
 import { Creature, CREATURE_LIST } from "~/models/creature"
-import { CreatureColorMode, usePreferencesStore } from "~/stores/preferences"
+import { CreatureColorMode, usePreferencesStore } from "~/stores/ui/preferences"
 import { useTypedStore } from "~/plugins/vuex"
 
 const diceRoller = inject<Readonly<Ref<InstanceType<typeof DiceRoller> | null>>>("diceRoller")

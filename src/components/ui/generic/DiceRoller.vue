@@ -13,7 +13,7 @@
 import DiceBox from "@3d-dice/dice-box"
 import { markRaw, onMounted, ref } from "vue"
 import { random, range } from "lodash-es"
-import { usePreferencesStore } from "~/stores/preferences"
+import { usePreferencesStore } from "~/stores/ui/preferences"
 
 const DebugDice: { nextRolls?: number[] } = {
   nextRolls: undefined
