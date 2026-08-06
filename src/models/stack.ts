@@ -4,6 +4,8 @@ import { CREATURE_DATA, CreatureType, MUSTER_DATA } from "./creature"
 import { HexEdge, Terrain } from "./masterboard"
 import { PlayerId } from "./player"
 
+let stackIdCounter = 0
+
 export type StackRef = number
 
 export type MusterBasis = [CreatureType, number]
@@ -18,6 +20,7 @@ export class Stack {
   readonly marker: number
   readonly split: boolean[]
   readonly recruits: Record<number, MusterChoice>
+  readonly id: number
 
   origin: number
   hex: number
@@ -35,6 +38,7 @@ export class Stack {
     this.origin = start
     this.marker = marker
     this.recruits = {}
+    this.id = stackIdCounter++
   }
 
   numSplitting(): number {

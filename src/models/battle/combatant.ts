@@ -1,11 +1,14 @@
 import { CREATURE_DATA, CreatureType } from "../creature"
 import { PlayerId } from "../player"
 
+let battleCreatureIdCounter = 0
+
 export interface IBattleCreature {
   readonly type: CreatureType
   readonly player: PlayerId
   readonly playerScore: number
   hex: number
+  id?: number
   wounds?: number
   initialHex?: number
   hasStruck?: boolean
@@ -15,6 +18,7 @@ export interface IBattleCreature {
 // which are actually assigned at runtime via Object.assign in the constructor below.
 // eslint-disable-next-line @typescript-eslint/no-unsafe-declaration-merging
 export interface BattleCreature extends IBattleCreature {
+  readonly id: number
   wounds: number
   initialHex: number
   hasStruck: boolean
@@ -24,6 +28,7 @@ export class BattleCreature {
   constructor(props: IBattleCreature) {
     Object.assign(this, {
       ...props,
+      id: props.id ?? battleCreatureIdCounter++,
       wounds: props.wounds ?? 0,
       initialHex: props.initialHex ?? props.hex,
       hasStruck: props.hasStruck ?? false

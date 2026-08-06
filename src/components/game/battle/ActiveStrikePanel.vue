@@ -27,7 +27,7 @@
       </v-card-item>
       <v-card-item
         v-for="([creature, hits], index) in targets"
-        :key="creature.guid"
+        :key="creature.id"
       >
         {{ index === 0 ? "Dealt" : "Carried over" }} {{ hitsString(hits) }} to a
         {{ creature.name() }}{{ activeStrike?.rangestrike ? " with a rangestrike" : "" }}.

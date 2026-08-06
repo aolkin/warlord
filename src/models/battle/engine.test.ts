@@ -619,3 +619,16 @@ describe("Battle phase transitions", () => {
     expect(centaur.wounds).toBe(2)
   })
 })
+
+describe("Battle hydration", () => {
+  it("preserves creature ids across a persist/restore round trip", () => {
+    const attacking: BattleSide = { player: PlayerId.RED, score: 0, creatures: [CreatureType.LION] }
+    const defending: BattleSide = { player: PlayerId.BLUE, score: 0, creatures: [CreatureType.CENTAUR] }
+    const battle = new Battle(Terrain.PLAINS, HexEdge.FIRST, attacking, defending)
+    const idsBeforeHydration = battle.creatures.map(creature => creature.id)
+
+    const hydrated = Battle.hydrate(JSON.parse(JSON.stringify(battle)) as Battle)
+
+    expect(hydrated.creatures.map(creature => creature.id)).toEqual(idsBeforeHydration)
+  })
+})
