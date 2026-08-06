@@ -1,7 +1,8 @@
 import { matches } from "lodash-es"
 import { View } from "~/store/ui/selection"
 import { assert } from "~/utils/assert"
-import { Battle, BATTLE_PHASE_TYPES, BattleCreature, BattlePhaseType, RangestrikeTarget } from "../battle"
+import { Battle, BATTLE_PHASE_TYPES, BattleCreature, BattlePhaseType, BattleSide, RangestrikeTarget } from "../battle"
+import masterboard from "../masterboard"
 import { PlayerId } from "../player"
 import { Stack } from "../stack"
 import type { ActionContext, TitanGame } from "../game"
@@ -11,6 +12,10 @@ interface BattlePayload { attacking: Stack, defending: Stack }
 interface IStrikePayload { attacker: BattleCreature, rolls: number[] }
 interface AttackPayload extends IStrikePayload { target: BattleCreature, optionalToHit?: number }
 interface RangestrikePayload extends IStrikePayload { target: RangestrikeTarget }
+
+function toBattleSide(stack: Stack, score: number): BattleSide {
+  return { player: stack.owner, score, creatures: stack.creatures }
+}
 
 export interface GameBattle {
   getBattleActivePlayer(): PlayerId | undefined
@@ -68,7 +73,11 @@ export const gameBattle: GameBattle & ThisType<TitanGame> = {
 
   mInitiateBattle({ attacking, defending }: BattlePayload): void {
     assert(attacking.attackEdge !== undefined, "Cannot attack without coming from somewhere")
-    this.activeBattle = new Battle(attacking.hex, attacking.attackEdge, this, attacking, defending)
+    const terrain = masterboard.getHex(attacking.hex).terrain
+    const attackingSide = toBattleSide(attacking, this.getPlayerById()(attacking.owner)?.score ?? 0)
+    const defendingSide = toBattleSide(defending, this.getPlayerById()(defending.owner)?.score ?? 0)
+    this.activeBattle = new Battle(terrain, attacking.attackEdge, attackingSide, defendingSide)
+    this.activeBattleHex = attacking.hex
   },
 
   mNextBattlePhase(): void {

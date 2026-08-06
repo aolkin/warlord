@@ -79,6 +79,7 @@ export class TitanGame {
   activePlayer: number
   activePhase: MasterboardPhase
   activeBattle?: Battle
+  activeBattleHex?: number
 
   constructor(numPlayers: number, random: Random = defaultRandom) {
     this.round = 0
@@ -86,6 +87,7 @@ export class TitanGame {
     this.activePlayer = 0
     this.activeRoll = undefined
     this.activeBattle = undefined
+    this.activeBattleHex = undefined
     this.activePhase = MasterboardPhase.SPLIT
     const colors = random.shuffle(range(0, 5))
     this.players = range(0, numPlayers).map(i => new Player(colors[i], `Player ${i + 1}`))
