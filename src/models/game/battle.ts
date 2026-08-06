@@ -13,6 +13,10 @@ interface IStrikePayload { attacker: BattleCreature, rolls: number[] }
 interface AttackPayload extends IStrikePayload { target: BattleCreature, optionalToHit?: number }
 interface RangestrikePayload extends IStrikePayload { target: RangestrikeTarget }
 
+function toBattleSide(stack: Stack, score: number): BattleSide {
+  return { player: stack.owner, score, creatures: stack.creatures }
+}
+
 export interface GameBattle {
   getBattleActivePlayer(): PlayerId | undefined
   getBattlePhaseType(): BattlePhaseType | undefined
@@ -70,16 +74,8 @@ export const gameBattle: GameBattle & ThisType<TitanGame> = {
   mInitiateBattle({ attacking, defending }: BattlePayload): void {
     assert(attacking.attackEdge !== undefined, "Cannot attack without coming from somewhere")
     const terrain = masterboard.getHex(attacking.hex).terrain
-    const attackingSide: BattleSide = {
-      player: attacking.owner,
-      score: this.getPlayerById()(attacking.owner)?.score ?? 0,
-      creatures: attacking.creatures
-    }
-    const defendingSide: BattleSide = {
-      player: defending.owner,
-      score: this.getPlayerById()(defending.owner)?.score ?? 0,
-      creatures: defending.creatures
-    }
+    const attackingSide = toBattleSide(attacking, this.getPlayerById()(attacking.owner)?.score ?? 0)
+    const defendingSide = toBattleSide(defending, this.getPlayerById()(defending.owner)?.score ?? 0)
     this.activeBattle = new Battle(terrain, attacking.attackEdge, attackingSide, defendingSide)
     this.activeBattleHex = attacking.hex
   },
