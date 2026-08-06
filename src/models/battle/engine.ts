@@ -2,10 +2,8 @@ import { memoize } from "lodash-es"
 import { assert } from "~/utils/assert"
 import { div } from "~/utils/math"
 import { CREATURE_DATA, CreatureType } from "../creature"
-import { TitanGame } from "../game"
-import masterboard, { HexEdge, Terrain } from "../masterboard"
+import { HexEdge, Terrain } from "../masterboard"
 import { PlayerId } from "../player"
-import { Stack } from "../stack"
 import {
   BATTLE_BOARD_ADJACENCIES,
   BATTLE_BOARDS,
@@ -30,8 +28,16 @@ import {
   isRangestrike
 } from "./strike"
 
+// What a Battle needs to know about one of its two participants - deliberately not the full
+// Stack, since a Battle has no other use for a Stack's masterboard position, marker, splits,
+// or muster state.
+export interface BattleSide {
+  player: PlayerId
+  score: number
+  creatures: CreatureType[]
+}
+
 export class Battle {
-  readonly hex: number
   readonly attackerEdge: HexEdge
   readonly terrain: Terrain
   readonly attacker: PlayerId
@@ -42,43 +48,34 @@ export class Battle {
   phase: BattlePhase
   activeStrike?: ActiveStrike
 
-  // Parameters optional for Hydration
-  constructor(hex: number, edge: HexEdge, game: TitanGame, attacking?: Stack, defending?: Stack) {
+  constructor(terrain: Terrain, edge: HexEdge, attacking: BattleSide, defending: BattleSide) {
     this.creatureOnHex = memoize(this.creatureOnHex)
     this.round = 0
     this.phase = BattlePhase.DEFENDER_MOVE
-    this.hex = hex
-    this.terrain = masterboard.getHex(hex).terrain
-    this.attackerEdge = this.terrain === Terrain.TOWER ? HexEdge.SECOND : edge
-    if (attacking !== undefined && defending !== undefined) {
-      this.attacker = attacking.owner
-      this.defender = defending.owner
-      this.creatures = attacking.creatures.map(type => new BattleCreature({
-        type,
-        player: attacking.owner,
-        playerScore: game.getPlayerById()(attacking.owner)?.score ?? 0,
-        hex: 37 + this.attackerEdge * 2
-      })).concat(defending.creatures.map(type => new BattleCreature({
-        type,
-        player: defending.owner,
-        playerScore: game.getPlayerById()(defending.owner)?.score ?? 0,
-        hex: 36 + this.attackerEdge * 2
-      })))
-    } else {
-      // These will be overwritten during hydration, but satisfy TypeScript
-      this.attacker = 0
-      this.defender = 0
-      this.creatures = []
-    }
+    this.terrain = terrain
+    this.attackerEdge = terrain === Terrain.TOWER ? HexEdge.SECOND : edge
+    this.attacker = attacking.player
+    this.defender = defending.player
+    this.creatures = attacking.creatures.map(type => new BattleCreature({
+      type,
+      player: attacking.player,
+      playerScore: attacking.score,
+      hex: 37 + this.attackerEdge * 2
+    })).concat(defending.creatures.map(type => new BattleCreature({
+      type,
+      player: defending.player,
+      playerScore: defending.score,
+      hex: 36 + this.attackerEdge * 2
+    })))
   }
 
-  static hydrate(battle: Battle, game: TitanGame): Battle {
-    const hydrated = new Battle(battle.hex, battle.attackerEdge, game)
-    Object.assign(hydrated, {
+  static hydrate(battle: Battle): Battle {
+    const hydrated: Battle = Object.assign(Object.create(Battle.prototype) as Battle, {
       ...battle,
       creatures: battle.creatures.map(creature => new BattleCreature(creature)),
       activeStrike: battle.activeStrike === undefined ? undefined : new ActiveStrike(battle.activeStrike)
     })
+    hydrated.creatureOnHex = memoize(hydrated.creatureOnHex)
     return hydrated
   }
 

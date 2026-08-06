@@ -1,7 +1,8 @@
 import { matches } from "lodash-es"
 import { View } from "~/store/ui/selection"
 import { assert } from "~/utils/assert"
-import { Battle, BATTLE_PHASE_TYPES, BattleCreature, BattlePhaseType, RangestrikeTarget } from "../battle"
+import { Battle, BATTLE_PHASE_TYPES, BattleCreature, BattlePhaseType, BattleSide, RangestrikeTarget } from "../battle"
+import masterboard from "../masterboard"
 import { PlayerId } from "../player"
 import { Stack } from "../stack"
 import type { ActionContext, TitanGame } from "../game"
@@ -68,7 +69,19 @@ export const gameBattle: GameBattle & ThisType<TitanGame> = {
 
   mInitiateBattle({ attacking, defending }: BattlePayload): void {
     assert(attacking.attackEdge !== undefined, "Cannot attack without coming from somewhere")
-    this.activeBattle = new Battle(attacking.hex, attacking.attackEdge, this, attacking, defending)
+    const terrain = masterboard.getHex(attacking.hex).terrain
+    const attackingSide: BattleSide = {
+      player: attacking.owner,
+      score: this.getPlayerById()(attacking.owner)?.score ?? 0,
+      creatures: attacking.creatures
+    }
+    const defendingSide: BattleSide = {
+      player: defending.owner,
+      score: this.getPlayerById()(defending.owner)?.score ?? 0,
+      creatures: defending.creatures
+    }
+    this.activeBattle = new Battle(terrain, attacking.attackEdge, attackingSide, defendingSide)
+    this.activeBattleHex = attacking.hex
   },
 
   mNextBattlePhase(): void {

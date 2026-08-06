@@ -34,7 +34,7 @@ export const gamePersistence: GamePersistence & ThisType<TitanGame> = {
         assign(new Player(player.id, player.name), player)),
       stacks: hydration.stacks.map((stack: Stack) =>
         assign(new Stack(stack.owner, stack.hex, stack.marker, stack.creatures), stack)),
-      activeBattle: hydration.activeBattle !== undefined ? Battle.hydrate(hydration.activeBattle, this) : undefined
+      activeBattle: hydration.activeBattle !== undefined ? Battle.hydrate(hydration.activeBattle) : undefined
     })
   },
 

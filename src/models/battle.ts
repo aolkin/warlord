@@ -27,3 +27,4 @@ export {
 export type { ActiveStrikeHit, IActiveStrike, RangestrikeTarget, Strike } from "./battle/strike"
 
 export { Battle } from "./battle/engine"
+export type { BattleSide } from "./battle/engine"
