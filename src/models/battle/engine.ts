@@ -223,6 +223,8 @@ export class Battle {
     )
   }
 
+  // TODO: rule 11.3 (a creature already in contact with an enemy may not move) is not enforced
+  // anywhere in this method or its callers - no engagement check exists in the movement-legality path.
   movementFor(creature: BattleCreature): Set<number> {
     if (creature.initialHex === 0) {
       return new Set<number>()
@@ -257,6 +259,9 @@ export class Battle {
     return this.creatures.filter(creature => creature.player !== whom.player &&
       (includeDead || creature.getRemainingHp() > 0) &&
       adjacencies.includes(creature.hex) &&
+      // TODO: only checks the cliff hazard in the fixed direction (whom -> creature), so it misses
+      // cliffs where `creature` (not `whom`) is the upper hex - creatureMovementCost above shows the
+      // correct pattern of querying both directions and ORing the result.
       this.getBoard().getEdgeHazard(whom.hex, creature.hex) !== EdgeHazard.CLIFF)
   }
 
@@ -524,6 +529,8 @@ export class Battle {
     }
   }
 
+  // TODO: rolls is never validated against the strike's expected dice count (see
+  // getAdjustedStrike/getRangestrike), so a caller can pass the wrong number of dice unnoticed.
   private performAttack(attacker: BattleCreature, defender: BattleCreature,
     rolls: number[], toHit: number, rangestrike: boolean): void {
     const totalHits = rolls.filter(roll => roll >= toHit).length
