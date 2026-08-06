@@ -6,13 +6,11 @@ import { UNATTAINABLE_MOVEMENT_COST } from "./board"
 import { Battle, BattleSide } from "./engine"
 import { BattlePhase } from "./strike"
 
-const PLAINS_TERRAIN = Terrain.PLAINS
-
 describe("Battle engagement", () => {
   it("starts with no engagements or pending strikes before anyone has moved", () => {
     const attacking: BattleSide = { player: PlayerId.RED, score: 0, creatures: [CreatureType.LION] }
     const defending: BattleSide = { player: PlayerId.BLUE, score: 0, creatures: [CreatureType.CENTAUR] }
-    const battle = new Battle(PLAINS_TERRAIN, HexEdge.FIRST, attacking, defending)
+    const battle = new Battle(Terrain.PLAINS, HexEdge.FIRST, attacking, defending)
 
     expect(battle.phase).toBe(BattlePhase.DEFENDER_MOVE)
     expect(battle.getPendingStrikes()).toEqual([])
@@ -22,7 +20,7 @@ describe("Battle engagement", () => {
   it("moves into contact, resolves a strike, and inflicts casualties", () => {
     const attacking: BattleSide = { player: PlayerId.RED, score: 0, creatures: [CreatureType.LION] }
     const defending: BattleSide = { player: PlayerId.BLUE, score: 0, creatures: [CreatureType.CENTAUR] }
-    const battle = new Battle(PLAINS_TERRAIN, HexEdge.FIRST, attacking, defending)
+    const battle = new Battle(Terrain.PLAINS, HexEdge.FIRST, attacking, defending)
     const lion = battle.getOffense()[0]
     const centaur = battle.getDefense()[0]
 
@@ -55,7 +53,7 @@ describe("Battle engagement", () => {
   it("computes to-hit purely from the skill difference on hazard-free terrain", () => {
     const attacking: BattleSide = { player: PlayerId.RED, score: 0, creatures: [CreatureType.OGRE] }
     const defending: BattleSide = { player: PlayerId.BLUE, score: 0, creatures: [CreatureType.TROLL] }
-    const battle = new Battle(PLAINS_TERRAIN, HexEdge.FIRST, attacking, defending)
+    const battle = new Battle(Terrain.PLAINS, HexEdge.FIRST, attacking, defending)
     const ogre = battle.getOffense()[0]
     const troll = battle.getDefense()[0]
 
@@ -75,7 +73,7 @@ describe("Rangestrike targets", () => {
   } {
     const attacking: BattleSide = { player: PlayerId.RED, score: 0, creatures: [attackerType] }
     const defending: BattleSide = { player: PlayerId.BLUE, score: 0, creatures: [CreatureType.CENTAUR] }
-    const battle = new Battle(PLAINS_TERRAIN, HexEdge.FIRST, attacking, defending)
+    const battle = new Battle(Terrain.PLAINS, HexEdge.FIRST, attacking, defending)
     battle.phase = BattlePhase.ATTACKER_STRIKE
     const attacker = battle.getOffense()[0]
     const target = battle.getDefense()[0]
@@ -239,7 +237,7 @@ describe("Carryover", () => {
   } {
     const attacking: BattleSide = { player: PlayerId.RED, score: 0, creatures: [CreatureType.LION] }
     const defending: BattleSide = { player: PlayerId.BLUE, score: 0, creatures: [CreatureType.CENTAUR, CreatureType.CENTAUR] }
-    const battle = new Battle(PLAINS_TERRAIN, HexEdge.FIRST, attacking, defending)
+    const battle = new Battle(Terrain.PLAINS, HexEdge.FIRST, attacking, defending)
     battle.phase = BattlePhase.ATTACKER_STRIKE
     const lion = battle.getOffense()[0]
     const [centaur1, centaur2] = battle.getDefense()
