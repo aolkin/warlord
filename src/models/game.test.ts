@@ -95,50 +95,37 @@ describe("TitanGame movement legality", () => {
     expect(getters.pathsForHex(100).every(p => p.foe === undefined)).toBe(true)
   })
 
-  it("excludes a destination occupied by one of the mover's own stacks", () => {
-    const game = newGame()
-    game.stacks.push(new Stack(game.players[0].id, 3, 5))
-    game.activePhase = MasterboardPhase.MOVE
-    game.activeRoll = 1
-    const getters = createGetters(game)
+  it("excludes a destination occupied by the mover's own stack, but flags one occupied by an enemy stack", () => {
+    const ownStackGame = newGame()
+    ownStackGame.stacks.push(new Stack(ownStackGame.players[0].id, 3, 5))
+    ownStackGame.activePhase = MasterboardPhase.MOVE
+    ownStackGame.activeRoll = 1
+    const ownDestinations = createGetters(ownStackGame).pathsForHex(100)
+      .map(p => p.path.at(-1)!.id).sort((a, b) => a - b)
+    expect(ownDestinations).toEqual([41, 101])
 
-    const destinations = getters.pathsForHex(100).map(p => p.path.at(-1)!.id).sort((a, b) => a - b)
-    expect(destinations).toEqual([41, 101])
+    const enemyStackGame = newGame()
+    enemyStackGame.stacks.push(new Stack(enemyStackGame.players[1].id, 3, 5))
+    enemyStackGame.activePhase = MasterboardPhase.MOVE
+    enemyStackGame.activeRoll = 1
+    const toEnemyHex = createGetters(enemyStackGame).pathsForHex(100).find(p => p.path.at(-1)!.id === 3)
+    expect(toEnemyHex?.foe?.owner).toBe(enemyStackGame.players[1].id)
   })
 
-  it("flags an enemy stack at the destination instead of excluding it", () => {
-    const game = newGame()
-    game.stacks.push(new Stack(game.players[1].id, 3, 5))
-    game.activePhase = MasterboardPhase.MOVE
-    game.activeRoll = 1
-    const getters = createGetters(game)
-
-    const toEnemyHex = getters.pathsForHex(100).find(p => p.path.at(-1)!.id === 3)
-    expect(toEnemyHex?.foe?.owner).toBe(game.players[1].id)
-  })
-
-  it("replaces the arrow exits of a hex with a square edge on the first step", () => {
-    const game = newGame()
+  it.each([
     // Hex 4 has a square edge (to 103) alongside its arrow edge (to 5).
-    game.stacks[0].hex = 4
-    game.activePhase = MasterboardPhase.MOVE
-    game.activeRoll = 1
-    const getters = createGetters(game)
-
-    const destinations = getters.pathsForHex(4).map(p => p.path.at(-1)!.id)
-    expect(destinations).toEqual([103])
-  })
-
-  it("adds a circle edge to the arrow exits on the first step", () => {
-    const game = newGame()
+    { label: "square edge replaces the arrow exit", startHex: 4, expected: [103] },
     // Hex 1 has a circle edge (to 1000) alongside its arrow edge (to 2), and no square edge.
-    game.stacks[0].hex = 1
+    { label: "circle edge adds to the arrow exit", startHex: 1, expected: [2, 1000] }
+  ])("$label on the first step", ({ startHex, expected }) => {
+    const game = newGame()
+    game.stacks[0].hex = startHex
     game.activePhase = MasterboardPhase.MOVE
     game.activeRoll = 1
     const getters = createGetters(game)
 
-    const destinations = getters.pathsForHex(1).map(p => p.path.at(-1)!.id).sort((a, b) => a - b)
-    expect(destinations).toEqual([2, 1000])
+    const destinations = getters.pathsForHex(startHex).map(p => p.path.at(-1)!.id).sort((a, b) => a - b)
+    expect(destinations).toEqual(expected)
   })
 
   it("continues from the entry hex using normal arrow movement on later steps", () => {
@@ -292,30 +279,24 @@ describe("TitanGame turn and phase transitions", () => {
     expect(game.activePhase).toBe(MasterboardPhase.MUSTER)
   })
 
-  it("rotates to the next player after musters without advancing the round", async () => {
+  it("rotates to the next player after musters, then wraps to the first player and advances the round on the next muster", async () => {
     const game = newGame()
-    game.activePhase = MasterboardPhase.MUSTER
     const context = createActionContext(game)
+    game.activePhase = MasterboardPhase.MUSTER
 
     await game.doNextPhase(context)
-
     expect(game.activePhase).toBe(MasterboardPhase.SPLIT)
     expect(game.activePlayer).toBe(1)
     expect(game.round).toBe(0)
-  })
 
-  it("wraps to the first player, advances the round, and clears any stale pending muster for the new active player", async () => {
-    const game = newGame()
-    game.activePlayer = 1
     game.activePhase = MasterboardPhase.MUSTER
     game.stacks[0].currentMuster = [CreatureType.CENTAUR, [CreatureType.CENTAUR, 0]]
-    const context = createActionContext(game)
 
     await game.doNextPhase(context)
-
     expect(game.activePhase).toBe(MasterboardPhase.SPLIT)
     expect(game.activePlayer).toBe(0)
     expect(game.round).toBe(1)
+    // Wrapping to the new active player clears any stale pending muster left on their stack.
     expect(game.stacks[0].currentMuster).toBeUndefined()
   })
 })
@@ -332,32 +313,28 @@ describe("TitanGame mustering (doSetRecruit)", () => {
     })).rejects.toThrow("not eligible to muster")
   })
 
-  it("refuses to recruit a non-lord creature the pool has run out of", async () => {
+  it.each([
+    { label: "a non-lord", creatureType: CreatureType.LION, expectSuccess: false },
+    { label: "a lord", creatureType: CreatureType.TITAN, expectSuccess: true }
+  ])("recruiting $label when its pool is exhausted: succeeds only for the lord", async ({
+    creatureType, expectSuccess
+  }) => {
     const game = newGame()
     const stack = new Stack(game.players[0].id, 100, 1, [CreatureType.CENTAUR, CreatureType.CENTAUR])
     stack.hex = 101 // moved
     game.stacks.push(stack)
-    game.creaturePool[CreatureType.LION] = 0
+    game.creaturePool[creatureType] = 0
     game.activePhase = MasterboardPhase.MUSTER
     const context = createActionContext(game)
+    const recruit: [CreatureType, [CreatureType, number]] = [creatureType, [CreatureType.CENTAUR, 2]]
 
-    await expect(game.doSetRecruit(context, {
-      stack, recruit: [CreatureType.LION, [CreatureType.CENTAUR, 2]]
-    })).rejects.toThrow("No more of the requested creature remaining")
-  })
-
-  it("allows recruiting a lord type even if its pool were exhausted", async () => {
-    const game = newGame()
-    const stack = new Stack(game.players[0].id, 100, 1, [CreatureType.CENTAUR])
-    stack.hex = 101
-    game.stacks.push(stack)
-    game.creaturePool[CreatureType.TITAN] = 0
-    game.activePhase = MasterboardPhase.MUSTER
-    const context = createActionContext(game)
-
-    await game.doSetRecruit(context, { stack, recruit: [CreatureType.TITAN, [CreatureType.CENTAUR, 0]] })
-
-    expect(stack.currentMuster).toEqual([CreatureType.TITAN, [CreatureType.CENTAUR, 0]])
+    if (expectSuccess) {
+      await game.doSetRecruit(context, { stack, recruit })
+      expect(stack.currentMuster).toEqual(recruit)
+    } else {
+      await expect(game.doSetRecruit(context, { stack, recruit }))
+        .rejects.toThrow("No more of the requested creature remaining")
+    }
   })
 
   it("applies the pending muster to the stack and pool when the muster phase ends", async () => {
