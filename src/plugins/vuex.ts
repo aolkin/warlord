@@ -1,12 +1,10 @@
 import { createStore, Store, useStore } from "vuex"
 import { TitanGame } from "~/models/game"
 import game from "~/store/game"
-import ui, { UiState } from "~/store/ui"
-import { provideVuexStore } from "~/stores/ui/selection"
+import { provideVuexStore, useSelectionStore } from "~/stores/ui/selection"
 
 export interface State {
   game: TitanGame
-  ui: UiState
 }
 
 // vuex's useStore() is untyped without an InjectionKey; this project has a single
@@ -22,7 +20,7 @@ const store = createStore({
     encodedSave: undefined
   }),
   modules: {
-    game, ui
+    game
   },
   mutations: {
     setEncodedSaveData(state, data?: string) {
@@ -32,7 +30,7 @@ const store = createStore({
   actions: {
     reset({ dispatch }) {
       void dispatch("game/reset")
-      void dispatch("ui/reset")
+      useSelectionStore().reset()
     }
   }
 })
