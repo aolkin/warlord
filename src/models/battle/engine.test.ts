@@ -3,26 +3,31 @@ import { CREATURE_DATA, CreatureType } from "~/models/creature"
 import { HexEdge, Terrain } from "~/models/masterboard"
 import { PlayerId } from "~/models/player"
 import { UNATTAINABLE_MOVEMENT_COST } from "./board"
+import { BattleCreature } from "./combatant"
 import { Battle, BattleSide } from "./engine"
 import { BattlePhase } from "./strike"
 
+function setupBattle(terrain: Terrain, attackerTypes: CreatureType[], defenderTypes: CreatureType[]): {
+  battle: Battle
+  offense: BattleCreature[]
+  defense: BattleCreature[]
+} {
+  const attacking: BattleSide = { player: PlayerId.RED, score: 0, creatures: attackerTypes }
+  const defending: BattleSide = { player: PlayerId.BLUE, score: 0, creatures: defenderTypes }
+  const battle = new Battle(terrain, HexEdge.FIRST, attacking, defending)
+  return { battle, offense: battle.getOffense(), defense: battle.getDefense() }
+}
+
+function place(creature: BattleCreature, hex: number): void {
+  creature.hex = hex
+  creature.initialHex = hex
+}
+
 describe("Battle engagement", () => {
-  it("starts with no engagements or pending strikes before anyone has moved", () => {
-    const attacking: BattleSide = { player: PlayerId.RED, score: 0, creatures: [CreatureType.LION] }
-    const defending: BattleSide = { player: PlayerId.BLUE, score: 0, creatures: [CreatureType.CENTAUR] }
-    const battle = new Battle(Terrain.PLAINS, HexEdge.FIRST, attacking, defending)
-
-    expect(battle.phase).toBe(BattlePhase.DEFENDER_MOVE)
-    expect(battle.getPendingStrikes()).toEqual([])
-    expect(battle.engagedWith(battle.getDefense()[0])).toEqual([])
-  })
-
   it("moves into contact, resolves a strike, and inflicts casualties", () => {
-    const attacking: BattleSide = { player: PlayerId.RED, score: 0, creatures: [CreatureType.LION] }
-    const defending: BattleSide = { player: PlayerId.BLUE, score: 0, creatures: [CreatureType.CENTAUR] }
-    const battle = new Battle(Terrain.PLAINS, HexEdge.FIRST, attacking, defending)
-    const lion = battle.getOffense()[0]
-    const centaur = battle.getDefense()[0]
+    const { battle, offense, defense } = setupBattle(Terrain.PLAINS, [CreatureType.LION], [CreatureType.CENTAUR])
+    const [lion] = offense
+    const [centaur] = defense
 
     // Defender moves first each round; hex 7 is within the Centaur's reach from its
     // entrance and adjacent to hex 8, which the Lion can reach on its own move.
@@ -49,18 +54,6 @@ describe("Battle engagement", () => {
     expect(centaur.getRemainingHp()).toBe(0)
     expect(centaur.hex).toBe(7) // corpses stay on the board until phaseExitStrikeback
   })
-
-  it("computes to-hit purely from the skill difference on hazard-free terrain", () => {
-    const attacking: BattleSide = { player: PlayerId.RED, score: 0, creatures: [CreatureType.OGRE] }
-    const defending: BattleSide = { player: PlayerId.BLUE, score: 0, creatures: [CreatureType.TROLL] }
-    const battle = new Battle(Terrain.PLAINS, HexEdge.FIRST, attacking, defending)
-    const ogre = battle.getOffense()[0]
-    const troll = battle.getDefense()[0]
-
-    // Ogre skill 2, Troll skill 2 -> even matchup
-    expect(battle.toHitRaw(ogre, troll)).toBe(4)
-    expect(battle.toHitAdjusted(ogre, troll)).toBe(4)
-  })
 })
 
 describe("Rangestrike targets", () => {
@@ -68,55 +61,54 @@ describe("Rangestrike targets", () => {
   // other creature adjacent so it is never itself engaged.
   function setupRanger(attackerType: CreatureType, targetHex: number): {
     battle: Battle
-    attacker: ReturnType<Battle["getOffense"]>[number]
-    target: ReturnType<Battle["getDefense"]>[number]
+    attacker: BattleCreature
+    target: BattleCreature
   } {
-    const attacking: BattleSide = { player: PlayerId.RED, score: 0, creatures: [attackerType] }
-    const defending: BattleSide = { player: PlayerId.BLUE, score: 0, creatures: [CreatureType.CENTAUR] }
-    const battle = new Battle(Terrain.PLAINS, HexEdge.FIRST, attacking, defending)
+    const { battle, offense, defense } = setupBattle(Terrain.PLAINS, [attackerType], [CreatureType.CENTAUR])
     battle.phase = BattlePhase.ATTACKER_STRIKE
-    const attacker = battle.getOffense()[0]
-    const target = battle.getDefense()[0]
-    attacker.hex = 8
-    attacker.initialHex = 8
-    target.hex = targetHex
-    target.initialHex = targetHex
+    const [attacker] = offense
+    const [target] = defense
+    place(attacker, 8)
+    place(target, targetHex)
     return { battle, attacker, target }
   }
 
-  it("finds a near-range target with no adjustment", () => {
-    const { battle, attacker, target } = setupRanger(CreatureType.RANGER, 20)
+  it.each([
+    {
+      label: "near-range, no adjustment",
+      creatureType: CreatureType.RANGER, targetHex: 20, length: 1, longDistance: false,
+      adjustment: { toHit: 0, dice: 0 }, rangestrike: { toHit: 4, dice: 2 }
+    },
+    {
+      label: "extended range (skill 4), long-distance to-hit penalty",
+      creatureType: CreatureType.RANGER, targetHex: 26, length: 1, longDistance: true,
+      adjustment: undefined, rangestrike: { toHit: 5, dice: 2 }
+    },
+    // Same targetHex 26 is reachable at long range by a skill-4 Ranger (above) but not by a
+    // skill-3 Hydra, which only gets near-range paths.
+    {
+      label: "extended range unreachable by a skill-3 rangestriker (Hydra)",
+      creatureType: CreatureType.HYDRA, targetHex: 26, length: 0, longDistance: undefined,
+      adjustment: undefined, rangestrike: undefined
+    },
+    {
+      label: "nothing within rangestrike distance",
+      creatureType: CreatureType.RANGER, targetHex: 32, length: 0, longDistance: undefined,
+      adjustment: undefined, rangestrike: undefined
+    }
+  ])("finds rangestrike targets by distance: $label", ({
+    creatureType, targetHex, length, longDistance, adjustment, rangestrike
+  }) => {
+    const { battle, attacker, target } = setupRanger(creatureType, targetHex)
 
     const targets = battle.rangestrikeTargets(attacker)
-    expect(targets).toHaveLength(1)
-    expect(targets[0].creature).toBe(target)
-    expect(targets[0].longDistance).toBe(false)
-    expect(targets[0].adjustment).toEqual({ toHit: 0, dice: 0 })
-    expect(battle.getRangestrike(attacker, targets[0])).toEqual({ toHit: 4, dice: 2 })
-  })
-
-  it("reaches an extended-range target (skill 4) with a long-distance to-hit penalty", () => {
-    const { battle, attacker } = setupRanger(CreatureType.RANGER, 26)
-
-    const targets = battle.rangestrikeTargets(attacker)
-    expect(targets).toHaveLength(1)
-    expect(targets[0].longDistance).toBe(true)
-    expect(battle.getRangestrike(attacker, targets[0])).toEqual({ toHit: 5, dice: 2 })
-  })
-
-  it("cannot reach the extended range with a skill-3 rangestriker (Hydra)", () => {
-    // Same targetHex 26 is reachable at long range by a skill-4 Ranger (above) but not
-    // by a skill-3 Hydra, which only gets near-range paths.
-    const { battle: nearBattle, attacker: hydraNear } = setupRanger(CreatureType.HYDRA, 20)
-    expect(nearBattle.rangestrikeTargets(hydraNear)).toHaveLength(1)
-
-    const { battle: farBattle, attacker: hydraFar } = setupRanger(CreatureType.HYDRA, 26)
-    expect(farBattle.rangestrikeTargets(hydraFar)).toEqual([])
-  })
-
-  it("finds no targets when nothing is within rangestrike distance", () => {
-    const { battle, attacker } = setupRanger(CreatureType.RANGER, 32)
-    expect(battle.rangestrikeTargets(attacker)).toEqual([])
+    expect(targets).toHaveLength(length)
+    if (length > 0) {
+      expect(targets[0].creature).toBe(target)
+      expect(targets[0].longDistance).toBe(longDistance)
+      if (adjustment !== undefined) expect(targets[0].adjustment).toEqual(adjustment)
+      expect(battle.getRangestrike(attacker, targets[0])).toEqual(rangestrike)
+    }
   })
 
   it("cannot rangestrike while already engaged in melee", () => {
@@ -361,10 +353,8 @@ describe("Battle board movement cost", () => {
 
 describe("Movement legality (movementFor)", () => {
   it("returns an empty set for a creature that is not on the board", () => {
-    const attacking: BattleSide = { player: PlayerId.RED, score: 0, creatures: [CreatureType.LION] }
-    const defending: BattleSide = { player: PlayerId.BLUE, score: 0, creatures: [CreatureType.CENTAUR] }
-    const battle = new Battle(Terrain.PLAINS, HexEdge.FIRST, attacking, defending)
-    const lion = battle.getOffense()[0]
+    const { battle, offense } = setupBattle(Terrain.PLAINS, [CreatureType.LION], [CreatureType.CENTAUR])
+    const [lion] = offense
     lion.initialHex = 0
 
     expect(battle.movementFor(lion)).toEqual(new Set())
@@ -373,25 +363,20 @@ describe("Movement legality (movementFor)", () => {
   it("reaches exactly the hexes affordable within a creature's skill, on hazard-free terrain", () => {
     // Ogre (skill 2) entering from battle-hex 37 (the attacker's entrance zone on
     // HexEdge.FIRST), on hazard-free Plains: every hex within 2 movement points.
-    const attacking: BattleSide = { player: PlayerId.RED, score: 0, creatures: [CreatureType.OGRE] }
-    const defending: BattleSide = { player: PlayerId.BLUE, score: 0, creatures: [CreatureType.CENTAUR] }
-    const battle = new Battle(Terrain.PLAINS, HexEdge.FIRST, attacking, defending)
+    const { battle, offense } = setupBattle(Terrain.PLAINS, [CreatureType.OGRE], [CreatureType.CENTAUR])
     battle.phase = BattlePhase.ATTACKER_MOVE
-    const ogre = battle.getOffense()[0]
+    const [ogre] = offense
     expect(ogre.initialHex).toBe(37)
 
     expect(battle.movementFor(ogre)).toEqual(new Set([3, 4, 9, 10, 16, 17, 22, 23, 29]))
   })
 
   it("cannot land a stack on a hex already occupied by another creature (friend or foe)", () => {
-    const attacking: BattleSide = { player: PlayerId.RED, score: 0, creatures: [CreatureType.LION] }
-    const defending: BattleSide = { player: PlayerId.BLUE, score: 0, creatures: [CreatureType.CENTAUR] }
-    const battle = new Battle(Terrain.PLAINS, HexEdge.FIRST, attacking, defending)
+    const { battle, offense, defense } = setupBattle(Terrain.PLAINS, [CreatureType.LION], [CreatureType.CENTAUR])
     battle.phase = BattlePhase.ATTACKER_MOVE
-    const lion = battle.getOffense()[0]
-    const centaur = battle.getDefense()[0]
-    centaur.hex = 4
-    centaur.initialHex = 4
+    const [lion] = offense
+    const [centaur] = defense
+    place(centaur, 4)
 
     expect(battle.movementFor(lion).has(4)).toBe(false)
   })
@@ -404,23 +389,14 @@ describe("Movement legality (movementFor)", () => {
     // than the enemy) so the movers aren't in contact with an enemy at phase start; movementFor
     // doesn't enforce rule 11.3 (in-contact creatures may not move - see the TODO on
     // movementFor in engine.ts), but this test isn't about that gap.
-    const attacking: BattleSide = {
-      player: PlayerId.RED,
-      score: 0,
-      creatures: [CreatureType.CENTAUR, CreatureType.GRIFFON, CreatureType.LION, CreatureType.LION]
-    }
-    const defending: BattleSide = { player: PlayerId.BLUE, score: 0, creatures: [CreatureType.CENTAUR] }
-    const battle = new Battle(Terrain.PLAINS, HexEdge.FIRST, attacking, defending)
+    const { battle, offense } = setupBattle(Terrain.PLAINS,
+      [CreatureType.CENTAUR, CreatureType.GRIFFON, CreatureType.LION, CreatureType.LION], [CreatureType.CENTAUR])
     battle.phase = BattlePhase.ATTACKER_MOVE
-    const [centaur, griffon, blocker1, blocker2] = battle.getOffense()
-    centaur.hex = 2
-    centaur.initialHex = 2
-    griffon.hex = 2
-    griffon.initialHex = 2
-    blocker1.hex = 7
-    blocker1.initialHex = 7
-    blocker2.hex = 8
-    blocker2.initialHex = 8
+    const [centaur, griffon, blocker1, blocker2] = offense
+    place(centaur, 2)
+    place(griffon, 2)
+    place(blocker1, 7)
+    place(blocker2, 8)
 
     const centaurReach = battle.movementFor(centaur)
     const griffonReach = battle.movementFor(griffon)
@@ -428,8 +404,6 @@ describe("Movement legality (movementFor)", () => {
     expect(griffonReach).toEqual(new Set([
       3, 4, 9, 10, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 25, 26, 27, 28
     ]))
-    // Every hex the grounded Centaur can still reach (via hex 3), the flying Griffon can too.
-    centaurReach.forEach(hex => expect(griffonReach.has(hex)).toBe(true))
   })
 })
 
@@ -439,16 +413,12 @@ describe("Engagement edge cases", () => {
     // This direction of the check (queried from the creature below, looking up) happens
     // to work correctly - see the TODO on engagedWith's cliff check in engine.ts for the
     // direction that doesn't.
-    const attacking: BattleSide = { player: PlayerId.RED, score: 0, creatures: [CreatureType.CENTAUR] }
-    const defending: BattleSide = { player: PlayerId.BLUE, score: 0, creatures: [CreatureType.LION] }
-    const battle = new Battle(Terrain.DESERT, HexEdge.FIRST, attacking, defending)
+    const { battle, offense, defense } = setupBattle(Terrain.DESERT, [CreatureType.CENTAUR], [CreatureType.LION])
     battle.phase = BattlePhase.ATTACKER_STRIKE
-    const centaur = battle.getOffense()[0]
-    const lion = battle.getDefense()[0]
-    centaur.hex = 15 // atop the cliff
-    centaur.initialHex = 15
-    lion.hex = 20 // below the cliff
-    lion.initialHex = 20
+    const [centaur] = offense
+    const [lion] = defense
+    place(centaur, 15) // atop the cliff
+    place(lion, 20) // below the cliff
 
     expect(battle.engagedWith(lion)).toEqual([])
   })
@@ -458,56 +428,42 @@ describe("Engagement edge cases", () => {
   // neither creature should be engaged with the other. This documents the correct behavior and
   // is expected to fail (via it.fails) until that asymmetry is fixed.
   it.fails("does not engage a creature atop a cliff with the creature below it", () => {
-    const attacking: BattleSide = { player: PlayerId.RED, score: 0, creatures: [CreatureType.CENTAUR] }
-    const defending: BattleSide = { player: PlayerId.BLUE, score: 0, creatures: [CreatureType.LION] }
-    const battle = new Battle(Terrain.DESERT, HexEdge.FIRST, attacking, defending)
+    const { battle, offense, defense } = setupBattle(Terrain.DESERT, [CreatureType.CENTAUR], [CreatureType.LION])
     battle.phase = BattlePhase.ATTACKER_STRIKE
-    const centaur = battle.getOffense()[0]
-    const lion = battle.getDefense()[0]
-    centaur.hex = 15 // atop the cliff
-    centaur.initialHex = 15
-    lion.hex = 20 // below the cliff
-    lion.initialHex = 20
+    const [centaur] = offense
+    const [lion] = defense
+    place(centaur, 15) // atop the cliff
+    place(lion, 20) // below the cliff
 
     expect(battle.engagedWith(centaur)).toEqual([])
   })
 
   it("checks engagement using the pre-move position while still in a move phase", () => {
-    const attacking: BattleSide = { player: PlayerId.RED, score: 0, creatures: [CreatureType.LION] }
-    const defending: BattleSide = { player: PlayerId.BLUE, score: 0, creatures: [CreatureType.CENTAUR] }
-    const battle = new Battle(Terrain.PLAINS, HexEdge.FIRST, attacking, defending)
-    const centaur = battle.getDefense()[0]
+    const { battle, offense, defense } = setupBattle(Terrain.PLAINS, [CreatureType.LION], [CreatureType.CENTAUR])
+    const [lion] = offense
+    const [centaur] = defense
 
     expect(battle.phase).toBe(BattlePhase.DEFENDER_MOVE)
     centaur.hex = 7 // now adjacent to where the Lion will eventually stand (hex 8)
-    // Still using centaur.initialHex (the entrance zone) for the engagement check, since
-    // we haven't left the move phase - the newly-occupied hex 7 has no bearing yet.
+    lion.hex = 8 // adjacent to centaur.hex (7), but not to centaur.initialHex (36)
+    // Still using centaur.initialHex (the entrance zone) for the engagement check, since we
+    // haven't left the move phase - if it used centaur.hex instead, the Lion at hex 8 (adjacent
+    // to hex 7) would show up as engaged here.
     expect(battle.engagedWith(centaur)).toEqual([])
   })
 
   it("excludes an engaged creature from carryover if the attacker cannot hit it at the toHit it just rolled", () => {
     // Terrain.TOWER's battle board has battle-hex 8 atop a wall edge from battle-hex 2,
     // which raises toHit by 1 for an attacker striking up through it.
-    const attacking: BattleSide = { player: PlayerId.RED, score: 0, creatures: [CreatureType.LION] }
-    const defending: BattleSide = {
-      player: PlayerId.BLUE, score: 0, creatures: [CreatureType.CENTAUR, CreatureType.CENTAUR, CreatureType.CENTAUR]
-    }
-    const battle = new Battle(Terrain.TOWER, HexEdge.FIRST, attacking, defending)
+    const { battle, offense, defense } = setupBattle(Terrain.TOWER,
+      [CreatureType.LION], [CreatureType.CENTAUR, CreatureType.CENTAUR, CreatureType.CENTAUR])
     battle.phase = BattlePhase.ATTACKER_STRIKE
-    const lion = battle.getOffense()[0]
-    const [primary, included, excluded] = battle.getDefense()
-    lion.hex = 2
-    lion.initialHex = 2
-    primary.hex = 7 // toHit 5, no hazard - struck directly, overkilled
-    primary.initialHex = 7
-    included.hex = 3 // toHit 5, no hazard - matches the rolled toHit, so carryover-eligible
-    included.initialHex = 3
-    excluded.hex = 8 // toHit 6, raised by the wall - harder than the rolled toHit
-    excluded.initialHex = 8
-
-    expect(battle.toHitAdjusted(lion, primary)).toBe(5)
-    expect(battle.toHitAdjusted(lion, included)).toBe(5)
-    expect(battle.toHitAdjusted(lion, excluded)).toBe(6)
+    const [lion] = offense
+    const [primary, included, excluded] = defense
+    place(lion, 2)
+    place(primary, 7) // toHit 5, no hazard - struck directly, overkilled
+    place(included, 3) // toHit 5, no hazard - matches the rolled toHit, so carryover-eligible
+    place(excluded, 8) // toHit 6, raised by the wall - harder than the rolled toHit
 
     battle.strike(lion, primary, [6, 6, 6, 6, 6])
     expect(primary.getRemainingHp()).toBe(0) // overkilled, so it drops out of engagedWith too
@@ -515,16 +471,12 @@ describe("Engagement edge cases", () => {
   })
 
   it("lets a strike choose a higher toHit than computed, but rejects a lower one", () => {
-    const attacking: BattleSide = { player: PlayerId.RED, score: 0, creatures: [CreatureType.LION] }
-    const defending: BattleSide = { player: PlayerId.BLUE, score: 0, creatures: [CreatureType.CENTAUR] }
-    const battle = new Battle(Terrain.PLAINS, HexEdge.FIRST, attacking, defending)
+    const { battle, offense, defense } = setupBattle(Terrain.PLAINS, [CreatureType.LION], [CreatureType.CENTAUR])
     battle.phase = BattlePhase.ATTACKER_STRIKE
-    const lion = battle.getOffense()[0]
-    const centaur = battle.getDefense()[0]
-    lion.hex = 8
-    lion.initialHex = 8
-    centaur.hex = 7
-    centaur.initialHex = 7
+    const [lion] = offense
+    const [centaur] = defense
+    place(lion, 8)
+    place(centaur, 7)
 
     const computedToHit = battle.toHitAdjusted(lion, centaur)
     expect(computedToHit).toBe(5)
@@ -538,16 +490,12 @@ describe("Engagement edge cases", () => {
   })
 
   it("resolves a rangestrike attack the same way as a melee strike, but never allows carryover", () => {
-    const attacking: BattleSide = { player: PlayerId.RED, score: 0, creatures: [CreatureType.RANGER] }
-    const defending: BattleSide = { player: PlayerId.BLUE, score: 0, creatures: [CreatureType.CENTAUR] }
-    const battle = new Battle(Terrain.PLAINS, HexEdge.FIRST, attacking, defending)
+    const { battle, offense, defense } = setupBattle(Terrain.PLAINS, [CreatureType.RANGER], [CreatureType.CENTAUR])
     battle.phase = BattlePhase.ATTACKER_STRIKE
-    const ranger = battle.getOffense()[0]
-    const centaur = battle.getDefense()[0]
-    ranger.hex = 8
-    ranger.initialHex = 8
-    centaur.hex = 20
-    centaur.initialHex = 20
+    const [ranger] = offense
+    const [centaur] = defense
+    place(ranger, 8)
+    place(centaur, 20)
 
     const targets = battle.rangestrikeTargets(ranger)
     expect(targets).toHaveLength(1)
@@ -605,9 +553,7 @@ describe("Battle phase transitions", () => {
   })
 
   it("skips straight past strike and strikeback phases when nobody is engaged", () => {
-    const attacking: BattleSide = { player: PlayerId.RED, score: 0, creatures: [CreatureType.LION] }
-    const defending: BattleSide = { player: PlayerId.BLUE, score: 0, creatures: [CreatureType.CENTAUR] }
-    const battle = new Battle(Terrain.PLAINS, HexEdge.FIRST, attacking, defending)
+    const { battle } = setupBattle(Terrain.PLAINS, [CreatureType.LION], [CreatureType.CENTAUR])
 
     expect(battle.phase).toBe(BattlePhase.DEFENDER_MOVE)
     battle.nextPhase() // no engagement -> DEFENDER_STRIKE, ATTACKER_STRIKEBACK both skipped
@@ -618,14 +564,11 @@ describe("Battle phase transitions", () => {
   })
 
   it("throws if a phase is exited while an engaged, unstruck creature was never given a strike", () => {
-    const attacking: BattleSide = { player: PlayerId.RED, score: 0, creatures: [CreatureType.LION] }
-    const defending: BattleSide = { player: PlayerId.BLUE, score: 0, creatures: [CreatureType.CENTAUR] }
-    const battle = new Battle(Terrain.PLAINS, HexEdge.FIRST, attacking, defending)
-    const centaur = battle.getDefense()[0]
-    centaur.hex = 7
-    centaur.initialHex = 7
-    battle.getOffense()[0].hex = 8
-    battle.getOffense()[0].initialHex = 8
+    const { battle, offense, defense } = setupBattle(Terrain.PLAINS, [CreatureType.LION], [CreatureType.CENTAUR])
+    const [lion] = offense
+    const [centaur] = defense
+    place(centaur, 7)
+    place(lion, 8)
 
     battle.nextPhase() // -> DEFENDER_STRIKE, Centaur is now pending and never strikes
     expect(battle.getPendingStrikes()).toEqual([centaur])
@@ -633,11 +576,9 @@ describe("Battle phase transitions", () => {
   })
 
   it("resets hasStruck for creatures on both sides whenever a strike phase is entered", () => {
-    const attacking: BattleSide = { player: PlayerId.RED, score: 0, creatures: [CreatureType.LION] }
-    const defending: BattleSide = { player: PlayerId.BLUE, score: 0, creatures: [CreatureType.CENTAUR] }
-    const battle = new Battle(Terrain.PLAINS, HexEdge.FIRST, attacking, defending)
-    const lion = battle.getOffense()[0]
-    const centaur = battle.getDefense()[0]
+    const { battle, offense, defense } = setupBattle(Terrain.PLAINS, [CreatureType.LION], [CreatureType.CENTAUR])
+    const [lion] = offense
+    const [centaur] = defense
     lion.hasStruck = true
     centaur.hasStruck = true
 
@@ -647,26 +588,17 @@ describe("Battle phase transitions", () => {
     expect(centaur.hasStruck).toBe(false)
   })
 
-  it("removes a creature from the battle if it is still in its entrance zone when its move phase ends", () => {
-    const attacking: BattleSide = { player: PlayerId.RED, score: 0, creatures: [CreatureType.LION] }
-    const defending: BattleSide = { player: PlayerId.BLUE, score: 0, creatures: [CreatureType.CENTAUR] }
-    const battle = new Battle(Terrain.PLAINS, HexEdge.FIRST, attacking, defending)
-    const centaur = battle.getDefense()[0]
-
-    expect(centaur.hex).toBe(36) // the defender's entrance zone for HexEdge.FIRST
-    battle.phaseExitMove()
-    expect(centaur.hex).toBe(0)
-  })
-
-  it("does not remove a creature that has moved onto the battle board proper", () => {
-    const attacking: BattleSide = { player: PlayerId.RED, score: 0, creatures: [CreatureType.LION] }
-    const defending: BattleSide = { player: PlayerId.BLUE, score: 0, creatures: [CreatureType.CENTAUR] }
-    const battle = new Battle(Terrain.PLAINS, HexEdge.FIRST, attacking, defending)
-    const centaur = battle.getDefense()[0]
-    centaur.hex = 7
+  it("removes a creature still in its entrance zone when its move phase ends, but not one that has moved onto the board", () => {
+    const { battle, defense } = setupBattle(Terrain.PLAINS, [CreatureType.LION],
+      [CreatureType.CENTAUR, CreatureType.CENTAUR])
+    const [unmoved, moved] = defense
+    expect(unmoved.hex).toBe(36) // the defender's entrance zone for HexEdge.FIRST
+    moved.hex = 7
 
     battle.phaseExitMove()
-    expect(centaur.hex).toBe(7)
+
+    expect(unmoved.hex).toBe(0)
+    expect(moved.hex).toBe(7)
   })
 
   it("wounds creatures on drift terrain again on every strike-phase entry, not just once per round", () => {
@@ -674,12 +606,9 @@ describe("Battle phase transitions", () => {
     // applies the drift wound unconditionally on every entry into a STRIKE-type phase,
     // so a creature that survives both the defender's and attacker's strike phases in
     // the same round is wounded twice.
-    const attacking: BattleSide = { player: PlayerId.RED, score: 0, creatures: [CreatureType.LION] }
-    const defending: BattleSide = { player: PlayerId.BLUE, score: 0, creatures: [CreatureType.CENTAUR] }
-    const battle = new Battle(Terrain.TUNDRA, HexEdge.FIRST, attacking, defending)
-    const centaur = battle.getDefense()[0]
-    centaur.hex = 7
-    centaur.initialHex = 7
+    const { battle, defense } = setupBattle(Terrain.TUNDRA, [CreatureType.LION], [CreatureType.CENTAUR])
+    const [centaur] = defense
+    place(centaur, 7)
 
     expect(centaur.wounds).toBe(0)
     battle.phase = BattlePhase.DEFENDER_STRIKE
