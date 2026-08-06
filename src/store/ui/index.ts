@@ -1,10 +1,8 @@
 import { Player } from "~/models/player"
 import { BaseActionContext } from "../types"
-import preferences, { Preferences } from "./preferences"
 import selections, { Selections } from "./selection"
 
 export interface UiState {
-  preferences: Preferences
   selections: Selections
   localPlayer: number
 }
@@ -12,7 +10,6 @@ export interface UiState {
 export default {
   namespaced: true,
   modules: {
-    preferences,
     selections
   },
   state: () => ({

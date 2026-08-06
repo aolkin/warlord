@@ -20,6 +20,7 @@
 <script lang="ts">
 import { defineComponent } from "vue"
 import board, { Masterboard, MasterboardEdge, MasterboardHex, MovementRule } from "~/models/masterboard"
+import { usePreferencesStore } from "~/stores/preferences"
 import HexEdge from "./HexEdge.vue"
 
 export default defineComponent({
@@ -35,7 +36,7 @@ export default defineComponent({
         .filter(([, edge]) => edge.rule !== MovementRule.NONE)
     },
     shadows(): boolean {
-      return this.$store.state.ui.preferences.fancyGraphics
+      return usePreferencesStore().fancyGraphics
     }
   }
 })

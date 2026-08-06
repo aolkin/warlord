@@ -60,6 +60,7 @@ import { mapActions, mapGetters, mapMutations, mapState } from "vuex"
 import { MasterboardPhase, Path } from "~/models/game"
 import { MasterboardHex } from "~/models/masterboard"
 import { Stack } from "~/models/stack"
+import { usePreferencesStore } from "~/stores/preferences"
 import StackPanel from "../../ui/game/StackPanel.vue"
 import TurnPanel from "../../ui/game/TurnPanel.vue"
 import MasterboardHexComponent from "./MasterboardHex.vue"
@@ -72,9 +73,11 @@ export default defineComponent({
   name: "Masterboard",
   components: { MasterboardHexes, StackPanel, TurnPanel, MasterboardStack, MasterboardHex: MasterboardHexComponent },
   computed: {
-    ...mapState("ui/preferences", ["freeMovement"]),
     ...mapState("game", ["activePhase", "stacks", "activeRoll"]),
     ...mapGetters("ui/selections", ["paths", "focusedStack", "selectedStack"]),
+    freeMovement(): boolean {
+      return usePreferencesStore().freeMovement
+    },
     sortedStacks(): Stack[] {
       lastSortedStacks = sortBy(this.stacks, stack =>
         stack === this.selectedStack ? 999 : lastSortedStacks.indexOf(stack))

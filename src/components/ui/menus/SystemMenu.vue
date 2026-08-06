@@ -134,7 +134,7 @@ import { defineComponent } from "vue"
 import { mapActions, mapGetters, mapMutations, mapState } from "vuex"
 import DiceRoller from "~/components/ui/generic/DiceRoller"
 import { Creature, CREATURE_LIST } from "~/models/creature"
-import { CreatureColorMode } from "~/store/ui/preferences"
+import { CreatureColorMode, usePreferencesStore } from "~/stores/preferences"
 
 export default defineComponent({
   name: "SystemMenu",
@@ -145,9 +145,12 @@ export default defineComponent({
     saveText: ""
   }),
   computed: {
-    ...mapState("ui", ["preferences", "selections", "localPlayer"]),
+    ...mapState("ui", ["selections", "localPlayer"]),
     ...mapState("game", ["activePhase"]),
     ...mapGetters("game", ["players"]),
+    preferencesStore() {
+      return usePreferencesStore()
+    },
     colorModes() {
       return {
         [CreatureColorMode.STANDARD]: "Standard",
@@ -158,34 +161,34 @@ export default defineComponent({
     },
     fancyGraphics: {
       get() {
-        return this.preferences.fancyGraphics
+        return this.preferencesStore.fancyGraphics
       },
       set(value: boolean) {
-        this.setFancyGraphics(value)
+        this.preferencesStore.setFancyGraphics(value)
       }
     },
     quickDice: {
       get() {
-        return this.preferences.quickDice
+        return this.preferencesStore.quickDice
       },
       set(value: boolean) {
-        this.setQuickDice(value)
+        this.preferencesStore.setQuickDice(value)
       }
     },
     freeMovement: {
       get() {
-        return this.preferences.freeMovement
+        return this.preferencesStore.freeMovement
       },
       set(value: boolean) {
-        this.setFreeMovement(value)
+        this.preferencesStore.setFreeMovement(value)
       }
     },
     creatureColorMode: {
       get() {
-        return `${this.preferences.creatureColorMode}`
+        return `${this.preferencesStore.creatureColorMode}`
       },
       set(value: string) {
-        this.setCreatureColorMode(Number(value))
+        this.preferencesStore.setCreatureColorMode(Number(value))
       }
     },
     uiPlayer: {
@@ -199,9 +202,6 @@ export default defineComponent({
   },
   methods: {
     ...mapMutations("ui", ["setPlayer"]),
-    ...mapMutations("ui/preferences", [
-      "setFancyGraphics", "setQuickDice", "setCreatureColorMode", "setFreeMovement"
-    ]),
     ...mapMutations("game", ["rehydrate"]),
     ...mapActions(["reset"]),
     ...mapActions("game", ["persist", "restore"]),

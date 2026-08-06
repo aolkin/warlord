@@ -57,6 +57,7 @@ import {
   BattlePhaseType,
   Hazard
 } from "~/models/battle"
+import { usePreferencesStore } from "~/stores/preferences"
 
 export default defineComponent({
   name: "ActionPanel",
@@ -68,8 +69,10 @@ export default defineComponent({
   }),
   computed: {
     ...mapState("game", ["activeBattle"]),
-    ...mapState("ui/preferences", ["debugUi"]),
     ...mapGetters("ui/selections", ["focusedBattleHex"]),
+    debugUi(): boolean {
+      return usePreferencesStore().debugUi
+    },
     ...mapGetters("game", ["battlePhaseType", "battleActivePlayer", "playerById",
       "battleCarryoverTargets"]),
     phaseTypeTitle(): string {

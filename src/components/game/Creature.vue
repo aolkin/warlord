@@ -116,10 +116,9 @@
 
 <script lang="ts">
 import { defineComponent, PropType } from "vue"
-import { mapState } from "vuex"
 import { Creature, CREATURE_DATA, CreatureType } from "~/models/creature"
 import { Player } from "~/models/player"
-import { CreatureColorMode } from "~/store/ui/preferences"
+import { CreatureColorMode, usePreferencesStore } from "~/stores/preferences"
 import FilterCache from "./color-util"
 import { TitanColor } from "./types"
 
@@ -187,7 +186,9 @@ export default defineComponent({
     CreatureType
   }),
   computed: {
-    ...mapState("ui/preferences", ["creatureColorMode"]),
+    creatureColorMode(): CreatureColorMode {
+      return usePreferencesStore().creatureColorMode
+    },
     creature(): Creature | undefined {
       return this.type !== undefined ? CREATURE_DATA[this.type] : undefined
     },

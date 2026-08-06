@@ -160,6 +160,7 @@ import {
 } from "~/models/battle"
 import { Terrain } from "~/models/masterboard"
 import { PlayerId } from "~/models/player"
+import { usePreferencesStore } from "~/stores/preferences"
 import EngageIcon from "../../ui/game/EngageIcon.vue"
 import RangestrikeIcon from "../../ui/game/RangestrikeIcon.vue"
 import Creature from "../Creature.vue"
@@ -202,8 +203,10 @@ export default defineComponent({
     debugHex: 0
   }),
   computed: {
-    ...mapState("ui/preferences", ["debugUi"]),
     ...mapState("game", ["activeBattle"]),
+    debugUi(): boolean {
+      return usePreferencesStore().debugUi
+    },
     ...mapGetters("game", ["playerById", "battleActivePlayer", "battlePhaseType", "battleEngagements",
       "battleCarryoverTargets", "battleRangestrikeTargets"]),
     ...mapGetters("ui/selections", ["movementHexes", "selectedCreature", "engagements", "rangestrikes"]),

@@ -59,6 +59,7 @@
 import { defineComponent } from "vue"
 import { mapMutations, mapState } from "vuex"
 import { MasterboardHex, Terrain } from "~/models/masterboard"
+import { usePreferencesStore } from "~/stores/preferences"
 import {
   CLIP_TRIANGLE_HEIGHT,
   CLIP_TRIANGLE_SIDE,
@@ -93,9 +94,8 @@ export default defineComponent({
   },
   computed: {
     ...mapState("game", ["activeRoll"]),
-    ...mapState("ui/preferences", ["fancyGraphics"]),
     shadows(): boolean {
-      return this.fancyGraphics
+      return usePreferencesStore().fancyGraphics
     },
     rootClass() {
       if (this.path) {

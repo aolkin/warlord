@@ -70,6 +70,7 @@
 <script lang="ts">
 import { defineComponent } from "vue"
 import { MasterboardEdge, MasterboardHex, MovementRule, Terrain } from "~/models/masterboard"
+import { usePreferencesStore } from "~/stores/preferences"
 import { hexTransform, isHexInverted, TRIANGLE_HEIGHT } from "./utils"
 
 export default defineComponent({
@@ -121,7 +122,7 @@ export default defineComponent({
       return this.shadow ? (this.multiArrow ? [-4, -14, -24] : [-4]) : []
     },
     shadows(): boolean {
-      return this.$store.state.ui.preferences.fancyGraphics
+      return usePreferencesStore().fancyGraphics
     }
   }
 })

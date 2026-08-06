@@ -13,7 +13,7 @@
 import DiceBox from "@3d-dice/dice-box"
 import { defineComponent, markRaw } from "vue"
 import { random, range } from "lodash-es"
-import { mapState } from "vuex"
+import { usePreferencesStore } from "~/stores/preferences"
 
 interface ComponentData {
   ready: boolean,
@@ -41,7 +41,9 @@ export default defineComponent({
     }
   },
   computed: {
-    ...mapState("ui/preferences", ["quickDice"])
+    quickDice(): boolean {
+      return usePreferencesStore().quickDice
+    }
   },
   mounted() {
     const diceBox = new DiceBox({
