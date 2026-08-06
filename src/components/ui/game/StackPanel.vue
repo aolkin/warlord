@@ -5,7 +5,6 @@
       border
       width="342"
       subtitle="Hover over a stack to view details..."
-      v-bind="$props as any"
     />
     <v-card
       v-else
@@ -13,7 +12,6 @@
       class="root-card"
       border
       width="342"
-      v-bind="$props as any"
     >
       <v-card-actions
         v-if="selectionStore.selectedStack === selectionStore.focusedStack"
