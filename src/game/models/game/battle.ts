@@ -1,6 +1,5 @@
 import { matches } from "lodash-es"
 import { assert } from "@/utils/assert"
-import { useSelectionStore, View } from "~/stores/ui/selection"
 import { Battle, BATTLE_PHASE_TYPES, BattleCreature, BattlePhaseType, BattleSide, RangestrikeTarget } from "../battle"
 import masterboard from "../masterboard"
 import { PlayerId } from "../player"
@@ -117,7 +116,6 @@ export const gameBattle: GameBattle & ThisType<TitanGame> = {
     assert(defending !== undefined,
       `No engagement present on hex ${attacking.hex}!`)
     commit("initiateBattle", { attacking, defending })
-    useSelectionStore().setView(View.BATTLEBOARD)
     await this.persist()
   },
 
