@@ -62,14 +62,13 @@ const store = useStore()
 const selectionStore = useSelectionStore()
 
 const activeBattle = computed(() => store.state.game.activeBattle)
-const selectedCreature = computed<BattleCreature | undefined>(() => selectionStore.selectedCreature)
-const selectedCreatureName = computed(() => selectedCreature.value?.name() ?? "")
+const selectedCreatureName = computed(() => selectionStore.selectedCreature?.name() ?? "")
 const targetedCreature = computed<BattleCreature>(() => props.target.creature)
 const targetedCreatureName = computed(() => targetedCreature.value?.name() ?? "")
 const targetedStrike = computed<Strike>(() =>
-  activeBattle.value.getTargetedStrike(selectedCreature.value, props.target))
+  activeBattle.value.getTargetedStrike(selectionStore.selectedCreature, props.target))
 const targetedStrikeUnadjusted = computed<Strike>(() => {
-  const rawStrike = activeBattle.value.getRawStrike(selectedCreature.value, targetedCreature.value)
+  const rawStrike = activeBattle.value.getRawStrike(selectionStore.selectedCreature, targetedCreature.value)
   return {
     toHit: props.target.longDistance ? rawStrike.toHit + 1 : rawStrike.toHit,
     dice: div(rawStrike.dice, 2)

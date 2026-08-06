@@ -20,7 +20,8 @@
         >
           <div
             v-if="pendingOffense.length > 0 ||
-              (activeBattle.phase === BattlePhase.ATTACKER_MOVE && (selectedCreature?.initialHex ?? -1) >= 36)"
+              (activeBattle.phase === BattlePhase.ATTACKER_MOVE &&
+                (selectionStore.selectedCreature?.initialHex ?? -1) >= 36)"
           >
             <v-card-title>{{ attacker.name }}'s Pending Creatures</v-card-title>
             <PendingCreatures
@@ -31,7 +32,8 @@
           </div>
           <div
             v-if="pendingDefense.length > 0 ||
-              (activeBattle.phase === BattlePhase.DEFENDER_MOVE && (selectedCreature?.initialHex ?? -1) >= 36)"
+              (activeBattle.phase === BattlePhase.DEFENDER_MOVE &&
+                (selectionStore.selectedCreature?.initialHex ?? -1) >= 36)"
           >
             <v-card-title>{{ defender.name }}'s Pending Creatures</v-card-title>
             <PendingCreatures
@@ -91,7 +93,6 @@ const localPlayer = computed<number>(() => store.state.ui.localPlayer)
 const activeBattle = computed(() => store.state.game.activeBattle)
 const players = computed<Player[]>(() => store.state.game.players)
 const playerById = computed(() => store.getters["game/playerById"])
-const selectedCreature = computed<BattleCreature | undefined>(() => selectionStore.selectedCreature)
 
 const orderingClasses = computed(() =>
   ({ "flex-column-reverse": activeBattle.value.defender === players.value[localPlayer.value].id }))

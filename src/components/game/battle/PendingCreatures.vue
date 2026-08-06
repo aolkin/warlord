@@ -6,7 +6,7 @@
       :type="creature.type"
       :player="playerById(creature.player)"
       :class="{ interactive: activeBattle.phase === expectedPhase,
-                selected: creature === selectedCreature }"
+                selected: creature === selectionStore.selectedCreature }"
       class="ma-1 pending"
       @click="activeBattle.phase === expectedPhase && selectCreature(creature)"
     />
@@ -39,17 +39,17 @@ const selectionStore = useSelectionStore()
 const activeBattle = computed(() => store.state.game.activeBattle)
 const playerById = computed(() => store.getters["game/playerById"])
 const battleActivePlayer = computed(() => store.getters["game/battleActivePlayer"])
-const selectedCreature = computed<BattleCreature | undefined>(() => selectionStore.selectedCreature)
 const showRemove = computed(() => activeBattle.value.phase === props.expectedPhase &&
-  (selectedCreature.value?.initialHex ?? -1) >= 36 &&
-  (selectedCreature.value?.hex ?? -1) < 36)
+  (selectionStore.selectedCreature?.initialHex ?? -1) >= 36 &&
+  (selectionStore.selectedCreature?.hex ?? -1) < 36)
 
 function selectCreature(creature: BattleCreature): void {
   selectionStore.selectCreature(creature)
 }
 
 function removeSelected(): void {
-  void store.dispatch("game/moveCreature", { creature: selectedCreature.value, hex: selectedCreature.value!.initialHex })
+  void store.dispatch("game/moveCreature",
+    { creature: selectionStore.selectedCreature, hex: selectionStore.selectedCreature!.initialHex })
 }
 </script>
 <style scoped lang="sass">

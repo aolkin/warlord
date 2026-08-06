@@ -5,7 +5,7 @@
         v-for="id in hexes"
         :key="id"
         :hex="board.getHex(id)"
-        @click="canFreeMove && move({ stack: selectedStack, hex: id })"
+        @click="canFreeMove && move({ stack: selectionStore.selectedStack, hex: id })"
       />
     </g>
     <MasterboardEdges />
@@ -30,7 +30,6 @@ withDefaults(defineProps<{
 const store = useStore()
 const selectionStore = useSelectionStore()
 
-const selectedStack = computed(() => selectionStore.selectedStack)
 const board = masterboard
 const hexes = computed(() => board.getHexIds())
 

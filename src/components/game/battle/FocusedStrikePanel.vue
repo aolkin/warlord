@@ -6,7 +6,7 @@
       width="300"
     >
       <StrikePanelTitle
-        :attacker="selectedCreature!"
+        :attacker="selectionStore.selectedCreature!"
         :target="(target ?? rangedTarget)!"
       />
       <v-card-text>
@@ -29,25 +29,21 @@ const store = useStore()
 const selectionStore = useSelectionStore()
 
 const activeBattle = computed(() => store.state.game.activeBattle)
-const selectedCreature = computed<BattleCreature | undefined>(() => selectionStore.selectedCreature)
-const focusedCreature = computed<BattleCreature | undefined>(() => selectionStore.focusedCreature)
-const engagements = computed<BattleCreature[]>(() => selectionStore.engagements)
-const rangestrikes = computed<RangestrikeTarget[]>(() => selectionStore.rangestrikes)
 
 const target = computed<BattleCreature | undefined>(() =>
-  focusedCreature.value !== undefined && engagements.value.includes(focusedCreature.value)
-    ? focusedCreature.value
+  selectionStore.focusedCreature !== undefined && selectionStore.engagements.includes(selectionStore.focusedCreature)
+    ? selectionStore.focusedCreature
     : undefined)
 const rangedFocus = computed<RangestrikeTarget | undefined>(() =>
-  focusedCreature.value && rangestrikes.value.filter(
-    (rangestrike: RangestrikeTarget) => rangestrike.creature === focusedCreature.value)[0])
+  selectionStore.focusedCreature && selectionStore.rangestrikes.filter(
+    (rangestrike: RangestrikeTarget) => rangestrike.creature === selectionStore.focusedCreature)[0])
 const rangedTarget = computed<BattleCreature | undefined>(() => rangedFocus.value?.creature)
 const strike = computed<Strike | undefined>(() => {
-  if (selectedCreature.value) {
+  if (selectionStore.selectedCreature) {
     if (target.value) {
-      return activeBattle.value.getAdjustedStrike(selectedCreature.value, target.value)
+      return activeBattle.value.getAdjustedStrike(selectionStore.selectedCreature, target.value)
     } else if (rangedFocus.value) {
-      return activeBattle.value.getRangestrike(selectedCreature.value, rangedFocus.value)
+      return activeBattle.value.getRangestrike(selectionStore.selectedCreature, rangedFocus.value)
     }
   }
   return undefined

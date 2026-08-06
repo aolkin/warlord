@@ -16,8 +16,8 @@
       />
     </template>
     <v-card-subtitle v-if="preferencesStore.debugUi">
-      Hex: {{ focusedBattleHex }} ({{ Hazard[land.getHazard(focusedBattleHex!)] }})
-      <span v-if="land.getElevation(focusedBattleHex!) > 0">+{{ land.getElevation(focusedBattleHex!) }}</span>
+      Hex: {{ selectionStore.focusedBattleHex }} ({{ Hazard[land.getHazard(selectionStore.focusedBattleHex!)] }})
+      <span v-if="land.getElevation(selectionStore.focusedBattleHex!) > 0">+{{ land.getElevation(selectionStore.focusedBattleHex!) }}</span>
     </v-card-subtitle>
     <v-card-text v-if="battlePhaseType === BattlePhaseType.MOVE && pendingCreatures > 0">
       You have {{ pendingCreatures }} creature{{ pendingCreatures > 1 ? 's' : '' }} that
@@ -64,7 +64,6 @@ const preferencesStore = usePreferencesStore()
 
 // ActionPanel only renders inside BattleBoard's v-else branch (active battle present).
 const activeBattle = computed(() => store.state.game.activeBattle!)
-const focusedBattleHex = computed(() => selectionStore.focusedBattleHex)
 const battlePhaseType = computed((): BattlePhaseType => store.getters["game/battlePhaseType"])
 const battleActivePlayer = computed(() => store.getters["game/battleActivePlayer"])
 const playerById = computed(() => store.getters["game/playerById"])
