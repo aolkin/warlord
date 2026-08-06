@@ -60,9 +60,9 @@ const store = useStore()
 const selectionStore = useSelectionStore()
 
 const activeBattle = computed(() => store.state.game.activeBattle)
-const selectedCreatureName = computed(() => selectionStore.selectedCreature?.name ?? "")
+const selectedCreatureName = computed(() => selectionStore.selectedCreature?.name() ?? "")
 const targetedCreature = computed<BattleCreature>(() => props.target.creature)
-const targetedCreatureName = computed(() => targetedCreature.value?.name ?? "")
+const targetedCreatureName = computed(() => targetedCreature.value?.name() ?? "")
 const targetedStrike = computed<Strike>(() =>
   activeBattle.value.getTargetedStrike(selectionStore.selectedCreature, props.target))
 const targetedStrikeUnadjusted = computed<Strike>(() => {

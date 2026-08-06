@@ -36,16 +36,16 @@ export class BattleCreature {
     this.hasStruck = props.hasStruck ?? false
   }
 
-  get name(): string {
+  name(): string {
     return CREATURE_DATA[this.type].name
   }
 
-  get strength(): number {
+  getStrength(): number {
     return CREATURE_DATA[this.type].getStrength(this.playerScore)
   }
 
-  get remainingHp(): number {
-    return this.strength - this.wounds
+  getRemainingHp(): number {
+    return this.getStrength() - this.wounds
   }
 }
 
@@ -55,24 +55,4 @@ export function wound(creature: BattleCreature, amount: number): void {
 
 export function performStrike(creature: BattleCreature): void {
   creature.hasStruck = true
-}
-
-export function phaseEnterMove(creature: BattleCreature): void {
-  creature.initialHex = creature.hex
-}
-
-export function phaseExitMove(creature: BattleCreature): void {
-  if (creature.hex >= 36) {
-    creature.hex = 0
-  }
-}
-
-export function phaseEnterStrike(creature: BattleCreature): void {
-  creature.hasStruck = false
-}
-
-export function phaseExitStrikeback(creature: BattleCreature): void {
-  if (creature.remainingHp <= 0) {
-    creature.hex = 0
-  }
 }

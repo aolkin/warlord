@@ -15,10 +15,6 @@ export type { BattleBoardProps } from "./battle/board"
 export {
   BattleCreature,
   performStrike,
-  phaseEnterMove,
-  phaseEnterStrike,
-  phaseExitMove,
-  phaseExitStrikeback,
   wound
 } from "./battle/combatant"
 export type { IBattleCreature } from "./battle/combatant"

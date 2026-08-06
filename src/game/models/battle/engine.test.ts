@@ -51,7 +51,7 @@ describe("Battle engagement", () => {
 
     expect(lion.hasStruck).toBe(true)
     expect(centaur.wounds).toBe(3) // Centaur's full strength (3); capped, not overkill
-    expect(centaur.remainingHp).toBe(0)
+    expect(centaur.getRemainingHp()).toBe(0)
     expect(centaur.hex).toBe(7) // corpses stay on the board until phaseExitStrikeback
   })
 })
@@ -247,7 +247,7 @@ describe("Carryover", () => {
     const { battle, lion, centaur1, centaur2 } = setupTripleEngagement()
 
     battle.strike(lion, centaur1, [6, 6, 6, 6, 6])
-    expect(centaur1.remainingHp).toBe(0)
+    expect(centaur1.getRemainingHp()).toBe(0)
     expect(battle.activeStrike?.canCarryover).toBe(true)
     // getCarryoverHits = 5 total hits - 3 assigned to centaur1
     expect(battle.activeStrike?.getCarryoverHits()).toBe(2)
@@ -466,7 +466,7 @@ describe("Engagement edge cases", () => {
     place(excluded, 8) // toHit 6, raised by the wall - harder than the rolled toHit
 
     battle.strike(lion, primary, [6, 6, 6, 6, 6])
-    expect(primary.remainingHp).toBe(0) // overkilled, so it drops out of engagedWith too
+    expect(primary.getRemainingHp()).toBe(0) // overkilled, so it drops out of engagedWith too
     expect(battle.carryoverTargets()).toEqual([included])
   })
 

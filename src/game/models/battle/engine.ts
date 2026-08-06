@@ -19,10 +19,6 @@ import {
 import {
   BattleCreature,
   performStrike,
-  phaseEnterMove,
-  phaseEnterStrike,
-  phaseExitMove,
-  phaseExitStrikeback,
   wound
 } from "./combatant"
 import {
@@ -152,16 +148,24 @@ export class Battle {
   }
 
   phaseEnterMove(): void {
-    this.getActiveCreatures().forEach(creature => phaseEnterMove(creature))
+    this.getActiveCreatures().forEach(creature => {
+      creature.initialHex = creature.hex
+    })
   }
 
   phaseExitMove(): void {
-    this.getActiveCreatures().forEach(creature => phaseExitMove(creature))
+    this.getActiveCreatures().forEach(creature => {
+      if (creature.hex >= 36) {
+        creature.hex = 0
+      }
+    })
   }
 
   phaseEnterStrike(): void {
     this.activeStrike = undefined
-    this.creatures.forEach(creature => phaseEnterStrike(creature))
+    this.creatures.forEach(creature => {
+      creature.hasStruck = false
+    })
     if (this.terrain === Terrain.TUNDRA) {
       this.creatures
         .filter(creature => this.getBoard().getHazard(creature.hex) === Hazard.DRIFT)
@@ -176,7 +180,11 @@ export class Battle {
 
   phaseExitStrikeback(): void {
     this.phaseExitStrike()
-    this.creatures.forEach(creature => phaseExitStrikeback(creature))
+    this.creatures.forEach(creature => {
+      if (creature.getRemainingHp() <= 0) {
+        creature.hex = 0
+      }
+    })
   }
 
   /** End Phase Manipulation **/
@@ -265,7 +273,7 @@ export class Battle {
     const hex = BATTLE_PHASE_TYPES[this.phase] === BattlePhaseType.MOVE ? whom.initialHex : whom.hex
     const adjacencies = BATTLE_BOARD_ADJACENCIES[hex]
     return this.creatures.filter(creature => creature.player !== whom.player &&
-      (includeDead || creature.remainingHp > 0) &&
+      (includeDead || creature.getRemainingHp() > 0) &&
       adjacencies.includes(creature.hex) &&
       // TODO: only checks the cliff hazard in the fixed direction (whom -> creature), so it misses
       // cliffs where `creature` (not `whom`) is the upper hex - creatureMovementCost above shows the
@@ -311,7 +319,7 @@ export class Battle {
         return targetCreature !== undefined && targetCreature.player !== creature.player &&
           // Warlocks can rangestrike lords!
           (creature.type === CreatureType.WARLOCK || !CREATURE_DATA[targetCreature.type].lord) &&
-          targetCreature.remainingHp > 0
+          targetCreature.getRemainingHp() > 0
       }
       return false
     }) as number[][]
@@ -512,7 +520,7 @@ export class Battle {
   getRawStrike(attacker: BattleCreature, defender: BattleCreature): Strike {
     return {
       toHit: this.toHitRaw(attacker, defender),
-      dice: attacker.strength
+      dice: attacker.getStrength()
     }
   }
 
@@ -542,7 +550,7 @@ export class Battle {
   private performAttack(attacker: BattleCreature, defender: BattleCreature,
     rolls: number[], toHit: number, rangestrike: boolean): void {
     const totalHits = rolls.filter(roll => roll >= toHit).length
-    const hits = Math.min(totalHits, defender.remainingHp)
+    const hits = Math.min(totalHits, defender.getRemainingHp())
     performStrike(attacker)
     wound(defender, hits)
     this.activeStrike = new ActiveStrike({
@@ -570,7 +578,7 @@ export class Battle {
     // Using an optional chain prevents typescript from learning that this.activeStrike is present
     assert(this.activeStrike !== undefined &&
       this.activeStrike.canCarryover, "Cannot carryover")
-    const hits = Math.min(this.activeStrike.getCarryoverHits(), target.remainingHp)
+    const hits = Math.min(this.activeStrike.getCarryoverHits(), target.getRemainingHp())
     this.activeStrike.carryover({ hits, target: target.hex })
     wound(target, hits)
   }
