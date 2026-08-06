@@ -35,7 +35,7 @@
       >
         <MasterboardStack
           v-for="stack in sortedStacks"
-          :key="stack.guid"
+          :key="stack.id"
           :stack="stack"
         />
       </g>

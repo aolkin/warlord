@@ -1,24 +1,8 @@
-import { random } from "lodash-es"
 import { createApp } from "vue"
 import App from "~/App.vue"
 import vuetify from "~/plugins/vuetify"
 import vuex from "~/plugins/vuex"
 import { loadFonts } from "~/plugins/webfontloader"
-
-(() => {
-  let idCounter = random(Number.MIN_SAFE_INTEGER, Number.MAX_SAFE_INTEGER)
-  Object.defineProperty(Object.prototype, "__guid", {
-    writable: true
-  })
-  Object.defineProperty(Object.prototype, "guid", {
-    get: function() {
-      if (this.__guid === undefined) {
-        this.__guid = idCounter++
-      }
-      return this.__guid
-    }
-  })
-})()
 
 void loadFonts()
 

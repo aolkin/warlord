@@ -2,7 +2,7 @@
   <div class="px-2 pb-1">
     <Creature
       v-for="creature in creatures"
-      :key="creature.guid"
+      :key="creature.id"
       :type="creature.type"
       :player="playerById(creature.player)"
       :class="{ interactive: activeBattle.phase === expectedPhase,
