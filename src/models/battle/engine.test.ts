@@ -399,17 +399,20 @@ describe("Movement legality (movementFor)", () => {
   it("lets a flying creature path through hexes blocked for grounded creatures, reaching further", () => {
     // Battle-hex 2 has only three neighbors (3, 7, 8); occupying both 7 and 8 seals off
     // everything past them for a grounded mover, since creatureMovementCost treats an
-    // occupied non-own hex as UNATTAINABLE for pathing (not just landing) unless flying.
+    // occupied hex as UNATTAINABLE for pathing (not just landing) unless flying - regardless
+    // of which player occupies it. The blockers are on the SAME side as the movers (rather
+    // than the enemy) so the movers aren't in contact with an enemy at phase start; movementFor
+    // doesn't enforce rule 11.3 (in-contact creatures may not move - see the TODO on
+    // movementFor in engine.ts), but this test isn't about that gap.
     const attacking: BattleSide = {
-      player: PlayerId.RED, score: 0, creatures: [CreatureType.CENTAUR, CreatureType.GRIFFON]
+      player: PlayerId.RED,
+      score: 0,
+      creatures: [CreatureType.CENTAUR, CreatureType.GRIFFON, CreatureType.LION, CreatureType.LION]
     }
-    const defending: BattleSide = {
-      player: PlayerId.BLUE, score: 0, creatures: [CreatureType.LION, CreatureType.LION]
-    }
+    const defending: BattleSide = { player: PlayerId.BLUE, score: 0, creatures: [CreatureType.CENTAUR] }
     const battle = new Battle(Terrain.PLAINS, HexEdge.FIRST, attacking, defending)
     battle.phase = BattlePhase.ATTACKER_MOVE
-    const [centaur, griffon] = battle.getOffense()
-    const [blocker1, blocker2] = battle.getDefense()
+    const [centaur, griffon, blocker1, blocker2] = battle.getOffense()
     centaur.hex = 2
     centaur.initialHex = 2
     griffon.hex = 2
@@ -431,10 +434,11 @@ describe("Movement legality (movementFor)", () => {
 })
 
 describe("Engagement edge cases", () => {
-  it("makes engagement across a cliff direction-dependent: the creature atop it is engaged, the one below is not", () => {
+  it("does not engage a creature below a cliff with the creature above it", () => {
     // Terrain.DESERT's battle board has a cliff edge between battle-hexes 15 and 20.
-    // engagedWith checks getEdgeHazard(whom.hex, candidate.hex), which is keyed by
-    // (lower, upper) - so the check only fires from one side.
+    // This direction of the check (queried from the creature below, looking up) happens
+    // to work correctly - see the TODO on engagedWith's cliff check in engine.ts for the
+    // direction that doesn't.
     const attacking: BattleSide = { player: PlayerId.RED, score: 0, creatures: [CreatureType.CENTAUR] }
     const defending: BattleSide = { player: PlayerId.BLUE, score: 0, creatures: [CreatureType.LION] }
     const battle = new Battle(Terrain.DESERT, HexEdge.FIRST, attacking, defending)
@@ -446,8 +450,26 @@ describe("Engagement edge cases", () => {
     lion.hex = 20 // below the cliff
     lion.initialHex = 20
 
-    expect(battle.engagedWith(centaur)).toEqual([lion])
     expect(battle.engagedWith(lion)).toEqual([])
+  })
+
+  // TODO: engagedWith's cliff check is direction-asymmetric (see the TODO at engine.ts's
+  // engagedWith). Per the Hazard Chart and rule 13.5, a cliff blocks engagement symmetrically -
+  // neither creature should be engaged with the other. This documents the correct behavior and
+  // is expected to fail (via it.fails) until that asymmetry is fixed.
+  it.fails("does not engage a creature atop a cliff with the creature below it", () => {
+    const attacking: BattleSide = { player: PlayerId.RED, score: 0, creatures: [CreatureType.CENTAUR] }
+    const defending: BattleSide = { player: PlayerId.BLUE, score: 0, creatures: [CreatureType.LION] }
+    const battle = new Battle(Terrain.DESERT, HexEdge.FIRST, attacking, defending)
+    battle.phase = BattlePhase.ATTACKER_STRIKE
+    const centaur = battle.getOffense()[0]
+    const lion = battle.getDefense()[0]
+    centaur.hex = 15 // atop the cliff
+    centaur.initialHex = 15
+    lion.hex = 20 // below the cliff
+    lion.initialHex = 20
+
+    expect(battle.engagedWith(centaur)).toEqual([])
   })
 
   it("checks engagement using the pre-move position while still in a move phase", () => {
@@ -529,10 +551,13 @@ describe("Engagement edge cases", () => {
 
     const targets = battle.rangestrikeTargets(ranger)
     expect(targets).toHaveLength(1)
-    battle.rangestrike(ranger, targets[0], [6, 6, 6, 6])
+    // Ranger has strength 4, so per rule 12.2 (dice = floor(power / 2)) a rangestrike rolls
+    // exactly 2 dice.
+    expect(battle.getRangestrike(ranger, targets[0]).dice).toBe(2)
+    battle.rangestrike(ranger, targets[0], [6, 6])
 
     expect(ranger.hasStruck).toBe(true)
-    expect(centaur.wounds).toBe(3) // capped at Centaur's full strength
+    expect(centaur.wounds).toBe(2)
     expect(battle.activeStrike?.rangestrike).toBe(true)
     expect(battle.activeStrike?.canCarryover).toBe(false) // overkilled, but rangestrikes never carry over
   })
