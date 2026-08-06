@@ -1,7 +1,7 @@
 <template>
   <div
     id="dicebox-container"
-    :class="{ rolling, quickDice }"
+    :class="{ rolling, quickDice: preferencesStore.quickDice }"
   >
     <div class="bg">
 &nbsp;
@@ -9,19 +9,11 @@
   </div>
 </template>
 
-<script lang="ts">
+<script setup lang="ts">
 import DiceBox from "@3d-dice/dice-box"
-import { defineComponent, markRaw } from "vue"
+import { markRaw, onMounted, ref } from "vue"
 import { random, range } from "lodash-es"
 import { usePreferencesStore } from "~/stores/preferences"
-
-interface ComponentData {
-  ready: boolean,
-  rolling: boolean,
-  resolve?: (_: number[]) => void,
-  reject?: (_: Error) => void,
-  diceBox?: DiceBox
-}
 
 const DebugDice: { nextRolls?: number[] } = {
   nextRolls: undefined
@@ -29,81 +21,72 @@ const DebugDice: { nextRolls?: number[] } = {
 // @ts-expect-error window.DebugDice is a debug hook with no declared type
 window.DebugDice = DebugDice
 
-export default defineComponent({
-  name: "DiceRoller",
-  data(): ComponentData {
-    return {
-      ready: false,
-      rolling: false,
-      resolve: undefined,
-      reject: undefined,
-      diceBox: undefined
-    }
-  },
-  computed: {
-    quickDice(): boolean {
-      return usePreferencesStore().quickDice
-    }
-  },
-  mounted() {
-    const diceBox = new DiceBox({
-      container: "#dicebox-container",
-      assetPath: "/assets/dice-box/",
-      theme: "diceOfRolling",
-      scale: 6,
-      restitution: 0.6,
-      friction: 0.9,
-      linearDamping: 0.5,
-      angularDamping: 0.5,
-      throwForce: 6,
-      spinForce: 2,
-      startingHeight: 30
-    })
-    diceBox.init().then(() => {
-      this.ready = true
-    })
-    diceBox.onRollComplete = (rollResult): void => {
-      const result = rollResult.flatMap(group => group.rolls.map(roll => roll.value))
-      console.log("Dice roll complete", rollResult, result)
-      this.resolve?.(result)
-      this.reject = undefined
-      this.resolve = undefined
-      this.rolling = false
-    }
-    this.diceBox = markRaw(diceBox)
-  },
-  methods: {
-    async roll(quantity?: number): Promise<number[]> {
-      return new Promise<number[]>((resolve, reject) => {
-        if (DebugDice.nextRolls) {
-          return resolve(DebugDice.nextRolls)
-        }
-        if (!this.ready) {
-          return reject(new Error("not ready"))
-        } else if (this.resolve !== undefined && this.reject !== undefined) {
-          return reject(new Error("busy"))
-        }
-        this.resolve = resolve
-        this.reject = reject
-        try {
-          this.rolling = true
-          this.$forceUpdate()
-          this.diceBox?.roll(`${quantity ?? 1}d6`)
-          if (this.quickDice) {
-            setTimeout(() => {
-              this.resolve?.(range(quantity ?? 1).map(() => random(1, 6)))
-              this.reject = undefined
-              this.resolve = undefined
-              this.rolling = false
-            }, 0)
-          }
-        } catch (e) {
-          reject(e)
-        }
-      })
-    }
+const preferencesStore = usePreferencesStore()
+
+const ready = ref(false)
+const rolling = ref(false)
+let pendingResolve: ((_: number[]) => void) | undefined
+let pendingReject: ((_: Error) => void) | undefined
+let diceBox: DiceBox | undefined
+
+onMounted(() => {
+  const box = new DiceBox({
+    container: "#dicebox-container",
+    assetPath: "/assets/dice-box/",
+    theme: "diceOfRolling",
+    scale: 6,
+    restitution: 0.6,
+    friction: 0.9,
+    linearDamping: 0.5,
+    angularDamping: 0.5,
+    throwForce: 6,
+    spinForce: 2,
+    startingHeight: 30
+  })
+  box.init().then(() => {
+    ready.value = true
+  })
+  box.onRollComplete = (rollResult): void => {
+    const result = rollResult.flatMap(group => group.rolls.map(roll => roll.value))
+    console.log("Dice roll complete", rollResult, result)
+    pendingResolve?.(result)
+    pendingReject = undefined
+    pendingResolve = undefined
+    rolling.value = false
   }
+  diceBox = markRaw(box)
 })
+
+async function roll(quantity?: number): Promise<number[]> {
+  return new Promise<number[]>((resolve, reject) => {
+    if (DebugDice.nextRolls) {
+      return resolve(DebugDice.nextRolls)
+    }
+    if (!ready.value) {
+      return reject(new Error("not ready"))
+    } else if (pendingResolve !== undefined && pendingReject !== undefined) {
+      return reject(new Error("busy"))
+    }
+    pendingResolve = resolve
+    pendingReject = reject
+    try {
+      rolling.value = true
+      diceBox?.roll(`${quantity ?? 1}d6`)
+      if (preferencesStore.quickDice) {
+        setTimeout(() => {
+          pendingResolve?.(range(quantity ?? 1).map(() => random(1, 6)))
+          pendingReject = undefined
+          pendingResolve = undefined
+          rolling.value = false
+        }, 0)
+      }
+    } catch (e) {
+      reject(e)
+    }
+  })
+}
+
+defineExpose({ roll })
 </script>
 
 <style scoped lang="sass">

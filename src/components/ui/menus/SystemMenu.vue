@@ -129,106 +129,86 @@
   </v-list>
 </template>
 
-<script lang="ts">
-import { defineComponent } from "vue"
-import { mapActions, mapGetters, mapMutations, mapState } from "vuex"
+<script setup lang="ts">
+import { computed, inject, Ref, ref } from "vue"
 import DiceRoller from "~/components/ui/generic/DiceRoller"
 import { Creature, CREATURE_LIST } from "~/models/creature"
 import { CreatureColorMode, usePreferencesStore } from "~/stores/preferences"
+import { useTypedStore } from "~/plugins/vuex"
 
-export default defineComponent({
-  name: "SystemMenu",
-  inject: ["diceRoller"],
-  data: () => ({
-    CREATURE_LIST,
-    diceQuantity: 1,
-    saveText: ""
-  }),
-  computed: {
-    ...mapState("ui", ["selections", "localPlayer"]),
-    ...mapState("game", ["activePhase"]),
-    ...mapGetters("game", ["players"]),
-    preferencesStore() {
-      return usePreferencesStore()
-    },
-    colorModes() {
-      return {
-        [CreatureColorMode.STANDARD]: "Standard",
-        [CreatureColorMode.PLAYER]: "Player Color",
-        [CreatureColorMode.STANDARD_UNIFORM_TEXT]: "Standard with Uniform Text",
-        [CreatureColorMode.PLAYER_UNIFORM_TEXT]: "Player Color with Uniform Text"
-      }
-    },
-    fancyGraphics: {
-      get() {
-        return this.preferencesStore.fancyGraphics
-      },
-      set(value: boolean) {
-        this.preferencesStore.setFancyGraphics(value)
-      }
-    },
-    quickDice: {
-      get() {
-        return this.preferencesStore.quickDice
-      },
-      set(value: boolean) {
-        this.preferencesStore.setQuickDice(value)
-      }
-    },
-    freeMovement: {
-      get() {
-        return this.preferencesStore.freeMovement
-      },
-      set(value: boolean) {
-        this.preferencesStore.setFreeMovement(value)
-      }
-    },
-    creatureColorMode: {
-      get() {
-        return `${this.preferencesStore.creatureColorMode}`
-      },
-      set(value: string) {
-        this.preferencesStore.setCreatureColorMode(Number(value))
-      }
-    },
-    uiPlayer: {
-      get() {
-        return this.localPlayer + 1
-      },
-      set(value: number) {
-        this.setPlayer(value - 1)
-      }
-    }
-  },
-  methods: {
-    ...mapMutations("ui", ["setPlayer"]),
-    ...mapMutations("game", ["rehydrate"]),
-    ...mapActions(["reset"]),
-    ...mapActions("game", ["persist", "restore"]),
-    summon(creature: Creature) {
-      if (this.selections.stack !== undefined) {
-        this.selections.stack.creatures.push(creature.type)
-      }
-    },
-    roll() {
-      const diceRoller = this.diceRoller as InstanceType<typeof DiceRoller>
-      diceRoller.roll(this.diceQuantity)
-    },
-    async persistToClipboard() {
-      const value = await this.persist()
-      if (value) {
-        this.saveText = value
-        await navigator.clipboard.writeText(value)
-      }
-    },
-    loadSave() {
-      this.restore(this.saveText)
-    },
-    loadJson() {
-      this.rehydrate(JSON.parse(this.saveText))
-    }
-  }
+const diceRoller = inject<Readonly<Ref<InstanceType<typeof DiceRoller> | null>>>("diceRoller")
+
+const preferencesStore = usePreferencesStore()
+const store = useTypedStore()
+
+const diceQuantity = ref(1)
+const saveText = ref("")
+
+const selections = computed(() => store.state.ui.selections)
+const localPlayer = computed(() => store.state.ui.localPlayer)
+const players = computed(() => store.getters["game/players"])
+
+const colorModes = computed(() => ({
+  [CreatureColorMode.STANDARD]: "Standard",
+  [CreatureColorMode.PLAYER]: "Player Color",
+  [CreatureColorMode.STANDARD_UNIFORM_TEXT]: "Standard with Uniform Text",
+  [CreatureColorMode.PLAYER_UNIFORM_TEXT]: "Player Color with Uniform Text"
+}))
+
+const fancyGraphics = computed({
+  get: () => preferencesStore.fancyGraphics,
+  set: (value: boolean) => preferencesStore.setFancyGraphics(value)
 })
+
+const quickDice = computed({
+  get: () => preferencesStore.quickDice,
+  set: (value: boolean) => preferencesStore.setQuickDice(value)
+})
+
+const freeMovement = computed({
+  get: () => preferencesStore.freeMovement,
+  set: (value: boolean) => preferencesStore.setFreeMovement(value)
+})
+
+const creatureColorMode = computed({
+  get: () => `${preferencesStore.creatureColorMode}`,
+  set: (value: string) => preferencesStore.setCreatureColorMode(Number(value))
+})
+
+const uiPlayer = computed({
+  get: () => localPlayer.value + 1,
+  set: (value: number) => store.commit("ui/setPlayer", value - 1)
+})
+
+function reset(): void {
+  store.dispatch("reset")
+}
+
+function summon(creature: Creature): void {
+  if (selections.value.stack !== undefined) {
+    selections.value.stack.creatures.push(creature.type)
+  }
+}
+
+function roll(): void {
+  diceRoller?.value?.roll(diceQuantity.value)
+}
+
+async function persistToClipboard(): Promise<void> {
+  const value = await store.dispatch("game/persist")
+  if (value) {
+    saveText.value = value
+    await navigator.clipboard.writeText(value)
+  }
+}
+
+function loadSave(): void {
+  store.dispatch("game/restore", saveText.value)
+}
+
+function loadJson(): void {
+  store.commit("game/rehydrate", JSON.parse(saveText.value))
+}
 </script>
 
 <style scoped lang="sass">

@@ -30,7 +30,7 @@
         @click="deselectCreature"
       >
         <BattleBoardHex
-          v-for="hex in hexes"
+          v-for="hex in BATTLE_BOARD_HEXES"
           :key="hex"
           :elevation="board.getElevation(hex)"
           :hazard="board.getHazard(hex)"
@@ -47,7 +47,7 @@
           class="debug-ui"
         >
           <text
-            v-for="hex in hexes"
+            v-for="hex in BATTLE_BOARD_HEXES"
             :key="hex"
             class="debug-hex-id"
             :class="{'debug-adjacent': debugHexAdjacencies.includes(hex), 'debug-selected': debugHex === hex}"
@@ -139,9 +139,8 @@
   </div>
 </template>
 
-<script lang="ts">
-import { defineComponent } from "vue"
-import { mapActions, mapGetters, mapMutations, mapState } from "vuex"
+<script setup lang="ts">
+import { computed, inject, Ref, ref } from "vue"
 import {
   ActiveStrike,
   BATTLE_BOARD_ADJACENCIES,
@@ -150,7 +149,6 @@ import {
   BATTLE_PHASE_TITLES,
   BattleBoard,
   BattleCreature,
-  BattlePhase,
   BattlePhaseType,
   EdgeHazard,
   isRangestrike,
@@ -161,6 +159,8 @@ import {
 import { Terrain } from "~/models/masterboard"
 import { PlayerId } from "~/models/player"
 import { usePreferencesStore } from "~/stores/preferences"
+import { useTypedStore } from "~/plugins/vuex"
+import DiceRoller from "~/components/ui/generic/DiceRoller"
 import EngageIcon from "../../ui/game/EngageIcon.vue"
 import RangestrikeIcon from "../../ui/game/RangestrikeIcon.vue"
 import Creature from "../Creature.vue"
@@ -173,167 +173,161 @@ import RangestrikeConfirmation from "./RangestrikeConfirmation.vue"
 import StrikeConfirmation from "./StrikeConfirmation.vue"
 import { hexTransformStr } from "./utils"
 
-export default defineComponent({
-  name: "BattleBoard",
-  components: {
-    RangestrikeIcon,
-    StrikeConfirmation,
-    RangestrikeConfirmation,
-    EngageIcon,
-    ActionPanel,
-    CreaturePanel,
-    Creature,
-    BattleBoardHex,
-    ActiveStrikePanel,
-    FocusedStrikePanel
-  },
-  inject: ["diceRoller"],
-  // The static imports mixed into this data() defeat precise typing without a
-  // broader rework of how the template consumes them; see the ESLint migration
-  // PR description for details.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  data: (): any & { target?: BattleCreature | RangestrikeTarget } => ({
-    Terrain,
-    BattlePhase,
-    BattlePhaseType,
-    BATTLE_PHASE_TITLES,
-    hexTransformStr,
-    target: undefined,
-    optionalToHit: undefined,
-    debugHex: 0
-  }),
-  computed: {
-    ...mapState("game", ["activeBattle"]),
-    debugUi(): boolean {
-      return usePreferencesStore().debugUi
-    },
-    ...mapGetters("game", ["playerById", "battleActivePlayer", "battlePhaseType", "battleEngagements",
-      "battleCarryoverTargets", "battleRangestrikeTargets"]),
-    ...mapGetters("ui/selections", ["movementHexes", "selectedCreature", "engagements", "rangestrikes"]),
-    attackCreatureDialog: {
-      get(): boolean {
-        return this.target !== undefined
-      },
-      set(val: boolean): void {
-        if (!val) {
-          this.target = undefined
-        }
-      }
-    },
-    terrain(): Terrain {
-      return this.activeBattle.terrain
-    },
-    board(): BattleBoard {
-      return BATTLE_BOARDS[this.terrain as Terrain]
-    },
-    hexes(): readonly number[] {
-      return BATTLE_BOARD_HEXES
-    },
-    edgesForHex(): ((hex: number) => Record<number, EdgeHazard>) {
-      return (hex: number) => Object.fromEntries(BATTLE_BOARD_ADJACENCIES[hex]
-        .map((adjacency: number): [number, EdgeHazard] =>
-          [relationToHex(hex, adjacency), this.board.getEdgeHazard(adjacency, hex)])
-        .filter(([, hazard]: [number, EdgeHazard]) => hazard !== EdgeHazard.NONE)
-      )
-    },
-    attacker(): PlayerId {
-      return this.activeBattle.attacker
-    },
-    defender(): PlayerId {
-      return this.activeBattle.defender
-    },
-    activeCreatures(): BattleCreature[] {
-      return this.activeBattle.creatures.filter((creature: BattleCreature) =>
-        creature.hex > 0 && creature.hex < 36)
-    },
-    creatureEnabled(): (creature: BattleCreature) => boolean {
-      return (creature) => {
-        if (creature.player !== this.battleActivePlayer) {
-          return false
-        }
-        const engagements = this.battleEngagements(creature).length
-        const rangestrikes = this.battleRangestrikeTargets(creature).length
-        switch (this.battlePhaseType) {
-          case BattlePhaseType.MOVE:
-            return engagements === 0
-          case BattlePhaseType.STRIKE:
-            if (!creature.hasStruck && rangestrikes > 0) {
-              return true
-            }
-           
-          case BattlePhaseType.STRIKEBACK:
-            return this.battleCarryoverTargets === undefined && !creature.hasStruck && engagements > 0
-          default:
-            return false
-        }
-      }
-    },
-    creatureClasses(): (creature: BattleCreature) => object {
-      return (creature: BattleCreature) => ({
-        "active-player": creature.player === this.battleActivePlayer,
-        interactive: this.creatureEnabled(creature),
-        selected: creature === this.selectedCreature,
-        attacker: this.activeStrike?.attacker === creature.hex,
-        target: this.activeStrike?.target === creature.hex
-      })
-    },
-    activeStrike(): ActiveStrike | undefined {
-      return this.activeBattle.activeStrike
-    },
-    targetedStrike(): Strike {
-      return this.selectedCreature && this.target
-        ? this.activeBattle.getTargetedStrike(this.selectedCreature, this.target)
-        : { toHit: 0, dice: 0 }
-    },
-    debugHexAdjacencies(): number[] {
-      return BATTLE_BOARD_ADJACENCIES[this.debugHex] ?? []
-    }
-  },
-  methods: {
-    isRangestrike,
-    ...mapMutations("ui/selections", [
-      "enterBattleHex", "leaveBattleHex", "selectCreature", "deselectCreature",
-      "enterCreature", "leaveCreature"
-    ]),
-    ...mapActions("game", ["moveCreature", "attackCreature", "rangestrikeCreature", "assignCarryover"]),
-    moveSelected(hex: number): void {
-      if (this.selectedCreature && this.movementHexes.has(hex)) {
-        this.moveCreature({ creature: this.selectedCreature, hex })
-      }
-    },
-    chooseCreature(creature: BattleCreature): void {
-      if (this.creatureEnabled(creature)) {
-        this.selectCreature(creature)
-      }
-    },
-    targetCreature(creature: BattleCreature | RangestrikeTarget): void {
-      if (!("creature" in creature) && this.activeStrike?.canCarryover && this.battleCarryoverTargets) {
-        if (this.battleCarryoverTargets.includes(creature)) {
-          this.assignCarryover(creature)
-        }
-      } else {
-        this.target = creature
-      }
-    },
-    async attackTargetedCreature(): Promise<void> {
-      console.log(this.selectedCreature, this.target)
-      const rolls = await this.diceRoller.roll(this.targetedStrike.dice)
-      await this[isRangestrike(this.target) ? "rangestrikeCreature" : "attackCreature"]({
-        attacker: this.selectedCreature,
-        target: this.target,
-        optionalToHit: this.optionalToHit,
-        rolls
-      })
-      console.log(this.activeBattle.activeStrike)
-      this.resetAttack()
-      this.deselectCreature()
-    },
-    resetAttack(): void {
-      this.target = undefined
-      this.optionalToHit = undefined
+const diceRoller = inject<Readonly<Ref<InstanceType<typeof DiceRoller> | null>>>("diceRoller")
+
+const preferencesStore = usePreferencesStore()
+const store = useTypedStore()
+
+const target = ref<BattleCreature | RangestrikeTarget | undefined>(undefined)
+const optionalToHit = ref<number | undefined>(undefined)
+const debugHex = ref(0)
+
+const activeBattle = computed(() => store.state.game.activeBattle)
+const debugUi = computed((): boolean => preferencesStore.debugUi)
+const playerById = computed(() => store.getters["game/playerById"])
+const battleActivePlayer = computed(() => store.getters["game/battleActivePlayer"])
+const battlePhaseType = computed((): BattlePhaseType => store.getters["game/battlePhaseType"])
+const battleEngagements = computed(() => store.getters["game/battleEngagements"])
+const battleCarryoverTargets = computed(() => store.getters["game/battleCarryoverTargets"])
+const battleRangestrikeTargets = computed(() => store.getters["game/battleRangestrikeTargets"])
+const movementHexes = computed(() => store.getters["ui/selections/movementHexes"])
+const selectedCreature = computed((): BattleCreature | undefined =>
+  store.getters["ui/selections/selectedCreature"])
+const engagements = computed(() => store.getters["ui/selections/engagements"])
+const rangestrikes = computed(() => store.getters["ui/selections/rangestrikes"])
+
+const attackCreatureDialog = computed({
+  get: (): boolean => target.value !== undefined,
+  set: (val: boolean): void => {
+    if (!val) {
+      target.value = undefined
     }
   }
 })
+
+const terrain = computed((): Terrain => activeBattle.value!.terrain)
+const board = computed((): BattleBoard => BATTLE_BOARDS[terrain.value as Terrain])
+
+function edgesForHex(hex: number): Record<number, EdgeHazard> {
+  return Object.fromEntries(BATTLE_BOARD_ADJACENCIES[hex]
+    .map((adjacency: number): [number, EdgeHazard] =>
+      [relationToHex(hex, adjacency), board.value.getEdgeHazard(adjacency, hex)])
+    .filter(([, hazard]: [number, EdgeHazard]) => hazard !== EdgeHazard.NONE)
+  )
+}
+
+const defender = computed((): PlayerId => activeBattle.value!.defender)
+
+const activeCreatures = computed((): BattleCreature[] =>
+  activeBattle.value!.creatures.filter((creature: BattleCreature) =>
+    creature.hex > 0 && creature.hex < 36))
+
+function creatureEnabled(creature: BattleCreature): boolean {
+  if (creature.player !== battleActivePlayer.value) {
+    return false
+  }
+  const engagementsCount = battleEngagements.value(creature).length
+  const rangestrikesCount = battleRangestrikeTargets.value(creature).length
+  switch (battlePhaseType.value) {
+    case BattlePhaseType.MOVE:
+      return engagementsCount === 0
+    case BattlePhaseType.STRIKE:
+      if (!creature.hasStruck && rangestrikesCount > 0) {
+        return true
+      }
+
+    case BattlePhaseType.STRIKEBACK:
+      return battleCarryoverTargets.value === undefined && !creature.hasStruck && engagementsCount > 0
+    default:
+      return false
+  }
+}
+
+function creatureClasses(creature: BattleCreature): object {
+  return {
+    "active-player": creature.player === battleActivePlayer.value,
+    interactive: creatureEnabled(creature),
+    selected: creature === selectedCreature.value,
+    attacker: activeStrike.value?.attacker === creature.hex,
+    target: activeStrike.value?.target === creature.hex
+  }
+}
+
+const activeStrike = computed((): ActiveStrike | undefined => activeBattle.value!.activeStrike)
+
+const targetedStrike = computed((): Strike =>
+  selectedCreature.value && target.value
+    ? activeBattle.value!.getTargetedStrike(selectedCreature.value, target.value)
+    : { toHit: 0, dice: 0 })
+
+const debugHexAdjacencies = computed((): number[] => BATTLE_BOARD_ADJACENCIES[debugHex.value] ?? [])
+
+function enterBattleHex(hex: number): void {
+  store.commit("ui/selections/enterBattleHex", hex)
+}
+
+function leaveBattleHex(hex: number): void {
+  store.commit("ui/selections/leaveBattleHex", hex)
+}
+
+function selectCreature(creature: BattleCreature): void {
+  store.commit("ui/selections/selectCreature", creature)
+}
+
+function deselectCreature(): void {
+  store.commit("ui/selections/deselectCreature")
+}
+
+function enterCreature(creature: BattleCreature): void {
+  store.commit("ui/selections/enterCreature", creature)
+}
+
+function leaveCreature(creature: BattleCreature): void {
+  store.commit("ui/selections/leaveCreature", creature)
+}
+
+function moveSelected(hex: number): void {
+  if (selectedCreature.value && movementHexes.value.has(hex)) {
+    store.dispatch("game/moveCreature", { creature: selectedCreature.value, hex })
+  }
+}
+
+function chooseCreature(creature: BattleCreature): void {
+  if (creatureEnabled(creature)) {
+    selectCreature(creature)
+  }
+}
+
+function targetCreature(creature: BattleCreature | RangestrikeTarget): void {
+  if (!("creature" in creature) && activeStrike.value?.canCarryover && battleCarryoverTargets.value) {
+    if (battleCarryoverTargets.value.includes(creature)) {
+      store.dispatch("game/assignCarryover", creature)
+    }
+  } else {
+    target.value = creature
+  }
+}
+
+async function attackTargetedCreature(): Promise<void> {
+  console.log(selectedCreature.value, target.value)
+  const rolls = await diceRoller?.value?.roll(targetedStrike.value.dice)
+  // Only invoked from StrikeConfirmation/RangestrikeConfirmation, which only render
+  // inside a `v-if="selectedCreature && target"` block.
+  await store.dispatch(isRangestrike(target.value!) ? "game/rangestrikeCreature" : "game/attackCreature", {
+    attacker: selectedCreature.value,
+    target: target.value,
+    optionalToHit: optionalToHit.value,
+    rolls
+  })
+  console.log(activeBattle.value!.activeStrike)
+  resetAttack()
+  deselectCreature()
+}
+
+function resetAttack(): void {
+  target.value = undefined
+  optionalToHit.value = undefined
+}
 </script>
 
 <style scoped lang="sass">
