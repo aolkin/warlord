@@ -3,8 +3,8 @@
     :class="rootClass"
     :transform="transform"
     class="parent"
-    @mouseenter="enter"
-    @mouseleave="leave"
+    @mouseenter="selectionStore.enterHex(hex)"
+    @mouseleave="selectionStore.leaveHex(hex)"
   >
     <polygon
       :class="{ fancy: preferencesStore.fancyGraphics }"
@@ -125,14 +125,6 @@ const inverted = computed(() => isHexInverted(props.hex.id))
 // activeRoll is defined - see src/stores/ui/selection.ts.
 const pathCount = computed((): number =>
   store.state.game.activeRoll! - (props.distanceToDest ?? 0) + 1)
-
-function enter(): void {
-  selectionStore.enterHex(props.hex)
-}
-
-function leave(): void {
-  selectionStore.leaveHex(props.hex)
-}
 </script>
 
 <style lang="sass" scoped>

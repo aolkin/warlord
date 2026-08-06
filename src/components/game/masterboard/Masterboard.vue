@@ -4,7 +4,7 @@
       class="board"
       viewBox="-400 -350 800 700"
       xmlns="http://www.w3.org/2000/svg"
-      @click="deselectStack"
+      @click="selectionStore.deselectStack"
     >
       <MasterboardHexes :can-free-move="canFreeMove" />
       <v-fade-transition>
@@ -95,16 +95,12 @@ const canFreeMove = computed((): boolean =>
   activePhase.value === MasterboardPhase.MOVE &&
   selectionStore.focusedStack !== undefined && preferencesStore.freeMovement)
 
-function deselectStack(): void {
-  selectionStore.deselectStack()
-}
-
 function moveStack(distance: number, foe: boolean, hex: MasterboardHex): void {
   if (distance !== activeRoll.value - 1 || selectionStore.focusedStack?.hasMoved() || foe) {
     return
   }
   store.dispatch("game/move", { stack: selectionStore.focusedStack, hex })
-  deselectStack()
+  selectionStore.deselectStack()
 }
 </script>
 

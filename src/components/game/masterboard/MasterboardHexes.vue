@@ -4,7 +4,7 @@
       <MasterboardHex
         v-for="id in hexes"
         :key="id"
-        :hex="board.getHex(id)"
+        :hex="masterboard.getHex(id)"
         @click="canFreeMove && move({ stack: selectionStore.selectedStack, hex: id })"
       />
     </g>
@@ -28,8 +28,7 @@ withDefaults(defineProps<{
 const store = useStore()
 const selectionStore = useSelectionStore()
 
-const board = masterboard
-const hexes = computed(() => board.getHexIds())
+const hexes = computed(() => masterboard.getHexIds())
 
 function move(payload: unknown): void {
   void store.dispatch("game/move", payload)

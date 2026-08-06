@@ -27,7 +27,7 @@
       <svg
         class="board"
         viewBox="-450 -450 800 800"
-        @click="deselectCreature"
+        @click="selectionStore.deselectCreature"
       >
         <BattleBoardHex
           v-for="hex in BATTLE_BOARD_HEXES"
@@ -68,8 +68,8 @@
            rotate(${120 * (activeBattle.attackerEdge - 1) + (creature.player === defender ? 180 : 0)})`"
           in-svg
           @click.stop="chooseCreature(creature)"
-          @mouseenter="enterCreature(creature)"
-          @mouseleave="leaveCreature(creature)"
+          @mouseenter="selectionStore.enterCreature(creature)"
+          @mouseleave="selectionStore.leaveCreature(creature)"
         />
         <EngageIcon
           v-for="(creature) in (battleCarryoverTargets ?? engagements)"
@@ -79,8 +79,8 @@
           :transform="`${hexTransformStr(creature.hex)} scale(0.9)
            rotate(${120 * (activeBattle.attackerEdge - 1) + (creature.player === defender ? 0 : 180)})`"
           @click.stop="targetCreature(creature)"
-          @mouseenter="enterCreature(creature)"
-          @mouseleave="leaveCreature(creature)"
+          @mouseenter="selectionStore.enterCreature(creature)"
+          @mouseleave="selectionStore.leaveCreature(creature)"
         />
         <RangestrikeIcon
           v-for="(rangestrikeTarget) in rangestrikes"
@@ -93,8 +93,8 @@
            rotate(${120 * (activeBattle.attackerEdge - 1) +
           (rangestrikeTarget.creature.player === defender ? 0 : 180)})`"
           @click.stop="targetCreature(rangestrikeTarget)"
-          @mouseenter="enterCreature(rangestrikeTarget.creature)"
-          @mouseleave="leaveCreature(rangestrikeTarget.creature)"
+          @mouseenter="selectionStore.enterCreature(rangestrikeTarget.creature)"
+          @mouseleave="selectionStore.leaveCreature(rangestrikeTarget.creature)"
         />
       </svg>
 
@@ -262,18 +262,6 @@ const targetedStrike = computed((): Strike =>
 
 const debugHexAdjacencies = computed((): number[] => BATTLE_BOARD_ADJACENCIES[debugHex.value] ?? [])
 
-function deselectCreature(): void {
-  selectionStore.deselectCreature()
-}
-
-function enterCreature(creature: BattleCreature): void {
-  selectionStore.enterCreature(creature)
-}
-
-function leaveCreature(creature: BattleCreature): void {
-  selectionStore.leaveCreature(creature)
-}
-
 function moveSelected(hex: number): void {
   if (selectedCreature.value && movementHexes.value.has(hex)) {
     store.dispatch("game/moveCreature", { creature: selectedCreature.value, hex })
@@ -312,7 +300,7 @@ async function attackTargetedCreature(): Promise<void> {
   })
   console.log(activeBattle.value!.activeStrike)
   resetAttack()
-  deselectCreature()
+  selectionStore.deselectCreature()
 }
 
 function resetAttack(): void {
