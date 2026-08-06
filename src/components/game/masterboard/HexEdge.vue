@@ -36,12 +36,12 @@
       <polyline points="-14,-3.25 -10,3  -6,-3.25" />
       <polyline points=" -4,-3.25   0,3   4,-3.25" />
       <polyline
-        v-if="shadows"
+        v-if="preferencesStore.fancyGraphics"
         class="no-shadow"
         points="-16.5,-3.25, -13.5,-3.25"
       />
       <polyline
-        v-if="shadows"
+        v-if="preferencesStore.fancyGraphics"
         class="no-shadow"
         points="-26.5,-3.25, -23.5,-3.25"
       />
@@ -53,7 +53,7 @@
       <polyline points="-4,-4 0,3 4,-4" />
     </g>
     <g
-      v-if="shadows"
+      v-if="preferencesStore.fancyGraphics"
       :transform="transform"
     >
       <polyline
@@ -103,8 +103,6 @@ const classes = computed(() => ({
 }))
 
 const shadowMaskXs = computed(() => props.shadow ? (multiArrow.value ? [-4, -14, -24] : [-4]) : [])
-
-const shadows = computed(() => preferencesStore.fancyGraphics)
 </script>
 
 <style lang="sass" scoped>

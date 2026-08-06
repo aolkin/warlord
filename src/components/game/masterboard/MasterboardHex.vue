@@ -7,14 +7,14 @@
     @mouseleave="leave"
   >
     <polygon
-      :class="{ fancy: shadows }"
+      :class="{ fancy: preferencesStore.fancyGraphics }"
       :points="points.join(' ')"
       :transform="inverted ? 'rotate(180)' : ''"
       class="hex"
     />
     <template v-if="!path">
       <clipPath
-        v-if="shadows"
+        v-if="preferencesStore.fancyGraphics"
         :id="`hex-${hex.id}-clip`"
       >
         <polygon
@@ -22,7 +22,7 @@
         />
       </clipPath>
       <polygon
-        v-if="shadows"
+        v-if="preferencesStore.fancyGraphics"
         :clip-path="`url(#hex-${hex.id}-clip)`"
         :points="points.join(' ')"
         :transform="inverted ? 'rotate(180) scale(0.99)' : 'scale(0.99)'"
@@ -82,8 +82,6 @@ const props = withDefaults(defineProps<{
 
 const preferencesStore = usePreferencesStore()
 const store = useTypedStore()
-
-const shadows = computed(() => preferencesStore.fancyGraphics)
 
 const terrain = computed(() => Terrain[props.hex?.terrain].toLowerCase())
 

@@ -82,8 +82,6 @@ const paths = computed((): Path[] => store.getters["ui/selections/paths"])
 const focusedStack = computed((): Stack | undefined => store.getters["ui/selections/focusedStack"])
 const selectedStack = computed((): Stack | undefined => store.getters["ui/selections/selectedStack"])
 
-const freeMovement = computed((): boolean => preferencesStore.freeMovement)
-
 const sortedStacks = computed((): Stack[] => {
   lastSortedStacks = sortBy(stacks.value, stack =>
     stack === selectedStack.value ? 999 : lastSortedStacks.indexOf(stack))
@@ -97,7 +95,7 @@ const interleavedPaths = computed((): [boolean, MasterboardHex][][] =>
 
 const canFreeMove = computed((): boolean =>
   activePhase.value === MasterboardPhase.MOVE &&
-  focusedStack.value !== undefined && freeMovement.value)
+  focusedStack.value !== undefined && preferencesStore.freeMovement)
 
 function deselectStack(): void {
   store.commit("ui/selections/deselectStack")

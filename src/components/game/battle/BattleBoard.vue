@@ -43,7 +43,7 @@
           @mouseleave="leaveBattleHex(hex)"
         />
         <g
-          v-if="debugUi"
+          v-if="preferencesStore.debugUi"
           class="debug-ui"
         >
           <text
@@ -183,7 +183,6 @@ const optionalToHit = ref<number | undefined>(undefined)
 const debugHex = ref(0)
 
 const activeBattle = computed(() => store.state.game.activeBattle)
-const debugUi = computed((): boolean => preferencesStore.debugUi)
 const playerById = computed(() => store.getters["game/playerById"])
 const battleActivePlayer = computed(() => store.getters["game/battleActivePlayer"])
 const battlePhaseType = computed((): BattlePhaseType => store.getters["game/battlePhaseType"])

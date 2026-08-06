@@ -15,7 +15,7 @@
         :title="phaseTypeTitle"
       />
     </template>
-    <v-card-subtitle v-if="debugUi">
+    <v-card-subtitle v-if="preferencesStore.debugUi">
       Hex: {{ focusedBattleHex }} ({{ Hazard[land.getHazard(focusedBattleHex)] }})
       <span v-if="land.getElevation(focusedBattleHex) > 0">+{{ land.getElevation(focusedBattleHex) }}</span>
     </v-card-subtitle>
@@ -63,7 +63,6 @@ const store = useTypedStore()
 // ActionPanel only renders inside BattleBoard's v-else branch (active battle present).
 const activeBattle = computed(() => store.state.game.activeBattle!)
 const focusedBattleHex = computed(() => store.getters["ui/selections/focusedBattleHex"])
-const debugUi = computed((): boolean => preferencesStore.debugUi)
 const battlePhaseType = computed((): BattlePhaseType => store.getters["game/battlePhaseType"])
 const battleActivePlayer = computed(() => store.getters["game/battleActivePlayer"])
 const playerById = computed(() => store.getters["game/playerById"])

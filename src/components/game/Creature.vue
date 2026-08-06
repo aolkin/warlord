@@ -169,8 +169,6 @@ const props = withDefaults(defineProps<{
 const preferencesStore = usePreferencesStore()
 const theme = useTheme()
 
-const creatureColorMode = computed((): CreatureColorMode => preferencesStore.creatureColorMode)
-
 const creature = computed((): Creature | undefined =>
   props.type !== undefined ? CREATURE_DATA[props.type] : undefined)
 
@@ -195,10 +193,10 @@ const classes = computed(() => {
   const classMap: Record<string, boolean> = {
     [creature.value?.name.toLowerCase() ?? "none"]: true,
     "uniform-text": [CreatureColorMode.PLAYER_UNIFORM_TEXT,
-      CreatureColorMode.STANDARD_UNIFORM_TEXT].includes(creatureColorMode.value)
+      CreatureColorMode.STANDARD_UNIFORM_TEXT].includes(preferencesStore.creatureColorMode)
   }
   if ([CreatureColorMode.STANDARD, CreatureColorMode.STANDARD_UNIFORM_TEXT]
-    .includes(creatureColorMode.value) && !creature.value?.lord) {
+    .includes(preferencesStore.creatureColorMode) && !creature.value?.lord) {
     classMap.standard = true
   } else {
     classMap[`text-player-${props.player?.id ?? 0}`] = true
@@ -215,7 +213,7 @@ const filter = computed(() => {
   let color = theme.current.value.colors[STANDARD_CREATURE_COLORS[props.type ?? 0]]
   if (props.player !== undefined) {
     if (creature.value?.lord || [CreatureColorMode.PLAYER_UNIFORM_TEXT,
-      CreatureColorMode.PLAYER].includes(creatureColorMode.value)) {
+      CreatureColorMode.PLAYER].includes(preferencesStore.creatureColorMode)) {
       color = theme.current.value.colors[`player-${props.player.id}`]
     }
   }

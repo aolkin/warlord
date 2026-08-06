@@ -7,7 +7,7 @@
       :hex="item[0]"
     />
   </g>
-  <g v-if="shadows">
+  <g v-if="preferencesStore.fancyGraphics">
     <HexEdge
       v-for="item in edges"
       :key="item[0].id + '-' + item[1].hexEdge"
@@ -29,6 +29,4 @@ const edges = computed((): [MasterboardHex, MasterboardEdge][] =>
   Array.from(board.hexes.values()).flatMap(
     hex => hex.getEdges().map((edge): [MasterboardHex, MasterboardEdge] => [hex, edge]))
     .filter(([, edge]) => edge.rule !== MovementRule.NONE))
-
-const shadows = computed(() => preferencesStore.fancyGraphics)
 </script>
