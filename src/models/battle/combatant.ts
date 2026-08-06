@@ -8,6 +8,7 @@ export interface IBattleCreature {
   readonly player: PlayerId
   readonly playerScore: number
   hex: number
+  id?: number
   wounds?: number
   initialHex?: number
   hasStruck?: boolean
@@ -27,7 +28,7 @@ export class BattleCreature {
   constructor(props: IBattleCreature) {
     Object.assign(this, {
       ...props,
-      id: battleCreatureIdCounter++,
+      id: props.id ?? battleCreatureIdCounter++,
       wounds: props.wounds ?? 0,
       initialHex: props.initialHex ?? props.hex,
       hasStruck: props.hasStruck ?? false
