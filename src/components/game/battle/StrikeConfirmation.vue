@@ -68,8 +68,6 @@ import { useStore } from "vuex"
 import { BattleCreature, isRangestrike, Strike } from "~/models/battle"
 import { useSelectionStore } from "~/stores/ui/selection"
 
-defineOptions({ name: "StrikeConfirmation" })
-
 const props = defineProps<{
   targetedCreature: BattleCreature
   optionalToHit?: number

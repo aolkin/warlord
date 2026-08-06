@@ -68,8 +68,6 @@ import MasterboardHexComponent from "./MasterboardHex.vue"
 import MasterboardHexes from "./MasterboardHexes.vue"
 import MasterboardStack from "./MasterboardStack.vue"
 
-defineOptions({ name: "Masterboard" })
-
 let lastSortedStacks: Stack[] = []
 
 const preferencesStore = usePreferencesStore()

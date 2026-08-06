@@ -85,8 +85,6 @@ import { MasterboardPhase } from "~/models/game"
 import { Stack } from "~/models/stack"
 import { useSelectionStore } from "~/stores/ui/selection"
 
-defineOptions({ name: "TurnPanel" })
-
 const diceRoller = inject<Readonly<Ref<InstanceType<typeof DiceRoller> | null>>>("diceRoller")
 
 const store = useStore()

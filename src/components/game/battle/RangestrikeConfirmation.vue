@@ -47,8 +47,6 @@ import { BattleCreature, RangestrikeTarget, Strike } from "~/models/battle"
 import { useSelectionStore } from "~/stores/ui/selection"
 import { div } from "~/utils/math"
 
-defineOptions({ name: "RangestrikeConfirmation" })
-
 const props = defineProps<{
   target: RangestrikeTarget
 }>()

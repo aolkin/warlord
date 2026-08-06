@@ -19,8 +19,6 @@ import { useSelectionStore } from "~/stores/ui/selection"
 import MasterboardEdges from "./MasterboardEdges.vue"
 import MasterboardHex from "./MasterboardHex.vue"
 
-defineOptions({ name: "MasterboardHexes" })
-
 withDefaults(defineProps<{
   canFreeMove?: boolean
 }>(), {

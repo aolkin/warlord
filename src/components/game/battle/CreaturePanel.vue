@@ -82,8 +82,6 @@ import { useSelectionStore } from "~/stores/ui/selection"
 import Creature from "../Creature.vue"
 import PendingCreatures from "./PendingCreatures.vue"
 
-defineOptions({ name: "CreaturePanel" })
-
 const store = useStore()
 const selectionStore = useSelectionStore()
 

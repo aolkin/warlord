@@ -88,8 +88,6 @@ import SystemMenu from "~/components/ui/menus/SystemMenu"
 import { usePreferencesStore } from "~/stores/ui/preferences"
 import { useSelectionStore, View } from "~/stores/ui/selection"
 
-defineOptions({ name: "App" })
-
 const diceRoller = ref<InstanceType<typeof DiceRoller> | null>(null)
 provide("diceRoller", readonly(diceRoller))
 

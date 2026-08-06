@@ -26,8 +26,6 @@ import { BattleCreature, BattlePhase } from "~/models/battle"
 import { useSelectionStore } from "~/stores/ui/selection"
 import Creature from "../Creature.vue"
 
-defineOptions({ name: "PendingCreatures" })
-
 const props = defineProps<{
   creatures: BattleCreature[]
   expectedPhase: BattlePhase
