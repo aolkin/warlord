@@ -3,7 +3,7 @@ import { PlayerId } from "../player"
 
 let battleCreatureIdCounter = 0
 
-export interface IBattleCreature {
+export interface BattleCreatureInit {
   readonly type: CreatureType
   readonly player: PlayerId
   readonly playerScore: number
@@ -14,64 +14,63 @@ export interface IBattleCreature {
   hasStruck?: boolean
 }
 
-// The interface/class pair is merged so the class type picks up these members,
-// which are actually assigned at runtime via Object.assign in the constructor below.
-// eslint-disable-next-line @typescript-eslint/no-unsafe-declaration-merging
-export interface BattleCreature extends IBattleCreature {
+export interface BattleCreature {
+  readonly type: CreatureType
+  readonly player: PlayerId
+  readonly playerScore: number
   readonly id: number
+  hex: number
   wounds: number
   initialHex: number
   hasStruck: boolean
 }
-// eslint-disable-next-line @typescript-eslint/no-unsafe-declaration-merging
-export class BattleCreature {
-  constructor(props: IBattleCreature) {
-    Object.assign(this, {
-      ...props,
-      id: props.id ?? battleCreatureIdCounter++,
-      wounds: props.wounds ?? 0,
-      initialHex: props.initialHex ?? props.hex,
-      hasStruck: props.hasStruck ?? false
-    })
-  }
 
-  name(): string {
-    return CREATURE_DATA[this.type].name
+export function createBattleCreature(props: BattleCreatureInit): BattleCreature {
+  return {
+    ...props,
+    id: props.id ?? battleCreatureIdCounter++,
+    wounds: props.wounds ?? 0,
+    initialHex: props.initialHex ?? props.hex,
+    hasStruck: props.hasStruck ?? false
   }
+}
 
-  getStrength(): number {
-    return CREATURE_DATA[this.type].getStrength(this.playerScore)
+export function creatureName(creature: BattleCreature): string {
+  return CREATURE_DATA[creature.type].name
+}
+
+export function getStrength(creature: BattleCreature): number {
+  return CREATURE_DATA[creature.type].getStrength(creature.playerScore)
+}
+
+export function getRemainingHp(creature: BattleCreature): number {
+  return getStrength(creature) - creature.wounds
+}
+
+export function wound(creature: BattleCreature, amount: number): void {
+  creature.wounds += amount
+}
+
+export function performStrike(creature: BattleCreature): void {
+  creature.hasStruck = true
+}
+
+export function phaseEnterMove(creature: BattleCreature): void {
+  creature.initialHex = creature.hex
+}
+
+export function phaseExitMove(creature: BattleCreature): void {
+  if (creature.hex >= 36) {
+    creature.hex = 0
   }
+}
 
-  getRemainingHp(): number {
-    return this.getStrength() - this.wounds
-  }
+export function phaseEnterStrike(creature: BattleCreature): void {
+  creature.hasStruck = false
+}
 
-  wound(amount: number): void {
-    this.wounds += amount
-  }
-
-  performStrike(): void {
-    this.hasStruck = true
-  }
-
-  phaseEnterMove(): void {
-    this.initialHex = this.hex
-  }
-
-  phaseExitMove(): void {
-    if (this.hex >= 36) {
-      this.hex = 0
-    }
-  }
-
-  phaseEnterStrike(): void {
-    this.hasStruck = false
-  }
-
-  phaseExitStrikeback(): void {
-    if (this.getRemainingHp() <= 0) {
-      this.hex = 0
-    }
+export function phaseExitStrikeback(creature: BattleCreature): void {
+  if (getRemainingHp(creature) <= 0) {
+    creature.hex = 0
   }
 }

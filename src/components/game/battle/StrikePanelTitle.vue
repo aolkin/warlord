@@ -1,35 +1,36 @@
 <template>
   <v-card-title>
     <span :class="`text-player-${attacker.player}`">
-      {{ attacker.name() }}
+      {{ creatureName(attacker) }}
       <span v-if="attackerHazard !== Hazard.NONE">({{ Hazard[attackerHazard].toLowerCase() }}) </span>
     </span>
     <span>vs </span>
     <span :class="`text-player-${target.player}`">
-      {{ target.name() }}
+      {{ creatureName(target) }}
       <span v-if="targetHazard !== Hazard.NONE">({{ Hazard[targetHazard].toLowerCase() }})</span>
     </span>
   </v-card-title>
 </template>
 <script lang="ts">
-import { defineComponent } from "vue"
+import { defineComponent, PropType } from "vue"
 import { mapState } from "vuex"
-import { BattleBoard, BattleCreature, Hazard } from "~/models/battle"
+import { BattleBoard, BattleCreature, creatureName, Hazard } from "~/models/battle"
 
 export default defineComponent({
   name: "StrikePanelTitle",
   props: {
     attacker: {
-      type: BattleCreature,
+      type: Object as PropType<BattleCreature>,
       required: true
     },
     target: {
-      type: BattleCreature,
+      type: Object as PropType<BattleCreature>,
       required: true
     }
   },
   data: () => ({
-    Hazard
+    Hazard,
+    creatureName
   }),
   computed: {
     ...mapState("game", ["activeBattle"]),

@@ -29,7 +29,7 @@
             :prepend-icon="`mdi-dice-${targetedStrike.toHit}`"
             :value="targetedStrike.toHit"
           >
-            {{ normalCarryovers.map(creature => creature.name()).join(", ") }}
+            {{ normalCarryovers.map(creature => creatureName(creature)).join(", ") }}
           </v-list-item>
           <v-list-item
             v-for="(creatures, toHit) in toHitAdjustments"
@@ -37,7 +37,7 @@
             :prepend-icon="`mdi-dice-${toHit}`"
             :value="Number(toHit)"
           >
-            {{ [...normalCarryovers, ...creatures].map(creature => creature.name()).join(", ") }}
+            {{ [...normalCarryovers, ...creatures].map(creature => creatureName(creature)).join(", ") }}
           </v-list-item>
         </v-list>
       </v-card-text>
@@ -65,7 +65,7 @@
 import { computed } from "vue"
 import { isEqual, range } from "lodash-es"
 import { useStore } from "vuex"
-import { BattleCreature, isRangestrike, Strike } from "~/models/battle"
+import { BattleCreature, creatureName, getRemainingHp, isRangestrike, Strike } from "~/models/battle"
 import { useSelectionStore } from "~/stores/ui/selection"
 
 const props = defineProps<{
@@ -83,8 +83,10 @@ const store = useStore()
 const selectionStore = useSelectionStore()
 
 const activeBattle = computed(() => store.state.game.activeBattle)
-const selectedCreatureName = computed(() => selectionStore.selectedCreature?.name() ?? "")
-const targetedCreatureName = computed(() => props.targetedCreature?.name() ?? "")
+const selectedCreatureName = computed(() =>
+  selectionStore.selectedCreature ? creatureName(selectionStore.selectedCreature) : "")
+const targetedCreatureName = computed(() =>
+  props.targetedCreature ? creatureName(props.targetedCreature) : "")
 const targetedStrike = computed<Strike>(() =>
   activeBattle.value.getTargetedStrike(selectionStore.selectedCreature, props.targetedCreature))
 const targetedStrikeUnadjusted = computed<Strike>(() =>
@@ -93,7 +95,7 @@ const targetedStrikeUnadjusted = computed<Strike>(() =>
 const targetedStrikeWasAdjusted = computed(() =>
   !isEqual(targetedStrikeUnadjusted.value, targetedStrike.value))
 const carryoversImpossible = computed(() => selectionStore.engagements.length < 2 ||
-  targetedStrike.value.dice - props.targetedCreature.getRemainingHp() <= 0)
+  targetedStrike.value.dice - getRemainingHp(props.targetedCreature) <= 0)
 const normalCarryovers = computed<BattleCreature[]>(() => carryoversImpossible.value
   ? []
   : selectionStore.engagements

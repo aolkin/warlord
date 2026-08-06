@@ -30,8 +30,8 @@
         :key="creature.id"
       >
         {{ index === 0 ? "Dealt" : "Carried over" }} {{ hitsString(hits) }} to a
-        {{ creature.name() }}{{ activeStrike?.rangestrike ? " with a rangestrike" : "" }}.
-        <span v-if="creature.getRemainingHp() < 1">The {{ creature.name() }} is dead.</span>
+        {{ creatureName(creature) }}{{ activeStrike?.rangestrike ? " with a rangestrike" : "" }}.
+        <span v-if="getRemainingHp(creature) < 1">The {{ creatureName(creature) }} is dead.</span>
       </v-card-item>
       <v-card-text v-if="activeStrike">
         <span v-if="activeStrike?.canCarryover && battleCarryoverTargets">
@@ -63,14 +63,16 @@
 <script lang="ts">
 import { defineComponent } from "vue"
 import { mapActions, mapGetters, mapState } from "vuex"
-import { ActiveStrike, BattleCreature, Hazard, Strike } from "~/models/battle"
+import { ActiveStrike, BattleCreature, creatureName, getRemainingHp, Hazard, Strike } from "~/models/battle"
 import StrikePanelTitle from "./StrikePanelTitle.vue"
 
 export default defineComponent({
   name: "ActiveStrikePanel",
   components: { StrikePanelTitle },
   data: () => ({
-    Hazard
+    Hazard,
+    creatureName,
+    getRemainingHp
   }),
   computed: {
     ...mapState("game", ["activeBattle"]),

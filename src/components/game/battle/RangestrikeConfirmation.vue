@@ -43,7 +43,7 @@
 import { computed } from "vue"
 import { isEqual } from "lodash-es"
 import { useStore } from "vuex"
-import { BattleCreature, RangestrikeTarget, Strike } from "~/models/battle"
+import { BattleCreature, creatureName, RangestrikeTarget, Strike } from "~/models/battle"
 import { useSelectionStore } from "~/stores/ui/selection"
 import { div } from "~/utils/math"
 
@@ -60,9 +60,10 @@ const store = useStore()
 const selectionStore = useSelectionStore()
 
 const activeBattle = computed(() => store.state.game.activeBattle)
-const selectedCreatureName = computed(() => selectionStore.selectedCreature?.name() ?? "")
+const selectedCreatureName = computed(() =>
+  selectionStore.selectedCreature ? creatureName(selectionStore.selectedCreature) : "")
 const targetedCreature = computed<BattleCreature>(() => props.target.creature)
-const targetedCreatureName = computed(() => targetedCreature.value?.name() ?? "")
+const targetedCreatureName = computed(() => targetedCreature.value ? creatureName(targetedCreature.value) : "")
 const targetedStrike = computed<Strike>(() =>
   activeBattle.value.getTargetedStrike(selectionStore.selectedCreature, props.target))
 const targetedStrikeUnadjusted = computed<Strike>(() => {

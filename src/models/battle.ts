@@ -12,8 +12,19 @@ export {
 } from "./battle/board"
 export type { BattleBoardProps } from "./battle/board"
 
-export { BattleCreature } from "./battle/combatant"
-export type { IBattleCreature } from "./battle/combatant"
+export {
+  createBattleCreature,
+  creatureName,
+  getRemainingHp,
+  getStrength,
+  performStrike,
+  phaseEnterMove,
+  phaseEnterStrike,
+  phaseExitMove,
+  phaseExitStrikeback,
+  wound
+} from "./battle/combatant"
+export type { BattleCreature, BattleCreatureInit } from "./battle/combatant"
 
 export {
   ActiveStrike,
