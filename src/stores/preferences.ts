@@ -8,7 +8,7 @@ export enum CreatureColorMode {
   PLAYER_UNIFORM_TEXT
 }
 
-export interface Preferences {
+interface Preferences {
   fancyGraphics: boolean
   debugUi: boolean
   quickDice: boolean

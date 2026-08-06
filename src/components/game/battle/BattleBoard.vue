@@ -160,7 +160,7 @@ import { Terrain } from "~/models/masterboard"
 import { PlayerId } from "~/models/player"
 import { usePreferencesStore } from "~/stores/preferences"
 import { useTypedStore } from "~/plugins/vuex"
-import DiceRoller from "~/components/ui/generic/DiceRoller"
+import type DiceRoller from "~/components/ui/generic/DiceRoller"
 import EngageIcon from "../../ui/game/EngageIcon.vue"
 import RangestrikeIcon from "../../ui/game/RangestrikeIcon.vue"
 import Creature from "../Creature.vue"
@@ -309,7 +309,10 @@ function targetCreature(creature: BattleCreature | RangestrikeTarget): void {
 
 async function attackTargetedCreature(): Promise<void> {
   console.log(selectedCreature.value, target.value)
-  const rolls = await diceRoller?.value?.roll(targetedStrike.value.dice)
+  if (diceRoller?.value == null) {
+    throw new Error("diceRoller ref is not set")
+  }
+  const rolls = await diceRoller.value.roll(targetedStrike.value.dice)
   // Only invoked from StrikeConfirmation/RangestrikeConfirmation, which only render
   // inside a `v-if="selectedCreature && target"` block.
   await store.dispatch(isRangestrike(target.value!) ? "game/rangestrikeCreature" : "game/attackCreature", {
