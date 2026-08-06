@@ -134,19 +134,20 @@ import { computed, inject, Ref, ref } from "vue"
 import DiceRoller from "~/components/ui/generic/DiceRoller"
 import { Creature, CREATURE_LIST } from "~/models/creature"
 import { useTypedStore } from "~/plugins/vuex"
+import { usePlayerStore } from "~/stores/ui/player"
 import { CreatureColorMode, usePreferencesStore } from "~/stores/ui/preferences"
 import { useSelectionStore } from "~/stores/ui/selection"
 
 const diceRoller = inject<Readonly<Ref<InstanceType<typeof DiceRoller> | null>>>("diceRoller")
 
 const preferencesStore = usePreferencesStore()
+const playerStore = usePlayerStore()
 const selectionStore = useSelectionStore()
 const store = useTypedStore()
 
 const diceQuantity = ref(1)
 const saveText = ref("")
 
-const localPlayer = computed(() => store.state.ui.localPlayer)
 const players = computed(() => store.getters["game/players"])
 
 const colorModes = computed(() => ({
@@ -177,8 +178,8 @@ const creatureColorMode = computed({
 })
 
 const uiPlayer = computed({
-  get: () => localPlayer.value + 1,
-  set: (value: number) => store.commit("ui/setPlayer", value - 1)
+  get: () => playerStore.localPlayer + 1,
+  set: (value: number) => playerStore.setLocalPlayer(value - 1)
 })
 
 function reset(): void {

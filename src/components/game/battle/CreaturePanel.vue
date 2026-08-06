@@ -77,22 +77,23 @@ import { computed, ref } from "vue"
 import { useStore } from "vuex"
 import { BattleCreature, BattlePhase } from "~/models/battle"
 import { Player } from "~/models/player"
+import { usePlayerStore } from "~/stores/ui/player"
 import { useSelectionStore } from "~/stores/ui/selection"
 import Creature from "../Creature.vue"
 import PendingCreatures from "./PendingCreatures.vue"
 
 const store = useStore()
+const playerStore = usePlayerStore()
 const selectionStore = useSelectionStore()
 
 const minimized = ref(false)
 
-const localPlayer = computed<number>(() => store.state.ui.localPlayer)
 const activeBattle = computed(() => store.state.game.activeBattle)
 const players = computed<Player[]>(() => store.state.game.players)
 const playerById = computed(() => store.getters["game/playerById"])
 
 const orderingClasses = computed(() =>
-  ({ "flex-column-reverse": activeBattle.value.defender === players.value[localPlayer.value].id }))
+  ({ "flex-column-reverse": activeBattle.value.defender === players.value[playerStore.localPlayer].id }))
 const attacker = computed<Player>(() => playerById.value(activeBattle.value.attacker))
 const defender = computed<Player>(() => playerById.value(activeBattle.value.defender))
 const pendingOffense = computed<BattleCreature[]>(() =>
