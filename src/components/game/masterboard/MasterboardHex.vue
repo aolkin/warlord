@@ -7,14 +7,14 @@
     @mouseleave="leave"
   >
     <polygon
-      :class="{ fancy: shadows }"
+      :class="{ fancy: preferencesStore.fancyGraphics }"
       :points="points.join(' ')"
       :transform="inverted ? 'rotate(180)' : ''"
       class="hex"
     />
     <template v-if="!path">
       <clipPath
-        v-if="shadows"
+        v-if="preferencesStore.fancyGraphics"
         :id="`hex-${hex.id}-clip`"
       >
         <polygon
@@ -22,7 +22,7 @@
         />
       </clipPath>
       <polygon
-        v-if="shadows"
+        v-if="preferencesStore.fancyGraphics"
         :clip-path="`url(#hex-${hex.id}-clip)`"
         :points="points.join(' ')"
         :transform="inverted ? 'rotate(180) scale(0.99)' : 'scale(0.99)'"
@@ -55,10 +55,11 @@
   </g>
 </template>
 
-<script lang="ts">
-import { defineComponent } from "vue"
-import { mapMutations, mapState } from "vuex"
+<script setup lang="ts">
+import { computed } from "vue"
 import { MasterboardHex, Terrain } from "~/models/masterboard"
+import { usePreferencesStore } from "~/stores/ui/preferences"
+import { useTypedStore } from "~/plugins/vuex"
 import {
   CLIP_TRIANGLE_HEIGHT,
   CLIP_TRIANGLE_SIDE,
@@ -68,87 +69,68 @@ import {
   TRIANGLE_SIDE
 } from "./utils"
 
-export default defineComponent({
-  name: "MasterboardHex",
-  props: {
-    hex: {
-      type: MasterboardHex,
-      required: true
-    },
-    distanceToDest: {
-      type: Number,
-      required: false,
-      default: undefined
-    },
-    pathIndex: {
-      type: Number,
-      required: false,
-      default: 0
-    },
-    containsEnemy: {
-      type: Boolean,
-      required: false,
-      default: false
+const props = withDefaults(defineProps<{
+  hex: MasterboardHex
+  distanceToDest?: number
+  pathIndex?: number
+  containsEnemy?: boolean
+}>(), {
+  distanceToDest: undefined,
+  pathIndex: 0,
+  containsEnemy: false
+})
+
+const preferencesStore = usePreferencesStore()
+const store = useTypedStore()
+
+const terrain = computed(() => Terrain[props.hex?.terrain].toLowerCase())
+
+const path = computed((): boolean => props.distanceToDest !== undefined)
+
+const rootClass = computed(() => {
+  if (path.value) {
+    return {
+      path: true,
+      foe: props.containsEnemy,
+      [`distance-${props.distanceToDest}`]: true,
+      [`path-${props.pathIndex}`]: true,
+      destination: props.distanceToDest === 1
     }
-  },
-  computed: {
-    ...mapState("game", ["activeRoll"]),
-    ...mapState("ui/preferences", ["fancyGraphics"]),
-    shadows(): boolean {
-      return this.fancyGraphics
-    },
-    rootClass() {
-      if (this.path) {
-        return {
-          path: true,
-          foe: this.containsEnemy,
-          [`distance-${this.distanceToDest}`]: true,
-          [`path-${this.pathIndex}`]: true,
-          destination: this.distanceToDest === 1
-        }
-      } else {
-        return {
-          board: true,
-          [this.terrain]: true
-        }
-      }
-    },
-    terrain() {
-      return Terrain[this.hex?.terrain].toLowerCase()
-    },
-    points() {
-      return [
-        [-CLIP_TRIANGLE_SIDE / 2, CLIP_TRIANGLE_HEIGHT - TRIANGLE_HEIGHT / 2],
-        [CLIP_TRIANGLE_SIDE / 2, CLIP_TRIANGLE_HEIGHT - TRIANGLE_HEIGHT / 2],
-        [TRIANGLE_SIDE / 2 - CLIP_TRIANGLE_SIDE / 2, TRIANGLE_HEIGHT / 2 - CLIP_TRIANGLE_HEIGHT],
-        [TRIANGLE_SIDE / 2 - CLIP_TRIANGLE_SIDE, TRIANGLE_HEIGHT / 2],
-        [CLIP_TRIANGLE_SIDE - TRIANGLE_SIDE / 2, TRIANGLE_HEIGHT / 2],
-        [CLIP_TRIANGLE_SIDE / 2 - TRIANGLE_SIDE / 2, TRIANGLE_HEIGHT / 2 - CLIP_TRIANGLE_HEIGHT]
-      ].map(([x, y]) => `${x},${y}`)
-    },
-    transform(): string {
-      return hexTransform(this.hex.id).toString()
-    },
-    inverted() {
-      return isHexInverted(this.hex.id)
-    },
-    path(): boolean {
-      return this.distanceToDest !== undefined
-    },
-    pathCount(): number {
-      return this.activeRoll - (this.distanceToDest ?? 0) + 1
-    }
-  },
-  methods: {
-    ...mapMutations("ui/selections", ["enterHex", "leaveHex"]),
-    enter() {
-      this.enterHex(this.hex)
-    },
-    leave() {
-      this.leaveHex(this.hex)
+  } else {
+    return {
+      board: true,
+      [terrain.value]: true
     }
   }
 })
+
+const points = computed(() => [
+  [-CLIP_TRIANGLE_SIDE / 2, CLIP_TRIANGLE_HEIGHT - TRIANGLE_HEIGHT / 2],
+  [CLIP_TRIANGLE_SIDE / 2, CLIP_TRIANGLE_HEIGHT - TRIANGLE_HEIGHT / 2],
+  [TRIANGLE_SIDE / 2 - CLIP_TRIANGLE_SIDE / 2, TRIANGLE_HEIGHT / 2 - CLIP_TRIANGLE_HEIGHT],
+  [TRIANGLE_SIDE / 2 - CLIP_TRIANGLE_SIDE, TRIANGLE_HEIGHT / 2],
+  [CLIP_TRIANGLE_SIDE - TRIANGLE_SIDE / 2, TRIANGLE_HEIGHT / 2],
+  [CLIP_TRIANGLE_SIDE / 2 - TRIANGLE_SIDE / 2, TRIANGLE_HEIGHT / 2 - CLIP_TRIANGLE_HEIGHT]
+].map(([x, y]) => `${x},${y}`))
+
+const transform = computed((): string => hexTransform(props.hex.id).toString())
+
+const inverted = computed(() => isHexInverted(props.hex.id))
+
+// Only read in the "path" branch (path === true), which only occurs when this
+// hex was given a distanceToDest by Masterboard's path rendering, itself only
+// populated once ui/selections' "paths" getter is non-empty and therefore
+// activeRoll is defined - see src/store/ui/selection.ts.
+const pathCount = computed((): number =>
+  store.state.game.activeRoll! - (props.distanceToDest ?? 0) + 1)
+
+function enter(): void {
+  store.commit("ui/selections/enterHex", props.hex)
+}
+
+function leave(): void {
+  store.commit("ui/selections/leaveHex", props.hex)
+}
 </script>
 
 <style lang="sass" scoped>

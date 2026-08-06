@@ -1,7 +1,7 @@
 <template>
   <g
     :class="classes"
-    :transform="hexTransform"
+    :transform="hexTransformStr"
   >
     <rect
       v-for="x in shadowMaskXs"
@@ -36,12 +36,12 @@
       <polyline points="-14,-3.25 -10,3  -6,-3.25" />
       <polyline points=" -4,-3.25   0,3   4,-3.25" />
       <polyline
-        v-if="shadows"
+        v-if="preferencesStore.fancyGraphics"
         class="no-shadow"
         points="-16.5,-3.25, -13.5,-3.25"
       />
       <polyline
-        v-if="shadows"
+        v-if="preferencesStore.fancyGraphics"
         class="no-shadow"
         points="-26.5,-3.25, -23.5,-3.25"
       />
@@ -53,7 +53,7 @@
       <polyline points="-4,-4 0,3 4,-4" />
     </g>
     <g
-      v-if="shadows"
+      v-if="preferencesStore.fancyGraphics"
       :transform="transform"
     >
       <polyline
@@ -67,64 +67,42 @@
     </g>
   </g>
 </template>
-<script lang="ts">
-import { defineComponent } from "vue"
+<script setup lang="ts">
+import { computed } from "vue"
 import { MasterboardEdge, MasterboardHex, MovementRule, Terrain } from "~/models/masterboard"
+import { usePreferencesStore } from "~/stores/ui/preferences"
 import { hexTransform, isHexInverted, TRIANGLE_HEIGHT } from "./utils"
 
-export default defineComponent({
-  name: "HexEdge",
-  props: {
-    edge: {
-      type: Object as () => MasterboardEdge,
-      required: true
-    },
-    hex: {
-      type: MasterboardHex,
-      required: true
-    },
-    shadow: {
-      type: Boolean,
-      default: false
-    }
-  },
-  data() {
-    return {
-      MovementRule
-    }
-  },
-  computed: {
-    multiArrow(): boolean {
-      return this.edge.rule === MovementRule.ARROW &&
-        !this.edge.hex.getEdges().some(edge =>
-          edge.rule !== MovementRule.NONE && edge.hex.id === this.hex.id)
-    },
-    hexTransform(): string {
-      return hexTransform(this.hex.id).toString()
-    },
-    transform() {
-      return `rotate(${isHexInverted(this.hex.id) ? 180 : 0})
-              translate(0 10)
-              rotate(${(this.edge.hexEdge - 1) * 120})
-              translate(${this.edge.hexEdge === 1 ? 10 : (this.edge.hexEdge === 0 ? 6 : 14)} 0)
-              translate(0 ${TRIANGLE_HEIGHT / 4 + (this.edge.hexEdge === 1 ? 13.75 : 7.25)})`
-    },
-    classes() {
-      return {
-        [Terrain[this.hex.terrain].toLowerCase()]: true,
-        ["to-" + Terrain[this.edge.hex.terrain].toLowerCase()]: true,
-        root: !this.shadow,
-        shadow: this.shadow
-      }
-    },
-    shadowMaskXs() {
-      return this.shadow ? (this.multiArrow ? [-4, -14, -24] : [-4]) : []
-    },
-    shadows(): boolean {
-      return this.$store.state.ui.preferences.fancyGraphics
-    }
-  }
+const props = withDefaults(defineProps<{
+  edge: MasterboardEdge
+  hex: MasterboardHex
+  shadow?: boolean
+}>(), {
+  shadow: false
 })
+
+const preferencesStore = usePreferencesStore()
+
+const multiArrow = computed((): boolean => props.edge.rule === MovementRule.ARROW &&
+  !props.edge.hex.getEdges().some(edge =>
+    edge.rule !== MovementRule.NONE && edge.hex.id === props.hex.id))
+
+const hexTransformStr = computed((): string => hexTransform(props.hex.id).toString())
+
+const transform = computed(() => `rotate(${isHexInverted(props.hex.id) ? 180 : 0})
+              translate(0 10)
+              rotate(${(props.edge.hexEdge - 1) * 120})
+              translate(${props.edge.hexEdge === 1 ? 10 : (props.edge.hexEdge === 0 ? 6 : 14)} 0)
+              translate(0 ${TRIANGLE_HEIGHT / 4 + (props.edge.hexEdge === 1 ? 13.75 : 7.25)})`)
+
+const classes = computed(() => ({
+  [Terrain[props.hex.terrain].toLowerCase()]: true,
+  ["to-" + Terrain[props.edge.hex.terrain].toLowerCase()]: true,
+  root: !props.shadow,
+  shadow: props.shadow
+}))
+
+const shadowMaskXs = computed(() => props.shadow ? (multiArrow.value ? [-4, -14, -24] : [-4]) : [])
 </script>
 
 <style lang="sass" scoped>

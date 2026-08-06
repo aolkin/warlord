@@ -85,6 +85,7 @@ import PlayerStatus from "~/components/ui/game/PlayerStatus"
 import DiceRoller from "~/components/ui/generic/DiceRoller"
 import GameMenu from "~/components/ui/menus/GameMenu"
 import SystemMenu from "~/components/ui/menus/SystemMenu"
+import { usePreferencesStore } from "~/stores/ui/preferences"
 import { View } from "~/store/ui/selection"
 
 export default defineComponent({
@@ -100,7 +101,7 @@ export default defineComponent({
   setup() {
     const diceRoller = ref(null)
     provide("diceRoller", readonly(diceRoller))
-    return { diceRoller }
+    return { diceRoller, preferencesStore: usePreferencesStore() }
   },
   data: () => ({
     View: View,
@@ -127,12 +128,10 @@ export default defineComponent({
   methods: {
     ...mapMutations("ui/selections", ["setView"]),
     toggleFancyGraphics() {
-      this.$store.commit("ui/preferences/setFancyGraphics",
-        !this.$store.state.ui.preferences.fancyGraphics)
+      this.preferencesStore.setFancyGraphics(!this.preferencesStore.fancyGraphics)
     },
     toggleDebugUi() {
-      this.$store.commit("ui/preferences/setDebugUi",
-        !this.$store.state.ui.preferences.debugUi)
+      this.preferencesStore.setDebugUi(!this.preferencesStore.debugUi)
     }
   }
 })

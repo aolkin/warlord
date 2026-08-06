@@ -15,7 +15,7 @@
         :title="phaseTypeTitle"
       />
     </template>
-    <v-card-subtitle v-if="debugUi">
+    <v-card-subtitle v-if="preferencesStore.debugUi">
       Hex: {{ focusedBattleHex }} ({{ Hazard[land.getHazard(focusedBattleHex)] }})
       <span v-if="land.getElevation(focusedBattleHex) > 0">+{{ land.getElevation(focusedBattleHex) }}</span>
     </v-card-subtitle>
@@ -46,88 +46,85 @@
     </v-fade-transition>
   </v-card>
 </template>
-<script lang="ts">
-import { defineComponent } from "vue"
-import { mapActions, mapGetters, mapMutations, mapState } from "vuex"
+<script setup lang="ts">
+import { computed } from "vue"
 import {
-  BATTLE_PHASE_TITLES,
-  BATTLE_PHASE_TYPES,
   BattleBoard,
   BattleCreature,
   BattlePhaseType,
   Hazard
 } from "~/models/battle"
+import { usePreferencesStore } from "~/stores/ui/preferences"
+import { useTypedStore } from "~/plugins/vuex"
 
-export default defineComponent({
-  name: "ActionPanel",
-  data: () => ({
-    Hazard,
-    BattlePhaseType,
-    BATTLE_PHASE_TITLES,
-    BATTLE_PHASE_TYPES
-  }),
-  computed: {
-    ...mapState("game", ["activeBattle"]),
-    ...mapState("ui/preferences", ["debugUi"]),
-    ...mapGetters("ui/selections", ["focusedBattleHex"]),
-    ...mapGetters("game", ["battlePhaseType", "battleActivePlayer", "playerById",
-      "battleCarryoverTargets"]),
-    phaseTypeTitle(): string {
-      switch (this.battlePhaseType) {
-        case BattlePhaseType.MOVE:
-          return "Movement"
-        case BattlePhaseType.STRIKE:
-          return "Strikes"
-        case BattlePhaseType.STRIKEBACK:
-          return "Strikebacks"
-        default:
-          return "Unknown"
-      }
-    },
-    phaseIcon(): string {
-      switch (this.battlePhaseType) {
-        case BattlePhaseType.MOVE:
-          return "mdi-cursor-move"
-        case BattlePhaseType.STRIKE:
-          return "mdi-sword"
-        case BattlePhaseType.STRIKEBACK:
-          return "mdi-shield-sword"
-        default:
-          return ""
-      }
-    },
-    pendingStrikes(): BattleCreature[] {
-      if (this.battlePhaseType === BattlePhaseType.STRIKE ||
-        this.battlePhaseType === BattlePhaseType.STRIKEBACK) {
-        return this.activeBattle.getPendingStrikes()
-      } else {
-        return []
-      }
-    },
-    mayProceed(): boolean {
-      return this.pendingStrikes.length === 0 && !this.battleCarryoverTargets
-    },
-    roundIcon(): string {
-      const name = `mdi-numeric-${this.activeBattle.round + 1}-box`
-      return name + (this.battleActivePlayer === this.activeBattle.defender ? "-outline" : "")
-    },
-    land(): BattleBoard {
-      return this.activeBattle.getBoard()
-    },
-    pendingCreatures(): number {
-      return this.activeBattle.creatures.filter((creature: BattleCreature) =>
-        creature.player === this.battleActivePlayer && creature.hex >= 36).length
-    }
-  },
-  methods: {
-    ...mapMutations("ui/selections", ["deselectCreature"]),
-    ...mapActions("game", ["nextBattlePhase"]),
-    nextPhase(): void {
-      this.deselectCreature()
-      this.nextBattlePhase()
-    }
+const preferencesStore = usePreferencesStore()
+const store = useTypedStore()
+
+// ActionPanel only renders inside BattleBoard's v-else branch (active battle present).
+const activeBattle = computed(() => store.state.game.activeBattle!)
+const focusedBattleHex = computed(() => store.getters["ui/selections/focusedBattleHex"])
+const battlePhaseType = computed((): BattlePhaseType => store.getters["game/battlePhaseType"])
+const battleActivePlayer = computed(() => store.getters["game/battleActivePlayer"])
+const playerById = computed(() => store.getters["game/playerById"])
+const battleCarryoverTargets = computed(() => store.getters["game/battleCarryoverTargets"])
+
+const phaseTypeTitle = computed((): string => {
+  switch (battlePhaseType.value) {
+    case BattlePhaseType.MOVE:
+      return "Movement"
+    case BattlePhaseType.STRIKE:
+      return "Strikes"
+    case BattlePhaseType.STRIKEBACK:
+      return "Strikebacks"
+    default:
+      return "Unknown"
   }
 })
+
+const phaseIcon = computed((): string => {
+  switch (battlePhaseType.value) {
+    case BattlePhaseType.MOVE:
+      return "mdi-cursor-move"
+    case BattlePhaseType.STRIKE:
+      return "mdi-sword"
+    case BattlePhaseType.STRIKEBACK:
+      return "mdi-shield-sword"
+    default:
+      return ""
+  }
+})
+
+const pendingStrikes = computed((): BattleCreature[] => {
+  if (battlePhaseType.value === BattlePhaseType.STRIKE ||
+    battlePhaseType.value === BattlePhaseType.STRIKEBACK) {
+    return activeBattle.value.getPendingStrikes()
+  } else {
+    return []
+  }
+})
+
+const mayProceed = computed((): boolean =>
+  pendingStrikes.value.length === 0 && !battleCarryoverTargets.value)
+
+const roundIcon = computed((): string => {
+  const name = `mdi-numeric-${activeBattle.value.round + 1}-box`
+  return name + (battleActivePlayer.value === activeBattle.value.defender ? "-outline" : "")
+})
+
+const land = computed((): BattleBoard => activeBattle.value.getBoard())
+
+const pendingCreatures = computed((): number =>
+  activeBattle.value.creatures.filter((creature: BattleCreature) =>
+    creature.player === battleActivePlayer.value && creature.hex >= 36).length)
+
+function deselectCreature(): void {
+  store.commit("ui/selections/deselectCreature")
+}
+
+function nextPhase(): void {
+  deselectCreature()
+  store.dispatch("game/nextBattlePhase")
+}
 </script>
 <style scoped lang="sass">
 @import "@/styles/terrain-colors.sass"
