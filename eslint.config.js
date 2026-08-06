@@ -24,7 +24,7 @@ export default defineConfigWithVueTs(
   },
   {
     name: "app/store-any",
-    files: ["src/store/**/*.ts"],
+    files: ["src/game/store/**/*.ts"],
     rules: {
       // Vuex 4's getter/action signatures (state, getters, rootState, rootGetters)
       // have no usable generic typing without a much larger store rewrite.

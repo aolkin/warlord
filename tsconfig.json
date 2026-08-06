@@ -10,25 +10,28 @@
     "allowJs": true,
     "paths": {
       "~/*": [
-        "./src/*"
+        "./src/ui/*"
       ],
       "~/components/*": [
-        "./src/components/*.vue"
-      ],
-      "~/store/*": [
-        "./src/store/*"
-      ],
-      "~/models/*": [
-        "./src/models/*"
+        "./src/ui/components/*.vue"
       ],
       "~/plugins/*": [
-        "./src/plugins/*"
+        "./src/ui/plugins/*"
       ],
       "~/utils/*": [
         "./src/utils/*"
       ],
       "@/*": [
-        "./src/*"
+        "./src/game/*"
+      ],
+      "@/models/*": [
+        "./src/game/models/*"
+      ],
+      "@/store/*": [
+        "./src/game/store/*"
+      ],
+      "@/utils/*": [
+        "./src/utils/*"
       ]
     },
     "sourceMap": true,

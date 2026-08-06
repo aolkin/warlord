@@ -14,8 +14,10 @@ export default defineConfig({
   define: { "process.env": {} },
   resolve: {
     alias: {
-      "~": path.resolve(configDir, "src"),
-      "@": path.resolve(configDir, "src")
+      "~/utils": path.resolve(configDir, "src/utils"),
+      "@/utils": path.resolve(configDir, "src/utils"),
+      "~": path.resolve(configDir, "src/ui"),
+      "@": path.resolve(configDir, "src/game")
     },
     extensions: [
       ".js",
