@@ -240,8 +240,8 @@ export class TitanGame {
         getters.activeStacks
           .filter((stack): stack is Stack & { currentMuster: MusterChoice } => stack.currentMuster !== undefined)
           .forEach(stack => {
-            stack.recruits[this.round] = stack.currentMuster
-            finalizeMuster(this, stack)
+            const recruitedCreature = finalizeMuster(this.round, stack)
+            this.creaturePool[recruitedCreature]--
           })
     }
     nextPhase(this, getters)
@@ -306,9 +306,10 @@ function resetStackMove(stack: Stack): void {
   stack.attackEdge = undefined
 }
 
-function finalizeMuster(game: TitanGame, stack: Stack & { currentMuster: MusterChoice }): void {
+function finalizeMuster(round: number, stack: Stack & { currentMuster: MusterChoice }): CreatureType {
+  stack.recruits[round] = stack.currentMuster
   stack.creatures.push(stack.currentMuster[0])
-  game.creaturePool[stack.currentMuster[0]]--
+  return stack.currentMuster[0]
 }
 
 function nextPhase(game: TitanGame, getters: Getters): void {
