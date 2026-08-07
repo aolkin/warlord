@@ -9,10 +9,6 @@ import { BattleCreature, performStrike } from "./combatant"
 import { Battle, BattleSide, nextPhase, phaseEnterStrike } from "./engine"
 import { BattlePhase } from "./strike"
 
-// strike/carryover/rangestrike are no longer part of the production API surface (their bodies
-// are inlined at their single call sites in game/battle.ts); tests that need to drive a strike
-// exercise the same mutators production code uses (mAttackCreature etc.) directly on a real
-// TitanGame, the same direct-call pattern game.test.ts uses for mPhaseExitSplit.
 function createGameWithActiveBattle(battle: Battle): TitanGame {
   const game = newGame()
   game.activeBattle = battle
