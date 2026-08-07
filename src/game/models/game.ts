@@ -208,96 +208,47 @@ export class TitanGame {
         .some(occupant => occupant.owner !== getters.activePlayerId))
   }
 
-  // Mutations
-
-  // Phase Entry/Exit Mutations take Getters and should not be called outside of `doNextPhase()`
-
-  mPhaseExitSplit(getters: Getters): void {
-    getters.activeStacks.filter(stack => stack.numSplitting() > 0).forEach(stack => {
-      this.stacks.push(stack.finalizeSplit(getters.nextMarker))
-    })
-  }
-
-  mPhaseEnterMove(getters: Getters): void {
-    getters.activeStacks.forEach(stack => {
-      stack.origin = stack.hex
-      stack.attackEdge = undefined
-    })
-    this.mulliganTaken = false
-  }
-
-  mPhaseExitMove(_getters: Getters): void {
-    this.activeRoll = undefined
-    // TODO: recombine splits that failed to move
-  }
-
-  mPhaseEnterBattle(_getters: Getters): void {
-  }
-
-  mPhaseExitBattle(_getters: Getters): void {
-  }
-
-  mPhaseEnterMuster(_getters: Getters): void {
-  }
-
-  mPhaseExitMuster(getters: Getters): void {
-    getters.activeStacks.forEach(stack => {
-      if (stack.currentMuster !== undefined) {
-        stack.recruits[this.round] = stack.currentMuster
-        stack.creatures.push(stack.currentMuster[0])
-        this.creaturePool[stack.currentMuster[0]]--
-      }
-    })
-  }
-
-  // End Phase Entry/Exit Mutations
-
-  mNextPhase(getters: Getters): void {
-    this.activePhase += 1
-    if (this.activePhase === MasterboardPhase.END) {
-      this.activePlayer += 1
-      if (this.activePlayer >= this.players.length) {
-        this.activePlayer = 0
-        this.round++
-      }
-      this.activePhase = MasterboardPhase.SPLIT
-      getters.activeStacks.forEach(stack => stack.currentMuster = undefined)
-    }
-  }
-
   // Actions
 
-  async doNextPhase({ getters, commit, dispatch }: ActionContext): Promise<void> {
+  async doNextPhase({ getters, dispatch }: ActionContext): Promise<void> {
     switch (this.activePhase) {
       case MasterboardPhase.SPLIT:
         // TODO: check getters.mayProceed before advancing — round-1 split rule (exactly 4 creatures with 1 lord) not yet enforced
-        commit("phaseExitSplit", getters)
-        commit("phaseEnterMove", getters)
+        getters.activeStacks.filter(stack => stack.numSplitting() > 0).forEach(stack => {
+          this.stacks.push(stack.finalizeSplit(getters.nextMarker))
+        })
+        getters.activeStacks.forEach(stack => {
+          stack.origin = stack.hex
+          stack.attackEdge = undefined
+        })
+        this.mulliganTaken = false
         break
       case MasterboardPhase.MOVE:
         // TODO: handle 2+ simultaneous engagements — no UI yet exists to let the player choose
         // which battle to resolve first. Refusing to advance keeps the game out of a battle
         // phase with no battle to resolve.
         assert(getters.engagedStacks.length <= 1, "Multiple simultaneous engagements are unsupported")
-        commit("phaseExitMove", getters)
-        commit("phaseEnterBattle", getters)
+        this.activeRoll = undefined
+        // TODO: recombine splits that failed to move
         if (getters.engagedStacks.length === 0) {
-          commit("nextPhase", getters)
-          commit("phaseExitBattle", getters)
-          commit("phaseEnterMuster", getters)
+          nextPhase(this, getters)
         } else {
           dispatch("initiateBattle", getters.engagedStacks[0])
         }
         break
       case MasterboardPhase.BATTLE:
         assert(this.activeBattle !== undefined, "Incomplete battle!")
-        commit("phaseExitBattle", getters)
-        commit("phaseEnterMuster", getters)
         break
       case MasterboardPhase.MUSTER:
-        commit("phaseExitMuster", getters)
+        getters.activeStacks.forEach(stack => {
+          if (stack.currentMuster !== undefined) {
+            stack.recruits[this.round] = stack.currentMuster
+            stack.creatures.push(stack.currentMuster[0])
+            this.creaturePool[stack.currentMuster[0]]--
+          }
+        })
     }
-    commit("nextPhase", getters)
+    nextPhase(this, getters)
     await this.persist()
   }
 
@@ -353,3 +304,16 @@ export class TitanGame {
 }
 
 Object.assign(TitanGame.prototype, gameBattle, gamePersistence)
+
+function nextPhase(game: TitanGame, getters: Getters): void {
+  game.activePhase += 1
+  if (game.activePhase === MasterboardPhase.END) {
+    game.activePlayer += 1
+    if (game.activePlayer >= game.players.length) {
+      game.activePlayer = 0
+      game.round++
+    }
+    game.activePhase = MasterboardPhase.SPLIT
+    getters.activeStacks.forEach(stack => stack.currentMuster = undefined)
+  }
+}

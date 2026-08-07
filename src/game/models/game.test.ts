@@ -93,10 +93,8 @@ describe("TitanGame mandatory moves (stack splitting during movement)", () => {
     original.setPendingSplit(4, true) // OGRE
     original.setPendingSplit(6, true) // GARGOYLE
     const getters = createGetters(game)
-    game.mPhaseExitSplit(getters)
+    await game.doNextPhase(createActionContext(game))
     const sibling = game.stacks.at(-1)!
-    game.mPhaseEnterMove(getters)
-    game.activePhase = MasterboardPhase.MOVE
     game.activeRoll = 1
     const context = createActionContext(game)
 
@@ -195,14 +193,12 @@ describe("TitanGame turn and phase transitions", () => {
     original.setPendingSplit(2, true)
     original.setPendingSplit(4, true)
     original.setPendingSplit(6, true)
-    const getters = createGetters(game)
-    game.mPhaseExitSplit(getters)
+    const context = createActionContext(game)
+    await game.doNextPhase(context)
     const sibling = game.stacks.at(-1)!
     original.hex = game.stacks[1].hex // engage GREEN
     sibling.hex = game.stacks[2].hex // engage RED
-    game.activePhase = MasterboardPhase.MOVE
     game.activeRoll = 1
-    const context = createActionContext(game)
 
     await expect(game.doNextPhase(context)).rejects.toThrow("Multiple simultaneous engagements")
 
@@ -328,8 +324,7 @@ describe("TitanGame mustering (doSetRecruit)", () => {
     const context = createActionContext(game)
     await game.doSetRecruit(context, { stack, recruit: [CreatureType.LION, [CreatureType.CENTAUR, 2]] })
 
-    const getters = createGetters(game)
-    game.mPhaseExitMuster(getters)
+    await game.doNextPhase(context)
 
     expect(stack.creatures).toContain(CreatureType.LION)
     expect(game.creaturePool[CreatureType.LION]).toBe(poolBefore - 1)
