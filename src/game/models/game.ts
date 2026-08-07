@@ -217,10 +217,7 @@ export class TitanGame {
         getters.activeStacks.filter(stack => stack.numSplitting() > 0).forEach(stack => {
           this.stacks.push(stack.finalizeSplit(getters.nextMarker))
         })
-        getters.activeStacks.forEach(stack => {
-          stack.origin = stack.hex
-          stack.attackEdge = undefined
-        })
+        getters.activeStacks.forEach(resetStackMove)
         this.mulliganTaken = false
         break
       case MasterboardPhase.MOVE:
@@ -240,13 +237,12 @@ export class TitanGame {
         assert(this.activeBattle !== undefined, "Incomplete battle!")
         break
       case MasterboardPhase.MUSTER:
-        getters.activeStacks.forEach(stack => {
-          if (stack.currentMuster !== undefined) {
+        getters.activeStacks
+          .filter((stack): stack is Stack & { currentMuster: MusterChoice } => stack.currentMuster !== undefined)
+          .forEach(stack => {
             stack.recruits[this.round] = stack.currentMuster
-            stack.creatures.push(stack.currentMuster[0])
-            this.creaturePool[stack.currentMuster[0]]--
-          }
-        })
+            finalizeMuster(this, stack)
+          })
     }
     nextPhase(this, getters)
     await this.persist()
@@ -305,6 +301,16 @@ export class TitanGame {
 
 Object.assign(TitanGame.prototype, gameBattle, gamePersistence)
 
+function resetStackMove(stack: Stack): void {
+  stack.origin = stack.hex
+  stack.attackEdge = undefined
+}
+
+function finalizeMuster(game: TitanGame, stack: Stack & { currentMuster: MusterChoice }): void {
+  stack.creatures.push(stack.currentMuster[0])
+  game.creaturePool[stack.currentMuster[0]]--
+}
+
 function nextPhase(game: TitanGame, getters: Getters): void {
   game.activePhase += 1
   if (game.activePhase === MasterboardPhase.END) {
@@ -314,6 +320,8 @@ function nextPhase(game: TitanGame, getters: Getters): void {
       game.round++
     }
     game.activePhase = MasterboardPhase.SPLIT
+    // A finalized muster is left on its stack so it stays visible until this player's stacks
+    // come up again; clear it now, right before this player's next SPLIT phase begins.
     getters.activeStacks.forEach(stack => stack.currentMuster = undefined)
   }
 }
