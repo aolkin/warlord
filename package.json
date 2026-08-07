@@ -38,5 +38,10 @@
     "vitest": "4",
     "vue-tsc": "^3.3.8",
     "wrangler": "^4.118.0"
+  },
+  "pnpm": {
+    "overrides": {
+      "undici": "^7.29.0"
+    }
   }
 }
