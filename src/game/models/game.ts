@@ -8,7 +8,7 @@ import { GamePersistence, gamePersistence, GAME_PERSISTENCE_KEY } from "./game/p
 import masterboard, { HexEdge, MasterboardHex } from "./masterboard"
 import { Player, PlayerId } from "./player"
 import { defaultRandom, Random } from "./random"
-import { finalizeSplit, MusterChoice, Stack } from "./stack"
+import { finalizeSplit, muster, MusterChoice, Stack } from "./stack"
 
 const INITIAL_HEXES: Record<number, number[]> = {
   2: [100, 400],
@@ -313,7 +313,7 @@ function startPlayerTurn(stack: Stack): void {
 
 function finalizeMuster(round: number, stack: Stack & { currentMuster: MusterChoice }): CreatureType {
   stack.recruits[round] = stack.currentMuster
-  stack.creatures.push(stack.currentMuster[0])
+  muster(stack, stack.currentMuster[0])
   return stack.currentMuster[0]
 }
 
