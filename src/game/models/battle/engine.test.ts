@@ -4,7 +4,7 @@ import { HexEdge, Terrain } from "@/models/masterboard"
 import { PlayerId } from "@/models/player"
 import { UNATTAINABLE_MOVEMENT_COST } from "./board"
 import { BattleCreature, performStrike } from "./combatant"
-import { Battle, BattleSide } from "./engine"
+import { Battle, BattleSide, carryover, rangestrike, strike } from "./engine"
 import { BattlePhase } from "./strike"
 
 function setupBattle(terrain: Terrain, attackerTypes: CreatureType[], defenderTypes: CreatureType[]): {
@@ -47,7 +47,7 @@ describe("Battle engagement", () => {
 
     const toHit = battle.toHitAdjusted(lion, centaur)
     expect(toHit).toBe(5) // 4 - (lion skill 3 - centaur skill 4), no terrain adjustment
-    battle.strike(lion, centaur, [6, 6, 6, 6, 6])
+    strike(battle, lion, centaur, [6, 6, 6, 6, 6])
 
     expect(lion.hasStruck).toBe(true)
     expect(centaur.wounds).toBe(3) // Centaur's full strength (3); capped, not overkill
@@ -246,14 +246,14 @@ describe("Carryover", () => {
   it("assigns overflow hits from an overkill strike to another engaged target", () => {
     const { battle, lion, centaur1, centaur2 } = setupTripleEngagement()
 
-    battle.strike(lion, centaur1, [6, 6, 6, 6, 6])
+    strike(battle, lion, centaur1, [6, 6, 6, 6, 6])
     expect(centaur1.getRemainingHp()).toBe(0)
     expect(battle.activeStrike?.canCarryover).toBe(true)
     // getCarryoverHits = 5 total hits - 3 assigned to centaur1
     expect(battle.activeStrike?.getCarryoverHits()).toBe(2)
     expect(battle.carryoverTargets()).toEqual([centaur2])
 
-    battle.carryover(centaur2)
+    carryover(battle, centaur2)
     expect(centaur2.wounds).toBe(2)
     expect(battle.activeStrike?.canCarryover).toBe(false) // no hits left to carry over
   })
@@ -261,7 +261,7 @@ describe("Carryover", () => {
   it("stops carryover once skipCarryover is called", () => {
     const { battle, lion, centaur1 } = setupTripleEngagement()
 
-    battle.strike(lion, centaur1, [6, 6, 6, 6, 6])
+    strike(battle, lion, centaur1, [6, 6, 6, 6, 6])
     expect(battle.activeStrike?.canCarryover).toBe(true)
 
     battle.activeStrike?.skipCarryover()
@@ -465,7 +465,7 @@ describe("Engagement edge cases", () => {
     place(included, 3) // toHit 5, no hazard - matches the rolled toHit, so carryover-eligible
     place(excluded, 8) // toHit 6, raised by the wall - harder than the rolled toHit
 
-    battle.strike(lion, primary, [6, 6, 6, 6, 6])
+    strike(battle, lion, primary, [6, 6, 6, 6, 6])
     expect(primary.getRemainingHp()).toBe(0) // overkilled, so it drops out of engagedWith too
     expect(battle.carryoverTargets()).toEqual([included])
   })
@@ -480,10 +480,10 @@ describe("Engagement edge cases", () => {
 
     const computedToHit = battle.toHitAdjusted(lion, centaur)
     expect(computedToHit).toBe(5)
-    expect(() => battle.strike(lion, centaur, [6, 6, 6, 6, 6], computedToHit - 1))
+    expect(() => strike(battle, lion, centaur, [6, 6, 6, 6, 6], computedToHit - 1))
       .toThrow("Cannot choose a lower to-hit")
 
-    battle.strike(lion, centaur, [6, 6, 6, 6, 6], computedToHit + 1)
+    strike(battle, lion, centaur, [6, 6, 6, 6, 6], computedToHit + 1)
     expect(battle.activeStrike?.toHit).toBe(computedToHit + 1)
     // A roll of 6 still clears the raised toHit of 6, so all 5 dice hit (capped at HP 3).
     expect(centaur.wounds).toBe(3)
@@ -502,7 +502,7 @@ describe("Engagement edge cases", () => {
     // Ranger has strength 4, so per rule 12.2 (dice = floor(power / 2)) a rangestrike rolls
     // exactly 2 dice.
     expect(battle.getRangestrike(ranger, targets[0]).dice).toBe(2)
-    battle.rangestrike(ranger, targets[0], [6, 6])
+    rangestrike(battle, ranger, targets[0], [6, 6])
 
     expect(ranger.hasStruck).toBe(true)
     expect(centaur.wounds).toBe(2)
