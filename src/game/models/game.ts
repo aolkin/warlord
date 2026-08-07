@@ -8,7 +8,7 @@ import { GamePersistence, gamePersistence, GAME_PERSISTENCE_KEY } from "./game/p
 import masterboard, { HexEdge, MasterboardHex } from "./masterboard"
 import { Player, PlayerId } from "./player"
 import { defaultRandom, Random } from "./random"
-import { MusterChoice, Stack } from "./stack"
+import { finalizeSplit, MusterChoice, Stack } from "./stack"
 
 const INITIAL_HEXES: Record<number, number[]> = {
   2: [100, 400],
@@ -215,7 +215,7 @@ export class TitanGame {
       case MasterboardPhase.SPLIT:
         // TODO: check getters.mayProceed before advancing — round-1 split rule (exactly 4 creatures with 1 lord) not yet enforced
         getters.activeStacks.filter(stack => stack.numSplitting() > 0).forEach(stack => {
-          this.stacks.push(stack.finalizeSplit(getters.nextMarker))
+          this.stacks.push(finalizeSplit(stack, getters.nextMarker))
         })
         this.mulliganTaken = false
         break

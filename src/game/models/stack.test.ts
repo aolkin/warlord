@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { Stack, MusterBasis } from "./stack"
+import { finalizeSplit, Stack, MusterBasis } from "./stack"
 import { CreatureType } from "./creature"
 import { Terrain } from "./masterboard"
 import { PlayerId } from "./player"
@@ -52,7 +52,7 @@ describe("Stack splitting", () => {
     stack.setPendingSplit(6, true)
     const splitOff = stack.getCreaturesSplit(true)
 
-    const newStack = stack.finalizeSplit(1)
+    const newStack = finalizeSplit(stack, 1)
 
     expect(newStack.owner).toBe(PlayerId.RED)
     expect(newStack.hex).toBe(5)
@@ -68,7 +68,7 @@ describe("Stack splitting", () => {
   it("refuses to finalize an invalid split", () => {
     const stack = new Stack(PlayerId.RED, 5, 0)
     stack.setPendingSplit(0, true) // only 1 marked, never valid
-    expect(() => stack.finalizeSplit(1)).toThrow()
+    expect(() => finalizeSplit(stack, 1)).toThrow()
   })
 })
 
