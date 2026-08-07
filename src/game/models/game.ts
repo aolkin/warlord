@@ -217,7 +217,6 @@ export class TitanGame {
         getters.activeStacks.filter(stack => stack.numSplitting() > 0).forEach(stack => {
           this.stacks.push(stack.finalizeSplit(getters.nextMarker))
         })
-        getters.activeStacks.forEach(resetStackMove)
         this.mulliganTaken = false
         break
       case MasterboardPhase.MOVE:
@@ -246,9 +245,9 @@ export class TitanGame {
     }
     nextPhase(this)
     if (this.activePhase === MasterboardPhase.SPLIT) {
-      // A finalized muster is left on its stack so it stays visible until this player's stacks
-      // come up again; clear it now, right before this player's next SPLIT phase begins.
-      getters.activeStacks.forEach(stack => stack.currentMuster = undefined)
+      // Reaching SPLIT here only happens by wrapping around from MUSTER (see nextPhase),
+      // which is the start of this player's next turn.
+      getters.activeStacks.forEach(startPlayerTurn)
     }
     await this.persist()
   }
@@ -306,9 +305,10 @@ export class TitanGame {
 
 Object.assign(TitanGame.prototype, gameBattle, gamePersistence)
 
-function resetStackMove(stack: Stack): void {
+function startPlayerTurn(stack: Stack): void {
   stack.origin = stack.hex
   stack.attackEdge = undefined
+  stack.currentMuster = undefined
 }
 
 function finalizeMuster(round: number, stack: Stack & { currentMuster: MusterChoice }): CreatureType {
