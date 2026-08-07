@@ -3,7 +3,7 @@ import { CREATURE_DATA, CreatureType } from "@/models/creature"
 import { HexEdge, Terrain } from "@/models/masterboard"
 import { PlayerId } from "@/models/player"
 import { UNATTAINABLE_MOVEMENT_COST } from "./board"
-import { BattleCreature } from "./combatant"
+import { BattleCreature, performStrike } from "./combatant"
 import { Battle, BattleSide } from "./engine"
 import { BattlePhase } from "./strike"
 
@@ -531,22 +531,22 @@ describe("Battle phase transitions", () => {
 
     battle.nextPhase()
     expectPhase(BattlePhase.DEFENDER_STRIKE, 0)
-    centaur.performStrike() // stand in for an actual strike() call - only hasStruck matters here
+    performStrike(centaur) // stand in for an actual strike() call - only hasStruck matters here
 
     battle.nextPhase()
     expectPhase(BattlePhase.ATTACKER_STRIKEBACK, 0)
-    lion.performStrike()
+    performStrike(lion)
 
     battle.nextPhase()
     expectPhase(BattlePhase.ATTACKER_MOVE, 0)
 
     battle.nextPhase()
     expectPhase(BattlePhase.ATTACKER_STRIKE, 0)
-    lion.performStrike()
+    performStrike(lion)
 
     battle.nextPhase()
     expectPhase(BattlePhase.DEFENDER_STRIKEBACK, 0)
-    centaur.performStrike()
+    performStrike(centaur)
 
     battle.nextPhase()
     expectPhase(BattlePhase.DEFENDER_MOVE, 1)

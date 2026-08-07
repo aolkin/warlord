@@ -1,4 +1,4 @@
-import { memoize } from "lodash-es"
+import { assign, memoize } from "lodash-es"
 import { assert } from "@/utils/assert"
 import { div } from "@/utils/math"
 import { CREATURE_DATA, CreatureType } from "../creature"
@@ -16,7 +16,11 @@ import {
   isCreatureNative,
   relationToHex
 } from "./board"
-import { BattleCreature } from "./combatant"
+import {
+  BattleCreature,
+  performStrike,
+  wound
+} from "./combatant"
 import {
   ActiveStrike,
   BATTLE_PHASE_TYPES,
@@ -69,7 +73,7 @@ export class Battle {
   static hydrate(battle: Battle): Battle {
     const hydrated: Battle = Object.assign(Object.create(Battle.prototype) as Battle, {
       ...battle,
-      creatures: battle.creatures.map(creature => new BattleCreature(creature)),
+      creatures: battle.creatures.map(creature => assign(new BattleCreature(creature), creature)),
       activeStrike: battle.activeStrike === undefined ? undefined : new ActiveStrike(battle.activeStrike)
     })
     hydrated.creatureOnHex = memoize(hydrated.creatureOnHex)
@@ -144,20 +148,28 @@ export class Battle {
   }
 
   phaseEnterMove(): void {
-    this.getActiveCreatures().forEach(creature => creature.phaseEnterMove())
+    this.getActiveCreatures().forEach(creature => {
+      creature.initialHex = creature.hex
+    })
   }
 
   phaseExitMove(): void {
-    this.getActiveCreatures().forEach(creature => creature.phaseExitMove())
+    this.getActiveCreatures().forEach(creature => {
+      if (creature.hex >= 36) {
+        creature.hex = 0
+      }
+    })
   }
 
   phaseEnterStrike(): void {
     this.activeStrike = undefined
-    this.creatures.forEach(creature => creature.phaseEnterStrike())
+    this.creatures.forEach(creature => {
+      creature.hasStruck = false
+    })
     if (this.terrain === Terrain.TUNDRA) {
       this.creatures
         .filter(creature => this.getBoard().getHazard(creature.hex) === Hazard.DRIFT)
-        .forEach(creature => creature.wound(1))
+        .forEach(creature => wound(creature, 1))
     }
   }
 
@@ -168,7 +180,11 @@ export class Battle {
 
   phaseExitStrikeback(): void {
     this.phaseExitStrike()
-    this.creatures.forEach(creature => creature.phaseExitStrikeback())
+    this.creatures.forEach(creature => {
+      if (creature.getRemainingHp() <= 0) {
+        creature.hex = 0
+      }
+    })
   }
 
   /** End Phase Manipulation **/
@@ -535,8 +551,8 @@ export class Battle {
     rolls: number[], toHit: number, rangestrike: boolean): void {
     const totalHits = rolls.filter(roll => roll >= toHit).length
     const hits = Math.min(totalHits, defender.getRemainingHp())
-    attacker.performStrike()
-    defender.wound(hits)
+    performStrike(attacker)
+    wound(defender, hits)
     this.activeStrike = new ActiveStrike({
       attacker: attacker.hex,
       target: defender.hex,
@@ -564,7 +580,7 @@ export class Battle {
       this.activeStrike.canCarryover, "Cannot carryover")
     const hits = Math.min(this.activeStrike.getCarryoverHits(), target.getRemainingHp())
     this.activeStrike.carryover({ hits, target: target.hex })
-    target.wound(hits)
+    wound(target, hits)
   }
 
   rangestrike(attacker: BattleCreature, defender: RangestrikeTarget, rolls: number[]): void {

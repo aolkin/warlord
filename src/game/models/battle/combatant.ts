@@ -3,36 +3,33 @@ import { PlayerId } from "../player"
 
 let battleCreatureIdCounter = 0
 
-export interface IBattleCreature {
+export interface BattleCreatureProps {
   readonly type: CreatureType
   readonly player: PlayerId
   readonly playerScore: number
   hex: number
-  id?: number
-  wounds?: number
-  initialHex?: number
-  hasStruck?: boolean
 }
 
-// The interface/class pair is merged so the class type picks up these members,
-// which are actually assigned at runtime via Object.assign in the constructor below.
-// eslint-disable-next-line @typescript-eslint/no-unsafe-declaration-merging
-export interface BattleCreature extends IBattleCreature {
+export class BattleCreature {
+  readonly type: CreatureType
+  readonly player: PlayerId
+  readonly playerScore: number
   readonly id: number
+
+  hex: number
   wounds: number
   initialHex: number
   hasStruck: boolean
-}
-// eslint-disable-next-line @typescript-eslint/no-unsafe-declaration-merging
-export class BattleCreature {
-  constructor(props: IBattleCreature) {
-    Object.assign(this, {
-      ...props,
-      id: props.id ?? battleCreatureIdCounter++,
-      wounds: props.wounds ?? 0,
-      initialHex: props.initialHex ?? props.hex,
-      hasStruck: props.hasStruck ?? false
-    })
+
+  constructor(props: BattleCreatureProps) {
+    this.type = props.type
+    this.player = props.player
+    this.playerScore = props.playerScore
+    this.id = battleCreatureIdCounter++
+    this.hex = props.hex
+    this.wounds = 0
+    this.initialHex = props.hex
+    this.hasStruck = false
   }
 
   name(): string {
@@ -46,32 +43,12 @@ export class BattleCreature {
   getRemainingHp(): number {
     return this.getStrength() - this.wounds
   }
+}
 
-  wound(amount: number): void {
-    this.wounds += amount
-  }
+export function wound(creature: BattleCreature, amount: number): void {
+  creature.wounds += amount
+}
 
-  performStrike(): void {
-    this.hasStruck = true
-  }
-
-  phaseEnterMove(): void {
-    this.initialHex = this.hex
-  }
-
-  phaseExitMove(): void {
-    if (this.hex >= 36) {
-      this.hex = 0
-    }
-  }
-
-  phaseEnterStrike(): void {
-    this.hasStruck = false
-  }
-
-  phaseExitStrikeback(): void {
-    if (this.getRemainingHp() <= 0) {
-      this.hex = 0
-    }
-  }
+export function performStrike(creature: BattleCreature): void {
+  creature.hasStruck = true
 }
