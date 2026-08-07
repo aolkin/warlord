@@ -245,8 +245,8 @@ export class TitanGame {
     }
     nextPhase(this)
     if (this.activePhase === MasterboardPhase.SPLIT) {
-      // Reaching SPLIT here only happens by wrapping around from MUSTER (see nextPhase),
-      // which is the start of this player's next turn.
+      // Every other case above leaves activePhase at MOVE, BATTLE, or MUSTER;
+      // only wrapping past END back to SPLIT lands here.
       getters.activeStacks.forEach(startPlayerTurn)
     }
     await this.persist()
