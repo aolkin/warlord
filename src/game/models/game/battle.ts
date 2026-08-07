@@ -1,6 +1,6 @@
 import { matches } from "lodash-es"
 import { assert } from "@/utils/assert"
-import { Battle, BATTLE_PHASE_TYPES, BattleCreature, BattlePhaseType, BattleSide, RangestrikeTarget, carryover, nextPhase, rangestrike, strike } from "../battle"
+import { Battle, BATTLE_PHASE_TYPES, BattleCreature, BattlePhaseType, BattleSide, RangestrikeTarget, nextPhase, performAttack, wound } from "../battle"
 import masterboard from "../masterboard"
 import { PlayerId } from "../player"
 import { Stack } from "../stack"
@@ -92,18 +92,32 @@ export const gameBattle: GameBattle & ThisType<TitanGame> = {
   mAttackCreature({ attacker, target, rolls, optionalToHit }: AttackPayload): void {
     assert(this.activeBattle?.creatures.some(matches(attacker)) ?? false, "Unexpected attacker")
     assert(this.activeBattle?.creatures.some(matches(target)) ?? false, "Unexpected defender")
-    strike(this.activeBattle!, attacker, target, rolls, optionalToHit)
+    const battle = this.activeBattle!
+    let toHit = battle.toHitAdjusted(attacker, target)
+    if (optionalToHit !== undefined) {
+      assert(optionalToHit >= toHit, "Cannot choose a lower to-hit")
+      toHit = optionalToHit
+    }
+    performAttack(battle, attacker, target, rolls, toHit, false)
   },
 
   mRangestrikeCreature({ attacker, target, rolls }: RangestrikePayload): void {
     assert(this.activeBattle?.creatures.some(matches(attacker)) ?? false, "Unexpected attacker")
     assert(this.activeBattle?.creatures.some(matches(target.creature)) ?? false, "Unexpected defender")
-    rangestrike(this.activeBattle!, attacker, target, rolls)
+    const battle = this.activeBattle!
+    const computedStrike = battle.getRangestrike(attacker, target)
+    performAttack(battle, attacker, target.creature, rolls, computedStrike.toHit, true)
   },
 
   mAssignCarryover(target: BattleCreature): void {
     assert(this.activeBattle?.creatures.some(matches(target)) ?? false, "Unexpected target")
-    carryover(this.activeBattle!, target)
+    const battle = this.activeBattle!
+    // Using an optional chain prevents typescript from learning that battle.activeStrike is present
+    assert(battle.activeStrike !== undefined &&
+      battle.activeStrike.canCarryover, "Cannot carryover")
+    const hits = Math.min(battle.activeStrike.getCarryoverHits(), target.getRemainingHp())
+    battle.activeStrike.carryover({ hits, target: target.hex })
+    wound(target, hits)
   },
 
   mSkipCarryover(): void {

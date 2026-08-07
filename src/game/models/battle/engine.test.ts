@@ -1,11 +1,36 @@
 import { describe, expect, it } from "vitest"
 import { CREATURE_DATA, CreatureType } from "@/models/creature"
+import { createActionContext, newGame } from "@/models/game.testUtils"
 import { HexEdge, Terrain } from "@/models/masterboard"
 import { PlayerId } from "@/models/player"
 import { UNATTAINABLE_MOVEMENT_COST } from "./board"
 import { BattleCreature, performStrike } from "./combatant"
-import { Battle, BattleSide, carryover, nextPhase, phaseEnterStrike, rangestrike, strike } from "./engine"
-import { BattlePhase } from "./strike"
+import { Battle, BattleSide, nextPhase, phaseEnterStrike } from "./engine"
+import { BattlePhase, RangestrikeTarget } from "./strike"
+
+// strike/carryover/rangestrike are no longer part of the production API surface (their bodies
+// are inlined at their single call sites in game/battle.ts); these wrappers drive the same
+// behavior through a real TitanGame's mutators (via the same commit -> mFoo mapping the real
+// Vuex module uses) so the tests below don't need to change.
+function strike(battle: Battle, attacker: BattleCreature, target: BattleCreature,
+  rolls: number[], optionalToHit?: number): void {
+  const context = createActionContext(newGame())
+  context.state.activeBattle = battle
+  context.commit("attackCreature", { attacker, target, rolls, optionalToHit })
+}
+
+function carryover(battle: Battle, target: BattleCreature): void {
+  const context = createActionContext(newGame())
+  context.state.activeBattle = battle
+  context.commit("assignCarryover", target)
+}
+
+function rangestrike(battle: Battle, attacker: BattleCreature, target: RangestrikeTarget,
+  rolls: number[]): void {
+  const context = createActionContext(newGame())
+  context.state.activeBattle = battle
+  context.commit("rangestrikeCreature", { attacker, target, rolls })
+}
 
 function setupBattle(terrain: Terrain, attackerTypes: CreatureType[], defenderTypes: CreatureType[]): {
   battle: Battle
