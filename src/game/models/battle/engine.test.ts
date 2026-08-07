@@ -4,7 +4,7 @@ import { HexEdge, Terrain } from "@/models/masterboard"
 import { PlayerId } from "@/models/player"
 import { UNATTAINABLE_MOVEMENT_COST } from "./board"
 import { BattleCreature, performStrike } from "./combatant"
-import { Battle, BattleSide, carryover, nextPhase, phaseEnterStrike, phaseExitMove, rangestrike, strike } from "./engine"
+import { Battle, BattleSide, carryover, nextPhase, phaseEnterStrike, rangestrike, strike } from "./engine"
 import { BattlePhase } from "./strike"
 
 function setupBattle(terrain: Terrain, attackerTypes: CreatureType[], defenderTypes: CreatureType[]): {
@@ -595,7 +595,7 @@ describe("Battle phase transitions", () => {
     expect(unmoved.hex).toBe(36) // the defender's entrance zone for HexEdge.FIRST
     moved.hex = 7
 
-    phaseExitMove(battle)
+    nextPhase(battle)
 
     expect(unmoved.hex).toBe(0)
     expect(moved.hex).toBe(7)

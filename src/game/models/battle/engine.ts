@@ -520,10 +520,15 @@ export function rangestrike(battle: Battle, attacker: BattleCreature, defender: 
 
 export function nextPhase(battle: Battle): void {
   if (BATTLE_PHASE_TYPES[battle.phase] === BattlePhaseType.MOVE) {
-    phaseExitMove(battle)
+    battle.getActiveCreatures().forEach(creature => {
+      if (creature.hex >= 36) {
+        creature.hex = 0
+      }
+    })
   } else if (BATTLE_PHASE_TYPES[battle.phase] === BattlePhaseType.STRIKE ||
     BATTLE_PHASE_TYPES[battle.phase] === BattlePhaseType.STRIKEBACK) {
-    phaseExitStrike(battle)
+    assert(battle.getPendingStrikes().length === 0, "All eligible creatures must strike")
+    battle.activeStrike = undefined
     if (BATTLE_PHASE_TYPES[battle.phase] === BattlePhaseType.STRIKEBACK) {
       battle.creatures.forEach(creature => {
         if (creature.getRemainingHp() <= 0) {
@@ -555,19 +560,6 @@ export function nextPhase(battle: Battle): void {
       nextPhase(battle)
     }
   }
-}
-
-export function phaseExitMove(battle: Battle): void {
-  battle.getActiveCreatures().forEach(creature => {
-    if (creature.hex >= 36) {
-      creature.hex = 0
-    }
-  })
-}
-
-export function phaseExitStrike(battle: Battle): void {
-  assert(battle.getPendingStrikes().length === 0, "All eligible creatures must strike")
-  battle.activeStrike = undefined
 }
 
 export function phaseEnterStrike(battle: Battle): void {
