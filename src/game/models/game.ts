@@ -228,7 +228,7 @@ export class TitanGame {
         this.activeRoll = undefined
         // TODO: recombine splits that failed to move
         if (getters.engagedStacks.length === 0) {
-          nextPhase(this, getters)
+          nextPhase(this)
         } else {
           dispatch("initiateBattle", getters.engagedStacks[0])
         }
@@ -244,7 +244,12 @@ export class TitanGame {
             this.creaturePool[recruitedCreature]--
           })
     }
-    nextPhase(this, getters)
+    nextPhase(this)
+    if (this.activePhase === MasterboardPhase.SPLIT) {
+      // A finalized muster is left on its stack so it stays visible until this player's stacks
+      // come up again; clear it now, right before this player's next SPLIT phase begins.
+      getters.activeStacks.forEach(stack => stack.currentMuster = undefined)
+    }
     await this.persist()
   }
 
@@ -312,7 +317,7 @@ function finalizeMuster(round: number, stack: Stack & { currentMuster: MusterCho
   return stack.currentMuster[0]
 }
 
-function nextPhase(game: TitanGame, getters: Getters): void {
+function nextPhase(game: TitanGame): void {
   game.activePhase += 1
   if (game.activePhase === MasterboardPhase.END) {
     game.activePlayer += 1
@@ -321,8 +326,5 @@ function nextPhase(game: TitanGame, getters: Getters): void {
       game.round++
     }
     game.activePhase = MasterboardPhase.SPLIT
-    // A finalized muster is left on its stack so it stays visible until this player's stacks
-    // come up again; clear it now, right before this player's next SPLIT phase begins.
-    getters.activeStacks.forEach(stack => stack.currentMuster = undefined)
   }
 }
