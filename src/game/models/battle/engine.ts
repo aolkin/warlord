@@ -114,28 +114,6 @@ export class Battle {
       .filter(creature => !creature.hasStruck && creature.hex > 0 && this.engagedWith(creature).length > 0)
   }
 
-  /** Battle Phase Maintenance **/
-
-  phaseExitMove(): void {
-    this.getActiveCreatures().forEach(creature => {
-      if (creature.hex >= 36) {
-        creature.hex = 0
-      }
-    })
-  }
-
-  phaseEnterStrike(): void {
-    this.activeStrike = undefined
-    this.creatures.forEach(creature => {
-      creature.hasStruck = false
-    })
-    if (this.terrain === Terrain.TUNDRA) {
-      this.creatures
-        .filter(creature => this.getBoard().getHazard(creature.hex) === Hazard.DRIFT)
-        .forEach(creature => wound(creature, 1))
-    }
-  }
-
   /** End Phase Manipulation **/
 
   creatureOnHex(hex: number): BattleCreature | undefined {
@@ -542,16 +520,17 @@ export function rangestrike(battle: Battle, attacker: BattleCreature, defender: 
 
 export function nextPhase(battle: Battle): void {
   if (BATTLE_PHASE_TYPES[battle.phase] === BattlePhaseType.MOVE) {
-    battle.phaseExitMove()
-  } else if (BATTLE_PHASE_TYPES[battle.phase] === BattlePhaseType.STRIKE) {
+    phaseExitMove(battle)
+  } else if (BATTLE_PHASE_TYPES[battle.phase] === BattlePhaseType.STRIKE ||
+    BATTLE_PHASE_TYPES[battle.phase] === BattlePhaseType.STRIKEBACK) {
     phaseExitStrike(battle)
-  } else if (BATTLE_PHASE_TYPES[battle.phase] === BattlePhaseType.STRIKEBACK) {
-    phaseExitStrike(battle)
-    battle.creatures.forEach(creature => {
-      if (creature.getRemainingHp() <= 0) {
-        creature.hex = 0
-      }
-    })
+    if (BATTLE_PHASE_TYPES[battle.phase] === BattlePhaseType.STRIKEBACK) {
+      battle.creatures.forEach(creature => {
+        if (creature.getRemainingHp() <= 0) {
+          creature.hex = 0
+        }
+      })
+    }
   }
   // @ts-expect-error memoize's .cache is not part of the method's declared type
   battle.creatureOnHex.cache.clear()
@@ -566,7 +545,7 @@ export function nextPhase(battle: Battle): void {
       creature.initialHex = creature.hex
     })
   } else if (BATTLE_PHASE_TYPES[battle.phase] === BattlePhaseType.STRIKE) {
-    battle.phaseEnterStrike()
+    phaseEnterStrike(battle)
   }
 
   // Skip phase if possible
@@ -578,7 +557,27 @@ export function nextPhase(battle: Battle): void {
   }
 }
 
+export function phaseExitMove(battle: Battle): void {
+  battle.getActiveCreatures().forEach(creature => {
+    if (creature.hex >= 36) {
+      creature.hex = 0
+    }
+  })
+}
+
 export function phaseExitStrike(battle: Battle): void {
   assert(battle.getPendingStrikes().length === 0, "All eligible creatures must strike")
   battle.activeStrike = undefined
+}
+
+export function phaseEnterStrike(battle: Battle): void {
+  battle.activeStrike = undefined
+  battle.creatures.forEach(creature => {
+    creature.hasStruck = false
+  })
+  if (battle.terrain === Terrain.TUNDRA) {
+    battle.creatures
+      .filter(creature => battle.getBoard().getHazard(creature.hex) === Hazard.DRIFT)
+      .forEach(creature => wound(creature, 1))
+  }
 }

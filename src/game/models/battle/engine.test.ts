@@ -4,7 +4,7 @@ import { HexEdge, Terrain } from "@/models/masterboard"
 import { PlayerId } from "@/models/player"
 import { UNATTAINABLE_MOVEMENT_COST } from "./board"
 import { BattleCreature, performStrike } from "./combatant"
-import { Battle, BattleSide, carryover, nextPhase, rangestrike, strike } from "./engine"
+import { Battle, BattleSide, carryover, nextPhase, phaseEnterStrike, phaseExitMove, rangestrike, strike } from "./engine"
 import { BattlePhase } from "./strike"
 
 function setupBattle(terrain: Terrain, attackerTypes: CreatureType[], defenderTypes: CreatureType[]): {
@@ -582,7 +582,7 @@ describe("Battle phase transitions", () => {
     lion.hasStruck = true
     centaur.hasStruck = true
 
-    battle.phaseEnterStrike()
+    phaseEnterStrike(battle)
 
     expect(lion.hasStruck).toBe(false)
     expect(centaur.hasStruck).toBe(false)
@@ -595,7 +595,7 @@ describe("Battle phase transitions", () => {
     expect(unmoved.hex).toBe(36) // the defender's entrance zone for HexEdge.FIRST
     moved.hex = 7
 
-    battle.phaseExitMove()
+    phaseExitMove(battle)
 
     expect(unmoved.hex).toBe(0)
     expect(moved.hex).toBe(7)
@@ -612,10 +612,10 @@ describe("Battle phase transitions", () => {
 
     expect(centaur.wounds).toBe(0)
     battle.phase = BattlePhase.DEFENDER_STRIKE
-    battle.phaseEnterStrike()
+    phaseEnterStrike(battle)
     expect(centaur.wounds).toBe(1)
     battle.phase = BattlePhase.ATTACKER_STRIKE
-    battle.phaseEnterStrike()
+    phaseEnterStrike(battle)
     expect(centaur.wounds).toBe(2)
   })
 })
