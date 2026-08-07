@@ -116,7 +116,7 @@ import { CREATURE_DATA, CreatureType } from "@/models/creature"
 import { MasterboardPhase } from "@/models/game"
 import masterboard, { Terrain } from "@/models/masterboard"
 import { Player } from "@/models/player"
-import { MusterChoice, MusterPossibility, setPendingSplit, Stack } from "@/models/stack"
+import { MusterChoice, MusterPossibility, Stack, togglePendingSplit } from "@/models/stack"
 import { useTypedStore } from "~/plugins/vuex"
 import { useSelectionStore } from "~/stores/ui/selection"
 import { mod } from "~/utils/math"
@@ -186,7 +186,7 @@ const musteringCaption = computed(() => {
 function toggleSplit(index: number): void {
   if (activePhase.value === MasterboardPhase.SPLIT && (selectionStore.focusedStack?.creatures.length ?? 0) > 2) {
     const stack = selectionStore.focusedStack!
-    setPendingSplit(stack, index, !stack.split[index])
+    togglePendingSplit(stack, index)
   }
 }
 

@@ -117,12 +117,8 @@ export class Stack {
   }
 }
 
-export function setPendingSplit(stack: Stack, index: number, pending: boolean): void {
-  stack.split[index] = pending
-}
-
-export function muster(stack: Stack, creature: CreatureType): void {
-  stack.creatures.push(creature)
+export function togglePendingSplit(stack: Stack, index: number): void {
+  stack.split[index] = !stack.split[index]
 }
 
 export function finalizeSplit(stack: Stack, marker: number): Stack {

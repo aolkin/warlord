@@ -6,7 +6,7 @@ import { createActionContext, createGetters, newGame } from "@/models/game.testU
 import { HexEdge } from "@/models/masterboard"
 import { PlayerId } from "@/models/player"
 import { Random } from "@/models/random"
-import { setPendingSplit, Stack } from "@/models/stack"
+import { Stack } from "@/models/stack"
 import { MasterboardPhase, TitanGame } from "./game"
 
 // doNextPhase deselects the selected stack via the Pinia selection store directly
@@ -88,10 +88,10 @@ describe("TitanGame mandatory moves (stack splitting during movement)", () => {
   it("requires splitting apart two stacks sharing a hex until one of them moves away", async () => {
     const game = newGame()
     const original = game.stacks[0]
-    setPendingSplit(original, 0, true) // TITAN
-    setPendingSplit(original, 2, true) // CENTAUR
-    setPendingSplit(original, 4, true) // OGRE
-    setPendingSplit(original, 6, true) // GARGOYLE
+    original.split[0] = true // TITAN
+    original.split[2] = true // CENTAUR
+    original.split[4] = true // OGRE
+    original.split[6] = true // GARGOYLE
     const getters = createGetters(game)
     await game.doNextPhase(createActionContext(game))
     const sibling = game.stacks.at(-1)!
@@ -118,10 +118,10 @@ describe("TitanGame mayProceed for the split phase", () => {
     expect(getters.mayProceed).toBe(false)
 
     const stack = game.stacks[0]
-    setPendingSplit(stack, 0, true)
-    setPendingSplit(stack, 2, true)
-    setPendingSplit(stack, 4, true)
-    setPendingSplit(stack, 6, true)
+    stack.split[0] = true
+    stack.split[2] = true
+    stack.split[4] = true
+    stack.split[6] = true
 
     expect(getters.mayProceed).toBe(true)
   })
@@ -133,10 +133,10 @@ describe("TitanGame turn and phase transitions", () => {
     const original = game.stacks[0]
     // Stale state from a previous turn, cleared on move entry.
     game.mulliganTaken = true
-    setPendingSplit(original, 0, true) // TITAN
-    setPendingSplit(original, 2, true) // CENTAUR
-    setPendingSplit(original, 4, true) // OGRE
-    setPendingSplit(original, 6, true) // GARGOYLE
+    original.split[0] = true // TITAN
+    original.split[2] = true // CENTAUR
+    original.split[4] = true // OGRE
+    original.split[6] = true // GARGOYLE
     const context = createActionContext(game)
 
     await game.doNextPhase(context)
@@ -190,10 +190,10 @@ describe("TitanGame turn and phase transitions", () => {
   it("refuses to leave the move phase with multiple simultaneous engagements", async () => {
     const game = newGame(3) // BLUE @ 100, GREEN @ 300, RED @ 500
     const original = game.stacks[0]
-    setPendingSplit(original, 0, true)
-    setPendingSplit(original, 2, true)
-    setPendingSplit(original, 4, true)
-    setPendingSplit(original, 6, true)
+    original.split[0] = true
+    original.split[2] = true
+    original.split[4] = true
+    original.split[6] = true
     const context = createActionContext(game)
     await game.doNextPhase(context)
     const sibling = game.stacks.at(-1)!

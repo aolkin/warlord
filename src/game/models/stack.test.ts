@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { finalizeSplit, muster, Stack, MusterBasis, setPendingSplit } from "./stack"
+import { finalizeSplit, Stack, MusterBasis } from "./stack"
 import { CreatureType } from "./creature"
 import { Terrain } from "./masterboard"
 import { PlayerId } from "./player"
@@ -10,16 +10,16 @@ describe("Stack splitting", () => {
     // Default 8: [TITAN, ANGEL, CENTAUR, CENTAUR, OGRE, OGRE, GARGOYLE, GARGOYLE]
     expect(stack.isValidSplit(true)).toBe(false) // nothing marked yet
 
-    setPendingSplit(stack, 0, true) // TITAN
-    setPendingSplit(stack, 2, true) // CENTAUR
-    setPendingSplit(stack, 4, true) // OGRE
+    stack.split[0] = true // TITAN
+    stack.split[2] = true // CENTAUR
+    stack.split[4] = true // OGRE
     expect(stack.isValidSplit(true)).toBe(false) // only 3 marked
 
-    setPendingSplit(stack, 1, true) // ANGEL - now 4 marked but 2 lords (TITAN + ANGEL)
+    stack.split[1] = true // ANGEL - now 4 marked but 2 lords (TITAN + ANGEL)
     expect(stack.isValidSplit(true)).toBe(false)
 
-    setPendingSplit(stack, 1, false)
-    setPendingSplit(stack, 6, true) // GARGOYLE - back to 4 marked, 1 lord (TITAN)
+    stack.split[1] = false
+    stack.split[6] = true // GARGOYLE - back to 4 marked, 1 lord (TITAN)
     expect(stack.isValidSplit(true)).toBe(true)
   })
 
@@ -27,29 +27,29 @@ describe("Stack splitting", () => {
     const stack = new Stack(PlayerId.RED, 5, 0)
     expect(stack.isValidSplit()).toBe(true) // no pending split is always valid outside round 1
 
-    setPendingSplit(stack, 0, true)
+    stack.split[0] = true
     expect(stack.isValidSplit()).toBe(false) // splitting exactly 1 creature is never valid
 
-    setPendingSplit(stack, 1, true)
+    stack.split[1] = true
     expect(stack.isValidSplit()).toBe(true) // 2 splitting, 6 remaining
 
     // Splitting off 6 of 8 would leave only 2 behind, which is still valid...
-    for (let i = 2; i < 6; i++) setPendingSplit(stack, i, true)
+    for (let i = 2; i < 6; i++) stack.split[i] = true
     expect(stack.numSplitting()).toBe(6)
     expect(stack.isValidSplit()).toBe(true)
 
     // ...but leaving fewer than 2 behind is not.
-    setPendingSplit(stack, 6, true)
+    stack.split[6] = true
     expect(stack.numSplitting()).toBe(7)
     expect(stack.isValidSplit()).toBe(false)
   })
 
   it("finalizes a split into a new stack sharing the same hex but a new marker", () => {
     const stack = new Stack(PlayerId.RED, 5, 0)
-    setPendingSplit(stack, 0, true)
-    setPendingSplit(stack, 2, true)
-    setPendingSplit(stack, 4, true)
-    setPendingSplit(stack, 6, true)
+    stack.split[0] = true
+    stack.split[2] = true
+    stack.split[4] = true
+    stack.split[6] = true
     const splitOff = stack.getCreaturesSplit(true)
 
     const newStack = finalizeSplit(stack, 1)
@@ -67,7 +67,7 @@ describe("Stack splitting", () => {
 
   it("refuses to finalize an invalid split", () => {
     const stack = new Stack(PlayerId.RED, 5, 0)
-    setPendingSplit(stack, 0, true) // only 1 marked, never valid
+    stack.split[0] = true // only 1 marked, never valid
     expect(() => finalizeSplit(stack, 1)).toThrow()
   })
 })
@@ -83,12 +83,8 @@ describe("Stack mustering eligibility", () => {
 
     expect(stack.canMuster()).toBe(expected)
   })
-
-  it("adds a mustered creature to the stack", () => {
-    const stack = new Stack(PlayerId.RED, 5, 0, [CreatureType.CENTAUR])
-    muster(stack, CreatureType.LION)
-    expect(stack.creatures).toEqual([CreatureType.CENTAUR, CreatureType.LION])
-  })
+  // Adding a mustered creature to the stack is exercised end-to-end by
+  // "applies the pending muster to the stack and pool when the muster phase ends" in game.test.ts.
 })
 
 describe("Stack musterable (recruit-tier constraints)", () => {
