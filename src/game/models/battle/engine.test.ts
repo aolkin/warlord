@@ -275,7 +275,7 @@ describe("Carryover", () => {
     game.mAttackCreature({ attacker: lion, target: centaur1, rolls: [6, 6, 6, 6, 6] })
     expect(battle.activeStrike?.canCarryover).toBe(true)
 
-    battle.activeStrike?.skipCarryover()
+    game.mSkipCarryover()
 
     expect(battle.activeStrike?.canCarryover).toBe(false)
     expect(battle.carryoverTargets()).toBeUndefined()

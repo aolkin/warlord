@@ -96,13 +96,4 @@ export class ActiveStrike {
   get canCarryover(): boolean {
     return !this.rangestrike && !this.carryoverSkipped && this.getCarryoverHits() > 0
   }
-
-  carryover(strike: ActiveStrikeHit): void {
-    this.targets.push(strike.target)
-    this.targetHits.push(strike.hits)
-  }
-
-  skipCarryover(): void {
-    this.carryoverSkipped = true
-  }
 }

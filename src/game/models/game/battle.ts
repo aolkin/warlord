@@ -116,12 +116,16 @@ export const gameBattle: GameBattle & ThisType<TitanGame> = {
     assert(battle.activeStrike !== undefined &&
       battle.activeStrike.canCarryover, "Cannot carryover")
     const hits = Math.min(battle.activeStrike.getCarryoverHits(), target.getRemainingHp())
-    battle.activeStrike.carryover({ hits, target: target.hex })
+    battle.activeStrike.targets.push(target.hex)
+    battle.activeStrike.targetHits.push(hits)
     wound(target, hits)
   },
 
   mSkipCarryover(): void {
-    this.activeBattle?.activeStrike?.skipCarryover()
+    const activeStrike = this.activeBattle?.activeStrike
+    if (activeStrike !== undefined) {
+      activeStrike.carryoverSkipped = true
+    }
   },
 
   async doInitiateBattle({ commit, getters }: ActionContext, attacking: Stack): Promise<void> {
