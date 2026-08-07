@@ -68,6 +68,7 @@ jobs:
 
       - name: Upload worker version
         id: deploy
+        if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'preview'))
         env:
           TAG: ${{ steps.version-meta.outputs.tag }}
           MESSAGE: ${{ steps.version-meta.outputs.message }}
