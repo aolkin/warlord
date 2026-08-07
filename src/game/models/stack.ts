@@ -122,16 +122,16 @@ export class Stack {
     this.split[index] = pending
   }
 
-  finalizeSplit(marker: number): Stack {
-    assert(this.isValidSplit(), "Invalid split")
-    assert(marker >= 0, "Invalid marker")
-    const creatures = this.getCreaturesSplit(true)
-    remove(this.creatures, (creature, index) => this.split[index])
-    this.split.fill(false)
-    return new Stack(this.owner, this.hex, marker, creatures)
-  }
-
   muster(creature: CreatureType): void {
     this.creatures.push(creature)
   }
+}
+
+export function finalizeSplit(stack: Stack, marker: number): Stack {
+  assert(stack.isValidSplit(), "Invalid split")
+  assert(marker >= 0, "Invalid marker")
+  const creatures = stack.getCreaturesSplit(true)
+  remove(stack.creatures, (creature, index) => stack.split[index])
+  stack.split.fill(false)
+  return new Stack(stack.owner, stack.hex, marker, creatures)
 }
