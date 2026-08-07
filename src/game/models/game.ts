@@ -265,29 +265,6 @@ export class TitanGame {
     }
   }
 
-  mSetRoll(payload: number): void {
-    assert(this.activePhase === MasterboardPhase.MOVE, "Innappropriate phase")
-    if (payload === undefined && this.activeRoll !== undefined) {
-      this.mulliganTaken = true
-    }
-    this.activeRoll = payload
-  }
-
-  mMove({ stack, hex, edge }: MovePayload): void {
-    assert(this.activePhase === MasterboardPhase.MOVE, "Innappropriate phase")
-    stack.attackEdge = edge
-    if (hex instanceof MasterboardHex) {
-      stack.hex = hex.id
-    } else {
-      stack.hex = hex
-    }
-  }
-
-  mMuster({ stack, recruit }: MusterPayload): void {
-    assert(this.activePhase === MasterboardPhase.MUSTER, "Innappropriate phase")
-    stack.currentMuster = recruit
-  }
-
   // Actions
 
   async doNextPhase({ getters, commit, dispatch }: ActionContext): Promise<void> {
@@ -324,28 +301,39 @@ export class TitanGame {
     await this.persist()
   }
 
-  async doSetRoll({ getters, commit }: ActionContext, payload?: number): Promise<void> {
+  async doSetRoll({ getters }: ActionContext, payload?: number): Promise<void> {
     if (payload === undefined && this.activeRoll !== undefined) {
       assert(getters.mulliganAvailable, "Mulligan unavailable")
     }
-    commit("setRoll", payload)
+    assert(this.activePhase === MasterboardPhase.MOVE, "Innappropriate phase")
+    if (payload === undefined && this.activeRoll !== undefined) {
+      this.mulliganTaken = true
+    }
+    this.activeRoll = payload
     await this.persist()
   }
 
-  async doMove({ commit }: ActionContext, payload: MovePayload): Promise<void> {
-    commit("move", payload)
+  async doMove(_context: ActionContext, { stack, hex, edge }: MovePayload): Promise<void> {
+    assert(this.activePhase === MasterboardPhase.MOVE, "Innappropriate phase")
+    stack.attackEdge = edge
+    if (hex instanceof MasterboardHex) {
+      stack.hex = hex.id
+    } else {
+      stack.hex = hex
+    }
     await this.persist()
   }
 
-  async doSetRecruit({ commit }: ActionContext, payload: MusterPayload): Promise<void> {
-    if (!payload.stack.canMuster()) {
+  async doSetRecruit(_context: ActionContext, { stack, recruit }: MusterPayload): Promise<void> {
+    if (!stack.canMuster()) {
       throw new Error("Stack is not eligible to muster!")
     }
-    if (payload.recruit !== undefined &&
-      this.creaturePool[payload.recruit[0]] < 1 && !CREATURE_DATA[payload.recruit[0]].lord) {
+    if (recruit !== undefined &&
+      this.creaturePool[recruit[0]] < 1 && !CREATURE_DATA[recruit[0]].lord) {
       throw new Error("No more of the requested creature remaining")
     }
-    commit("muster", payload)
+    assert(this.activePhase === MasterboardPhase.MUSTER, "Innappropriate phase")
+    stack.currentMuster = recruit
     await this.persist()
   }
 

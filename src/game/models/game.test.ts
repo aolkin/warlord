@@ -144,7 +144,7 @@ describe("TitanGame movement legality", () => {
 })
 
 describe("TitanGame mandatory moves (stack splitting during movement)", () => {
-  it("requires splitting apart two stacks sharing a hex until one of them moves away", () => {
+  it("requires splitting apart two stacks sharing a hex until one of them moves away", async () => {
     const game = newGame()
     const original = game.stacks[0]
     original.setPendingSplit(0, true) // TITAN
@@ -157,12 +157,13 @@ describe("TitanGame mandatory moves (stack splitting during movement)", () => {
     game.mPhaseEnterMove(getters)
     game.activePhase = MasterboardPhase.MOVE
     game.activeRoll = 1
+    const context = createActionContext(game)
 
     expect(getters.mandatoryMoves).toEqual(expect.arrayContaining([original, sibling]))
     expect(getters.mandatoryMoves).toHaveLength(2)
     expect(getters.mayProceed).toBe(false)
 
-    game.mMove({ stack: original, hex: 3 })
+    await game.doMove(context, { stack: original, hex: 3 })
 
     // Once split apart, the remaining stack alone on the origin hex is no longer mandatory.
     expect(getters.mandatoryMoves).toEqual([])
@@ -303,6 +304,30 @@ describe("TitanGame turn and phase transitions", () => {
   })
 })
 
+describe("TitanGame roll setting (doSetRoll)", () => {
+  it("records the roll during the move phase", async () => {
+    const game = newGame()
+    game.activePhase = MasterboardPhase.MOVE
+    const context = createActionContext(game)
+
+    await game.doSetRoll(context, 4)
+
+    expect(game.activeRoll).toBe(4)
+  })
+
+  it("taking a mulligan clears the roll and marks it taken", async () => {
+    const game = newGame()
+    game.activePhase = MasterboardPhase.MOVE
+    game.activeRoll = 3
+    const context = createActionContext(game)
+
+    await game.doSetRoll(context, undefined)
+
+    expect(game.activeRoll).toBeUndefined()
+    expect(game.mulliganTaken).toBe(true)
+  })
+})
+
 describe("TitanGame mustering (doSetRecruit)", () => {
   it("refuses to record a recruit for a stack that isn't eligible to muster", async () => {
     const game = newGame()
@@ -313,6 +338,19 @@ describe("TitanGame mustering (doSetRecruit)", () => {
     await expect(game.doSetRecruit(context, {
       stack, recruit: [CreatureType.CENTAUR, [CreatureType.CENTAUR, 0]]
     })).rejects.toThrow("not eligible to muster")
+  })
+
+  it("refuses to record a recruit outside the muster phase", async () => {
+    const game = newGame()
+    const stack = new Stack(game.players[0].id, 100, 1, [CreatureType.CENTAUR, CreatureType.CENTAUR])
+    stack.hex = 101 // moved, so otherwise eligible to muster
+    game.stacks.push(stack)
+    game.activePhase = MasterboardPhase.MOVE
+    const context = createActionContext(game)
+
+    await expect(game.doSetRecruit(context, {
+      stack, recruit: [CreatureType.LION, [CreatureType.CENTAUR, 2]]
+    })).rejects.toThrow("Innappropriate phase")
   })
 
   it.each([
