@@ -17,7 +17,6 @@ export {
   performStrike,
   wound
 } from "./battle/combatant"
-export type { IBattleCreature } from "./battle/combatant"
 
 export {
   ActiveStrike,

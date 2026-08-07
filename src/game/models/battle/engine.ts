@@ -1,4 +1,4 @@
-import { memoize } from "lodash-es"
+import { assign, memoize } from "lodash-es"
 import { assert } from "@/utils/assert"
 import { div } from "@/utils/math"
 import { CREATURE_DATA, CreatureType } from "../creature"
@@ -73,7 +73,7 @@ export class Battle {
   static hydrate(battle: Battle): Battle {
     const hydrated: Battle = Object.assign(Object.create(Battle.prototype) as Battle, {
       ...battle,
-      creatures: battle.creatures.map(creature => new BattleCreature(creature)),
+      creatures: battle.creatures.map(creature => assign(new BattleCreature(creature), creature)),
       activeStrike: battle.activeStrike === undefined ? undefined : new ActiveStrike(battle.activeStrike)
     })
     hydrated.creatureOnHex = memoize(hydrated.creatureOnHex)

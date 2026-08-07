@@ -3,15 +3,11 @@ import { PlayerId } from "../player"
 
 let battleCreatureIdCounter = 0
 
-export interface IBattleCreature {
+export interface BattleCreatureProps {
   readonly type: CreatureType
   readonly player: PlayerId
   readonly playerScore: number
   hex: number
-  id?: number
-  wounds?: number
-  initialHex?: number
-  hasStruck?: boolean
 }
 
 export class BattleCreature {
@@ -25,15 +21,15 @@ export class BattleCreature {
   initialHex: number
   hasStruck: boolean
 
-  constructor(props: IBattleCreature) {
+  constructor(props: BattleCreatureProps) {
     this.type = props.type
     this.player = props.player
     this.playerScore = props.playerScore
-    this.id = props.id ?? battleCreatureIdCounter++
+    this.id = battleCreatureIdCounter++
     this.hex = props.hex
-    this.wounds = props.wounds ?? 0
-    this.initialHex = props.initialHex ?? props.hex
-    this.hasStruck = props.hasStruck ?? false
+    this.wounds = 0
+    this.initialHex = props.hex
+    this.hasStruck = false
   }
 
   name(): string {
