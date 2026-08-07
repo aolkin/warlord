@@ -1,35 +1,22 @@
 import { describe, expect, it } from "vitest"
 import { CREATURE_DATA, CreatureType } from "@/models/creature"
+import type { TitanGame } from "@/models/game"
 import { newGame } from "@/models/game.testUtils"
 import { HexEdge, Terrain } from "@/models/masterboard"
 import { PlayerId } from "@/models/player"
 import { UNATTAINABLE_MOVEMENT_COST } from "./board"
 import { BattleCreature, performStrike } from "./combatant"
 import { Battle, BattleSide, nextPhase, phaseEnterStrike } from "./engine"
-import { BattlePhase, RangestrikeTarget } from "./strike"
+import { BattlePhase } from "./strike"
 
 // strike/carryover/rangestrike are no longer part of the production API surface (their bodies
-// are inlined at their single call sites in game/battle.ts); these wrappers drive the same
-// behavior through a real TitanGame's mutators (mAttackCreature etc., called directly the same
-// way game.test.ts calls mPhaseExitSplit) so the tests below don't need to change.
-function strike(battle: Battle, attacker: BattleCreature, target: BattleCreature,
-  rolls: number[], optionalToHit?: number): void {
+// are inlined at their single call sites in game/battle.ts); tests that need to drive a strike
+// exercise the same mutators production code uses (mAttackCreature etc.) directly on a real
+// TitanGame, the same direct-call pattern game.test.ts uses for mPhaseExitSplit.
+function createGameWithActiveBattle(battle: Battle): TitanGame {
   const game = newGame()
   game.activeBattle = battle
-  game.mAttackCreature({ attacker, target, rolls, optionalToHit })
-}
-
-function carryover(battle: Battle, target: BattleCreature): void {
-  const game = newGame()
-  game.activeBattle = battle
-  game.mAssignCarryover(target)
-}
-
-function rangestrike(battle: Battle, attacker: BattleCreature, target: RangestrikeTarget,
-  rolls: number[]): void {
-  const game = newGame()
-  game.activeBattle = battle
-  game.mRangestrikeCreature({ attacker, target, rolls })
+  return game
 }
 
 function setupBattle(terrain: Terrain, attackerTypes: CreatureType[], defenderTypes: CreatureType[]): {
@@ -72,7 +59,8 @@ describe("Battle engagement", () => {
 
     const toHit = battle.toHitAdjusted(lion, centaur)
     expect(toHit).toBe(5) // 4 - (lion skill 3 - centaur skill 4), no terrain adjustment
-    strike(battle, lion, centaur, [6, 6, 6, 6, 6])
+    const game = createGameWithActiveBattle(battle)
+    game.mAttackCreature({ attacker: lion, target: centaur, rolls: [6, 6, 6, 6, 6] })
 
     expect(lion.hasStruck).toBe(true)
     expect(centaur.wounds).toBe(3) // Centaur's full strength (3); capped, not overkill
@@ -271,14 +259,15 @@ describe("Carryover", () => {
   it("assigns overflow hits from an overkill strike to another engaged target", () => {
     const { battle, lion, centaur1, centaur2 } = setupTripleEngagement()
 
-    strike(battle, lion, centaur1, [6, 6, 6, 6, 6])
+    const game = createGameWithActiveBattle(battle)
+    game.mAttackCreature({ attacker: lion, target: centaur1, rolls: [6, 6, 6, 6, 6] })
     expect(centaur1.getRemainingHp()).toBe(0)
     expect(battle.activeStrike?.canCarryover).toBe(true)
     // getCarryoverHits = 5 total hits - 3 assigned to centaur1
     expect(battle.activeStrike?.getCarryoverHits()).toBe(2)
     expect(battle.carryoverTargets()).toEqual([centaur2])
 
-    carryover(battle, centaur2)
+    game.mAssignCarryover(centaur2)
     expect(centaur2.wounds).toBe(2)
     expect(battle.activeStrike?.canCarryover).toBe(false) // no hits left to carry over
   })
@@ -286,7 +275,8 @@ describe("Carryover", () => {
   it("stops carryover once skipCarryover is called", () => {
     const { battle, lion, centaur1 } = setupTripleEngagement()
 
-    strike(battle, lion, centaur1, [6, 6, 6, 6, 6])
+    const game = createGameWithActiveBattle(battle)
+    game.mAttackCreature({ attacker: lion, target: centaur1, rolls: [6, 6, 6, 6, 6] })
     expect(battle.activeStrike?.canCarryover).toBe(true)
 
     battle.activeStrike?.skipCarryover()
@@ -490,7 +480,7 @@ describe("Engagement edge cases", () => {
     place(included, 3) // toHit 5, no hazard - matches the rolled toHit, so carryover-eligible
     place(excluded, 8) // toHit 6, raised by the wall - harder than the rolled toHit
 
-    strike(battle, lion, primary, [6, 6, 6, 6, 6])
+    createGameWithActiveBattle(battle).mAttackCreature({ attacker: lion, target: primary, rolls: [6, 6, 6, 6, 6] })
     expect(primary.getRemainingHp()).toBe(0) // overkilled, so it drops out of engagedWith too
     expect(battle.carryoverTargets()).toEqual([included])
   })
@@ -505,10 +495,14 @@ describe("Engagement edge cases", () => {
 
     const computedToHit = battle.toHitAdjusted(lion, centaur)
     expect(computedToHit).toBe(5)
-    expect(() => strike(battle, lion, centaur, [6, 6, 6, 6, 6], computedToHit - 1))
-      .toThrow("Cannot choose a lower to-hit")
+    const game = createGameWithActiveBattle(battle)
+    expect(() => game.mAttackCreature({
+      attacker: lion, target: centaur, rolls: [6, 6, 6, 6, 6], optionalToHit: computedToHit - 1
+    })).toThrow("Cannot choose a lower to-hit")
 
-    strike(battle, lion, centaur, [6, 6, 6, 6, 6], computedToHit + 1)
+    game.mAttackCreature({
+      attacker: lion, target: centaur, rolls: [6, 6, 6, 6, 6], optionalToHit: computedToHit + 1
+    })
     expect(battle.activeStrike?.toHit).toBe(computedToHit + 1)
     // A roll of 6 still clears the raised toHit of 6, so all 5 dice hit (capped at HP 3).
     expect(centaur.wounds).toBe(3)
@@ -527,7 +521,7 @@ describe("Engagement edge cases", () => {
     // Ranger has strength 4, so per rule 12.2 (dice = floor(power / 2)) a rangestrike rolls
     // exactly 2 dice.
     expect(battle.getRangestrike(ranger, targets[0]).dice).toBe(2)
-    rangestrike(battle, ranger, targets[0], [6, 6])
+    createGameWithActiveBattle(battle).mRangestrikeCreature({ attacker: ranger, target: targets[0], rolls: [6, 6] })
 
     expect(ranger.hasStruck).toBe(true)
     expect(centaur.wounds).toBe(2)
