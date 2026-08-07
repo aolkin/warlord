@@ -93,10 +93,8 @@ describe("TitanGame mandatory moves (stack splitting during movement)", () => {
     original.setPendingSplit(4, true) // OGRE
     original.setPendingSplit(6, true) // GARGOYLE
     const getters = createGetters(game)
-    game.mPhaseExitSplit(getters)
+    await game.doNextPhase(createActionContext(game))
     const sibling = game.stacks.at(-1)!
-    game.mPhaseEnterMove(getters)
-    game.activePhase = MasterboardPhase.MOVE
     game.activeRoll = 1
     const context = createActionContext(game)
 
@@ -130,13 +128,11 @@ describe("TitanGame mayProceed for the split phase", () => {
 })
 
 describe("TitanGame turn and phase transitions", () => {
-  it("advances from split to move, finalizing pending splits and resetting per-turn movement state", async () => {
+  it("advances from split to move, finalizing pending splits", async () => {
     const game = newGame()
     const original = game.stacks[0]
-    // Stale state from a previous turn, all of which move entry clears.
+    // Stale state from a previous turn, cleared on move entry.
     game.mulliganTaken = true
-    original.attackEdge = HexEdge.FIRST
-    original.origin = 3
     original.setPendingSplit(0, true) // TITAN
     original.setPendingSplit(2, true) // CENTAUR
     original.setPendingSplit(4, true) // OGRE
@@ -153,6 +149,9 @@ describe("TitanGame turn and phase transitions", () => {
       CreatureType.OGRE, CreatureType.GARGOYLE])
     expect(original.creatures).toEqual([CreatureType.ANGEL, CreatureType.CENTAUR,
       CreatureType.OGRE, CreatureType.GARGOYLE])
+    // origin/attackEdge are only ever reset at the start of a turn (SPLIT reached via the
+    // MUSTER wraparound); a freshly split stack already has them at their construction
+    // defaults, so this transition leaves them untouched.
     expect(original.origin).toBe(original.hex)
     expect(original.attackEdge).toBeUndefined()
     expect(game.mulliganTaken).toBe(false)
@@ -195,14 +194,12 @@ describe("TitanGame turn and phase transitions", () => {
     original.setPendingSplit(2, true)
     original.setPendingSplit(4, true)
     original.setPendingSplit(6, true)
-    const getters = createGetters(game)
-    game.mPhaseExitSplit(getters)
+    const context = createActionContext(game)
+    await game.doNextPhase(context)
     const sibling = game.stacks.at(-1)!
     original.hex = game.stacks[1].hex // engage GREEN
     sibling.hex = game.stacks[2].hex // engage RED
-    game.activePhase = MasterboardPhase.MOVE
     game.activeRoll = 1
-    const context = createActionContext(game)
 
     await expect(game.doNextPhase(context)).rejects.toThrow("Multiple simultaneous engagements")
 
@@ -235,13 +232,19 @@ describe("TitanGame turn and phase transitions", () => {
 
     game.activePhase = MasterboardPhase.MUSTER
     game.stacks[0].currentMuster = [CreatureType.CENTAUR, [CreatureType.CENTAUR, 0]]
+    // Stale movement state left over from this player's earlier MOVE phase this round.
+    game.stacks[0].attackEdge = HexEdge.FIRST
+    game.stacks[0].origin = 3
 
     await game.doNextPhase(context)
     expect(game.activePhase).toBe(MasterboardPhase.SPLIT)
     expect(game.activePlayer).toBe(0)
     expect(game.round).toBe(1)
-    // Wrapping to the new active player clears any stale pending muster left on their stack.
+    // Wrapping to the new active player starts their turn: clears any stale pending muster
+    // and resets per-turn movement state left on their stacks.
     expect(game.stacks[0].currentMuster).toBeUndefined()
+    expect(game.stacks[0].attackEdge).toBeUndefined()
+    expect(game.stacks[0].origin).toBe(game.stacks[0].hex)
   })
 })
 
@@ -328,8 +331,7 @@ describe("TitanGame mustering (doSetRecruit)", () => {
     const context = createActionContext(game)
     await game.doSetRecruit(context, { stack, recruit: [CreatureType.LION, [CreatureType.CENTAUR, 2]] })
 
-    const getters = createGetters(game)
-    game.mPhaseExitMuster(getters)
+    await game.doNextPhase(context)
 
     expect(stack.creatures).toContain(CreatureType.LION)
     expect(game.creaturePool[CreatureType.LION]).toBe(poolBefore - 1)
