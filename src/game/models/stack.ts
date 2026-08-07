@@ -115,16 +115,10 @@ export class Stack {
     }
     return possibilities
   }
+}
 
-  // MUTATING METHODS - todo, change this
-
-  setPendingSplit(index: number, pending: boolean): void {
-    this.split[index] = pending
-  }
-
-  muster(creature: CreatureType): void {
-    this.creatures.push(creature)
-  }
+export function togglePendingSplit(stack: Stack, index: number): void {
+  stack.split[index] = !stack.split[index]
 }
 
 export function finalizeSplit(stack: Stack, marker: number): Stack {
