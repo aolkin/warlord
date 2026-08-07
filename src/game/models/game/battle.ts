@@ -1,6 +1,6 @@
 import { matches } from "lodash-es"
 import { assert } from "@/utils/assert"
-import { Battle, BATTLE_PHASE_TYPES, BattleCreature, BattlePhaseType, BattleSide, RangestrikeTarget } from "../battle"
+import { Battle, BATTLE_PHASE_TYPES, BattleCreature, BattlePhaseType, BattleSide, RangestrikeTarget, carryover, rangestrike, strike } from "../battle"
 import masterboard from "../masterboard"
 import { PlayerId } from "../player"
 import { Stack } from "../stack"
@@ -92,18 +92,18 @@ export const gameBattle: GameBattle & ThisType<TitanGame> = {
   mAttackCreature({ attacker, target, rolls, optionalToHit }: AttackPayload): void {
     assert(this.activeBattle?.creatures.some(matches(attacker)) ?? false, "Unexpected attacker")
     assert(this.activeBattle?.creatures.some(matches(target)) ?? false, "Unexpected defender")
-    this.activeBattle?.strike(attacker, target, rolls, optionalToHit)
+    strike(this.activeBattle!, attacker, target, rolls, optionalToHit)
   },
 
   mRangestrikeCreature({ attacker, target, rolls }: RangestrikePayload): void {
     assert(this.activeBattle?.creatures.some(matches(attacker)) ?? false, "Unexpected attacker")
     assert(this.activeBattle?.creatures.some(matches(target.creature)) ?? false, "Unexpected defender")
-    this.activeBattle?.rangestrike(attacker, target, rolls)
+    rangestrike(this.activeBattle!, attacker, target, rolls)
   },
 
   mAssignCarryover(target: BattleCreature): void {
     assert(this.activeBattle?.creatures.some(matches(target)) ?? false, "Unexpected target")
-    this.activeBattle?.carryover(target)
+    carryover(this.activeBattle!, target)
   },
 
   mSkipCarryover(): void {
