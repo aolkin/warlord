@@ -476,7 +476,7 @@ export class Battle {
 
 // TODO: rolls is never validated against the strike's expected dice count (see
 // getAdjustedStrike/getRangestrike), so a caller can pass the wrong number of dice unnoticed.
-function performAttack(battle: Battle, attacker: BattleCreature, defender: BattleCreature,
+export function performAttack(battle: Battle, attacker: BattleCreature, defender: BattleCreature,
   rolls: number[], toHit: number, rangestrike: boolean): void {
   const totalHits = rolls.filter(roll => roll >= toHit).length
   const hits = Math.min(totalHits, defender.getRemainingHp())
@@ -491,31 +491,6 @@ function performAttack(battle: Battle, attacker: BattleCreature, defender: Battl
     rolls,
     rangestrike
   })
-}
-
-export function strike(battle: Battle, attacker: BattleCreature, defender: BattleCreature,
-  rolls: number[], optionalToHit?: number): void {
-  let toHit = battle.toHitAdjusted(attacker, defender)
-  if (optionalToHit !== undefined) {
-    assert(optionalToHit >= toHit, "Cannot choose a lower to-hit")
-    toHit = optionalToHit
-  }
-  performAttack(battle, attacker, defender, rolls, toHit, false)
-}
-
-export function carryover(battle: Battle, target: BattleCreature): void {
-  // Using an optional chain prevents typescript from learning that battle.activeStrike is present
-  assert(battle.activeStrike !== undefined &&
-    battle.activeStrike.canCarryover, "Cannot carryover")
-  const hits = Math.min(battle.activeStrike.getCarryoverHits(), target.getRemainingHp())
-  battle.activeStrike.carryover({ hits, target: target.hex })
-  wound(target, hits)
-}
-
-export function rangestrike(battle: Battle, attacker: BattleCreature, defender: RangestrikeTarget,
-  rolls: number[]): void {
-  const computedStrike = battle.getRangestrike(attacker, defender)
-  performAttack(battle, attacker, defender.creature, rolls, computedStrike.toHit, true)
 }
 
 export function nextPhase(battle: Battle): void {
