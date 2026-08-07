@@ -116,43 +116,6 @@ export class Battle {
 
   /** Battle Phase Maintenance **/
 
-  nextPhase(): void {
-    if (BATTLE_PHASE_TYPES[this.phase] === BattlePhaseType.MOVE) {
-      this.phaseExitMove()
-    } else if (BATTLE_PHASE_TYPES[this.phase] === BattlePhaseType.STRIKE) {
-      this.phaseExitStrike()
-    } else if (BATTLE_PHASE_TYPES[this.phase] === BattlePhaseType.STRIKEBACK) {
-      this.phaseExitStrikeback()
-    }
-    // @ts-expect-error memoize's .cache is not part of the method's declared type
-    this.creatureOnHex.cache.clear()
-    if (this.phase === BattlePhase.DEFENDER_STRIKEBACK) {
-      this.round += 1
-      this.phase = BattlePhase.DEFENDER_MOVE
-    } else {
-      this.phase += 1
-    }
-    if (BATTLE_PHASE_TYPES[this.phase] === BattlePhaseType.MOVE) {
-      this.phaseEnterMove()
-    } else if (BATTLE_PHASE_TYPES[this.phase] === BattlePhaseType.STRIKE) {
-      this.phaseEnterStrike()
-    }
-
-    // Skip phase if possible
-    if (BATTLE_PHASE_TYPES[this.phase] !== BattlePhaseType.MOVE) {
-      if (this.getPendingStrikes().length === 0) {
-        console.log(`Skipping phase ${this.phase} thanks to no pending strikes`)
-        this.nextPhase()
-      }
-    }
-  }
-
-  phaseEnterMove(): void {
-    this.getActiveCreatures().forEach(creature => {
-      creature.initialHex = creature.hex
-    })
-  }
-
   phaseExitMove(): void {
     this.getActiveCreatures().forEach(creature => {
       if (creature.hex >= 36) {
@@ -171,20 +134,6 @@ export class Battle {
         .filter(creature => this.getBoard().getHazard(creature.hex) === Hazard.DRIFT)
         .forEach(creature => wound(creature, 1))
     }
-  }
-
-  phaseExitStrike(): void {
-    assert(this.getPendingStrikes().length === 0, "All eligible creatures must strike")
-    this.activeStrike = undefined
-  }
-
-  phaseExitStrikeback(): void {
-    this.phaseExitStrike()
-    this.creatures.forEach(creature => {
-      if (creature.getRemainingHp() <= 0) {
-        creature.hex = 0
-      }
-    })
   }
 
   /** End Phase Manipulation **/
@@ -589,4 +538,47 @@ export function rangestrike(battle: Battle, attacker: BattleCreature, defender: 
   rolls: number[]): void {
   const computedStrike = battle.getRangestrike(attacker, defender)
   performAttack(battle, attacker, defender.creature, rolls, computedStrike.toHit, true)
+}
+
+export function nextPhase(battle: Battle): void {
+  if (BATTLE_PHASE_TYPES[battle.phase] === BattlePhaseType.MOVE) {
+    battle.phaseExitMove()
+  } else if (BATTLE_PHASE_TYPES[battle.phase] === BattlePhaseType.STRIKE) {
+    phaseExitStrike(battle)
+  } else if (BATTLE_PHASE_TYPES[battle.phase] === BattlePhaseType.STRIKEBACK) {
+    phaseExitStrike(battle)
+    battle.creatures.forEach(creature => {
+      if (creature.getRemainingHp() <= 0) {
+        creature.hex = 0
+      }
+    })
+  }
+  // @ts-expect-error memoize's .cache is not part of the method's declared type
+  battle.creatureOnHex.cache.clear()
+  if (battle.phase === BattlePhase.DEFENDER_STRIKEBACK) {
+    battle.round += 1
+    battle.phase = BattlePhase.DEFENDER_MOVE
+  } else {
+    battle.phase += 1
+  }
+  if (BATTLE_PHASE_TYPES[battle.phase] === BattlePhaseType.MOVE) {
+    battle.getActiveCreatures().forEach(creature => {
+      creature.initialHex = creature.hex
+    })
+  } else if (BATTLE_PHASE_TYPES[battle.phase] === BattlePhaseType.STRIKE) {
+    battle.phaseEnterStrike()
+  }
+
+  // Skip phase if possible
+  if (BATTLE_PHASE_TYPES[battle.phase] !== BattlePhaseType.MOVE) {
+    if (battle.getPendingStrikes().length === 0) {
+      console.log(`Skipping phase ${battle.phase} thanks to no pending strikes`)
+      nextPhase(battle)
+    }
+  }
+}
+
+export function phaseExitStrike(battle: Battle): void {
+  assert(battle.getPendingStrikes().length === 0, "All eligible creatures must strike")
+  battle.activeStrike = undefined
 }

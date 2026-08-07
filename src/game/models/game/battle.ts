@@ -1,6 +1,6 @@
 import { matches } from "lodash-es"
 import { assert } from "@/utils/assert"
-import { Battle, BATTLE_PHASE_TYPES, BattleCreature, BattlePhaseType, BattleSide, RangestrikeTarget, carryover, rangestrike, strike } from "../battle"
+import { Battle, BATTLE_PHASE_TYPES, BattleCreature, BattlePhaseType, BattleSide, RangestrikeTarget, carryover, nextPhase, rangestrike, strike } from "../battle"
 import masterboard from "../masterboard"
 import { PlayerId } from "../player"
 import { Stack } from "../stack"
@@ -81,7 +81,7 @@ export const gameBattle: GameBattle & ThisType<TitanGame> = {
 
   mNextBattlePhase(): void {
     assert(this.activeBattle !== undefined, "No active battle!")
-    this.activeBattle?.nextPhase()
+    nextPhase(this.activeBattle)
   },
 
   mMoveCreature({ creature, hex }: BattleMovePayload): void {

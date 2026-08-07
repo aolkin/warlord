@@ -4,7 +4,7 @@ import { HexEdge, Terrain } from "@/models/masterboard"
 import { PlayerId } from "@/models/player"
 import { UNATTAINABLE_MOVEMENT_COST } from "./board"
 import { BattleCreature, performStrike } from "./combatant"
-import { Battle, BattleSide, carryover, rangestrike, strike } from "./engine"
+import { Battle, BattleSide, carryover, nextPhase, rangestrike, strike } from "./engine"
 import { BattlePhase } from "./strike"
 
 function setupBattle(terrain: Terrain, attackerTypes: CreatureType[], defenderTypes: CreatureType[]): {
@@ -35,12 +35,12 @@ describe("Battle engagement", () => {
     centaur.hex = 7
     // Nothing is on the board to engage yet, so strike/strikeback for both sides
     // are auto-skipped straight through to the attacker's move.
-    battle.nextPhase()
+    nextPhase(battle)
     expect(battle.phase).toBe(BattlePhase.ATTACKER_MOVE)
 
     expect(battle.movementFor(lion).has(8)).toBe(true)
     lion.hex = 8
-    battle.nextPhase()
+    nextPhase(battle)
     expect(battle.phase).toBe(BattlePhase.ATTACKER_STRIKE)
     expect(battle.engagedWith(lion)).toEqual([centaur])
     expect(battle.getPendingStrikes()).toEqual([lion])
@@ -529,26 +529,26 @@ describe("Battle phase transitions", () => {
     }
     expectPhase(BattlePhase.DEFENDER_MOVE, 0)
 
-    battle.nextPhase()
+    nextPhase(battle)
     expectPhase(BattlePhase.DEFENDER_STRIKE, 0)
     performStrike(centaur) // stand in for an actual strike() call - only hasStruck matters here
 
-    battle.nextPhase()
+    nextPhase(battle)
     expectPhase(BattlePhase.ATTACKER_STRIKEBACK, 0)
     performStrike(lion)
 
-    battle.nextPhase()
+    nextPhase(battle)
     expectPhase(BattlePhase.ATTACKER_MOVE, 0)
 
-    battle.nextPhase()
+    nextPhase(battle)
     expectPhase(BattlePhase.ATTACKER_STRIKE, 0)
     performStrike(lion)
 
-    battle.nextPhase()
+    nextPhase(battle)
     expectPhase(BattlePhase.DEFENDER_STRIKEBACK, 0)
     performStrike(centaur)
 
-    battle.nextPhase()
+    nextPhase(battle)
     expectPhase(BattlePhase.DEFENDER_MOVE, 1)
   })
 
@@ -556,9 +556,9 @@ describe("Battle phase transitions", () => {
     const { battle } = setupBattle(Terrain.PLAINS, [CreatureType.LION], [CreatureType.CENTAUR])
 
     expect(battle.phase).toBe(BattlePhase.DEFENDER_MOVE)
-    battle.nextPhase() // no engagement -> DEFENDER_STRIKE, ATTACKER_STRIKEBACK both skipped
+    nextPhase(battle) // no engagement -> DEFENDER_STRIKE, ATTACKER_STRIKEBACK both skipped
     expect(battle.phase).toBe(BattlePhase.ATTACKER_MOVE)
-    battle.nextPhase() // -> ATTACKER_STRIKE, DEFENDER_STRIKEBACK both skipped, round increments
+    nextPhase(battle) // -> ATTACKER_STRIKE, DEFENDER_STRIKEBACK both skipped, round increments
     expect(battle.phase).toBe(BattlePhase.DEFENDER_MOVE)
     expect(battle.round).toBe(1)
   })
@@ -570,9 +570,9 @@ describe("Battle phase transitions", () => {
     place(centaur, 7)
     place(lion, 8)
 
-    battle.nextPhase() // -> DEFENDER_STRIKE, Centaur is now pending and never strikes
+    nextPhase(battle) // -> DEFENDER_STRIKE, Centaur is now pending and never strikes
     expect(battle.getPendingStrikes()).toEqual([centaur])
-    expect(() => battle.nextPhase()).toThrow("All eligible creatures must strike")
+    expect(() => nextPhase(battle)).toThrow("All eligible creatures must strike")
   })
 
   it("resets hasStruck for creatures on both sides whenever a strike phase is entered", () => {
