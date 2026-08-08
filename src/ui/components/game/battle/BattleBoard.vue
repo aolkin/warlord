@@ -99,6 +99,7 @@
       </svg>
 
       <CreaturePanel
+        :local-player-is-defender="localPlayerIsDefender"
         position="fixed"
         location="top right"
         class="ma-3"
@@ -168,6 +169,7 @@ import {
 import { Terrain } from "@/models/masterboard"
 import { PlayerId } from "@/models/player"
 import { useGameStore } from "~/stores/game"
+import { usePlayerStore } from "~/stores/ui/player"
 import { usePreferencesStore } from "~/stores/ui/preferences"
 import { useSelectionStore } from "~/stores/ui/selection"
 import type DiceRoller from "~/components/ui/generic/DiceRoller"
@@ -186,6 +188,7 @@ import { hexTransformStr } from "./utils"
 const diceRoller = inject<Readonly<Ref<InstanceType<typeof DiceRoller> | null>>>("diceRoller")
 
 const gameStore = useGameStore()
+const playerStore = usePlayerStore()
 const preferencesStore = usePreferencesStore()
 const selectionStore = useSelectionStore()
 
@@ -222,6 +225,9 @@ const edgeHazardsByHex = computed((): Record<number, Record<number, EdgeHazard>>
     [hex, edgesForHex(hex)])))
 
 const defender = computed((): PlayerId => activeBattle.value!.defender)
+
+const localPlayerIsDefender = computed((): boolean =>
+  defender.value === gameStore.players[playerStore.localPlayer].id)
 
 const activeCreatures = computed((): BattleCreature[] =>
   activeBattle.value!.creatures.filter((creature: BattleCreature) =>
