@@ -49,7 +49,7 @@
         class="label"
         text-anchor="middle"
       >
-        {{ pathInfo.distanceFromStart }}
+        {{ distanceFromStart }}
       </text>
     </template>
   </g>
@@ -70,10 +70,12 @@ import {
 } from "./utils"
 
 // Populated only when this hex is a step on a stack's move path; its absence means
-// the hex is being rendered as a plain board hex.
+// the hex is being rendered as a plain board hex. pathLength and positionOnPath are
+// the roll length and this step's zero-based offset along the path; distanceToDest
+// and distanceFromStart are derived from them below.
 export interface PathInfo {
-  distanceToDest: number
-  distanceFromStart: number
+  pathLength: number
+  positionOnPath: number
   pathIndex: number
   containsEnemy: boolean
 }
@@ -88,15 +90,18 @@ const selectionStore = useSelectionStore()
 
 const terrain = computed(() => Terrain[props.hex?.terrain].toLowerCase())
 
+const distanceToDest = computed(() => props.pathInfo!.pathLength - props.pathInfo!.positionOnPath)
+const distanceFromStart = computed(() => props.pathInfo!.positionOnPath + 1)
+
 const rootClass = computed(() => {
   if (props.pathInfo) {
-    const { distanceToDest, pathIndex, containsEnemy } = props.pathInfo
+    const { pathIndex, containsEnemy } = props.pathInfo
     return {
       path: true,
       foe: containsEnemy,
-      [`distance-${distanceToDest}`]: true,
+      [`distance-${distanceToDest.value}`]: true,
       [`path-${pathIndex}`]: true,
-      destination: distanceToDest === 1
+      destination: distanceToDest.value === 1
     }
   } else {
     return {

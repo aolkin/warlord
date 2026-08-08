@@ -23,8 +23,8 @@
               :hex="hex"
               :path-info="{
                 pathIndex: index,
-                distanceToDest: activeRoll! - distance,
-                distanceFromStart: distance + 1,
+                pathLength: activeRoll!,
+                positionOnPath: distance,
                 containsEnemy: foe
               }"
               @click.stop="moveStack(distance, foe, hex)"
