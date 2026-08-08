@@ -25,7 +25,7 @@ const gameStore = useGameStore()
 
 const board = computed((): BattleBoard => gameStore.game.activeBattle!.getBoard())
 const attackerHazard = computed((): Hazard =>
-  props.attacker ? board.value.getHazard(props.attacker?.hex) : Hazard.NONE)
+  props.attacker ? board.value.getHazard(props.attacker.hex) : Hazard.NONE)
 const targetHazard = computed((): Hazard =>
-  props.target ? board.value.getHazard(props.target?.hex) : Hazard.NONE)
+  props.target ? board.value.getHazard(props.target.hex) : Hazard.NONE)
 </script>

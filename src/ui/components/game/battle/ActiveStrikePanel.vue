@@ -82,12 +82,10 @@ const strike = computed((): Strike | undefined => activeStrike.value && {
   toHit: activeStrike.value.toHit,
   dice: activeStrike.value.rolls.length
 })
-const hitsString = computed((): (hits: number, modifier?: string) => string => {
-  return (hits: number, modifier?: string) => {
-    const extra = modifier === undefined ? "" : modifier + " "
-    return `${hits} ${extra}hit${hits === 1 ? "" : "s"}`
-  }
-})
+function hitsString(hits: number, modifier?: string): string {
+  const extra = modifier === undefined ? "" : modifier + " "
+  return `${hits} ${extra}hit${hits === 1 ? "" : "s"}`
+}
 </script>
 
 <style scoped lang="sass">
