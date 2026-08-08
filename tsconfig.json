@@ -5,6 +5,7 @@
     "moduleResolution": "node10",
     "ignoreDeprecations": "6.0",
     "lib": ["esnext", "dom", "dom.iterable"],
+    "types": ["vite/client"],
     "strict": true,
     "jsx": "preserve",
     "allowJs": true,
