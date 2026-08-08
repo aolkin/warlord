@@ -21,6 +21,15 @@
         inset
       />
     </v-list-item>
+    <v-list-item>
+      <v-switch
+        v-model="offscreenDice"
+        label="Offscreen Dice Rendering"
+        hint="Smoother dice rolls at the cost of a larger download; off renders on the main thread instead. Takes effect after reload."
+        persistent-hint
+        inset
+      />
+    </v-list-item>
     <v-divider />
     <v-list-item>
       <v-btn
@@ -168,6 +177,11 @@ const quickDice = computed({
 const freeMovement = computed({
   get: () => preferencesStore.freeMovement,
   set: (value: boolean) => preferencesStore.setFreeMovement(value)
+})
+
+const offscreenDice = computed({
+  get: () => preferencesStore.offscreenDice,
+  set: (value: boolean) => preferencesStore.setOffscreenDice(value)
 })
 
 const creatureColorMode = computed({
