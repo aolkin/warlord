@@ -34,7 +34,7 @@
           :key="hex"
           :elevation="board.getElevation(hex)"
           :hazard="board.getHazard(hex)"
-          :edge-hazards="edgesForHex(hex)"
+          :edge-hazards="edgeHazardsByHex[hex]"
           :interactive="battlePhaseType === BattlePhaseType.MOVE && movementHexes.has(hex)"
           :transform="hexTransformStr(hex)"
           :class="{ [`hex-${hex}`]: true, 'available-move': movementHexes.has(hex) }"
@@ -215,6 +215,10 @@ function edgesForHex(hex: number): Record<number, EdgeHazard> {
     .filter(([, hazard]: [number, EdgeHazard]) => hazard !== EdgeHazard.NONE)
   )
 }
+
+const edgeHazardsByHex = computed((): Record<number, Record<number, EdgeHazard>> =>
+  Object.fromEntries(BATTLE_BOARD_HEXES.map((hex: number): [number, Record<number, EdgeHazard>] =>
+    [hex, edgesForHex(hex)])))
 
 const defender = computed((): PlayerId => activeBattle.value!.defender)
 
