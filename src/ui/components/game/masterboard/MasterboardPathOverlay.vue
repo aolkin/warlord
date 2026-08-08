@@ -66,7 +66,7 @@ const rootClass = computed(() => {
       &:hover :deep(.hex)
         fill: rgba($path-color, 0.25)
 
-g.paths:hover .parent
+g.paths:hover .root
   .label
     opacity: 0.2
 

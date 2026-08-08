@@ -1,7 +1,7 @@
 <template>
   <g
     :transform="transform"
-    class="parent"
+    class="root"
     @mouseenter="selectionStore.enterHex(hex)"
     @mouseleave="selectionStore.leaveHex(hex)"
   >
@@ -35,7 +35,7 @@ const inverted = computed(() => isHexInverted(props.hex.id))
 </script>
 
 <style lang="sass" scoped>
-.parent
+.root
   font-family: Quintessential, "Fanwood Text", serif
   font-weight: bold
   font-size: 0.75em

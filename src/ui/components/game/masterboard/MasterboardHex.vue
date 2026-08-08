@@ -56,7 +56,7 @@ const terrain = computed(() => Terrain[props.hex?.terrain].toLowerCase())
 <style lang="sass" scoped>
 @import "~/styles/terrain-colors.sass"
 
-.parent
+.root
   .id
     font-size: 0.6em
 
