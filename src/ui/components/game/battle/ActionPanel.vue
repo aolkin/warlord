@@ -1,13 +1,13 @@
 <template>
   <v-card
     width="300"
-    :title="`${gameStore.playerById(gameStore.battleActivePlayer!)?.name}'s Turn`"
+    :title="`${battleActivePlayer?.name}'s Turn`"
   >
     <template #prepend>
       <v-icon
         :icon="roundIcon"
         size="x-large"
-        :title="`Round ${gameStore.game.activeBattle!.round + 1}`"
+        :title="`Round ${activeBattle.round + 1}`"
       />
       <v-icon
         :icon="phaseIcon"
@@ -62,8 +62,10 @@ const gameStore = useGameStore()
 const selectionStore = useSelectionStore()
 const preferencesStore = usePreferencesStore()
 
-// Every read of activeBattle below is non-null asserted: ActionPanel only renders inside
-// BattleBoard's v-else branch, which requires an active battle.
+// ActionPanel only renders inside BattleBoard's v-else branch, which requires an active battle.
+const activeBattle = computed(() => gameStore.game.activeBattle!)
+const battleActivePlayer = computed(() => gameStore.playerById(gameStore.battleActivePlayer!))
+
 const phaseTypeTitle = computed((): string => {
   switch (gameStore.battlePhaseType) {
     case BattlePhaseType.MOVE:
@@ -93,7 +95,7 @@ const phaseIcon = computed((): string => {
 const pendingStrikes = computed((): BattleCreature[] => {
   if (gameStore.battlePhaseType === BattlePhaseType.STRIKE ||
     gameStore.battlePhaseType === BattlePhaseType.STRIKEBACK) {
-    return gameStore.game.activeBattle!.getPendingStrikes()
+    return activeBattle.value.getPendingStrikes()
   } else {
     return []
   }
@@ -103,14 +105,14 @@ const mayProceed = computed((): boolean =>
   pendingStrikes.value.length === 0 && !gameStore.battleCarryoverTargets)
 
 const roundIcon = computed((): string => {
-  const name = `mdi-numeric-${gameStore.game.activeBattle!.round + 1}-box`
-  return name + (gameStore.battleActivePlayer === gameStore.game.activeBattle!.defender ? "-outline" : "")
+  const name = `mdi-numeric-${activeBattle.value.round + 1}-box`
+  return name + (gameStore.battleActivePlayer === activeBattle.value.defender ? "-outline" : "")
 })
 
-const land = computed((): BattleBoard => gameStore.game.activeBattle!.getBoard())
+const land = computed((): BattleBoard => activeBattle.value.getBoard())
 
 const pendingCreatures = computed((): number =>
-  gameStore.game.activeBattle!.creatures.filter((creature: BattleCreature) =>
+  activeBattle.value.creatures.filter((creature: BattleCreature) =>
     creature.player === gameStore.battleActivePlayer && creature.hex >= 36).length)
 
 function nextPhase(): void {

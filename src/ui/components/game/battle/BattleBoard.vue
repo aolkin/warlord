@@ -1,10 +1,10 @@
 <template>
   <div
     class="battleboard-root"
-    :class="gameStore.game.activeBattle === undefined ? 'inactive' : Terrain[terrain].toLowerCase()"
+    :class="activeBattle === undefined ? 'inactive' : Terrain[terrain].toLowerCase()"
   >
     <svg
-      v-if="gameStore.game.activeBattle === undefined"
+      v-if="activeBattle === undefined"
       class="no-active-battle"
       viewBox="-100 -50 200 100"
     >
@@ -21,7 +21,7 @@
       >
         <v-card-title>Battle Land: {{ Terrain[terrain] }}</v-card-title>
         <v-card-title>
-          Round: {{ gameStore.game.activeBattle.round + 1 }} - {{ BATTLE_PHASE_TITLES[gameStore.game.activeBattle.phase] }}
+          Round: {{ activeBattle.round + 1 }} - {{ BATTLE_PHASE_TITLES[activeBattle.phase] }}
         </v-card-title>
       </v-card>
       <svg
@@ -65,7 +65,7 @@
           class="battle-creature"
           :class="creatureClasses(creature)"
           :transform="`${hexTransformStr(creature.hex)} scale(0.9)
-           rotate(${120 * (gameStore.game.activeBattle.attackerEdge - 1) + (creature.player === defender ? 180 : 0)})`"
+           rotate(${120 * (activeBattle.attackerEdge - 1) + (creature.player === defender ? 180 : 0)})`"
           in-svg
           @click.stop="chooseCreature(creature)"
           @mouseenter="selectionStore.enterCreature(creature)"
@@ -77,7 +77,7 @@
           interactive
           transparent-hover
           :transform="`${hexTransformStr(creature.hex)} scale(0.9)
-           rotate(${120 * (gameStore.game.activeBattle.attackerEdge - 1) + (creature.player === defender ? 0 : 180)})`"
+           rotate(${120 * (activeBattle.attackerEdge - 1) + (creature.player === defender ? 0 : 180)})`"
           @click.stop="targetCreature(creature)"
           @mouseenter="selectionStore.enterCreature(creature)"
           @mouseleave="selectionStore.leaveCreature(creature)"
@@ -90,7 +90,7 @@
           :long-distance="rangestrikeTarget.longDistance"
           :adjustment="rangestrikeTarget.adjustment"
           :transform="`${hexTransformStr(rangestrikeTarget.creature.hex)} scale(0.9)
-           rotate(${120 * (gameStore.game.activeBattle.attackerEdge - 1) +
+           rotate(${120 * (activeBattle.attackerEdge - 1) +
           (rangestrikeTarget.creature.player === defender ? 0 : 180)})`"
           @click.stop="targetCreature(rangestrikeTarget)"
           @mouseenter="selectionStore.enterCreature(rangestrikeTarget.creature)"
@@ -184,6 +184,8 @@ const target = ref<BattleCreature | RangestrikeTarget | undefined>(undefined)
 const optionalToHit = ref<number | undefined>(undefined)
 const debugHex = ref(0)
 
+const activeBattle = computed(() => gameStore.game.activeBattle)
+
 const attackCreatureDialog = computed({
   get: (): boolean => target.value !== undefined,
   set: (val: boolean): void => {
@@ -193,7 +195,7 @@ const attackCreatureDialog = computed({
   }
 })
 
-const terrain = computed((): Terrain => gameStore.game.activeBattle!.terrain)
+const terrain = computed((): Terrain => activeBattle.value!.terrain)
 const board = computed((): BattleBoard => BATTLE_BOARDS[terrain.value as Terrain])
 
 function edgesForHex(hex: number): Record<number, EdgeHazard> {
@@ -208,10 +210,10 @@ const edgeHazardsByHex = computed((): Record<number, Record<number, EdgeHazard>>
   Object.fromEntries(BATTLE_BOARD_HEXES.map((hex: number): [number, Record<number, EdgeHazard>] =>
     [hex, edgesForHex(hex)])))
 
-const defender = computed((): PlayerId => gameStore.game.activeBattle!.defender)
+const defender = computed((): PlayerId => activeBattle.value!.defender)
 
 const activeCreatures = computed((): BattleCreature[] =>
-  gameStore.game.activeBattle!.creatures.filter((creature: BattleCreature) =>
+  activeBattle.value!.creatures.filter((creature: BattleCreature) =>
     creature.hex > 0 && creature.hex < 36))
 
 function creatureEnabled(creature: BattleCreature): boolean {
@@ -245,11 +247,11 @@ function creatureClasses(creature: BattleCreature): object {
   }
 }
 
-const activeStrike = computed((): ActiveStrike | undefined => gameStore.game.activeBattle!.activeStrike)
+const activeStrike = computed((): ActiveStrike | undefined => activeBattle.value!.activeStrike)
 
 const targetedStrike = computed((): Strike =>
   selectionStore.selectedCreature && target.value
-    ? gameStore.game.activeBattle!.getTargetedStrike(selectionStore.selectedCreature, target.value)
+    ? activeBattle.value!.getTargetedStrike(selectionStore.selectedCreature, target.value)
     : { toHit: 0, dice: 0 })
 
 const debugHexAdjacencies = computed((): number[] => BATTLE_BOARD_ADJACENCIES[debugHex.value] ?? [])
@@ -293,7 +295,7 @@ async function attackTargetedCreature(): Promise<void> {
       optionalToHit: optionalToHit.value,
       rolls
     }))
-  console.log(gameStore.game.activeBattle!.activeStrike)
+  console.log(activeBattle.value!.activeStrike)
   resetAttack()
   selectionStore.deselectCreature()
 }

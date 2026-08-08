@@ -5,10 +5,10 @@
       :key="creature.id"
       :type="creature.type"
       :player="gameStore.playerById(creature.player)"
-      :class="{ interactive: gameStore.game.activeBattle!.phase === expectedPhase,
+      :class="{ interactive: activeBattle.phase === expectedPhase,
                 selected: creature === selectionStore.selectedCreature }"
       class="ma-1 pending"
-      @click="gameStore.game.activeBattle!.phase === expectedPhase && selectionStore.selectCreature(creature)"
+      @click="activeBattle.phase === expectedPhase && selectionStore.selectCreature(creature)"
     />
     <Creature
       v-if="showRemove"
@@ -34,7 +34,9 @@ const props = defineProps<{
 const gameStore = useGameStore()
 const selectionStore = useSelectionStore()
 
-const showRemove = computed(() => gameStore.game.activeBattle!.phase === props.expectedPhase &&
+const activeBattle = computed(() => gameStore.game.activeBattle!)
+
+const showRemove = computed(() => activeBattle.value.phase === props.expectedPhase &&
   (selectionStore.selectedCreature?.initialHex ?? -1) >= 36 &&
   (selectionStore.selectedCreature?.hex ?? -1) < 36)
 

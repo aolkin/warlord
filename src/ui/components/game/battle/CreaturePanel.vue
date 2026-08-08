@@ -19,7 +19,7 @@
         >
           <div
             v-if="pendingOffense.length > 0 ||
-              (gameStore.game.activeBattle!.phase === BattlePhase.ATTACKER_MOVE &&
+              (activeBattle.phase === BattlePhase.ATTACKER_MOVE &&
                 (selectionStore.selectedCreature?.initialHex ?? -1) >= 36)"
           >
             <v-card-title>{{ attacker?.name }}'s Pending Creatures</v-card-title>
@@ -31,7 +31,7 @@
           </div>
           <div
             v-if="pendingDefense.length > 0 ||
-              (gameStore.game.activeBattle!.phase === BattlePhase.DEFENDER_MOVE &&
+              (activeBattle.phase === BattlePhase.DEFENDER_MOVE &&
                 (selectionStore.selectedCreature?.initialHex ?? -1) >= 36)"
           >
             <v-card-title>{{ defender?.name }}'s Pending Creatures</v-card-title>
@@ -88,23 +88,25 @@ const selectionStore = useSelectionStore()
 
 const minimized = ref(false)
 
+const activeBattle = computed(() => gameStore.game.activeBattle!)
+
 const orderingClasses = computed(() =>
   ({
     "flex-column-reverse":
-      gameStore.game.activeBattle!.defender === gameStore.players[playerStore.localPlayer].id
+      activeBattle.value.defender === gameStore.players[playerStore.localPlayer].id
   }))
 const attacker = computed<Player | undefined>(() =>
-  gameStore.playerById(gameStore.game.activeBattle!.attacker))
+  gameStore.playerById(activeBattle.value.attacker))
 const defender = computed<Player | undefined>(() =>
-  gameStore.playerById(gameStore.game.activeBattle!.defender))
+  gameStore.playerById(activeBattle.value.defender))
 const pendingOffense = computed<BattleCreature[]>(() =>
-  gameStore.game.activeBattle!.getOffense().filter((creature: BattleCreature) => creature.hex >= 36))
+  activeBattle.value.getOffense().filter((creature: BattleCreature) => creature.hex >= 36))
 const pendingDefense = computed<BattleCreature[]>(() =>
-  gameStore.game.activeBattle!.getDefense().filter((creature: BattleCreature) => creature.hex >= 36))
+  activeBattle.value.getDefense().filter((creature: BattleCreature) => creature.hex >= 36))
 const deadOffense = computed<BattleCreature[]>(() =>
-  gameStore.game.activeBattle!.getOffense().filter((creature: BattleCreature) => creature.hex === 0))
+  activeBattle.value.getOffense().filter((creature: BattleCreature) => creature.hex === 0))
 const deadDefense = computed<BattleCreature[]>(() =>
-  gameStore.game.activeBattle!.getDefense().filter((creature: BattleCreature) => creature.hex === 0))
+  activeBattle.value.getDefense().filter((creature: BattleCreature) => creature.hex === 0))
 </script>
 <style scoped lang="sass">
 .interactive

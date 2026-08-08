@@ -26,6 +26,7 @@ import StrikePanelTitle from "./StrikePanelTitle.vue"
 const gameStore = useGameStore()
 const selectionStore = useSelectionStore()
 
+const activeBattle = computed(() => gameStore.game.activeBattle!)
 
 const target = computed<BattleCreature | undefined>(() =>
   selectionStore.focusedCreature !== undefined && selectionStore.engagements.includes(selectionStore.focusedCreature)
@@ -38,9 +39,9 @@ const rangedTarget = computed<BattleCreature | undefined>(() => rangedFocus.valu
 const strike = computed<Strike | undefined>(() => {
   if (selectionStore.selectedCreature) {
     if (target.value) {
-      return gameStore.game.activeBattle!.getAdjustedStrike(selectionStore.selectedCreature, target.value)
+      return activeBattle.value.getAdjustedStrike(selectionStore.selectedCreature, target.value)
     } else if (rangedFocus.value) {
-      return gameStore.game.activeBattle!.getRangestrike(selectionStore.selectedCreature, rangedFocus.value)
+      return activeBattle.value.getRangestrike(selectionStore.selectedCreature, rangedFocus.value)
     }
   }
   return undefined
