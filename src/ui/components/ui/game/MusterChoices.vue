@@ -1,7 +1,7 @@
 <template>
   <div>
     <Creature
-      v-if="gameStore.game.activePhase === MasterboardPhase.MUSTER"
+      v-if="activePhase === MasterboardPhase.MUSTER"
       :type="undefined"
       :player="player"
       :class="{ selected: chosen === undefined }"
@@ -61,10 +61,10 @@ import { CREATURE_DATA } from "@/models/creature"
 import { MasterboardPhase } from "@/models/game"
 import { Player } from "@/models/player"
 import { MusterChoice, MusterPossibility } from "@/models/stack"
-import { useGameStore } from "~/stores/game"
 import Creature from "../../game/Creature.vue"
 
 const props = withDefaults(defineProps<{
+  activePhase: MasterboardPhase
   musterable?: MusterPossibility[]
   player?: Player
   modelValue?: MusterChoice
@@ -77,8 +77,6 @@ const props = withDefaults(defineProps<{
 const emit = defineEmits<{
   "update:modelValue": [value: MusterChoice]
 }>()
-
-const gameStore = useGameStore()
 
 const dialogState = ref(props.musterable.map(() => false))
 

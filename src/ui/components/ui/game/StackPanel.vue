@@ -94,6 +94,7 @@
             v-if="activePhase === MasterboardPhase.MOVE || selectionStore.focusedStack.canMuster()"
             v-model="mustering"
             class="px-2 pb-1"
+            :active-phase="activePhase"
             :musterable="musterable"
             :player="stackPlayer"
           />
