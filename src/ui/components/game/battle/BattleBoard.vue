@@ -126,7 +126,7 @@
           :battle="activeBattle"
           :attacker="selectionStore.selectedCreature"
           :targeted-creature="target"
-          @attack="attackTargetedCreature"
+          @attack="attackTargetedCreature(selectionStore.selectedCreature, target)"
           @cancel="resetAttack"
         />
         <RangestrikeConfirmation
@@ -135,7 +135,7 @@
           :battle="activeBattle"
           :attacker="selectionStore.selectedCreature"
           :target="target"
-          @attack="attackTargetedCreature"
+          @attack="attackTargetedCreature(selectionStore.selectedCreature, target)"
           @cancel="resetAttack"
         />
       </template>
@@ -285,19 +285,20 @@ function targetCreature(creature: BattleCreature | RangestrikeTarget): void {
   }
 }
 
-async function attackTargetedCreature(attacker: BattleCreature): Promise<void> {
+async function attackTargetedCreature(
+  attacker: BattleCreature,
+  attackTarget: BattleCreature | RangestrikeTarget
+): Promise<void> {
   console.log(attacker, target.value)
   if (diceRoller?.value == null) {
     throw new Error("diceRoller ref is not set")
   }
   const rolls = await diceRoller.value.roll(targetedStrike.value.dice)
-  // Only invoked from StrikeConfirmation/RangestrikeConfirmation, which only render
-  // inside a `v-if="selectionStore.selectedCreature && target"` block, so target is defined.
-  await (isRangestrike(target.value!)
-    ? gameStore.rangestrikeCreature({ attacker, target: target.value as RangestrikeTarget, rolls })
+  await (isRangestrike(attackTarget)
+    ? gameStore.rangestrikeCreature({ attacker, target: attackTarget, rolls })
     : gameStore.attackCreature({
       attacker,
-      target: target.value as BattleCreature,
+      target: attackTarget,
       optionalToHit: optionalToHit.value,
       rolls
     }))

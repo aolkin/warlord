@@ -53,7 +53,7 @@
         <v-btn
           color="primary"
           class="float-right"
-          @click="$emit('attack', attacker)"
+          @click="$emit('attack')"
         >
           Attack
         </v-btn>
@@ -76,7 +76,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   cancel: []
-  attack: [attacker: BattleCreature]
+  attack: []
   "update:optionalToHit": [value: number | undefined]
 }>()
 
