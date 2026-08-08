@@ -1,5 +1,4 @@
 import { range } from "lodash-es"
-import { BaseActionContext } from "@/store/types"
 import { assert } from "@/utils/assert"
 import { Battle, BattleCreature, BattlePhaseType } from "./battle"
 import { CREATURE_DATA, CREATURE_LIST, CreatureType } from "./creature"
@@ -58,15 +57,8 @@ export interface Getters {
 export interface MovePayload { stack: Stack, hex: number | MasterboardHex, edge?: HexEdge }
 export interface MusterPayload { stack: Stack, recruit: MusterChoice }
 
-export interface ActionContext extends BaseActionContext {
-  state: TitanGame
-  getters: Getters
-}
-
-// Methods contributed by gameBattle/gamePersistence are assigned onto TitanGame.prototype via
-// Object.assign below rather than declared in the class body, so the store's
-// Object.getOwnPropertyNames(TitanGame.prototype) reflection still finds them; this interface
-// makes those methods visible to the type checker.
+// gameBattle/gamePersistence are mixed onto TitanGame.prototype by the Object.assign below,
+// which the type checker cannot see; this interface declares what they contribute.
 // eslint-disable-next-line @typescript-eslint/no-unsafe-declaration-merging
 export interface TitanGame extends GameBattle, GamePersistence {}
 // eslint-disable-next-line @typescript-eslint/no-unsafe-declaration-merging
@@ -212,7 +204,7 @@ export class TitanGame {
 
   // Actions
 
-  async doNextPhase({ getters, dispatch }: ActionContext): Promise<void> {
+  async doNextPhase(getters: Getters): Promise<void> {
     switch (this.activePhase) {
       case MasterboardPhase.SPLIT:
         // TODO: check getters.mayProceed before advancing — round-1 split rule (exactly 4 creatures with 1 lord) not yet enforced
@@ -231,7 +223,7 @@ export class TitanGame {
         if (getters.engagedStacks.length === 0) {
           nextPhase(this)
         } else {
-          dispatch("initiateBattle", getters.engagedStacks[0])
+          void this.doInitiateBattle(getters, getters.engagedStacks[0])
         }
         break
       case MasterboardPhase.BATTLE:
@@ -254,7 +246,7 @@ export class TitanGame {
     await this.persist()
   }
 
-  async doSetRoll({ getters }: ActionContext, payload?: number): Promise<void> {
+  async doSetRoll(getters: Getters, payload?: number): Promise<void> {
     if (payload === undefined && this.activeRoll !== undefined) {
       assert(getters.mulliganAvailable, "Mulligan unavailable")
     }
@@ -266,7 +258,7 @@ export class TitanGame {
     await this.persist()
   }
 
-  async doMove(_context: ActionContext, { stack, hex, edge }: MovePayload): Promise<void> {
+  async doMove({ stack, hex, edge }: MovePayload): Promise<void> {
     assert(this.activePhase === MasterboardPhase.MOVE, "Innappropriate phase")
     stack.attackEdge = edge
     if (hex instanceof MasterboardHex) {
@@ -277,7 +269,7 @@ export class TitanGame {
     await this.persist()
   }
 
-  async doSetRecruit(_context: ActionContext, { stack, recruit }: MusterPayload): Promise<void> {
+  async doSetRecruit({ stack, recruit }: MusterPayload): Promise<void> {
     if (!stack.canMuster()) {
       throw new Error("Stack is not eligible to muster!")
     }

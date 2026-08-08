@@ -27,9 +27,6 @@
       "@/models/*": [
         "./src/game/models/*"
       ],
-      "@/store/*": [
-        "./src/game/store/*"
-      ],
       "@/utils/*": [
         "./src/utils/*"
       ]
