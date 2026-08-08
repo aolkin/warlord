@@ -22,6 +22,7 @@
               :key="hex.id"
               :path-index="index"
               :distance-to-dest="activeRoll! - distance"
+              :distance-from-start="distance + 1"
               :hex="hex"
               :contains-enemy="foe"
               @click.stop="moveStack(distance, foe, hex)"
