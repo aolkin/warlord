@@ -1,5 +1,5 @@
 import { defineStore } from "pinia"
-import { ref } from "vue"
+import { reactive, toRefs, watch } from "vue"
 
 export enum CreatureColorMode {
   STANDARD,
@@ -40,65 +40,9 @@ const savePreferences = (preferences: Preferences): void => {
 }
 
 export const usePreferencesStore = defineStore("preferences", () => {
-  const initial = loadPreferences()
-  const fancyGraphics = ref(initial.fancyGraphics)
-  const debugUi = ref(initial.debugUi)
-  const quickDice = ref(initial.quickDice)
-  const freeMovement = ref(initial.freeMovement)
-  const offscreenDice = ref(initial.offscreenDice)
-  const creatureColorMode = ref(initial.creatureColorMode)
+  const preferences = reactive(loadPreferences())
 
-  const persist = (): void => savePreferences({
-    fancyGraphics: fancyGraphics.value,
-    debugUi: debugUi.value,
-    quickDice: quickDice.value,
-    freeMovement: freeMovement.value,
-    offscreenDice: offscreenDice.value,
-    creatureColorMode: creatureColorMode.value
-  })
+  watch(preferences, () => savePreferences({ ...preferences }), { deep: true })
 
-  function setFancyGraphics(value: boolean): void {
-    fancyGraphics.value = value
-    persist()
-  }
-
-  function setDebugUi(value: boolean): void {
-    debugUi.value = value
-    persist()
-  }
-
-  function setQuickDice(value: boolean): void {
-    quickDice.value = value
-    persist()
-  }
-
-  function setFreeMovement(value: boolean): void {
-    freeMovement.value = value
-    persist()
-  }
-
-  function setOffscreenDice(value: boolean): void {
-    offscreenDice.value = value
-    persist()
-  }
-
-  function setCreatureColorMode(value: CreatureColorMode): void {
-    creatureColorMode.value = value
-    persist()
-  }
-
-  return {
-    fancyGraphics,
-    debugUi,
-    quickDice,
-    freeMovement,
-    offscreenDice,
-    creatureColorMode,
-    setFancyGraphics,
-    setDebugUi,
-    setQuickDice,
-    setFreeMovement,
-    setOffscreenDice,
-    setCreatureColorMode
-  }
+  return toRefs(preferences)
 })

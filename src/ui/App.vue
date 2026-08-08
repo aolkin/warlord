@@ -117,11 +117,11 @@ onBeforeMount(() => {
 })
 
 function toggleFancyGraphics(): void {
-  preferencesStore.setFancyGraphics(!preferencesStore.fancyGraphics)
+  preferencesStore.fancyGraphics = !preferencesStore.fancyGraphics
 }
 
 function toggleDebugUi(): void {
-  preferencesStore.setDebugUi(!preferencesStore.debugUi)
+  preferencesStore.debugUi = !preferencesStore.debugUi
 }
 </script>
 
