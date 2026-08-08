@@ -1,7 +1,7 @@
 import { defineStore } from "pinia"
 import { computed, reactive } from "vue"
 import { BattleCreature } from "@/models/battle"
-import { Getters, MovePayload, MusterPayload, Path, TitanGame } from "@/models/game"
+import { MovePayload, MusterPayload, Path, TitanGame } from "@/models/game"
 import { AttackPayload, BattleMovePayload, RangestrikePayload } from "@/models/game/battle"
 import { Player, PlayerId } from "@/models/player"
 import { Stack } from "@/models/stack"
@@ -17,9 +17,8 @@ export const useGameStore = defineStore("game", () => {
   const activePlayer = computed(() => game.getActivePlayer())
   const activePlayerId = computed(() => game.getActivePlayerId())
   const activeStacks = computed(() => game.getActiveStacks())
-  const nextMarker = computed(() => game.getNextMarker())
-  const mandatoryMoves = computed(() => game.getMandatoryMoves(getters))
-  const mayProceed = computed(() => game.getMayProceed(getters))
+  const mandatoryMoves = computed(() => game.getMandatoryMoves())
+  const mayProceed = computed(() => game.getMayProceed())
   const mulliganAvailable = computed(() => game.getMulliganAvailable())
   const engagedStacks = computed(() => game.getEngagedStacks())
   const battleActivePlayer = computed(() => game.getBattleActivePlayer())
@@ -50,31 +49,6 @@ export const useGameStore = defineStore("game", () => {
     return game.getBattleEngagements(creature)
   }
 
-  // A getXxx method that builds on other derived values takes them as a Getters object.
-  // reactive() unwraps each computed on access, so those reads go through the cache above;
-  // the parameterized entries are plain functions and pass through unchanged.
-  const getters: Getters = reactive({
-    round,
-    firstRound,
-    players,
-    playerById,
-    stacksForPlayer,
-    stacksForHex,
-    activePlayer,
-    activePlayerId,
-    activeStacks,
-    nextMarker,
-    pathsForHex,
-    mandatoryMoves,
-    mayProceed,
-    mulliganAvailable,
-    engagedStacks,
-    battleActivePlayer,
-    battlePhaseType,
-    battleMoves,
-    battleEngagements
-  })
-
   return {
     game,
     round,
@@ -97,8 +71,8 @@ export const useGameStore = defineStore("game", () => {
     battleEngagements,
     battleCarryoverTargets,
     battleRangestrikeTargets: (creature: BattleCreature) => game.getBattleRangestrikeTargets(creature),
-    nextPhase: (): Promise<void> => game.doNextPhase(getters),
-    setRoll: (roll?: number): Promise<void> => game.doSetRoll(getters, roll),
+    nextPhase: (): Promise<void> => game.doNextPhase(),
+    setRoll: (roll?: number): Promise<void> => game.doSetRoll(roll),
     move: (payload: MovePayload): Promise<void> => game.doMove(payload),
     setRecruit: (payload: MusterPayload): Promise<void> => game.doSetRecruit(payload),
     nextBattlePhase: (): Promise<void> => game.doNextBattlePhase(),

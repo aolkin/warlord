@@ -93,7 +93,7 @@ describe("TitanGame mandatory moves (stack splitting during movement)", () => {
     original.split[4] = true // OGRE
     original.split[6] = true // GARGOYLE
     const getters = createGetters(game)
-    await game.doNextPhase(getters)
+    await game.doNextPhase()
     const sibling = game.stacks.at(-1)!
     game.activeRoll = 1
 
@@ -136,9 +136,8 @@ describe("TitanGame turn and phase transitions", () => {
     original.split[2] = true // CENTAUR
     original.split[4] = true // OGRE
     original.split[6] = true // GARGOYLE
-    const getters = createGetters(game)
 
-    await game.doNextPhase(getters)
+    await game.doNextPhase()
 
     expect(game.activePhase).toBe(MasterboardPhase.MOVE)
     expect(game.stacks).toHaveLength(3)
@@ -160,9 +159,8 @@ describe("TitanGame turn and phase transitions", () => {
     const game = newGame() // BLUE at 100, GREEN at 400: never in contact
     game.activePhase = MasterboardPhase.MOVE
     game.activeRoll = 1
-    const getters = createGetters(game)
 
-    await game.doNextPhase(getters)
+    await game.doNextPhase()
 
     expect(game.activePhase).toBe(MasterboardPhase.MUSTER)
     expect(game.activeRoll).toBeUndefined()
@@ -176,9 +174,8 @@ describe("TitanGame turn and phase transitions", () => {
     attacker.attackEdge = HexEdge.FIRST
     game.activePhase = MasterboardPhase.MOVE
     game.activeRoll = 1
-    const getters = createGetters(game)
 
-    await game.doNextPhase(getters)
+    await game.doNextPhase()
 
     expect(game.activeBattle?.attacker).toBe(attacker.owner)
     expect(game.activeBattle?.defender).toBe(defender.owner)
@@ -196,14 +193,13 @@ describe("TitanGame turn and phase transitions", () => {
     original.split[2] = true
     original.split[4] = true
     original.split[6] = true
-    const getters = createGetters(game)
-    await game.doNextPhase(getters)
+    await game.doNextPhase()
     const sibling = game.stacks.at(-1)!
     original.hex = game.stacks[1].hex // engage GREEN
     sibling.hex = game.stacks[2].hex // engage RED
     game.activeRoll = 1
 
-    await expect(game.doNextPhase(getters)).rejects.toThrow("Multiple simultaneous engagements")
+    await expect(game.doNextPhase()).rejects.toThrow("Multiple simultaneous engagements")
 
     expect(game.activePhase).toBe(MasterboardPhase.MOVE)
     expect(game.activeBattle).toBeUndefined()
@@ -215,19 +211,17 @@ describe("TitanGame turn and phase transitions", () => {
     // Battle mechanics themselves are exercised by the battle test suite; only the
     // phase-transition gating (an active battle must exist) is under test here.
     game.activeBattle = {} as unknown as Battle
-    const getters = createGetters(game)
 
-    await game.doNextPhase(getters)
+    await game.doNextPhase()
 
     expect(game.activePhase).toBe(MasterboardPhase.MUSTER)
   })
 
   it("rotates to the next player after musters, then wraps to the first player and advances the round on the next muster", async () => {
     const game = newGame()
-    const getters = createGetters(game)
     game.activePhase = MasterboardPhase.MUSTER
 
-    await game.doNextPhase(getters)
+    await game.doNextPhase()
     expect(game.activePhase).toBe(MasterboardPhase.SPLIT)
     expect(game.activePlayer).toBe(1)
     expect(game.round).toBe(0)
@@ -238,7 +232,7 @@ describe("TitanGame turn and phase transitions", () => {
     game.stacks[0].attackEdge = HexEdge.FIRST
     game.stacks[0].origin = 3
 
-    await game.doNextPhase(getters)
+    await game.doNextPhase()
     expect(game.activePhase).toBe(MasterboardPhase.SPLIT)
     expect(game.activePlayer).toBe(0)
     expect(game.round).toBe(1)
@@ -254,9 +248,8 @@ describe("TitanGame roll setting (doSetRoll)", () => {
   it("records the roll during the move phase", async () => {
     const game = newGame()
     game.activePhase = MasterboardPhase.MOVE
-    const getters = createGetters(game)
 
-    await game.doSetRoll(getters, 4)
+    await game.doSetRoll(4)
 
     expect(game.activeRoll).toBe(4)
   })
@@ -265,9 +258,8 @@ describe("TitanGame roll setting (doSetRoll)", () => {
     const game = newGame()
     game.activePhase = MasterboardPhase.MOVE
     game.activeRoll = 3
-    const getters = createGetters(game)
 
-    await game.doSetRoll(getters, undefined)
+    await game.doSetRoll(undefined)
 
     expect(game.activeRoll).toBeUndefined()
     expect(game.mulliganTaken).toBe(true)
@@ -327,10 +319,9 @@ describe("TitanGame mustering (doSetRecruit)", () => {
     game.stacks.push(stack)
     const poolBefore = game.creaturePool[CreatureType.LION]
     game.activePhase = MasterboardPhase.MUSTER
-    const getters = createGetters(game)
     await game.doSetRecruit({ stack, recruit: [CreatureType.LION, [CreatureType.CENTAUR, 2]] })
 
-    await game.doNextPhase(getters)
+    await game.doNextPhase()
 
     expect(stack.creatures).toContain(CreatureType.LION)
     expect(game.creaturePool[CreatureType.LION]).toBe(poolBefore - 1)

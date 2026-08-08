@@ -30,8 +30,7 @@ export interface Path {
   path: MasterboardHex[]
 }
 
-// The derived values a TitanGame method may read while computing its own result. Each entry
-// is produced by the correspondingly named getXxx method.
+// The full set of derived values TitanGame exposes, one per correspondingly named getXxx method.
 export interface Getters {
   readonly round: number // 1-indexed
   readonly firstRound: boolean
@@ -162,10 +161,10 @@ export class TitanGame {
     return paths
   }
 
-  getMandatoryMoves(getters: Getters): Stack[] {
-    return getters.activeStacks.filter(stack => !stack.hasMoved() &&
-      getters.stacksForHex(stack.origin).length > 1 &&
-      getters.pathsForHex(stack.hex).length > 0)
+  getMandatoryMoves(): Stack[] {
+    return this.getActiveStacks().filter(stack => !stack.hasMoved() &&
+      this.getStacksForHex(stack.origin).length > 1 &&
+      this.getPathsForHex(stack.hex).length > 0)
   }
 
   getActivePlayer(): Player {
@@ -176,13 +175,13 @@ export class TitanGame {
     return this.getActivePlayer().id
   }
 
-  getMayProceed(getters: Getters): boolean {
+  getMayProceed(): boolean {
     switch (this.activePhase) {
       case MasterboardPhase.SPLIT:
-        return getters.activeStacks.every(stack => stack.isValidSplit(this.round === 0))
+        return this.getActiveStacks().every(stack => stack.isValidSplit(this.round === 0))
       case MasterboardPhase.MOVE:
-        return getters.mandatoryMoves.length === 0 &&
-          getters.activeStacks.some(stack => stack.hasMoved())
+        return this.getMandatoryMoves().length === 0 &&
+          this.getActiveStacks().some(stack => stack.hasMoved())
       case MasterboardPhase.BATTLE:
         return true
       case MasterboardPhase.MUSTER:
@@ -206,33 +205,36 @@ export class TitanGame {
 
   // Actions
 
-  async doNextPhase(getters: Getters): Promise<void> {
+  async doNextPhase(): Promise<void> {
     switch (this.activePhase) {
       case MasterboardPhase.SPLIT:
-        // TODO: check getters.mayProceed before advancing — round-1 split rule (exactly 4 creatures with 1 lord) not yet enforced
-        getters.activeStacks.filter(stack => stack.numSplitting() > 0).forEach(stack => {
-          this.stacks.push(finalizeSplit(stack, getters.nextMarker!))
+        // TODO: check mayProceed before advancing — round-1 split rule (exactly 4 creatures with 1 lord) not yet enforced
+        this.getActiveStacks().filter(stack => stack.numSplitting() > 0).forEach(stack => {
+          // Each pushed stack claims a marker, so the next split needs a fresh read.
+          this.stacks.push(finalizeSplit(stack, this.getNextMarker()!))
         })
         this.mulliganTaken = false
         break
-      case MasterboardPhase.MOVE:
+      case MasterboardPhase.MOVE: {
+        const engagedStacks = this.getEngagedStacks()
         // TODO: handle 2+ simultaneous engagements — no UI yet exists to let the player choose
         // which battle to resolve first. Refusing to advance keeps the game out of a battle
         // phase with no battle to resolve.
-        assert(getters.engagedStacks.length <= 1, "Multiple simultaneous engagements are unsupported")
+        assert(engagedStacks.length <= 1, "Multiple simultaneous engagements are unsupported")
         this.activeRoll = undefined
         // TODO: recombine splits that failed to move
-        if (getters.engagedStacks.length === 0) {
+        if (engagedStacks.length === 0) {
           nextPhase(this)
         } else {
-          void this.doInitiateBattle(getters.engagedStacks[0])
+          void this.doInitiateBattle(engagedStacks[0])
         }
         break
+      }
       case MasterboardPhase.BATTLE:
         assert(this.activeBattle !== undefined, "Incomplete battle!")
         break
       case MasterboardPhase.MUSTER:
-        getters.activeStacks
+        this.getActiveStacks()
           .filter((stack): stack is Stack & { currentMuster: MusterChoice } => stack.currentMuster !== undefined)
           .forEach(stack => {
             const recruitedCreature = finalizeMuster(this.round, stack)
@@ -243,14 +245,14 @@ export class TitanGame {
     if (this.activePhase === MasterboardPhase.SPLIT) {
       // Every other case above leaves activePhase at MOVE, BATTLE, or MUSTER;
       // only wrapping past END back to SPLIT lands here.
-      getters.activeStacks.forEach(startPlayerTurn)
+      this.getActiveStacks().forEach(startPlayerTurn)
     }
     await this.persist()
   }
 
-  async doSetRoll(getters: Getters, payload?: number): Promise<void> {
+  async doSetRoll(payload?: number): Promise<void> {
     if (payload === undefined && this.activeRoll !== undefined) {
-      assert(getters.mulliganAvailable, "Mulligan unavailable")
+      assert(this.getMulliganAvailable(), "Mulligan unavailable")
     }
     assert(this.activePhase === MasterboardPhase.MOVE, "Innappropriate phase")
     if (payload === undefined && this.activeRoll !== undefined) {
