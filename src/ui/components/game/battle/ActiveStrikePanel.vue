@@ -2,7 +2,7 @@
   <v-expand-transition>
     <v-card
       v-if="strike"
-      v-bind="$props as any"
+      v-bind="$attrs"
       width="300"
     >
       <StrikePanelTitle
@@ -62,22 +62,24 @@
 
 <script setup lang="ts">
 import { computed } from "vue"
-import { ActiveStrike, BattleCreature, Strike } from "@/models/battle"
+import { ActiveStrike, Battle, BattleCreature, Strike } from "@/models/battle"
 import { useGameStore } from "~/stores/game"
 import StrikePanelTitle from "./StrikePanelTitle.vue"
 
+const props = defineProps<{
+  battle: Battle
+}>()
+
 const gameStore = useGameStore()
 
-const activeBattle = computed(() => gameStore.game.activeBattle!)
-
-const activeStrike = computed((): ActiveStrike | undefined => activeBattle.value.activeStrike)
+const activeStrike = computed((): ActiveStrike | undefined => props.battle.activeStrike)
 const attacker = computed((): BattleCreature | undefined =>
-  activeStrike.value && activeBattle.value.creatureOnHex(activeStrike.value.attacker))
+  activeStrike.value && props.battle.creatureOnHex(activeStrike.value.attacker))
 const target = computed((): BattleCreature | undefined =>
-  activeStrike.value && activeBattle.value.creatureOnHex(activeStrike.value.target))
+  activeStrike.value && props.battle.creatureOnHex(activeStrike.value.target))
 const targets = computed((): [BattleCreature, number][] =>
   (activeStrike.value?.targets ?? []).map((hex, index) =>
-    [activeBattle.value.creatureOnHex(hex)!, activeStrike.value?.targetHits[index] ?? 0]))
+    [props.battle.creatureOnHex(hex)!, activeStrike.value?.targetHits[index] ?? 0]))
 const strike = computed((): Strike | undefined => activeStrike.value && {
   toHit: activeStrike.value.toHit,
   dice: activeStrike.value.rolls.length

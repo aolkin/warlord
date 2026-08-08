@@ -107,6 +107,7 @@
         position="fixed"
         location="bottom right"
         class="ma-3 mb-10"
+        :battle="activeBattle"
       />
       <v-sheet
         position="fixed"
@@ -115,7 +116,10 @@
         rounded
       >
         <FocusedStrikePanel rounded />
-        <ActiveStrikePanel rounded />
+        <ActiveStrikePanel
+          rounded
+          :battle="activeBattle"
+        />
       </v-sheet>
 
       <template v-if="selectionStore.selectedCreature && target">

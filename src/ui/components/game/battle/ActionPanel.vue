@@ -7,7 +7,7 @@
       <v-icon
         :icon="roundIcon"
         size="x-large"
-        :title="`Round ${activeBattle.round + 1}`"
+        :title="`Round ${battle.round + 1}`"
       />
       <v-icon
         :icon="phaseIcon"
@@ -49,23 +49,27 @@
 <script setup lang="ts">
 import { computed } from "vue"
 import {
+  Battle,
   BattleBoard,
   BattleCreature,
   BattlePhaseType,
   Hazard
 } from "@/models/battle"
+import { PlayerId } from "@/models/player"
 import { useGameStore } from "~/stores/game"
 import { usePreferencesStore } from "~/stores/ui/preferences"
 import { useSelectionStore } from "~/stores/ui/selection"
+
+const props = defineProps<{
+  battle: Battle
+}>()
 
 const gameStore = useGameStore()
 const selectionStore = useSelectionStore()
 const preferencesStore = usePreferencesStore()
 
-// ActionPanel only renders inside BattleBoard's v-else branch, which requires an active battle.
-const activeBattle = computed(() => gameStore.game.activeBattle!)
 const battlePhaseType = computed(() => gameStore.battlePhaseType)
-const battleActivePlayerId = computed(() => gameStore.battleActivePlayer!)
+const battleActivePlayerId = computed((): PlayerId => props.battle.getActivePlayer())
 const battleActivePlayer = computed(() => gameStore.playerById(battleActivePlayerId.value))
 
 const phaseTypeTitle = computed((): string => {
@@ -97,7 +101,7 @@ const phaseIcon = computed((): string => {
 const pendingStrikes = computed((): BattleCreature[] => {
   if (battlePhaseType.value === BattlePhaseType.STRIKE ||
     battlePhaseType.value === BattlePhaseType.STRIKEBACK) {
-    return activeBattle.value.getPendingStrikes()
+    return props.battle.getPendingStrikes()
   } else {
     return []
   }
@@ -107,14 +111,14 @@ const mayProceed = computed((): boolean =>
   pendingStrikes.value.length === 0 && !gameStore.battleCarryoverTargets)
 
 const roundIcon = computed((): string => {
-  const name = `mdi-numeric-${activeBattle.value.round + 1}-box`
-  return name + (battleActivePlayerId.value === activeBattle.value.defender ? "-outline" : "")
+  const name = `mdi-numeric-${props.battle.round + 1}-box`
+  return name + (battleActivePlayerId.value === props.battle.defender ? "-outline" : "")
 })
 
-const land = computed((): BattleBoard => activeBattle.value.getBoard())
+const land = computed((): BattleBoard => props.battle.getBoard())
 
 const pendingCreatures = computed((): number =>
-  activeBattle.value.creatures.filter((creature: BattleCreature) =>
+  props.battle.creatures.filter((creature: BattleCreature) =>
     creature.player === battleActivePlayerId.value && creature.hex >= 36).length)
 
 function nextPhase(): void {
