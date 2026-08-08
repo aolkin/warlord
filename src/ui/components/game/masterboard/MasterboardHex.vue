@@ -8,50 +8,39 @@
   >
     <polygon
       :class="{ fancy: preferencesStore.fancyGraphics }"
-      :points="points.join(' ')"
+      :points="HEX_POINTS"
       :transform="inverted ? 'rotate(180)' : ''"
       class="hex"
     />
-    <template v-if="!pathInfo">
-      <clipPath
-        v-if="preferencesStore.fancyGraphics"
-        :id="`hex-${hex.id}-clip`"
-      >
-        <polygon
-          :points="points.join(' ')"
-        />
-      </clipPath>
+    <clipPath
+      v-if="preferencesStore.fancyGraphics"
+      :id="`hex-${hex.id}-clip`"
+    >
       <polygon
-        v-if="preferencesStore.fancyGraphics"
-        :clip-path="`url(#hex-${hex.id}-clip)`"
-        :points="points.join(' ')"
-        :transform="inverted ? 'rotate(180) scale(0.99)' : 'scale(0.99)'"
-        class="outline"
+        :points="HEX_POINTS"
       />
-      <text
-        :y="inverted ? 15 : -10"
-        class="id"
-        text-anchor="middle"
-      >
-        {{ hex.id }}
-      </text>
-      <text
-        :y="inverted ? -25 : 35"
-        class="label"
-        text-anchor="middle"
-      >
-        {{ terrain }}
-      </text>
-    </template>
-    <template v-else>
-      <text
-        :y="inverted ? -10 : 20"
-        class="label"
-        text-anchor="middle"
-      >
-        {{ distanceFromStart }}
-      </text>
-    </template>
+    </clipPath>
+    <polygon
+      v-if="preferencesStore.fancyGraphics"
+      :clip-path="`url(#hex-${hex.id}-clip)`"
+      :points="HEX_POINTS"
+      :transform="inverted ? 'rotate(180) scale(0.99)' : 'scale(0.99)'"
+      class="outline"
+    />
+    <text
+      :y="inverted ? 15 : -10"
+      class="id"
+      text-anchor="middle"
+    >
+      {{ hex.id }}
+    </text>
+    <text
+      :y="inverted ? -25 : 35"
+      class="label"
+      text-anchor="middle"
+    >
+      {{ terrain }}
+    </text>
   </g>
 </template>
 
@@ -60,29 +49,10 @@ import { computed } from "vue"
 import { MasterboardHex, Terrain } from "@/models/masterboard"
 import { usePreferencesStore } from "~/stores/ui/preferences"
 import { useSelectionStore } from "~/stores/ui/selection"
-import {
-  CLIP_TRIANGLE_HEIGHT,
-  CLIP_TRIANGLE_SIDE,
-  hexTransform,
-  isHexInverted,
-  TRIANGLE_HEIGHT,
-  TRIANGLE_SIDE
-} from "./utils"
-
-// Populated only when this hex is a step on a stack's move path; its absence means
-// the hex is being rendered as a plain board hex. pathLength and positionOnPath are
-// the roll length and this step's zero-based offset along the path; distanceFromStart
-// is derived from them below (distanceToDest is derived inline in rootClass).
-export interface PathInfo {
-  pathLength: number
-  positionOnPath: number
-  pathIndex: number
-  containsEnemy: boolean
-}
+import { HEX_POINTS, hexTransform, isHexInverted } from "./utils"
 
 const props = defineProps<{
   hex: MasterboardHex
-  pathInfo?: PathInfo
 }>()
 
 const preferencesStore = usePreferencesStore()
@@ -90,35 +60,10 @@ const selectionStore = useSelectionStore()
 
 const terrain = computed(() => Terrain[props.hex?.terrain].toLowerCase())
 
-const distanceFromStart = computed(() => props.pathInfo!.positionOnPath + 1)
-
-const rootClass = computed(() => {
-  if (props.pathInfo) {
-    const { pathLength, positionOnPath, pathIndex, containsEnemy } = props.pathInfo
-    const distanceToDest = pathLength - positionOnPath
-    return {
-      path: true,
-      foe: containsEnemy,
-      [`distance-${distanceToDest}`]: true,
-      [`path-${pathIndex}`]: true,
-      destination: distanceToDest === 1
-    }
-  } else {
-    return {
-      board: true,
-      [terrain.value]: true
-    }
-  }
-})
-
-const points = computed(() => [
-  [-CLIP_TRIANGLE_SIDE / 2, CLIP_TRIANGLE_HEIGHT - TRIANGLE_HEIGHT / 2],
-  [CLIP_TRIANGLE_SIDE / 2, CLIP_TRIANGLE_HEIGHT - TRIANGLE_HEIGHT / 2],
-  [TRIANGLE_SIDE / 2 - CLIP_TRIANGLE_SIDE / 2, TRIANGLE_HEIGHT / 2 - CLIP_TRIANGLE_HEIGHT],
-  [TRIANGLE_SIDE / 2 - CLIP_TRIANGLE_SIDE, TRIANGLE_HEIGHT / 2],
-  [CLIP_TRIANGLE_SIDE - TRIANGLE_SIDE / 2, TRIANGLE_HEIGHT / 2],
-  [CLIP_TRIANGLE_SIDE / 2 - TRIANGLE_SIDE / 2, TRIANGLE_HEIGHT / 2 - CLIP_TRIANGLE_HEIGHT]
-].map(([x, y]) => `${x},${y}`))
+const rootClass = computed(() => ({
+  board: true,
+  [terrain.value]: true
+}))
 
 const transform = computed((): string => hexTransform(props.hex.id).toString())
 
@@ -158,49 +103,4 @@ const inverted = computed(() => isHexInverted(props.hex.id))
       baseline-shift: 0.25em
 
 @include terrain-colors(".hex", fill)
-
-.path .hex
-  stroke-width: 0
-  transition: 0.25s ease-out
-
-.path .label
-  font-size: 20pt
-
-@for $path from 0 through 2
-  $path-color: adjust-hue(#ff43ab, $path * 120deg)
-
-  @for $dist from 1 through 6
-    $dist-opacity: calc(0.75 - $dist / 6 * 0.5)
-
-    .path-#{$path}.distance-#{$dist}
-      .hex
-        fill: rgba($path-color, $dist-opacity)
-        stroke: darken($path-color, 25%)
-
-      .label
-        fill: darken($path-color, 35%)
-
-      &:hover .hex
-        fill: rgba($path-color, 0.25)
-
-g.paths:hover .path
-  .label
-    opacity: 0.2
-
-  .hex
-    fill: transparent
-
-  &:hover
-    .label
-      opacity: 1
-
-    .hex
-      stroke-width: 2px
-
-.path.distance-1:not(.foe)
-  cursor: pointer
-
-  &:hover .hex
-    stroke-width: 8px !important
-
 </style>
