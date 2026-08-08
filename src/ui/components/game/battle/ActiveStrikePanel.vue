@@ -34,7 +34,7 @@
         <span v-if="creature.getRemainingHp() < 1">The {{ creature.name() }} is dead.</span>
       </v-card-item>
       <v-card-text v-if="activeStrike">
-        <span v-if="activeStrike?.canCarryover && battleCarryoverTargets">
+        <span v-if="activeStrike?.canCarryover && gameStore.battleCarryoverTargets">
           You may still carry over {{ hitsString(activeStrike.getCarryoverHits()) }}.
         </span>
         <span v-else-if="activeStrike?.canCarryover">
@@ -47,11 +47,11 @@
           No hits remain to carry over.
         </span>
       </v-card-text>
-      <v-card-actions v-if="battleCarryoverTargets">
+      <v-card-actions v-if="gameStore.battleCarryoverTargets">
         <v-btn
           block
           variant="outlined"
-          @click="skipCarryover"
+          @click="gameStore.skipCarryover()"
         >
           Skip Carry Over
         </v-btn>
@@ -62,14 +62,13 @@
 
 <script setup lang="ts">
 import { computed } from "vue"
-import { useStore } from "vuex"
 import { ActiveStrike, BattleCreature, Strike } from "@/models/battle"
+import { useGameStore } from "~/stores/game"
 import StrikePanelTitle from "./StrikePanelTitle.vue"
 
-const store = useStore()
+const gameStore = useGameStore()
 
-const activeBattle = computed(() => store.state.game.activeBattle)
-const battleCarryoverTargets = computed(() => store.getters["game/battleCarryoverTargets"])
+const activeBattle = computed(() => gameStore.game.activeBattle!)
 
 const activeStrike = computed((): ActiveStrike | undefined => activeBattle.value.activeStrike)
 const attacker = computed((): BattleCreature | undefined =>
@@ -78,7 +77,7 @@ const target = computed((): BattleCreature | undefined =>
   activeStrike.value && activeBattle.value.creatureOnHex(activeStrike.value.target))
 const targets = computed((): [BattleCreature, number][] =>
   (activeStrike.value?.targets ?? []).map((hex, index) =>
-    [activeBattle.value.creatureOnHex(hex), activeStrike.value?.targetHits[index] ?? 0]))
+    [activeBattle.value.creatureOnHex(hex)!, activeStrike.value?.targetHits[index] ?? 0]))
 const strike = computed((): Strike | undefined => activeStrike.value && {
   toHit: activeStrike.value.toHit,
   dice: activeStrike.value.rolls.length
@@ -89,10 +88,6 @@ const hitsString = computed((): (hits: number, modifier?: string) => string => {
     return `${hits} ${extra}hit${hits === 1 ? "" : "s"}`
   }
 })
-
-function skipCarryover(): void {
-  store.dispatch("game/skipCarryover")
-}
 </script>
 
 <style scoped lang="sass">
