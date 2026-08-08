@@ -1,4 +1,5 @@
 import { Getters, TitanGame } from "./game"
+import { PlayerId } from "./player"
 import { Random } from "./random"
 
 export const noShuffleRandom: Random = { shuffle: collection => [...collection] }
@@ -26,14 +27,14 @@ export function createGetters(game: TitanGame): Getters {
   lazy("round", () => game.getRound())
   lazy("firstRound", () => game.getFirstRound())
   lazy("players", () => game.getPlayers())
-  lazy("playerById", () => game.getPlayerById())
-  lazy("stacksForPlayer", () => game.getStacksForPlayer())
-  lazy("stacksForHex", () => game.getStacksForHex())
+  lazy("playerById", () => (id: PlayerId) => game.getPlayerById(id))
+  lazy("stacksForPlayer", () => (owner: PlayerId) => game.getStacksForPlayer(owner))
+  lazy("stacksForHex", () => (hex: number) => game.getStacksForHex(hex))
   lazy("activePlayer", () => game.getActivePlayer())
   lazy("activePlayerId", () => game.getActivePlayerId(getters))
   lazy("activeStacks", () => game.getActiveStacks(getters))
   lazy("nextMarker", () => game.getNextMarker(getters))
-  lazy("pathsForHex", () => game.getPathsForHex(getters))
+  lazy("pathsForHex", () => (hex: number) => game.getPathsForHex(getters, hex))
   lazy("mandatoryMoves", () => game.getMandatoryMoves(getters))
   lazy("mayProceed", () => game.getMayProceed(getters))
   lazy("mulliganAvailable", () => game.getMulliganAvailable(getters))

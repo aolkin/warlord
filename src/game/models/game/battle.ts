@@ -19,10 +19,10 @@ function toBattleSide(stack: Stack, score: number): BattleSide {
 export interface GameBattle {
   getBattleActivePlayer(): PlayerId | undefined
   getBattlePhaseType(): BattlePhaseType | undefined
-  getBattleMoves(): (creature: BattleCreature) => Set<number>
-  getBattleEngagements(): (creature: BattleCreature) => BattleCreature[]
+  getBattleMoves(creature: BattleCreature): Set<number>
+  getBattleEngagements(creature: BattleCreature): BattleCreature[]
   getBattleCarryoverTargets(): BattleCreature[] | undefined
-  getBattleRangestrikeTargets(): (creature: BattleCreature) => RangestrikeTarget[]
+  getBattleRangestrikeTargets(creature: BattleCreature): RangestrikeTarget[]
   mInitiateBattle(payload: BattlePayload): void
   mNextBattlePhase(): void
   mMoveCreature(payload: BattleMovePayload): void
@@ -48,33 +48,27 @@ export const gameBattle: GameBattle & ThisType<TitanGame> = {
     return this.activeBattle === undefined ? undefined : BATTLE_PHASE_TYPES[this.activeBattle.phase]
   },
 
-  getBattleMoves(): (creature: BattleCreature) => Set<number> {
-    return (creature: BattleCreature) => {
-      return this.activeBattle === undefined ? new Set<number>() : this.activeBattle.movementFor(creature)
-    }
+  getBattleMoves(creature: BattleCreature): Set<number> {
+    return this.activeBattle === undefined ? new Set<number>() : this.activeBattle.movementFor(creature)
   },
 
-  getBattleEngagements(): (creature: BattleCreature) => BattleCreature[] {
-    return (creature: BattleCreature) => {
-      return this.activeBattle === undefined ? [] : this.activeBattle.engagedWith(creature)
-    }
+  getBattleEngagements(creature: BattleCreature): BattleCreature[] {
+    return this.activeBattle === undefined ? [] : this.activeBattle.engagedWith(creature)
   },
 
   getBattleCarryoverTargets(): BattleCreature[] | undefined {
     return this.activeBattle?.carryoverTargets()
   },
 
-  getBattleRangestrikeTargets(): (creature: BattleCreature) => RangestrikeTarget[] {
-    return (creature: BattleCreature) => {
-      return this.activeBattle === undefined ? [] : this.activeBattle.rangestrikeTargets(creature)
-    }
+  getBattleRangestrikeTargets(creature: BattleCreature): RangestrikeTarget[] {
+    return this.activeBattle === undefined ? [] : this.activeBattle.rangestrikeTargets(creature)
   },
 
   mInitiateBattle({ attacking, defending }: BattlePayload): void {
     assert(attacking.attackEdge !== undefined, "Cannot attack without coming from somewhere")
     const terrain = masterboard.getHex(attacking.hex).terrain
-    const attackingSide = toBattleSide(attacking, this.getPlayerById()(attacking.owner)?.score ?? 0)
-    const defendingSide = toBattleSide(defending, this.getPlayerById()(defending.owner)?.score ?? 0)
+    const attackingSide = toBattleSide(attacking, this.getPlayerById(attacking.owner)?.score ?? 0)
+    const defendingSide = toBattleSide(defending, this.getPlayerById(defending.owner)?.score ?? 0)
     this.activeBattle = new Battle(terrain, attacking.attackEdge, attackingSide, defendingSide)
     this.activeBattleHex = attacking.hex
   },

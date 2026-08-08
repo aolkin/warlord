@@ -105,12 +105,12 @@ export class TitanGame {
     return this.players
   }
 
-  getPlayerById() {
-    return (id: PlayerId) => this.players.find(player => player.id === id)
+  getPlayerById(id: PlayerId): Player | undefined {
+    return this.players.find(player => player.id === id)
   }
 
-  getStacksForPlayer() {
-    return (owner: PlayerId) => this.stacks.filter(stack => stack.owner === owner)
+  getStacksForPlayer(owner: PlayerId): Stack[] {
+    return this.stacks.filter(stack => stack.owner === owner)
   }
 
   getActiveStacks(getters: Getters): Stack[] {
@@ -122,43 +122,41 @@ export class TitanGame {
     return range(0, 12).find(marker => !usedMarkers.includes(marker))
   }
 
-  getStacksForHex() {
-    return (hex: number) => this.stacks.filter(stack => stack.hex === hex)
+  getStacksForHex(hex: number): Stack[] {
+    return this.stacks.filter(stack => stack.hex === hex)
   }
 
-  getPathsForHex(getters: Getters): (hex: number) => Path[] {
-    return (hexNum: number) => {
-      if (this.activeRoll === undefined) {
-        return []
-      }
-      const initialHex = masterboard.getHex(hexNum)
-      const paths: Path[] = []
-      // [Array of hexes to get where we are, first hex with enemies, current hex]
-      type pathing = [MasterboardHex[], Stack | undefined, MasterboardHex]
-      const stack: pathing[] = initialHex.getMovement(true).map(edge => [[initialHex], undefined, edge.hex])
-      let entry: pathing | undefined
-      while ((entry = stack.pop()) !== undefined) {
-        const [path, , hex] = entry
-        let foe = entry[1]
-        const occupants: Stack[] = getters.stacksForHex(hex.id)
-        if (foe === undefined) {
-          const foes = occupants.filter((stack: Stack) => stack.owner !== getters.activePlayerId)
-          if (foes.length > 0) {
-            foe = foes[0]
-          }
-        }
-        if (path.length === this.activeRoll) {
-          if (!occupants.some((stack: Stack) => stack.owner === getters.activePlayerId)) {
-            paths.push({ foe, path: [...path, hex] })
-          }
-        } else {
-          stack.push(...hex.getMovement(false)
-            .filter(edge => path[path.length - 1] !== edge.hex)
-            .map(edge => [[...path, hex], foe, edge.hex] as pathing))
-        }
-      }
-      return paths
+  getPathsForHex(getters: Getters, hexNum: number): Path[] {
+    if (this.activeRoll === undefined) {
+      return []
     }
+    const initialHex = masterboard.getHex(hexNum)
+    const paths: Path[] = []
+    // [Array of hexes to get where we are, first hex with enemies, current hex]
+    type pathing = [MasterboardHex[], Stack | undefined, MasterboardHex]
+    const stack: pathing[] = initialHex.getMovement(true).map(edge => [[initialHex], undefined, edge.hex])
+    let entry: pathing | undefined
+    while ((entry = stack.pop()) !== undefined) {
+      const [path, , hex] = entry
+      let foe = entry[1]
+      const occupants: Stack[] = getters.stacksForHex(hex.id)
+      if (foe === undefined) {
+        const foes = occupants.filter((stack: Stack) => stack.owner !== getters.activePlayerId)
+        if (foes.length > 0) {
+          foe = foes[0]
+        }
+      }
+      if (path.length === this.activeRoll) {
+        if (!occupants.some((stack: Stack) => stack.owner === getters.activePlayerId)) {
+          paths.push({ foe, path: [...path, hex] })
+        }
+      } else {
+        stack.push(...hex.getMovement(false)
+          .filter(edge => path[path.length - 1] !== edge.hex)
+          .map(edge => [[...path, hex], foe, edge.hex] as pathing))
+      }
+    }
+    return paths
   }
 
   getMandatoryMoves(getters: Getters): Stack[] {
