@@ -19,6 +19,15 @@ You are a supervisor. Your job is to keep a continuous stream of PRs flowing tow
 
 The user provides the tasks when invoking this skill. If the invocation names no tasks, ask — that is the one thing worth blocking on. Prefer tasks whose file footprints don't overlap when running in parallel; sequence dependent tasks.
 
+## Resuming
+
+Cron/watch state lives only in the session that created it — a fresh session invoking this skill has no memory of PRs a prior session opened or is watching. Before picking a new task, reconstruct in-flight state from GitHub instead of assuming the backlog is untouched:
+
+1. `gh pr list --author @me --state open --json number,title,headRefName,url` to find PRs already opened by prior supervisor work that are still unmerged.
+2. For each, run one normal watch-pr poll cycle to establish current status — don't assume a prior summary (yours or the user's) is still accurate.
+3. Treat still-open PRs as in-progress work, not new tasks; only pick backlog items with no corresponding open PR or merged commit.
+4. A decision that only ever existed in a chat transcript (not the repo, a PR, or an issue) is invisible to a resumed session. If repo state alone can't tell you whether something was intentionally skipped or just not started, say so rather than guessing.
+
 ## Model ladder
 
 Every subagent gets the **cheapest model appropriate to the task**, escalating on failure:
@@ -37,6 +46,7 @@ On escalation: spawn a **fresh** agent one rung up. It should reuse the stuck ag
 Include this in every subagent prompt, adapted to the task:
 
 - The task, its acceptance criteria, and the branch name to use.
+- **Fresh main**: "Before scoping or writing any code, `git fetch origin main` and branch from `origin/main`, not whatever `main` happens to be checked out locally — it may be behind. If your worktree was created before this fetch, rebase onto `origin/main` before starting work." This applies to scouts sizing a task and implementers alike — scoping against a stale main produces acceptance criteria for code that's already changed.
 - **Escalation rule**: "If you get stuck — requirements unclear, repeated failures, missing access, anything you cannot resolve — STOP. Do not thrash, do not push broken or half-done work; leave your worktree as-is for a successor to build on. Return a short report: your worktree path, what you attempted, what is blocking, and anything you learned that a retry should know."
 - **Definition of done** (implementers): tests/lint/build pass locally, branch pushed, PR created with a clear description, and the final message reports: PR number/URL, branch, one-line summary, and any caveats.
 - **Report format**: final message ≤ 10 lines. No file dumps, no diffs — the supervisor only needs outcomes and identifiers.
