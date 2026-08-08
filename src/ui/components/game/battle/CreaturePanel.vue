@@ -22,7 +22,7 @@
               (activeBattle.phase === BattlePhase.ATTACKER_MOVE &&
                 (selectionStore.selectedCreature?.initialHex ?? -1) >= 36)"
           >
-            <v-card-title>{{ attacker?.name }}'s Pending Creatures</v-card-title>
+            <v-card-title>{{ attacker.name }}'s Pending Creatures</v-card-title>
             <PendingCreatures
               :creatures="pendingOffense"
               :expected-phase="BattlePhase.ATTACKER_MOVE"
@@ -34,7 +34,7 @@
               (activeBattle.phase === BattlePhase.DEFENDER_MOVE &&
                 (selectionStore.selectedCreature?.initialHex ?? -1) >= 36)"
           >
-            <v-card-title>{{ defender?.name }}'s Pending Creatures</v-card-title>
+            <v-card-title>{{ defender.name }}'s Pending Creatures</v-card-title>
             <PendingCreatures
               :creatures="pendingDefense"
               :expected-phase="BattlePhase.DEFENDER_MOVE"
@@ -44,7 +44,7 @@
         </div>
         <div>
           <div v-if="deadOffense.length > 0">
-            <v-card-title>{{ attacker?.name }}'s Dead Creatures</v-card-title>
+            <v-card-title>{{ attacker.name }}'s Dead Creatures</v-card-title>
             <div class="px-2 pb-1">
               <Creature
                 v-for="(creature, index) in deadOffense"
@@ -56,7 +56,7 @@
             </div>
           </div>
           <div v-if="deadDefense.length > 0">
-            <v-card-title>{{ defender?.name }}'s Dead Creatures</v-card-title>
+            <v-card-title>{{ defender.name }}'s Dead Creatures</v-card-title>
             <div class="px-2 pb-1">
               <Creature
                 v-for="(creature, index) in deadDefense"
@@ -95,10 +95,12 @@ const orderingClasses = computed(() =>
     "flex-column-reverse":
       activeBattle.value.defender === gameStore.players[playerStore.localPlayer].id
   }))
-const attacker = computed<Player | undefined>(() =>
-  gameStore.playerById(activeBattle.value.attacker))
-const defender = computed<Player | undefined>(() =>
-  gameStore.playerById(activeBattle.value.defender))
+// activeBattle.attacker/defender are always a Stack.owner, which is only ever set from a
+// PlayerId already present in gameStore.players, so these lookups cannot miss.
+const attacker = computed<Player>(() =>
+  gameStore.playerById(activeBattle.value.attacker)!)
+const defender = computed<Player>(() =>
+  gameStore.playerById(activeBattle.value.defender)!)
 const pendingOffense = computed<BattleCreature[]>(() =>
   activeBattle.value.getOffense().filter((creature: BattleCreature) => creature.hex >= 36))
 const pendingDefense = computed<BattleCreature[]>(() =>

@@ -19,7 +19,7 @@
       Hex: {{ selectionStore.focusedBattleHex }} ({{ Hazard[land.getHazard(selectionStore.focusedBattleHex!)] }})
       <span v-if="land.getElevation(selectionStore.focusedBattleHex!) > 0">+{{ land.getElevation(selectionStore.focusedBattleHex!) }}</span>
     </v-card-subtitle>
-    <v-card-text v-if="gameStore.battlePhaseType === BattlePhaseType.MOVE && pendingCreatures > 0">
+    <v-card-text v-if="battlePhaseType === BattlePhaseType.MOVE && pendingCreatures > 0">
       You have {{ pendingCreatures }} creature{{ pendingCreatures > 1 ? 's' : '' }} that
       {{ pendingCreatures > 1 ? 'have' : 'has' }} not entered the battle board. If they do
       not do so this round, they will be eliminated.
@@ -64,10 +64,12 @@ const preferencesStore = usePreferencesStore()
 
 // ActionPanel only renders inside BattleBoard's v-else branch, which requires an active battle.
 const activeBattle = computed(() => gameStore.game.activeBattle!)
-const battleActivePlayer = computed(() => gameStore.playerById(gameStore.battleActivePlayer!))
+const battlePhaseType = computed(() => gameStore.battlePhaseType)
+const battleActivePlayerId = computed(() => gameStore.battleActivePlayer!)
+const battleActivePlayer = computed(() => gameStore.playerById(battleActivePlayerId.value))
 
 const phaseTypeTitle = computed((): string => {
-  switch (gameStore.battlePhaseType) {
+  switch (battlePhaseType.value) {
     case BattlePhaseType.MOVE:
       return "Movement"
     case BattlePhaseType.STRIKE:
@@ -80,7 +82,7 @@ const phaseTypeTitle = computed((): string => {
 })
 
 const phaseIcon = computed((): string => {
-  switch (gameStore.battlePhaseType) {
+  switch (battlePhaseType.value) {
     case BattlePhaseType.MOVE:
       return "mdi-cursor-move"
     case BattlePhaseType.STRIKE:
@@ -93,8 +95,8 @@ const phaseIcon = computed((): string => {
 })
 
 const pendingStrikes = computed((): BattleCreature[] => {
-  if (gameStore.battlePhaseType === BattlePhaseType.STRIKE ||
-    gameStore.battlePhaseType === BattlePhaseType.STRIKEBACK) {
+  if (battlePhaseType.value === BattlePhaseType.STRIKE ||
+    battlePhaseType.value === BattlePhaseType.STRIKEBACK) {
     return activeBattle.value.getPendingStrikes()
   } else {
     return []
@@ -106,14 +108,14 @@ const mayProceed = computed((): boolean =>
 
 const roundIcon = computed((): string => {
   const name = `mdi-numeric-${activeBattle.value.round + 1}-box`
-  return name + (gameStore.battleActivePlayer === activeBattle.value.defender ? "-outline" : "")
+  return name + (battleActivePlayerId.value === activeBattle.value.defender ? "-outline" : "")
 })
 
 const land = computed((): BattleBoard => activeBattle.value.getBoard())
 
 const pendingCreatures = computed((): number =>
   activeBattle.value.creatures.filter((creature: BattleCreature) =>
-    creature.player === gameStore.battleActivePlayer && creature.hex >= 36).length)
+    creature.player === battleActivePlayerId.value && creature.hex >= 36).length)
 
 function nextPhase(): void {
   selectionStore.deselectCreature()
