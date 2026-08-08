@@ -137,10 +137,9 @@ const stackPlayer = computed((): Player | undefined => selectionStore.focusedSta
   ? undefined
   : gameStore.playerById(selectionStore.focusedStack.owner))
 
-const musteringTerrain = computed((): Terrain =>
-  activePhase.value === MasterboardPhase.MUSTER
-    ? masterboard.getHex(selectionStore.focusedStack?.hex as number).terrain
-    : selectionStore.focusedHex?.terrain as Terrain)
+const musteringTerrain = computed((): Terrain => activePhase.value === MasterboardPhase.MUSTER
+  ? masterboard.getHex(selectionStore.focusedStack?.hex as number).terrain
+  : selectionStore.focusedHex?.terrain as Terrain)
 
 const musteringTerrainName = computed((): string => capitalize(Terrain[musteringTerrain.value]))
 
@@ -193,12 +192,11 @@ function toggleSplit(index: number): void {
 }
 
 function cycleStacks(by: number): void {
-  const activeStacks = gameStore.activeStacks
-  let index = activeStacks.indexOf(selectionStore.selectedStack as Stack)
+  let index = gameStore.activeStacks.indexOf(selectionStore.selectedStack as Stack)
   let candidateStack: Stack
   do {
     index += by
-    candidateStack = activeStacks[mod(index, activeStacks.length)]
+    candidateStack = gameStore.activeStacks[mod(index, gameStore.activeStacks.length)]
   } while ((activePhase.value === MasterboardPhase.MOVE && candidateStack.hasMoved()) ||
   (activePhase.value === MasterboardPhase.MUSTER && !candidateStack.canMuster()))
   selectionStore.selectStack(candidateStack)
