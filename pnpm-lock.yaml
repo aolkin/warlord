@@ -9,25 +9,25 @@ dependencies:
     specifier: ^1.1.4
     version: 1.1.4(babylonjs-gltf2interface@5.57.1)
   '@mdi/font':
-    specifier: ^6.5.95
+    specifier: ^6.9.96
     version: 6.9.96
   lodash-es:
-    specifier: ^4.17.21
+    specifier: ^4.18.1
     version: 4.18.1
   pinia:
     specifier: ^4.0.2
     version: 4.0.2(@vue/devtools-api@8.2.1)(typescript@6.0.3)(vue@3.5.40)
   vue:
-    specifier: ^3.2.0
+    specifier: ^3.5.40
     version: 3.5.40(typescript@6.0.3)
   vuetify:
-    specifier: ^3.1.1
+    specifier: ^3.12.11
     version: 3.12.11(typescript@6.0.3)(vue@3.5.40)
   vuex:
-    specifier: ^4.0.2
+    specifier: ^4.1.0
     version: 4.1.0(vue@3.5.40)
   webfontloader:
-    specifier: ^1.0.0
+    specifier: ^1.6.28
     version: 1.6.28
 
 devDependencies:
@@ -50,7 +50,7 @@ devDependencies:
     specifier: ^29.1.1
     version: 29.1.1
   sass:
-    specifier: ^1.38.0
+    specifier: ^1.102.0
     version: 1.102.0
   typescript:
     specifier: 6.0.3
@@ -59,7 +59,7 @@ devDependencies:
     specifier: ^8.1.5
     version: 8.1.5(sass@1.102.0)
   vitest:
-    specifier: '4'
+    specifier: ^4.1.10
     version: 4.1.10(jsdom@29.1.1)(vite@8.1.5)
   vue-tsc:
     specifier: ^3.3.8
@@ -2416,8 +2416,8 @@ packages:
     resolution: {integrity: sha512-VNTrAak/KhO2i8dqqnqnAHOa3cYBwXEZe9h+D5h/1ZqFSTEFHdM65lR7RoIqq3tBBYavsOXV84NoHXZ0AkPyqQ==}
     dev: true
 
-  /nanoid@3.3.16:
-    resolution: {integrity: sha512-bzlKTyNJ7+LdGIIwy8ijFpIqEQIvafahV7eYykJ8Cvh42EdJeODoJ6gUJXpQJvej1BddH8OqTXZNE/KfbWAu8Q==}
+  /nanoid@3.3.18:
+    resolution: {integrity: sha512-DTg4MJbGMWkfi6VZFdNt2/caMbQy4Ou+Op/hJQvGEWcnVfoA1QA+xzRKAzw9jD6+GVOOeYr/mIcuDSdug6F6+w==}
     engines: {node: ^10 || ^12 || ^13.7 || ^14 || >=15.0.1}
     hasBin: true
 
@@ -2550,7 +2550,7 @@ packages:
     resolution: {integrity: sha512-g50586zr4bZmwFiTlflMu8E0bDTb5I5gertgwAKmsdUlTQIhZtunzUlD1WSzwcVWPoAVpsrA6vlfCD7oXvRwgg==}
     engines: {node: ^10 || ^12 || >=14}
     dependencies:
-      nanoid: 3.3.16
+      nanoid: 3.3.18
       picocolors: 1.1.1
       source-map-js: 1.2.1
 
