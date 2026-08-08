@@ -60,85 +60,8 @@ export const useSelectionStore = defineStore("selection", () => {
     view.value = value
   }
 
-  function reset(): void {
-    stack.value = undefined
-    creature.value = undefined
-    focusedStacks.splice(0, focusedStacks.length)
-    focusedHexes.splice(0, focusedHexes.length)
-    focusedCreatures.splice(0, focusedCreatures.length)
-    focusedBattleHexes.splice(0, focusedBattleHexes.length)
-  }
-
-  function selectStack(selection: Stack): void {
-    stack.value = selection
-  }
-
   function deselectStack(): void {
     stack.value = undefined
-  }
-
-  function enterStack(entering: Stack): void {
-    if (!focusedStacks.includes(entering)) {
-      focusedStacks.push(entering)
-    }
-  }
-
-  function leaveStack(leaving: Stack): void {
-    const index = focusedStacks.indexOf(leaving)
-    if (index !== -1) {
-      focusedStacks.splice(index)
-    }
-  }
-
-  function enterHex(entering: MasterboardHex): void {
-    if (!focusedHexes.includes(entering)) {
-      focusedHexes.push(entering)
-    }
-  }
-
-  function leaveHex(leaving: MasterboardHex): void {
-    const index = focusedHexes.indexOf(leaving)
-    if (index !== -1) {
-      focusedHexes.splice(index)
-    }
-  }
-
-  function selectCreature(selection: BattleCreature): void {
-    if (creature.value === selection) {
-      creature.value = undefined
-    } else {
-      creature.value = selection
-    }
-  }
-
-  function deselectCreature(): void {
-    creature.value = undefined
-  }
-
-  function enterCreature(entering: BattleCreature): void {
-    if (!focusedCreatures.includes(entering)) {
-      focusedCreatures.push(entering)
-    }
-  }
-
-  function leaveCreature(leaving: BattleCreature): void {
-    const index = focusedCreatures.indexOf(leaving)
-    if (index !== -1) {
-      focusedCreatures.splice(index)
-    }
-  }
-
-  function enterBattleHex(entering: number): void {
-    if (!focusedBattleHexes.includes(entering)) {
-      focusedBattleHexes.push(entering)
-    }
-  }
-
-  function leaveBattleHex(leaving: number): void {
-    const index = focusedBattleHexes.indexOf(leaving)
-    if (index !== -1) {
-      focusedBattleHexes.splice(index)
-    }
   }
 
   watch(() => gameStore.game.activePhase, deselectStack)
@@ -170,18 +93,71 @@ export const useSelectionStore = defineStore("selection", () => {
     engagements,
     rangestrikes,
     setView,
-    reset,
-    selectStack,
+    reset: (): void => {
+      stack.value = undefined
+      creature.value = undefined
+      focusedStacks.splice(0, focusedStacks.length)
+      focusedHexes.splice(0, focusedHexes.length)
+      focusedCreatures.splice(0, focusedCreatures.length)
+      focusedBattleHexes.splice(0, focusedBattleHexes.length)
+    },
+    selectStack: (selection: Stack): void => {
+      stack.value = selection
+    },
     deselectStack,
-    enterStack,
-    leaveStack,
-    enterHex,
-    leaveHex,
-    selectCreature,
-    deselectCreature,
-    enterCreature,
-    leaveCreature,
-    enterBattleHex,
-    leaveBattleHex
+    enterStack: (entering: Stack): void => {
+      if (!focusedStacks.includes(entering)) {
+        focusedStacks.push(entering)
+      }
+    },
+    leaveStack: (leaving: Stack): void => {
+      const index = focusedStacks.indexOf(leaving)
+      if (index !== -1) {
+        focusedStacks.splice(index)
+      }
+    },
+    enterHex: (entering: MasterboardHex): void => {
+      if (!focusedHexes.includes(entering)) {
+        focusedHexes.push(entering)
+      }
+    },
+    leaveHex: (leaving: MasterboardHex): void => {
+      const index = focusedHexes.indexOf(leaving)
+      if (index !== -1) {
+        focusedHexes.splice(index)
+      }
+    },
+    selectCreature: (selection: BattleCreature): void => {
+      if (creature.value === selection) {
+        creature.value = undefined
+      } else {
+        creature.value = selection
+      }
+    },
+    deselectCreature: (): void => {
+      creature.value = undefined
+    },
+    enterCreature: (entering: BattleCreature): void => {
+      if (!focusedCreatures.includes(entering)) {
+        focusedCreatures.push(entering)
+      }
+    },
+    leaveCreature: (leaving: BattleCreature): void => {
+      const index = focusedCreatures.indexOf(leaving)
+      if (index !== -1) {
+        focusedCreatures.splice(index)
+      }
+    },
+    enterBattleHex: (entering: number): void => {
+      if (!focusedBattleHexes.includes(entering)) {
+        focusedBattleHexes.push(entering)
+      }
+    },
+    leaveBattleHex: (leaving: number): void => {
+      const index = focusedBattleHexes.indexOf(leaving)
+      if (index !== -1) {
+        focusedBattleHexes.splice(index)
+      }
+    }
   }
 })

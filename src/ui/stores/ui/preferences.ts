@@ -53,41 +53,31 @@ export const usePreferencesStore = defineStore("preferences", () => {
     creatureColorMode: creatureColorMode.value
   })
 
-  function setFancyGraphics(value: boolean): void {
-    fancyGraphics.value = value
-    persist()
-  }
-
-  function setDebugUi(value: boolean): void {
-    debugUi.value = value
-    persist()
-  }
-
-  function setQuickDice(value: boolean): void {
-    quickDice.value = value
-    persist()
-  }
-
-  function setFreeMovement(value: boolean): void {
-    freeMovement.value = value
-    persist()
-  }
-
-  function setCreatureColorMode(value: CreatureColorMode): void {
-    creatureColorMode.value = value
-    persist()
-  }
-
   return {
     fancyGraphics,
     debugUi,
     quickDice,
     freeMovement,
     creatureColorMode,
-    setFancyGraphics,
-    setDebugUi,
-    setQuickDice,
-    setFreeMovement,
-    setCreatureColorMode
+    setFancyGraphics: (value: boolean): void => {
+      fancyGraphics.value = value
+      persist()
+    },
+    setDebugUi: (value: boolean): void => {
+      debugUi.value = value
+      persist()
+    },
+    setQuickDice: (value: boolean): void => {
+      quickDice.value = value
+      persist()
+    },
+    setFreeMovement: (value: boolean): void => {
+      freeMovement.value = value
+      persist()
+    },
+    setCreatureColorMode: (value: CreatureColorMode): void => {
+      creatureColorMode.value = value
+      persist()
+    }
   }
 })
