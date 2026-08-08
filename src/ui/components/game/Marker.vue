@@ -24,42 +24,27 @@
   </component>
 </template>
 
-<script lang="ts">
-import { defineComponent, PropType } from "vue"
+<script setup lang="ts">
+import { computed } from "vue"
 import { padStart } from "lodash-es"
 import { PlayerId } from "@/models/player"
 
-export default defineComponent({
-  name: "PlayerMarker",
-  props: {
-    color: {
-      type: Number as PropType<PlayerId>,
-      required: true
-    },
-    marker: {
-      type: Number,
-      required: true
-    },
-    inSvg: {
-      type: Boolean,
-      default: false
-    },
-    transform: {
-      type: String,
-      required: false,
-      default: ""
-    }
-  },
-  computed: {
-    imageUrl() {
-      const id = padStart(String(this.color * 12 + this.marker + 1), 2, "0")
-      return new URL(`../../assets/markers/marker-${id}.svg`, import.meta.url).href
-    },
-    fullTransform() {
-      return this.inSvg ? this.transform + " translate(-50 -50)" : ""
-    }
-  }
+const props = withDefaults(defineProps<{
+  color: PlayerId
+  marker: number
+  inSvg?: boolean
+  transform?: string
+}>(), {
+  inSvg: false,
+  transform: ""
 })
+
+const imageUrl = computed(() => {
+  const id = padStart(String(props.color * 12 + props.marker + 1), 2, "0")
+  return new URL(`../../assets/markers/marker-${id}.svg`, import.meta.url).href
+})
+
+const fullTransform = computed(() => props.inSvg ? props.transform + " translate(-50 -50)" : "")
 </script>
 
 <style scoped lang="sass">

@@ -15,39 +15,26 @@
     />
   </g>
 </template>
-<script lang="ts">
-import { defineComponent, PropType } from "vue"
+<script setup lang="ts">
+import { computed } from "vue"
 import { EdgeHazard, Hazard } from "@/models/battle"
 
-export default defineComponent({
-  name: "BattleBoardHexEdge",
-  props: {
-    elevation: {
-      type: Number,
-      default: 0
-    },
-    hazard: {
-      type: Number as PropType<Hazard>,
-      default: Hazard.NONE
-    },
-    edgeHazards: {
-      type: Object as PropType<Record<number, EdgeHazard>>,
-      default: () => {}
-    }
-  },
-  computed: {
-    hexClasses() {
-      return {
-        [`elevation-${this.elevation}`]: true,
-        [Hazard[this.hazard].toLowerCase()]: true
-      }
-    },
-    hazardImg() {
-      return new URL(`../../../assets/hazards/${Hazard[this.hazard].toLowerCase()}.svg`,
-        import.meta.url).href
-    }
-  }
+const props = withDefaults(defineProps<{
+  elevation?: number
+  hazard?: Hazard
+  edgeHazards?: Record<number, EdgeHazard>
+}>(), {
+  elevation: 0,
+  hazard: Hazard.NONE
 })
+
+const hexClasses = computed(() => ({
+  [`elevation-${props.elevation}`]: true,
+  [Hazard[props.hazard].toLowerCase()]: true
+}))
+
+const hazardImg = computed(() => new URL(`../../../assets/hazards/${Hazard[props.hazard].toLowerCase()}.svg`,
+  import.meta.url).href)
 </script>
 
 <style lang="sass" scoped>

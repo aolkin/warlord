@@ -31,48 +31,32 @@
     />
   </g>
 </template>
-<script lang="ts">
-import { defineComponent, PropType } from "vue"
+<script setup lang="ts">
+import { computed } from "vue"
 import { EdgeHazard, Hazard } from "@/models/battle"
 
-export default defineComponent({
-  name: "BattleBoardHex",
-  props: {
-    elevation: {
-      type: Number,
-      default: 0
-    },
-    hazard: {
-      type: Number as PropType<Hazard>,
-      default: Hazard.NONE
-    },
-    edgeHazards: {
-      type: Object as PropType<Record<number, EdgeHazard>>,
-      default: () => {}
-    },
-    interactive: {
-      type: Boolean,
-      default: false
-    }
-  },
-  computed: {
-    hexClasses() {
-      return {
-        [`elevation-${this.elevation}`]: true,
-        [Hazard[this.hazard].toLowerCase()]: true
-      }
-    },
-    hazardImg() {
-      return new URL(`../../../assets/hazards/${Hazard[this.hazard].toLowerCase()}.svg`,
-        import.meta.url).href
-    },
-    edgeHazardImg(): ((hazard: EdgeHazard) => string) {
-      return (hazard: EdgeHazard) =>
-        new URL(`../../../assets/hazards/${EdgeHazard[hazard].toLowerCase()}.svg`,
-          import.meta.url).href
-    }
-  }
+const props = withDefaults(defineProps<{
+  elevation?: number
+  hazard?: Hazard
+  edgeHazards?: Record<number, EdgeHazard>
+  interactive?: boolean
+}>(), {
+  elevation: 0,
+  hazard: Hazard.NONE,
+  interactive: false
 })
+
+const hexClasses = computed(() => ({
+  [`elevation-${props.elevation}`]: true,
+  [Hazard[props.hazard].toLowerCase()]: true
+}))
+
+const hazardImg = computed(() => new URL(`../../../assets/hazards/${Hazard[props.hazard].toLowerCase()}.svg`,
+  import.meta.url).href)
+
+const edgeHazardImg = computed(() => (hazard: EdgeHazard) =>
+  new URL(`../../../assets/hazards/${EdgeHazard[hazard].toLowerCase()}.svg`,
+    import.meta.url).href)
 </script>
 
 <style lang="sass" scoped>
