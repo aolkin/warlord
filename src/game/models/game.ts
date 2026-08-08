@@ -31,6 +31,8 @@ export interface Path {
   path: MasterboardHex[]
 }
 
+// The derived values a TitanGame method may read while computing its own result. Each entry
+// is produced by the correspondingly named getXxx method.
 export interface Getters {
   readonly round: number // 1-indexed
   readonly firstRound: boolean
@@ -40,21 +42,21 @@ export interface Getters {
   readonly stacksForPlayer: (owner: PlayerId) => Stack[]
   readonly stacksForHex: (hex: number) => Stack[]
   readonly pathsForHex: (hex: number) => Path[]
-  readonly nextMarker: number
+  readonly nextMarker: number | undefined
   readonly mulliganAvailable: boolean
   readonly activePlayer: Player
   readonly activePlayerId: PlayerId
-  readonly battleActivePlayer: PlayerId
-  readonly battlePhaseType: BattlePhaseType
-  readonly battleMoves: Set<number>
-  readonly battleEngagements: BattleCreature[]
+  readonly battleActivePlayer: PlayerId | undefined
+  readonly battlePhaseType: BattlePhaseType | undefined
+  readonly battleMoves: (creature: BattleCreature) => Set<number>
+  readonly battleEngagements: (creature: BattleCreature) => BattleCreature[]
   readonly mayProceed: boolean
   readonly engagedStacks: Stack[]
   readonly mandatoryMoves: Stack[]
 }
 
-interface MovePayload { stack: Stack, hex: number | MasterboardHex, edge?: HexEdge }
-interface MusterPayload { stack: Stack, recruit: MusterChoice }
+export interface MovePayload { stack: Stack, hex: number | MasterboardHex, edge?: HexEdge }
+export interface MusterPayload { stack: Stack, recruit: MusterChoice }
 
 export interface ActionContext extends BaseActionContext {
   state: TitanGame
@@ -215,7 +217,7 @@ export class TitanGame {
       case MasterboardPhase.SPLIT:
         // TODO: check getters.mayProceed before advancing — round-1 split rule (exactly 4 creatures with 1 lord) not yet enforced
         getters.activeStacks.filter(stack => stack.numSplitting() > 0).forEach(stack => {
-          this.stacks.push(finalizeSplit(stack, getters.nextMarker))
+          this.stacks.push(finalizeSplit(stack, getters.nextMarker!))
         })
         this.mulliganTaken = false
         break

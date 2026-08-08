@@ -29,7 +29,7 @@ export function createGetters(game: TitanGame): Getters {
   lazy("activePlayer", () => game.getActivePlayer())
   lazy("activePlayerId", () => game.getActivePlayerId(getters))
   lazy("activeStacks", () => game.getActiveStacks(getters))
-  lazy("nextMarker", () => game.getNextMarker(getters) as number)
+  lazy("nextMarker", () => game.getNextMarker(getters))
   lazy("pathsForHex", () => game.getPathsForHex(getters))
   lazy("mandatoryMoves", () => game.getMandatoryMoves(getters))
   lazy("mayProceed", () => game.getMayProceed(getters))

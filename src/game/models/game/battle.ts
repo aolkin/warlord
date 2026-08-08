@@ -6,11 +6,11 @@ import { PlayerId } from "../player"
 import { Stack } from "../stack"
 import type { ActionContext, TitanGame } from "../game"
 
-interface BattleMovePayload { creature: BattleCreature, hex: number }
+export interface BattleMovePayload { creature: BattleCreature, hex: number }
 interface BattlePayload { attacking: Stack, defending: Stack }
 interface IStrikePayload { attacker: BattleCreature, rolls: number[] }
-interface AttackPayload extends IStrikePayload { target: BattleCreature, optionalToHit?: number }
-interface RangestrikePayload extends IStrikePayload { target: RangestrikeTarget }
+export interface AttackPayload extends IStrikePayload { target: BattleCreature, optionalToHit?: number }
+export interface RangestrikePayload extends IStrikePayload { target: RangestrikeTarget }
 
 function toBattleSide(stack: Stack, score: number): BattleSide {
   return { player: stack.owner, score, creatures: stack.creatures }
