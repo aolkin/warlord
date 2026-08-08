@@ -39,9 +39,21 @@ const props = withDefaults(defineProps<{
   transform: ""
 })
 
+const markerUrls = import.meta.glob<string>("../../assets/markers/*.svg", {
+  eager: true,
+  import: "default",
+  query: "?url"
+})
+
 const imageUrl = computed(() => {
   const id = padStart(String(props.color * 12 + props.marker + 1), 2, "0")
-  return new URL(`../../assets/markers/marker-${id}.svg`, import.meta.url).href
+  const path = `../../assets/markers/marker-${id}.svg`
+  const url = markerUrls[path]
+  if (url === undefined) {
+    console.warn(`Marker.vue: no crest asset for computed marker id "${id}" ` +
+      `(color=${props.color}, marker=${props.marker}); rendering without a crest image.`)
+  }
+  return url
 })
 
 const fullTransform = computed(() => props.inSvg ? props.transform + " translate(-50 -50)" : "")
