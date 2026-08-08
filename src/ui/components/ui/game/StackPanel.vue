@@ -8,7 +8,7 @@
     />
     <v-card
       v-else
-      :elevation="selectionStore.focusedStack === selectionStore.selectedStack ? 24 : 0"
+      :elevation="selectionStore.focusedStack === selectionStore.selectedStack ? 5 : 0"
       class="root-card"
       border
       width="342"
@@ -217,6 +217,9 @@ function cycleStacks(by: number): void {
 
 .split-guide .v-card-text
   text-align: center
+
+  p
+    margin: 0
 
   .first-round-success
     font-size: 1.1em
