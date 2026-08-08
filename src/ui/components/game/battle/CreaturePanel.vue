@@ -20,7 +20,7 @@
           <div
             v-if="pendingOffense.length > 0 ||
               (activeBattle.phase === BattlePhase.ATTACKER_MOVE &&
-                props.selectedCreatureStartedInEntranceZone)"
+                props.selectedStartedOffBoard)"
           >
             <v-card-title>{{ attacker.name }}'s Pending Creatures</v-card-title>
             <PendingCreatures
@@ -32,7 +32,7 @@
           <div
             v-if="pendingDefense.length > 0 ||
               (activeBattle.phase === BattlePhase.DEFENDER_MOVE &&
-                props.selectedCreatureStartedInEntranceZone)"
+                props.selectedStartedOffBoard)"
           >
             <v-card-title>{{ defender.name }}'s Pending Creatures</v-card-title>
             <PendingCreatures
@@ -82,7 +82,7 @@ import PendingCreatures from "./PendingCreatures.vue"
 
 const props = defineProps<{
   localPlayerIsDefender: boolean
-  selectedCreatureStartedInEntranceZone: boolean
+  selectedStartedOffBoard: boolean
 }>()
 
 const gameStore = useGameStore()

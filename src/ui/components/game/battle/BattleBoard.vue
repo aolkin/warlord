@@ -100,7 +100,7 @@
 
       <CreaturePanel
         :local-player-is-defender="localPlayerIsDefender"
-        :selected-creature-started-in-entrance-zone="selectedCreatureStartedInEntranceZone"
+        :selected-started-off-board="selectedStartedOffBoard"
         position="fixed"
         location="top right"
         class="ma-3"
@@ -233,7 +233,7 @@ const defender = computed((): PlayerId => activeBattle.value!.defender)
 const localPlayerIsDefender = computed((): boolean =>
   defender.value === gameStore.players[playerStore.localPlayer].id)
 
-const selectedCreatureStartedInEntranceZone = computed((): boolean =>
+const selectedStartedOffBoard = computed((): boolean =>
   (selectionStore.selectedCreature?.initialHex ?? -1) >= 36)
 
 const activeCreatures = computed((): BattleCreature[] =>
