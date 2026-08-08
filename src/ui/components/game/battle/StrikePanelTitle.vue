@@ -11,37 +11,23 @@
     </span>
   </v-card-title>
 </template>
-<script lang="ts">
-import { defineComponent } from "vue"
-import { mapState } from "vuex"
+<script setup lang="ts">
+import { computed } from "vue"
+import { useStore } from "vuex"
 import { BattleBoard, BattleCreature, Hazard } from "@/models/battle"
 
-export default defineComponent({
-  name: "StrikePanelTitle",
-  props: {
-    attacker: {
-      type: BattleCreature,
-      required: true
-    },
-    target: {
-      type: BattleCreature,
-      required: true
-    }
-  },
-  data: () => ({
-    Hazard
-  }),
-  computed: {
-    ...mapState("game", ["activeBattle"]),
-    board(): BattleBoard {
-      return this.activeBattle.getBoard()
-    },
-    attackerHazard(): Hazard {
-      return this.attacker ? this.board.getHazard(this.attacker?.hex) : Hazard.NONE
-    },
-    targetHazard(): Hazard {
-      return this.target ? this.board.getHazard(this.target?.hex) : Hazard.NONE
-    }
-  }
-})
+const props = defineProps<{
+  attacker: BattleCreature
+  target: BattleCreature
+}>()
+
+const store = useStore()
+
+const activeBattle = computed(() => store.state.game.activeBattle)
+
+const board = computed((): BattleBoard => activeBattle.value.getBoard())
+const attackerHazard = computed((): Hazard =>
+  props.attacker ? board.value.getHazard(props.attacker?.hex) : Hazard.NONE)
+const targetHazard = computed((): Hazard =>
+  props.target ? board.value.getHazard(props.target?.hex) : Hazard.NONE)
 </script>

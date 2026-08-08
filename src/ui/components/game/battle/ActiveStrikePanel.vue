@@ -60,57 +60,39 @@
   </v-expand-transition>
 </template>
 
-<script lang="ts">
-import { defineComponent } from "vue"
-import { mapActions, mapGetters, mapState } from "vuex"
-import { ActiveStrike, BattleCreature, Hazard, Strike } from "@/models/battle"
+<script setup lang="ts">
+import { computed } from "vue"
+import { useStore } from "vuex"
+import { ActiveStrike, BattleCreature, Strike } from "@/models/battle"
 import StrikePanelTitle from "./StrikePanelTitle.vue"
 
-export default defineComponent({
-  name: "ActiveStrikePanel",
-  components: { StrikePanelTitle },
-  data: () => ({
-    Hazard
-  }),
-  computed: {
-    ...mapState("game", ["activeBattle"]),
-    ...mapGetters("game", ["battleCarryoverTargets"]),
-    activeStrike(): ActiveStrike | undefined {
-      return this.activeBattle.activeStrike
-    },
-    attacker(): BattleCreature | undefined {
-      return this.activeStrike && this.activeBattle.creatureOnHex(this.activeStrike.attacker)
-    },
-    target(): BattleCreature | undefined {
-      return this.activeStrike && this.activeBattle.creatureOnHex(this.activeStrike.target)
-    },
-    targets(): [BattleCreature, number][] {
-      return (this.activeStrike?.targets ?? []).map((hex, index) =>
-        [this.activeBattle.creatureOnHex(hex), this.activeStrike?.targetHits[index] ?? 0])
-    },
-    targetedStrike(): Strike | undefined {
-      if (this.attacker && this.target) {
-        return this.activeBattle.getAdjustedStrike(this.attacker, this.target)
-      }
-      return undefined
-    },
-    strike(): Strike | undefined {
-      return this.activeStrike && {
-        toHit: this.activeStrike.toHit,
-        dice: this.activeStrike.rolls.length
-      }
-    },
-    hitsString(): (hits: number, modifier?: string) => string {
-      return (hits: number, modifier?: string) => {
-        const extra = modifier === undefined ? "" : modifier + " "
-        return `${hits} ${extra}hit${hits === 1 ? "" : "s"}`
-      }
-    }
-  },
-  methods: {
-    ...mapActions("game", ["skipCarryover"])
+const store = useStore()
+
+const activeBattle = computed(() => store.state.game.activeBattle)
+const battleCarryoverTargets = computed(() => store.getters["game/battleCarryoverTargets"])
+
+const activeStrike = computed((): ActiveStrike | undefined => activeBattle.value.activeStrike)
+const attacker = computed((): BattleCreature | undefined =>
+  activeStrike.value && activeBattle.value.creatureOnHex(activeStrike.value.attacker))
+const target = computed((): BattleCreature | undefined =>
+  activeStrike.value && activeBattle.value.creatureOnHex(activeStrike.value.target))
+const targets = computed((): [BattleCreature, number][] =>
+  (activeStrike.value?.targets ?? []).map((hex, index) =>
+    [activeBattle.value.creatureOnHex(hex), activeStrike.value?.targetHits[index] ?? 0]))
+const strike = computed((): Strike | undefined => activeStrike.value && {
+  toHit: activeStrike.value.toHit,
+  dice: activeStrike.value.rolls.length
+})
+const hitsString = computed((): (hits: number, modifier?: string) => string => {
+  return (hits: number, modifier?: string) => {
+    const extra = modifier === undefined ? "" : modifier + " "
+    return `${hits} ${extra}hit${hits === 1 ? "" : "s"}`
   }
 })
+
+function skipCarryover(): void {
+  store.dispatch("game/skipCarryover")
+}
 </script>
 
 <style scoped lang="sass">
