@@ -43,6 +43,7 @@ const props = withDefaults(defineProps<{
 }>(), {
   elevation: 0,
   hazard: Hazard.NONE,
+  edgeHazards: () => ({}),
   interactive: false
 })
 
