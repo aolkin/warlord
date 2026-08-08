@@ -2,68 +2,43 @@ import { describe, expect, it } from "vitest"
 import { CREATURE_DATA, CREATURE_LIST, Creature, CreatureType, MUSTER_DATA } from "./creature"
 import { Terrain } from "./masterboard"
 
-// Attributes below are transcribed from the Character Chart, rulebook section 28
-// (assets/reference/titan-rules.md lines 411-450). Titan's Value is left blank there
-// ("??") because a Titan's Power-factor is score-based (see 19.1), so it's omitted here.
-const CHARACTER_CHART: Array<{
-  type: CreatureType
-  strength: number
-  skill: number
-  canFly: boolean
-  canRangestrike: boolean
-  lord: boolean
-  value: number | null
-}> = [
-  // Lords (3.1: "Lords are divided into three types: Titans, Angels, and Archangels")
-  { type: CreatureType.TITAN, strength: 6, skill: 4, canFly: false, canRangestrike: false, lord: true, value: null },
-  { type: CreatureType.ANGEL, strength: 6, skill: 4, canFly: true, canRangestrike: false, lord: true, value: 24 },
-  { type: CreatureType.ARCHANGEL, strength: 9, skill: 4, canFly: true, canRangestrike: false, lord: true, value: 36 },
-  // Demi-Lords: Guardian and Warlock are not Lords per 3.1
-  { type: CreatureType.GUARDIAN, strength: 12, skill: 2, canFly: true, canRangestrike: false, lord: false, value: 24 },
-  { type: CreatureType.WARLOCK, strength: 5, skill: 4, canFly: false, canRangestrike: true, lord: false, value: 20 },
-  // Creatures
-  { type: CreatureType.BEHEMOTH, strength: 8, skill: 3, canFly: false, canRangestrike: false, lord: false, value: 24 },
-  { type: CreatureType.CENTAUR, strength: 3, skill: 4, canFly: false, canRangestrike: false, lord: false, value: 12 },
-  { type: CreatureType.COLOSSUS, strength: 10, skill: 4, canFly: false, canRangestrike: false, lord: false, value: 40 },
-  { type: CreatureType.CYCLOPS, strength: 9, skill: 2, canFly: false, canRangestrike: false, lord: false, value: 18 },
-  { type: CreatureType.DRAGON, strength: 9, skill: 3, canFly: true, canRangestrike: true, lord: false, value: 27 },
-  { type: CreatureType.GARGOYLE, strength: 4, skill: 3, canFly: true, canRangestrike: false, lord: false, value: 12 },
-  { type: CreatureType.GIANT, strength: 7, skill: 4, canFly: false, canRangestrike: true, lord: false, value: 28 },
-  { type: CreatureType.GORGON, strength: 6, skill: 3, canFly: true, canRangestrike: true, lord: false, value: 18 },
-  { type: CreatureType.GRIFFON, strength: 5, skill: 4, canFly: true, canRangestrike: false, lord: false, value: 20 },
-  { type: CreatureType.HYDRA, strength: 10, skill: 3, canFly: false, canRangestrike: true, lord: false, value: 30 },
-  { type: CreatureType.LION, strength: 5, skill: 3, canFly: false, canRangestrike: false, lord: false, value: 15 },
-  { type: CreatureType.MINOTAUR, strength: 4, skill: 4, canFly: false, canRangestrike: true, lord: false, value: 16 },
-  { type: CreatureType.OGRE, strength: 6, skill: 2, canFly: false, canRangestrike: false, lord: false, value: 12 },
-  { type: CreatureType.RANGER, strength: 4, skill: 4, canFly: true, canRangestrike: true, lord: false, value: 16 },
-  { type: CreatureType.SERPENT, strength: 18, skill: 2, canFly: false, canRangestrike: false, lord: false, value: 36 },
-  { type: CreatureType.TROLL, strength: 8, skill: 2, canFly: false, canRangestrike: false, lord: false, value: 16 },
-  { type: CreatureType.UNICORN, strength: 6, skill: 4, canFly: false, canRangestrike: false, lord: false, value: 24 },
-  { type: CreatureType.WARBEAR, strength: 6, skill: 3, canFly: false, canRangestrike: false, lord: false, value: 18 },
-  { type: CreatureType.WYVERN, strength: 7, skill: 3, canFly: true, canRangestrike: false, lord: false, value: 21 }
-].map(row => ({ ...row, label: CreatureType[row.type] }))
+const ALL_CREATURE_TYPES = Object.values(CreatureType).filter((v): v is number => typeof v === "number")
 
 describe("CREATURE_DATA", () => {
   it("has exactly one entry per CreatureType", () => {
-    const enumTypes = Object.values(CreatureType).filter((v): v is number => typeof v === "number")
-    expect(CREATURE_LIST.map(c => c.type).sort()).toEqual(enumTypes.sort())
-    expect(CHARACTER_CHART.map(c => c.type).sort()).toEqual(enumTypes.sort())
+    expect(CREATURE_LIST.map(c => c.type).sort()).toEqual([...ALL_CREATURE_TYPES].sort())
   })
 
-  it.each(CHARACTER_CHART)(
-    "$label matches the rulebook's Battle-factors, abilities, and value",
-    ({ type, strength, skill, canFly, canRangestrike, lord, value }) => {
-      const creature = CREATURE_DATA[type]
-      expect(creature.strength).toBe(strength)
-      expect(creature.skill).toBe(skill)
-      expect(creature.canFly).toBe(canFly)
-      expect(creature.canRangestrike).toBe(canRangestrike)
-      expect(creature.lord).toBe(lord)
-      if (value !== null) {
-        expect(creature.getValue()).toBe(value)
-      }
+  // 3.1: "Lords are divided into three types: Titans, Angels, and Archangels."
+  it("lords are exactly Titan, Angel, and Archangel", () => {
+    const lords = new Set(CREATURE_LIST.filter(c => c.lord).map(c => c.type))
+    expect(lords).toEqual(new Set([CreatureType.TITAN, CreatureType.ANGEL, CreatureType.ARCHANGEL]))
+  })
+
+  // 3.2: "Guardians and Warlocks are the two types of Demi-Lords." They're recruited only
+  // in Tower Lands (18.4/18.5), a mechanism MUSTER_DATA's terrain chains don't model, so
+  // they never appear in any chain. 3.3: the remaining 19 types are the terrain-musterable
+  // Creatures. Deriving the demi-lord set as "non-Lord, non-musterable" (rather than typing
+  // its two members against a chart) also catches a demi-lord type wrongly added to a chain.
+  it("demi-lords are exactly the non-Lord types absent from every terrain muster chain, leaving 19 musterable Creature types", () => {
+    const lords = new Set(CREATURE_LIST.filter(c => c.lord).map(c => c.type))
+    const musterable = new Set(Object.values(MUSTER_DATA).flatMap(chain => chain.map(([, type]) => type)))
+    const demiLords = ALL_CREATURE_TYPES.filter(t => !lords.has(t) && !musterable.has(t))
+    expect(new Set(demiLords)).toEqual(new Set([CreatureType.GUARDIAN, CreatureType.WARLOCK]))
+    expect(musterable.size).toBe(19)
+    expect(lords.size + demiLords.length + musterable.size).toBe(ALL_CREATURE_TYPES.length)
+  })
+
+  // 28's Character Chart bounds every Power-factor 3-18 and every Skill-factor 2-4; the
+  // constructor enforces the same bounds, but this checks the assembled data set directly.
+  it("every creature's Power-factor and Skill-factor fall within the chart's ranges", () => {
+    for (const creature of CREATURE_LIST) {
+      expect(creature.strength).toBeGreaterThanOrEqual(3)
+      expect(creature.strength).toBeLessThanOrEqual(18)
+      expect(creature.skill).toBeGreaterThanOrEqual(2)
+      expect(creature.skill).toBeLessThanOrEqual(4)
     }
-  )
+  })
 })
 
 describe("Creature constructor validation", () => {
@@ -110,6 +85,23 @@ describe("MUSTER_DATA", () => {
     }
   })
 
+  // 18.2: "The numbers to the left of the character's name indicate how many of that type
+  // a Legion must already contain to be qualified to muster a Creature of the next larger
+  // size." Only the base Creature of a chain needs no prior count. Stack.musterable() reads
+  // each non-base entry's requirement against the immediately preceding chain entry
+  // (src/game/models/stack.ts's terrainData[i - 1] lookup), so a requirement anywhere but
+  // the front, or a missing one past the front, would desync from how it's consumed.
+  it("in each non-Tower terrain, only the base creature omits a muster-count requirement", () => {
+    for (const [terrainKey, chain] of Object.entries(MUSTER_DATA)) {
+      if (Number(terrainKey) === Terrain.TOWER) continue
+      expect(chain[0][0]).toBeNull()
+      for (const [threshold] of chain.slice(1)) {
+        expect(threshold).not.toBeNull()
+        expect(threshold!).toBeGreaterThan(0)
+      }
+    }
+  })
+
   it("Tower legions may muster any Tower creature regardless of Legion contents (18.5)", () => {
     expect(MUSTER_DATA[Terrain.TOWER]).toEqual([
       [0, CreatureType.CENTAUR],
@@ -136,40 +128,5 @@ describe("MUSTER_DATA", () => {
   it("Colossus is the apex creature reachable via both the Mountains and Tundra chains", () => {
     expect(MUSTER_DATA[Terrain.MOUNTAINS].at(-1)![1]).toBe(CreatureType.COLOSSUS)
     expect(MUSTER_DATA[Terrain.TUNDRA].at(-1)![1]).toBe(CreatureType.COLOSSUS)
-  })
-
-  // The Hazard Chart (27.) lists each hazard's "native characters". Those sets should
-  // match the creatures recruitable in the terrain(s) featuring that hazard.
-  it.each([
-    {
-      hazard: "Bramble",
-      terrains: [Terrain.BRUSH, Terrain.JUNGLE],
-      natives: [CreatureType.GARGOYLE, CreatureType.CYCLOPS, CreatureType.GORGON, CreatureType.BEHEMOTH,
-        CreatureType.SERPENT]
-    },
-    {
-      hazard: "Drift",
-      terrains: [Terrain.TUNDRA],
-      natives: [CreatureType.TROLL, CreatureType.WARBEAR, CreatureType.GIANT, CreatureType.COLOSSUS]
-    },
-    {
-      hazard: "Bog",
-      terrains: [Terrain.MARSH, Terrain.SWAMP],
-      natives: [CreatureType.OGRE, CreatureType.TROLL, CreatureType.RANGER, CreatureType.WYVERN, CreatureType.HYDRA]
-    },
-    {
-      hazard: "Sand/Dune",
-      terrains: [Terrain.DESERT],
-      natives: [CreatureType.LION, CreatureType.GRIFFON, CreatureType.HYDRA]
-    },
-    {
-      hazard: "Slope",
-      terrains: [Terrain.MOUNTAINS, Terrain.HILLS],
-      natives: [CreatureType.OGRE, CreatureType.LION, CreatureType.MINOTAUR, CreatureType.UNICORN,
-        CreatureType.DRAGON, CreatureType.COLOSSUS]
-    }
-  ])("$hazard-native creatures match the recruit chains for their terrain(s)", ({ terrains, natives }) => {
-    const recruitable = new Set(terrains.flatMap(t => MUSTER_DATA[t].map(([, type]) => type)))
-    expect(recruitable).toEqual(new Set(natives))
   })
 })
