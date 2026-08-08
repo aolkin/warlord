@@ -11,7 +11,7 @@ const configDir = path.dirname(fileURLToPath(import.meta.url))
 export default defineConfig({
   plugins: [
     vue(),
-    vuetify({ autoImport: true, styles: "sass" })
+    vuetify({ autoImport: true })
   ],
   define: { "process.env": {} },
   resolve: {
