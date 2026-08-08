@@ -115,12 +115,12 @@ export class TitanGame {
     return this.stacks.filter(stack => stack.owner === owner)
   }
 
-  getActiveStacks(getters: Getters): Stack[] {
-    return getters.stacksForPlayer(getters.activePlayerId)
+  getActiveStacks(): Stack[] {
+    return this.getStacksForPlayer(this.getActivePlayerId())
   }
 
-  getNextMarker(getters: Getters): number | undefined {
-    const usedMarkers = getters.activeStacks.map(stack => stack.marker)
+  getNextMarker(): number | undefined {
+    const usedMarkers = this.getActiveStacks().map(stack => stack.marker)
     return range(0, 12).find(marker => !usedMarkers.includes(marker))
   }
 
@@ -171,8 +171,8 @@ export class TitanGame {
     return this.players[this.activePlayer]
   }
 
-  getActivePlayerId(getters: Getters): PlayerId {
-    return getters.activePlayer.id
+  getActivePlayerId(): PlayerId {
+    return this.getActivePlayer().id
   }
 
   getMayProceed(getters: Getters): boolean {
@@ -191,9 +191,9 @@ export class TitanGame {
     }
   }
 
-  getMulliganAvailable(getters: Getters): boolean {
+  getMulliganAvailable(): boolean {
     return this.round === 0 && !this.mulliganTaken &&
-      !getters.activeStacks.some(stack => stack.hasMoved())
+      !this.getActiveStacks().some(stack => stack.hasMoved())
   }
 
   getEngagedStacks(getters: Getters): Stack[] {
