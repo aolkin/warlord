@@ -1,11 +1,6 @@
 declare module "*.css"
 declare module "vuetify/styles"
 
-declare module "assert" {
-  function assert(value: unknown, message?: string | Error): asserts value
-  export = assert
-}
-
 declare module "@3d-dice/dice-box" {
   export default class DiceBox {
     constructor(options?: Record<string, unknown>)

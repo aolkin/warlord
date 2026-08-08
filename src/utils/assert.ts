@@ -1,9 +1,7 @@
-import assertBuiltin from "assert"
-
 export function assert(condition: boolean, msg: string): asserts condition {
-  if (typeof assertBuiltin === "function") {
-    assertBuiltin(condition, msg)
-  } else {
-    console.assert(condition, msg)
+  if (condition) return
+  if (import.meta.env.DEV) {
+    throw new Error(msg)
   }
+  console.assert(condition, msg)
 }
