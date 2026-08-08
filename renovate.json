@@ -1,0 +1,33 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:base",
+    "schedule:weekends"
+  ],
+  "grouping": {
+    "major": {
+      "title": "Major dependency updates",
+      "groupName": "major",
+      "schedule": ["before 3am on Monday"]
+    },
+    "minor": {
+      "title": "Minor dependency updates",
+      "groupName": "minor",
+      "schedule": ["before 3am on Monday"]
+    },
+    "patch": {
+      "title": "Patch dependency updates",
+      "groupName": "patch",
+      "automerge": true,
+      "schedule": ["before 3am on Monday"]
+    }
+  },
+  "packageRules": [
+    {
+      "matchUpdateTypes": ["patch"],
+      "automerge": true,
+      "automergeType": "pr",
+      "automergeStrategy": "squash"
+    }
+  ]
+}
