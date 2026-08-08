@@ -57,7 +57,7 @@ const rootClass = computed(() => {
     foe: containsEnemy,
     [`distance-${distanceToDest}`]: true,
     [`path-${pathIndex}`]: true,
-    destination: distanceToDest === 1
+    destination: pathStepLabel.value === pathLength
   }
 })
 

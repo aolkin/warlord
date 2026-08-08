@@ -1,8 +1,8 @@
 <template>
   <g
-    :class="rootClass"
+    :class="terrain"
     :transform="transform"
-    class="parent"
+    class="parent board"
     @mouseenter="selectionStore.enterHex(hex)"
     @mouseleave="selectionStore.leaveHex(hex)"
   >
@@ -59,11 +59,6 @@ const preferencesStore = usePreferencesStore()
 const selectionStore = useSelectionStore()
 
 const terrain = computed(() => Terrain[props.hex?.terrain].toLowerCase())
-
-const rootClass = computed(() => ({
-  board: true,
-  [terrain.value]: true
-}))
 
 const transform = computed((): string => hexTransform(props.hex.id).toString())
 
