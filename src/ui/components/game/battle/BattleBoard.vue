@@ -299,7 +299,6 @@ async function attackTargetedCreature(
   attacker: BattleCreature,
   attackTarget: BattleCreature | RangestrikeTarget
 ): Promise<void> {
-  console.log(attacker, target.value)
   if (diceRoller?.value == null) {
     throw new Error("diceRoller ref is not set")
   }
@@ -312,7 +311,6 @@ async function attackTargetedCreature(
       optionalToHit: optionalToHit.value,
       rolls
     }))
-  console.log(activeBattle.value!.activeStrike)
   resetAttack()
   selectionStore.deselectCreature()
 }

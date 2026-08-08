@@ -182,7 +182,6 @@ export class Battle {
         .filter(i => (possibilities.get(i) ?? -1) < remainingMovement)
       adjacencies.forEach(potentialHex => {
         const movementCost = this.creatureMovementCost(potentialHex, origin, creature)
-        // console.log({ origin, potentialHex, remainingMovement, movementCost })
         if (movementCost <= remainingMovement) {
           if (remainingMovement - movementCost > 0) {
             stack.push([potentialHex, remainingMovement - movementCost])
@@ -531,7 +530,6 @@ export function nextPhase(battle: Battle): void {
   // Skip phase if possible
   if (BATTLE_PHASE_TYPES[battle.phase] !== BattlePhaseType.MOVE) {
     if (battle.getPendingStrikes().length === 0) {
-      console.log(`Skipping phase ${battle.phase} thanks to no pending strikes`)
       nextPhase(battle)
     }
   }

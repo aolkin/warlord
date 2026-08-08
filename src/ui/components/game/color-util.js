@@ -306,7 +306,6 @@ class FilterCache {
     const rgb = hexToRgb(hex)
     const color = new Color(...rgb)
     if (this.cache[hex] === undefined) {
-      console.log("Solving for " + hex)
       const solver = new Solver(color)
       this.cache[hex] = solver.solve()
     }

@@ -48,7 +48,6 @@ onMounted(() => {
   })
   box.onRollComplete = (rollResult): void => {
     const result = rollResult.flatMap(group => group.rolls.map(roll => roll.value))
-    console.log("Dice roll complete", rollResult, result)
     pendingResolve?.(result)
     pendingReject = undefined
     pendingResolve = undefined
