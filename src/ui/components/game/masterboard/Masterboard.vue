@@ -17,16 +17,14 @@
             v-for="(step, distance) in interleavedPaths"
             :key="distance"
           >
-            <MasterboardHexComponent
+            <MasterboardPathOverlay
               v-for="([foe, hex], index) in step"
               :key="hex.id"
+              :contains-enemy="foe"
               :hex="hex"
-              :path-info="{
-                pathIndex: index,
-                pathLength: activeRoll!,
-                positionOnPath: distance,
-                containsEnemy: foe
-              }"
+              :path-index="index"
+              :path-length="activeRoll!"
+              :position-on-path="distance"
               @click.stop="moveStack(distance, foe, hex)"
             />
           </g>
@@ -67,8 +65,8 @@ import { usePreferencesStore } from "~/stores/ui/preferences"
 import { useSelectionStore } from "~/stores/ui/selection"
 import StackPanel from "../../ui/game/StackPanel.vue"
 import TurnPanel from "../../ui/game/TurnPanel.vue"
-import MasterboardHexComponent from "./MasterboardHex.vue"
 import MasterboardHexes from "./MasterboardHexes.vue"
+import MasterboardPathOverlay from "./MasterboardPathOverlay.vue"
 import MasterboardStack from "./MasterboardStack.vue"
 
 let lastSortedStacks: Stack[] = []
