@@ -55,62 +55,6 @@ export const useGameStore = defineStore("game", () => {
     battleEngagements
   })
 
-  function nextPhase(): Promise<void> {
-    return game.doNextPhase(getters)
-  }
-
-  function setRoll(roll?: number): Promise<void> {
-    return game.doSetRoll(getters, roll)
-  }
-
-  function move(payload: MovePayload): Promise<void> {
-    return game.doMove(payload)
-  }
-
-  function setRecruit(payload: MusterPayload): Promise<void> {
-    return game.doSetRecruit(payload)
-  }
-
-  function nextBattlePhase(): Promise<void> {
-    return game.doNextBattlePhase()
-  }
-
-  function moveCreature(payload: BattleMovePayload): Promise<void> {
-    return game.doMoveCreature(getters, payload)
-  }
-
-  function attackCreature(payload: AttackPayload): Promise<void> {
-    return game.doAttackCreature(getters, payload)
-  }
-
-  function rangestrikeCreature(payload: RangestrikePayload): Promise<void> {
-    return game.doRangestrikeCreature(getters, payload)
-  }
-
-  function assignCarryover(target: BattleCreature): Promise<void> {
-    return game.doAssignCarryover(getters, target)
-  }
-
-  function skipCarryover(): Promise<void> {
-    return game.doSkipCarryover(getters)
-  }
-
-  function persist(): Promise<string | undefined> {
-    return game.persist()
-  }
-
-  function restore(encoded: string): Promise<void> {
-    return game.doRestore(encoded)
-  }
-
-  function rehydrate(hydration: TitanGame): void {
-    game.mRehydrate(hydration)
-  }
-
-  function reset(): void {
-    Object.assign(game, new TitanGame(2))
-  }
-
   return {
     game,
     round,
@@ -133,19 +77,20 @@ export const useGameStore = defineStore("game", () => {
     battleEngagements,
     battleCarryoverTargets,
     battleRangestrikeTargets,
-    nextPhase,
-    setRoll,
-    move,
-    setRecruit,
-    nextBattlePhase,
-    moveCreature,
-    attackCreature,
-    rangestrikeCreature,
-    assignCarryover,
-    skipCarryover,
-    persist,
-    restore,
-    rehydrate,
-    reset
+    nextPhase: (): Promise<void> => game.doNextPhase(getters),
+    setRoll: (roll?: number): Promise<void> => game.doSetRoll(getters, roll),
+    move: (payload: MovePayload): Promise<void> => game.doMove(payload),
+    setRecruit: (payload: MusterPayload): Promise<void> => game.doSetRecruit(payload),
+    nextBattlePhase: (): Promise<void> => game.doNextBattlePhase(),
+    moveCreature: (payload: BattleMovePayload): Promise<void> => game.doMoveCreature(getters, payload),
+    attackCreature: (payload: AttackPayload): Promise<void> => game.doAttackCreature(getters, payload),
+    rangestrikeCreature: (payload: RangestrikePayload): Promise<void> =>
+      game.doRangestrikeCreature(getters, payload),
+    assignCarryover: (target: BattleCreature): Promise<void> => game.doAssignCarryover(getters, target),
+    skipCarryover: (): Promise<void> => game.doSkipCarryover(getters),
+    persist: (): Promise<string | undefined> => game.persist(),
+    restore: (encoded: string): Promise<void> => game.doRestore(encoded),
+    rehydrate: (hydration: TitanGame): void => game.mRehydrate(hydration),
+    reset: (): void => { Object.assign(game, new TitanGame(2)) }
   }
 })
