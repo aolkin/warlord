@@ -1,6 +1,6 @@
 import { range } from "lodash-es"
 import { assert } from "@/utils/assert"
-import { Battle, BattleCreature, BattlePhaseType } from "./battle"
+import { Battle } from "./battle"
 import { CREATURE_DATA, CREATURE_LIST, CreatureType } from "./creature"
 import { GameBattle, gameBattle } from "./game/battle"
 import { GamePersistence, gamePersistence, GAME_PERSISTENCE_KEY } from "./game/persistence"
@@ -28,29 +28,6 @@ export enum MasterboardPhase {
 export interface Path {
   foe?: Stack
   path: MasterboardHex[]
-}
-
-// The full set of derived values TitanGame exposes, one per correspondingly named getXxx method.
-export interface Getters {
-  readonly round: number // 1-indexed
-  readonly firstRound: boolean
-  readonly players: Player[]
-  readonly activeStacks: Stack[]
-  readonly playerById: (player: PlayerId) => Player
-  readonly stacksForPlayer: (owner: PlayerId) => Stack[]
-  readonly stacksForHex: (hex: number) => Stack[]
-  readonly pathsForHex: (hex: number) => Path[]
-  readonly nextMarker: number | undefined
-  readonly mulliganAvailable: boolean
-  readonly activePlayer: Player
-  readonly activePlayerId: PlayerId
-  readonly battleActivePlayer: PlayerId | undefined
-  readonly battlePhaseType: BattlePhaseType | undefined
-  readonly battleMoves: (creature: BattleCreature) => Set<number>
-  readonly battleEngagements: (creature: BattleCreature) => BattleCreature[]
-  readonly mayProceed: boolean
-  readonly engagedStacks: Stack[]
-  readonly mandatoryMoves: Stack[]
 }
 
 export interface MovePayload { stack: Stack, hex: number | MasterboardHex, edge?: HexEdge }
