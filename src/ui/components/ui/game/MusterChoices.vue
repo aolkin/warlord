@@ -1,7 +1,7 @@
 <template>
   <div>
     <Creature
-      v-if="activePhase === MasterboardPhase.MUSTER"
+      v-if="canDecline"
       :type="undefined"
       :player="player"
       :class="{ selected: chosen === undefined }"
@@ -58,13 +58,12 @@
 import { computed, ref, watch } from "vue"
 import { fill } from "lodash-es"
 import { CREATURE_DATA } from "@/models/creature"
-import { MasterboardPhase } from "@/models/game"
 import { Player } from "@/models/player"
 import { MusterChoice, MusterPossibility } from "@/models/stack"
 import Creature from "../../game/Creature.vue"
 
 const props = withDefaults(defineProps<{
-  activePhase: MasterboardPhase
+  canDecline: boolean
   musterable?: MusterPossibility[]
   player?: Player
   modelValue?: MusterChoice
