@@ -40,16 +40,16 @@
   </div>
 </template>
 
-<script lang="ts">
-import { defineComponent } from "vue"
-import { mapGetters } from "vuex"
+<script setup lang="ts">
+import { computed } from "vue"
+import { useStore } from "vuex"
 
-export default defineComponent({
-  name: "PlayerStatus",
-  computed: {
-    ...mapGetters("game", ["players", "activePlayer", "stacksForPlayer", "round"])
-  }
-})
+const store = useStore()
+
+const players = computed(() => store.getters["game/players"])
+const activePlayer = computed(() => store.getters["game/activePlayer"])
+const stacksForPlayer = computed(() => store.getters["game/stacksForPlayer"])
+const round = computed(() => store.getters["game/round"])
 </script>
 
 <style lang="sass" scoped>

@@ -16,19 +16,19 @@
         v-model="dialogState[index]"
         max-width="640"
       >
-        <template #activator="{ props }">
+        <template #activator="{ props: activatorProps }">
           <Creature
             :type="creature"
             :player="player"
             :class="{ unavailable: creature !== undefined && musterBasis.length < 1,
                       selected: chosen !== undefined && creature === chosen[0] }"
             class="ma-1 recruitment-choice"
-            v-bind="musterBasis.length > 1 ? props : {}"
+            v-bind="musterBasis.length > 1 ? activatorProps : {}"
             @click="musterBasis.length === 1 && choose([creature, musterBasis[0]])"
           />
         </template>
         <v-card>
-          <v-card-title>Muster a {{ CREATURES[creature].name }} with...</v-card-title>
+          <v-card-title>Muster a {{ CREATURE_DATA[creature].name }} with...</v-card-title>
           <v-card-actions>
             <svg
               v-for="[basisCreature, count] in musterBasis"
@@ -54,67 +54,53 @@
     </template>
   </div>
 </template>
-<script lang="ts">
-import { defineComponent, PropType } from "vue"
+<script setup lang="ts">
+import { computed, ref, watch } from "vue"
 import { fill } from "lodash-es"
-import { mapState } from "vuex"
+import { useStore } from "vuex"
 import { CREATURE_DATA } from "@/models/creature"
 import { MasterboardPhase } from "@/models/game"
 import { Player } from "@/models/player"
 import { MusterChoice, MusterPossibility } from "@/models/stack"
 import Creature from "../../game/Creature.vue"
 
-export default defineComponent({
-  name: "MusterChoices",
-  components: { Creature },
-  props: {
-    musterable: {
-      type: Array as PropType<MusterPossibility[]>,
-      required: false,
-      default: () => []
-    },
-    player: {
-      type: Player,
-      required: false,
-      default: undefined
-    },
-    modelValue: {
-      type: Array as unknown as PropType<MusterChoice>,
-      required: false,
-      default: undefined
-    }
+const props = withDefaults(defineProps<{
+  musterable?: MusterPossibility[]
+  player?: Player
+  modelValue?: MusterChoice
+}>(), {
+  musterable: () => [],
+  player: undefined,
+  modelValue: undefined
+})
+
+const emit = defineEmits<{
+  "update:modelValue": [value: MusterChoice]
+}>()
+
+const store = useStore()
+
+const dialogState = ref(props.musterable.map(() => false))
+
+const activePhase = computed(() => store.state.game.activePhase)
+
+const chosen = computed({
+  get() {
+    return props.modelValue
   },
-  emits: ["update:modelValue"],
-  data() {
-    return {
-      MasterboardPhase,
-      CREATURES: CREATURE_DATA,
-      dialogState: this.musterable.map(() => false)
-    }
-  },
-  computed: {
-    ...mapState("game", ["activePhase"]),
-    chosen: {
-      get() {
-        return this.modelValue
-      },
-      set(value: MusterChoice) {
-        this.$emit("update:modelValue", value)
-      }
-    }
-  },
-  watch: {
-    musterable(value) {
-      this.dialogState = value.map(() => false)
-    }
-  },
-  methods: {
-    choose(possibility: MusterChoice) {
-      this.chosen = possibility
-      fill(this.dialogState, false)
-    }
+  set(value: MusterChoice) {
+    emit("update:modelValue", value)
   }
 })
+
+watch(() => props.musterable, (value) => {
+  dialogState.value = value.map(() => false)
+})
+
+function choose(possibility: MusterChoice) {
+  chosen.value = possibility
+  fill(dialogState.value, false)
+}
 </script>
 <style scoped lang="sass">
 .recruitment-choice
