@@ -28,7 +28,7 @@
           />
         </template>
         <v-card>
-          <v-card-title>Muster a {{ CREATURES[creature].name }} with...</v-card-title>
+          <v-card-title>Muster a {{ CREATURE_DATA[creature].name }} with...</v-card-title>
           <v-card-actions>
             <svg
               v-for="[basisCreature, count] in musterBasis"
@@ -77,8 +77,6 @@ const props = withDefaults(defineProps<{
 const emit = defineEmits<{
   "update:modelValue": [value: MusterChoice]
 }>()
-
-const CREATURES = CREATURE_DATA
 
 const store = useStore()
 
