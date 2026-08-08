@@ -91,7 +91,7 @@ const interleavedPaths = computed((): [boolean, MasterboardHex][][] =>
 
 const canFreeMove = computed((): boolean =>
   gameStore.game.activePhase === MasterboardPhase.MOVE &&
-  selectionStore.focusedStack !== undefined && preferencesStore.freeMovement)
+  selectionStore.selectedStack !== undefined && preferencesStore.freeMovement)
 
 function moveStack(distance: number, foe: boolean, hex: MasterboardHex): void {
   if (distance !== activeRoll.value - 1 || selectionStore.focusedStack?.hasMoved() || foe) {
