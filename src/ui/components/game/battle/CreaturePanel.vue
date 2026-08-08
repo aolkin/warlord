@@ -26,7 +26,9 @@
             <PendingCreatures
               :creatures="pendingOffense"
               :expected-phase="BattlePhase.ATTACKER_MOVE"
+              :selected-creature="props.selectedCreature"
               class="px-2 pb-1"
+              @select="emit('select', $event)"
             />
           </div>
           <div
@@ -38,7 +40,9 @@
             <PendingCreatures
               :creatures="pendingDefense"
               :expected-phase="BattlePhase.DEFENDER_MOVE"
+              :selected-creature="props.selectedCreature"
               class="px-2 pb-1"
+              @select="emit('select', $event)"
             />
           </div>
         </div>
@@ -82,7 +86,12 @@ import PendingCreatures from "./PendingCreatures.vue"
 
 const props = defineProps<{
   localPlayerIsDefender: boolean
+  selectedCreature: BattleCreature | undefined
   selectedStartedOffBoard: boolean
+}>()
+
+const emit = defineEmits<{
+  select: [creature: BattleCreature]
 }>()
 
 const gameStore = useGameStore()
