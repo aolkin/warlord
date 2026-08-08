@@ -41,7 +41,8 @@ onMounted(() => {
     angularDamping: 0.5,
     throwForce: 6,
     spinForce: 2,
-    startingHeight: 30
+    startingHeight: 30,
+    offscreen: preferencesStore.offscreenDice
   })
   box.init().then(() => {
     ready.value = true

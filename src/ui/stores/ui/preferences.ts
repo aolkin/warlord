@@ -13,6 +13,7 @@ interface Preferences {
   debugUi: boolean
   quickDice: boolean
   freeMovement: boolean
+  offscreenDice: boolean
   creatureColorMode: CreatureColorMode
 }
 
@@ -23,6 +24,7 @@ const DEFAULT_PREFERENCES: Preferences = {
   debugUi: false,
   quickDice: false,
   freeMovement: false,
+  offscreenDice: true,
   creatureColorMode: CreatureColorMode.STANDARD
 }
 
@@ -43,6 +45,7 @@ export const usePreferencesStore = defineStore("preferences", () => {
   const debugUi = ref(initial.debugUi)
   const quickDice = ref(initial.quickDice)
   const freeMovement = ref(initial.freeMovement)
+  const offscreenDice = ref(initial.offscreenDice)
   const creatureColorMode = ref(initial.creatureColorMode)
 
   const persist = (): void => savePreferences({
@@ -50,6 +53,7 @@ export const usePreferencesStore = defineStore("preferences", () => {
     debugUi: debugUi.value,
     quickDice: quickDice.value,
     freeMovement: freeMovement.value,
+    offscreenDice: offscreenDice.value,
     creatureColorMode: creatureColorMode.value
   })
 
@@ -73,6 +77,11 @@ export const usePreferencesStore = defineStore("preferences", () => {
     persist()
   }
 
+  function setOffscreenDice(value: boolean): void {
+    offscreenDice.value = value
+    persist()
+  }
+
   function setCreatureColorMode(value: CreatureColorMode): void {
     creatureColorMode.value = value
     persist()
@@ -83,11 +92,13 @@ export const usePreferencesStore = defineStore("preferences", () => {
     debugUi,
     quickDice,
     freeMovement,
+    offscreenDice,
     creatureColorMode,
     setFancyGraphics,
     setDebugUi,
     setQuickDice,
     setFreeMovement,
+    setOffscreenDice,
     setCreatureColorMode
   }
 })
