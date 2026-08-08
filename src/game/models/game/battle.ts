@@ -4,7 +4,7 @@ import { Battle, BATTLE_PHASE_TYPES, BattleCreature, BattlePhaseType, BattleSide
 import masterboard from "../masterboard"
 import { PlayerId } from "../player"
 import { Stack } from "../stack"
-import type { ActionContext, TitanGame } from "../game"
+import type { Getters, TitanGame } from "../game"
 
 export interface BattleMovePayload { creature: BattleCreature, hex: number }
 interface BattlePayload { attacking: Stack, defending: Stack }
@@ -30,13 +30,13 @@ export interface GameBattle {
   mRangestrikeCreature(payload: RangestrikePayload): void
   mAssignCarryover(target: BattleCreature): void
   mSkipCarryover(): void
-  doInitiateBattle(context: ActionContext, attacking: Stack): Promise<void>
-  doMoveCreature(context: ActionContext, payload: BattleMovePayload): Promise<void>
-  doNextBattlePhase(context: ActionContext): Promise<void>
-  doAttackCreature(context: ActionContext, payload: AttackPayload): Promise<void>
-  doRangestrikeCreature(context: ActionContext, payload: RangestrikePayload): Promise<void>
-  doAssignCarryover(context: ActionContext, payload: BattleCreature): Promise<void>
-  doSkipCarryover(context: ActionContext): Promise<void>
+  doInitiateBattle(getters: Getters, attacking: Stack): Promise<void>
+  doMoveCreature(getters: Getters, payload: BattleMovePayload): Promise<void>
+  doNextBattlePhase(): Promise<void>
+  doAttackCreature(getters: Getters, payload: AttackPayload): Promise<void>
+  doRangestrikeCreature(getters: Getters, payload: RangestrikePayload): Promise<void>
+  doAssignCarryover(getters: Getters, payload: BattleCreature): Promise<void>
+  doSkipCarryover(getters: Getters): Promise<void>
 }
 
 export const gameBattle: GameBattle & ThisType<TitanGame> = {
@@ -128,55 +128,55 @@ export const gameBattle: GameBattle & ThisType<TitanGame> = {
     }
   },
 
-  async doInitiateBattle({ commit, getters }: ActionContext, attacking: Stack): Promise<void> {
+  async doInitiateBattle(getters: Getters, attacking: Stack): Promise<void> {
     const defending = getters.stacksForHex(attacking.hex)
       .find(stack => stack.owner !== getters.activePlayerId) as Stack
     assert(defending !== undefined,
       `No engagement present on hex ${attacking.hex}!`)
-    commit("initiateBattle", { attacking, defending })
+    this.mInitiateBattle({ attacking, defending })
     await this.persist()
   },
 
-  async doMoveCreature({ getters, commit }: ActionContext, payload: BattleMovePayload): Promise<void> {
+  async doMoveCreature(getters: Getters, payload: BattleMovePayload): Promise<void> {
     assert(getters.battlePhaseType === BattlePhaseType.MOVE, "Not in movement phase")
     assert(payload.creature.player === this.getBattleActivePlayer(), "Incorrect player")
-    commit("moveCreature", payload)
+    this.mMoveCreature(payload)
     await this.persist()
   },
 
-  async doNextBattlePhase({ commit }: ActionContext): Promise<void> {
-    commit("nextBattlePhase")
+  async doNextBattlePhase(): Promise<void> {
+    this.mNextBattlePhase()
     await this.persist()
   },
 
-  async doAttackCreature({ getters, commit }: ActionContext, payload: AttackPayload): Promise<void> {
+  async doAttackCreature(getters: Getters, payload: AttackPayload): Promise<void> {
     if (this.activeBattle === undefined) { throw new Error("Must be in a battle!") }
     assert(getters.battlePhaseType !== BattlePhaseType.MOVE, "Cannot strike in movement phase")
     assert(payload.attacker.player === this.getBattleActivePlayer(), "Incorrect player")
-    commit("attackCreature", payload)
+    this.mAttackCreature(payload)
     await this.persist()
   },
 
-  async doRangestrikeCreature({ getters, commit }: ActionContext, payload: RangestrikePayload): Promise<void> {
+  async doRangestrikeCreature(getters: Getters, payload: RangestrikePayload): Promise<void> {
     if (this.activeBattle === undefined) { throw new Error("Must be in a battle!") }
     assert(getters.battlePhaseType !== BattlePhaseType.MOVE, "Cannot strike in movement phase")
     assert(payload.attacker.player === this.getBattleActivePlayer(), "Incorrect player")
-    commit("rangestrikeCreature", payload)
+    this.mRangestrikeCreature(payload)
     await this.persist()
   },
 
-  async doAssignCarryover({ getters, commit }: ActionContext, payload: BattleCreature): Promise<void> {
+  async doAssignCarryover(getters: Getters, payload: BattleCreature): Promise<void> {
     if (this.activeBattle === undefined) { throw new Error("Must be in a battle!") }
     assert(getters.battlePhaseType !== BattlePhaseType.MOVE, "Cannot carryover in movement phase")
-    commit("assignCarryover", payload)
+    this.mAssignCarryover(payload)
     await this.persist()
   },
 
-  async doSkipCarryover({ getters, commit }: ActionContext): Promise<void> {
+  async doSkipCarryover(getters: Getters): Promise<void> {
     if (this.activeBattle === undefined) { throw new Error("Must be in a battle!") }
     if (this.activeBattle.activeStrike === undefined) { throw new Error("Must have an active strike!") }
     assert(getters.battlePhaseType !== BattlePhaseType.MOVE, "Cannot carryover in movement phase")
-    commit("skipCarryover")
+    this.mSkipCarryover()
     await this.persist()
   }
 }

@@ -1,18 +1,13 @@
-import { upperFirst } from "lodash-es"
 import { defineStore } from "pinia"
 import { computed, reactive } from "vue"
 import { BattleCreature } from "@/models/battle"
-import { ActionContext, Getters, MovePayload, MusterPayload, TitanGame } from "@/models/game"
+import { Getters, MovePayload, MusterPayload, TitanGame } from "@/models/game"
 import { AttackPayload, BattleMovePayload, RangestrikePayload } from "@/models/game/battle"
-import vuexStore, { State } from "~/plugins/vuex"
 
 export const useGameStore = defineStore("game", () => {
   // TitanGame holds both the serializable game state and the rules deriving from it
   // (see proposals/04-state-management.md), so the instance itself is the store's state.
-  // Until the vuex game module goes away it owns that instance; wrapping the very same one
-  // keeps reads and writes through either store consistent, since reactive() returns the
-  // proxy vuex already created for it.
-  const game = reactive((vuexStore.state as unknown as State).game)
+  const game = reactive(TitanGame.hydrate())
 
   const round = computed(() => game.getRound())
   const firstRound = computed(() => game.getFirstRound())
@@ -60,57 +55,44 @@ export const useGameStore = defineStore("game", () => {
     battleEngagements
   })
 
-  const invoke = (name: string, ...args: unknown[]): unknown =>
-    (game as unknown as Record<string, (..._: unknown[]) => unknown>)[name](...args)
-
-  // TitanGame's doXxx methods still take the vuex-shaped context the game module hands them,
-  // where commit("fooBar") reaches mFooBar and dispatch("fooBar") reaches doFooBar on the
-  // instance itself.
-  const context: ActionContext = {
-    state: game as TitanGame,
-    getters,
-    commit: (mutation, payload) => { invoke(`m${upperFirst(mutation)}`, payload) },
-    dispatch: (action, payload) => { void invoke(`do${upperFirst(action)}`, context, payload) }
-  }
-
   function nextPhase(): Promise<void> {
-    return game.doNextPhase(context)
+    return game.doNextPhase(getters)
   }
 
   function setRoll(roll?: number): Promise<void> {
-    return game.doSetRoll(context, roll)
+    return game.doSetRoll(getters, roll)
   }
 
   function move(payload: MovePayload): Promise<void> {
-    return game.doMove(context, payload)
+    return game.doMove(payload)
   }
 
   function setRecruit(payload: MusterPayload): Promise<void> {
-    return game.doSetRecruit(context, payload)
+    return game.doSetRecruit(payload)
   }
 
   function nextBattlePhase(): Promise<void> {
-    return game.doNextBattlePhase(context)
+    return game.doNextBattlePhase()
   }
 
   function moveCreature(payload: BattleMovePayload): Promise<void> {
-    return game.doMoveCreature(context, payload)
+    return game.doMoveCreature(getters, payload)
   }
 
   function attackCreature(payload: AttackPayload): Promise<void> {
-    return game.doAttackCreature(context, payload)
+    return game.doAttackCreature(getters, payload)
   }
 
   function rangestrikeCreature(payload: RangestrikePayload): Promise<void> {
-    return game.doRangestrikeCreature(context, payload)
+    return game.doRangestrikeCreature(getters, payload)
   }
 
   function assignCarryover(target: BattleCreature): Promise<void> {
-    return game.doAssignCarryover(context, target)
+    return game.doAssignCarryover(getters, target)
   }
 
   function skipCarryover(): Promise<void> {
-    return game.doSkipCarryover(context)
+    return game.doSkipCarryover(getters)
   }
 
   function persist(): Promise<string | undefined> {
@@ -118,7 +100,7 @@ export const useGameStore = defineStore("game", () => {
   }
 
   function restore(encoded: string): Promise<void> {
-    return game.doRestore(context, encoded)
+    return game.doRestore(encoded)
   }
 
   function rehydrate(hydration: TitanGame): void {

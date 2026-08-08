@@ -21,14 +21,5 @@ export default defineConfigWithVueTs(
       "vue/multi-word-component-names": "off",
       "@typescript-eslint/no-unused-vars": ["error", { argsIgnorePattern: "^_" }]
     }
-  },
-  {
-    name: "app/store-any",
-    files: ["src/game/store/**/*.ts"],
-    rules: {
-      // Vuex 4's getter/action signatures (state, getters, rootState, rootGetters)
-      // have no usable generic typing without a much larger store rewrite.
-      "@typescript-eslint/no-explicit-any": "off"
-    }
   }
 )
