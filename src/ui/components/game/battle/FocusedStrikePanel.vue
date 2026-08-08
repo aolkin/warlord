@@ -30,10 +30,8 @@ const gameStore = useGameStore()
 
 const activeBattle = computed(() => gameStore.game.activeBattle!)
 
-const engagements = computed<BattleCreature[]>(() =>
-  props.attacker === undefined ? [] : gameStore.battleEngagements(props.attacker))
-const rangestrikes = computed<RangestrikeTarget[]>(() =>
-  props.attacker === undefined ? [] : gameStore.battleRangestrikeTargets(props.attacker))
+const engagements = computed<BattleCreature[]>(() => gameStore.battleEngagements(props.attacker))
+const rangestrikes = computed<RangestrikeTarget[]>(() => gameStore.battleRangestrikeTargets(props.attacker))
 
 const target = computed<BattleCreature | undefined>(() =>
   props.focusedCreature !== undefined && engagements.value.includes(props.focusedCreature)
