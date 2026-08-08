@@ -13,19 +13,17 @@
 </template>
 <script setup lang="ts">
 import { computed } from "vue"
-import { useStore } from "vuex"
 import { BattleBoard, BattleCreature, Hazard } from "@/models/battle"
+import { useGameStore } from "~/stores/game"
 
 const props = defineProps<{
   attacker: BattleCreature
   target: BattleCreature
 }>()
 
-const store = useStore()
+const gameStore = useGameStore()
 
-const activeBattle = computed(() => store.state.game.activeBattle)
-
-const board = computed((): BattleBoard => activeBattle.value.getBoard())
+const board = computed((): BattleBoard => gameStore.game.activeBattle!.getBoard())
 const attackerHazard = computed((): Hazard =>
   props.attacker ? board.value.getHazard(props.attacker?.hex) : Hazard.NONE)
 const targetHazard = computed((): Hazard =>

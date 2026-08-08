@@ -1,6 +1,6 @@
 <template>
   <div
-    :style="{ height: players.length * 60 + 40 }"
+    :style="{ height: gameStore.players.length * 60 + 40 }"
     class="d-flex flex-column justify-space-between"
   >
     <div class="text-center round-label">
@@ -8,18 +8,18 @@
     </div>
     <div
       class="text-center round-counter"
-      v-text="round"
+      v-text="gameStore.round"
     />
     <v-card
-      v-for="player in players"
+      v-for="player in gameStore.players"
       :key="player.id"
-      :class="{ 'active': activePlayer === player, [`bg-player-${player.id}`]: true }"
+      :class="{ 'active': gameStore.activePlayer === player, [`bg-player-${player.id}`]: true }"
       class="player-card ml-2 mr-1 py-1 my-2"
       elevation="4"
     >
       <div
         class="text-center"
-        v-text="stacksForPlayer(player.id).length"
+        v-text="gameStore.stacksForPlayer(player.id).length"
       />
       <v-tooltip right>
         <template #activator="{ props }">
@@ -41,15 +41,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue"
-import { useStore } from "vuex"
+import { useGameStore } from "~/stores/game"
 
-const store = useStore()
-
-const players = computed(() => store.getters["game/players"])
-const activePlayer = computed(() => store.getters["game/activePlayer"])
-const stacksForPlayer = computed(() => store.getters["game/stacksForPlayer"])
-const round = computed(() => store.getters["game/round"])
+const gameStore = useGameStore()
 </script>
 
 <style lang="sass" scoped>

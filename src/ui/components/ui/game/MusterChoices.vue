@@ -1,7 +1,7 @@
 <template>
   <div>
     <Creature
-      v-if="activePhase === MasterboardPhase.MUSTER"
+      v-if="gameStore.game.activePhase === MasterboardPhase.MUSTER"
       :type="undefined"
       :player="player"
       :class="{ selected: chosen === undefined }"
@@ -57,11 +57,11 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue"
 import { fill } from "lodash-es"
-import { useStore } from "vuex"
 import { CREATURE_DATA } from "@/models/creature"
 import { MasterboardPhase } from "@/models/game"
 import { Player } from "@/models/player"
 import { MusterChoice, MusterPossibility } from "@/models/stack"
+import { useGameStore } from "~/stores/game"
 import Creature from "../../game/Creature.vue"
 
 const props = withDefaults(defineProps<{
@@ -78,11 +78,9 @@ const emit = defineEmits<{
   "update:modelValue": [value: MusterChoice]
 }>()
 
-const store = useStore()
+const gameStore = useGameStore()
 
 const dialogState = ref(props.musterable.map(() => false))
-
-const activePhase = computed(() => store.state.game.activePhase)
 
 const chosen = computed({
   get() {
