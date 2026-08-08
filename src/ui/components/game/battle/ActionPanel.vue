@@ -15,7 +15,7 @@
         :title="phaseTypeTitle"
       />
     </template>
-    <v-card-subtitle v-if="preferencesStore.debugUi">
+    <v-card-subtitle v-if="preferencesStore.debugUi && selectionStore.focusedBattleHex !== undefined">
       Hex: {{ selectionStore.focusedBattleHex }} ({{ Hazard[land.getHazard(selectionStore.focusedBattleHex!)] }})
       <span v-if="land.getElevation(selectionStore.focusedBattleHex!) > 0">+{{ land.getElevation(selectionStore.focusedBattleHex!) }}</span>
     </v-card-subtitle>

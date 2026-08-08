@@ -21,7 +21,7 @@ describe("TitanGame", () => {
 
     const game = new TitanGame(2, reverse)
 
-    expect(game.players.map(player => player.id)).toEqual([PlayerId.BLACK, PlayerId.YELLOW])
+    expect(game.players.map(player => player.id)).toEqual([PlayerId.BROWN, PlayerId.BLACK])
   })
 })
 

@@ -3,6 +3,7 @@ import { computed, reactive } from "vue"
 import { BattleCreature } from "@/models/battle"
 import { Getters, MovePayload, MusterPayload, Path, TitanGame } from "@/models/game"
 import { AttackPayload, BattleMovePayload, RangestrikePayload } from "@/models/game/battle"
+import { GAME_PERSISTENCE_KEY } from "@/models/game/persistence"
 import { Player, PlayerId } from "@/models/player"
 import { Stack } from "@/models/stack"
 
@@ -111,6 +112,9 @@ export const useGameStore = defineStore("game", () => {
     persist: (): Promise<string | undefined> => game.persist(),
     restore: (encoded: string): Promise<void> => game.doRestore(encoded),
     rehydrate: (hydration: TitanGame): void => game.mRehydrate(hydration),
-    reset: (): void => { Object.assign(game, new TitanGame(2)) }
+    reset: (): void => {
+      Object.assign(game, new TitanGame(2))
+      delete localStorage[GAME_PERSISTENCE_KEY]
+    }
   }
 })
