@@ -2,7 +2,7 @@
   <g
     :class="terrain"
     :transform="transform"
-    class="parent board"
+    class="parent"
     @mouseenter="selectionStore.enterHex(hex)"
     @mouseleave="selectionStore.leaveHex(hex)"
   >
@@ -74,7 +74,7 @@ const inverted = computed(() => isHexInverted(props.hex.id))
   font-size: 0.75em
   text-transform: uppercase
 
-.parent.board
+.parent
   .id
     font-size: 0.6em
   .hex
