@@ -118,6 +118,7 @@
         rounded
       >
         <FocusedStrikePanel
+          v-if="selectionStore.selectedCreature"
           rounded
           :attacker="selectionStore.selectedCreature"
         />

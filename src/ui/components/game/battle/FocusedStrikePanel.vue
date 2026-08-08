@@ -5,7 +5,7 @@
       width="300"
     >
       <StrikePanelTitle
-        :attacker="props.attacker!"
+        :attacker="props.attacker"
         :target="(target ?? rangedTarget)!"
       />
       <v-card-text>
@@ -23,7 +23,7 @@ import { useSelectionStore } from "~/stores/ui/selection"
 import StrikePanelTitle from "./StrikePanelTitle.vue"
 
 const props = defineProps<{
-  attacker: BattleCreature | undefined
+  attacker: BattleCreature
 }>()
 
 const gameStore = useGameStore()
@@ -40,13 +40,10 @@ const rangedFocus = computed<RangestrikeTarget | undefined>(() =>
     (rangestrike: RangestrikeTarget) => rangestrike.creature === selectionStore.focusedCreature)[0])
 const rangedTarget = computed<BattleCreature | undefined>(() => rangedFocus.value?.creature)
 const strike = computed<Strike | undefined>(() => {
-  const attacker = props.attacker
-  if (attacker) {
-    if (target.value) {
-      return activeBattle.value.getAdjustedStrike(attacker, target.value)
-    } else if (rangedFocus.value) {
-      return activeBattle.value.getRangestrike(attacker, rangedFocus.value)
-    }
+  if (target.value) {
+    return activeBattle.value.getAdjustedStrike(props.attacker, target.value)
+  } else if (rangedFocus.value) {
+    return activeBattle.value.getRangestrike(props.attacker, rangedFocus.value)
   }
   return undefined
 })
