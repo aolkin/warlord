@@ -27,7 +27,7 @@
             class="text-center"
             v-bind="props"
           >
-            <v-icon icon="mdi-account-circle" />
+            <v-icon :icon="mdiAccountCircle" />
           </div>
         </template>
         <span v-text="player.name" />
@@ -43,9 +43,13 @@
 <script lang="ts">
 import { defineComponent } from "vue"
 import { mapGetters } from "vuex"
+import { mdiAccountCircle } from "@mdi/js"
 
 export default defineComponent({
   name: "PlayerStatus",
+  data: () => ({
+    mdiAccountCircle
+  }),
   computed: {
     ...mapGetters("game", ["players", "activePlayer", "stacksForPlayer", "round"])
   }

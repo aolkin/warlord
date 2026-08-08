@@ -22,7 +22,7 @@
           :key="index"
           size="x-large"
           :class="{'text-secondary': roll >= activeStrike.toHit, 'no-hit': roll < activeStrike.toHit}"
-          :icon="`mdi-dice-${roll}`"
+          :icon="diceIcon(roll)"
         />
       </v-card-item>
       <v-card-item
@@ -64,13 +64,15 @@
 import { defineComponent } from "vue"
 import { mapActions, mapGetters, mapState } from "vuex"
 import { ActiveStrike, BattleCreature, Hazard, Strike } from "@/models/battle"
+import { diceIcon } from "~/icons"
 import StrikePanelTitle from "./StrikePanelTitle.vue"
 
 export default defineComponent({
   name: "ActiveStrikePanel",
   components: { StrikePanelTitle },
   data: () => ({
-    Hazard
+    Hazard,
+    diceIcon
   }),
   computed: {
     ...mapState("game", ["activeBattle"]),

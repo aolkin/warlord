@@ -49,6 +49,33 @@
 <script setup lang="ts">
 import { computed } from "vue"
 import {
+  mdiCursorMove,
+  mdiNumeric0Box,
+  mdiNumeric0BoxOutline,
+  mdiNumeric1Box,
+  mdiNumeric1BoxOutline,
+  mdiNumeric2Box,
+  mdiNumeric2BoxOutline,
+  mdiNumeric3Box,
+  mdiNumeric3BoxOutline,
+  mdiNumeric4Box,
+  mdiNumeric4BoxOutline,
+  mdiNumeric5Box,
+  mdiNumeric5BoxOutline,
+  mdiNumeric6Box,
+  mdiNumeric6BoxOutline,
+  mdiNumeric7Box,
+  mdiNumeric7BoxOutline,
+  mdiNumeric8Box,
+  mdiNumeric8BoxOutline,
+  mdiNumeric9Box,
+  mdiNumeric9BoxOutline,
+  mdiNumeric9PlusBox,
+  mdiNumeric9PlusBoxOutline,
+  mdiShieldSword,
+  mdiSword
+} from "@mdi/js"
+import {
   BattleBoard,
   BattleCreature,
   BattlePhaseType,
@@ -57,6 +84,17 @@ import {
 import { useTypedStore } from "~/plugins/vuex"
 import { usePreferencesStore } from "~/stores/ui/preferences"
 import { useSelectionStore } from "~/stores/ui/selection"
+
+// Indexed by round number (0-9); rounds beyond that fall back to the "9+" icon.
+const NUMERIC_BOX_ICONS = [
+  mdiNumeric0Box, mdiNumeric1Box, mdiNumeric2Box, mdiNumeric3Box, mdiNumeric4Box,
+  mdiNumeric5Box, mdiNumeric6Box, mdiNumeric7Box, mdiNumeric8Box, mdiNumeric9Box
+]
+const NUMERIC_BOX_OUTLINE_ICONS = [
+  mdiNumeric0BoxOutline, mdiNumeric1BoxOutline, mdiNumeric2BoxOutline, mdiNumeric3BoxOutline,
+  mdiNumeric4BoxOutline, mdiNumeric5BoxOutline, mdiNumeric6BoxOutline, mdiNumeric7BoxOutline,
+  mdiNumeric8BoxOutline, mdiNumeric9BoxOutline
+]
 
 const store = useTypedStore()
 const selectionStore = useSelectionStore()
@@ -85,11 +123,11 @@ const phaseTypeTitle = computed((): string => {
 const phaseIcon = computed((): string => {
   switch (battlePhaseType.value) {
     case BattlePhaseType.MOVE:
-      return "mdi-cursor-move"
+      return mdiCursorMove
     case BattlePhaseType.STRIKE:
-      return "mdi-sword"
+      return mdiSword
     case BattlePhaseType.STRIKEBACK:
-      return "mdi-shield-sword"
+      return mdiShieldSword
     default:
       return ""
   }
@@ -108,8 +146,10 @@ const mayProceed = computed((): boolean =>
   pendingStrikes.value.length === 0 && !battleCarryoverTargets.value)
 
 const roundIcon = computed((): string => {
-  const name = `mdi-numeric-${activeBattle.value.round + 1}-box`
-  return name + (battleActivePlayer.value === activeBattle.value.defender ? "-outline" : "")
+  const round = activeBattle.value.round + 1
+  const outline = battleActivePlayer.value === activeBattle.value.defender
+  const icons = outline ? NUMERIC_BOX_OUTLINE_ICONS : NUMERIC_BOX_ICONS
+  return icons[round] ?? (outline ? mdiNumeric9PlusBoxOutline : mdiNumeric9PlusBox)
 })
 
 const land = computed((): BattleBoard => activeBattle.value.getBoard())

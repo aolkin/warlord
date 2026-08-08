@@ -8,35 +8,35 @@
     >
       <div>
         <v-btn
-          icon="mdi-menu"
+          :icon="mdiMenu"
           variant="plain"
           @click="menuVisible = !menuVisible"
         />
         <v-btn
           :variant="view === View.MASTERBOARD ? 'text' : 'plain'"
-          icon="mdi-dots-hexagon"
+          :icon="mdiDotsHexagon"
           @click="view = View.MASTERBOARD"
         />
         <v-btn
           :variant="view === View.BATTLEBOARD ? 'text' : 'plain'"
-          icon="mdi-hexagon-multiple-outline"
+          :icon="mdiHexagonMultipleOutline"
           @click="view = View.BATTLEBOARD"
         />
       </div>
       <PlayerStatus />
       <div>
         <v-btn
-          icon="mdi-code-tags"
+          :icon="mdiCodeTags"
           variant="plain"
           @click="toggleDebugUi"
         />
         <v-btn
-          icon="mdi-shimmer"
+          :icon="mdiShimmer"
           variant="plain"
           @click="toggleFancyGraphics"
         />
         <v-btn
-          icon="mdi-cog"
+          :icon="mdiCog"
           variant="plain"
           @click="prefsPaneVisible = !prefsPaneVisible"
         />
@@ -79,6 +79,14 @@
 <script setup lang="ts">
 import { computed, onBeforeMount, provide, readonly, ref } from "vue"
 import { useStore } from "vuex"
+import {
+  mdiCodeTags,
+  mdiCog,
+  mdiDotsHexagon,
+  mdiHexagonMultipleOutline,
+  mdiMenu,
+  mdiShimmer
+} from "@mdi/js"
 import BattleBoard from "~/components/game/battle/BattleBoard"
 import Masterboard from "~/components/game/masterboard/Masterboard"
 import PlayerStatus from "~/components/ui/game/PlayerStatus"

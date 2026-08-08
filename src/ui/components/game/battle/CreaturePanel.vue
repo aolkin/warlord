@@ -8,7 +8,7 @@
       location="top right"
       variant="plain"
       :rounded="0"
-      icon="mdi-window-minimize"
+      :icon="mdiWindowMinimize"
       @click="minimized = !minimized"
     />
     <v-expand-transition>
@@ -75,6 +75,7 @@
 <script setup lang="ts">
 import { computed, ref } from "vue"
 import { useStore } from "vuex"
+import { mdiWindowMinimize } from "@mdi/js"
 import { BattleCreature, BattlePhase } from "@/models/battle"
 import { Player } from "@/models/player"
 import { usePlayerStore } from "~/stores/ui/player"

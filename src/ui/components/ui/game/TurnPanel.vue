@@ -80,9 +80,11 @@
 import { computed, inject, Ref } from "vue"
 import { sum } from "lodash-es"
 import { useStore } from "vuex"
+import { mdiAccountMultiplePlus, mdiCallSplit, mdiDiceMultiple, mdiSwordCross } from "@mdi/js"
 import DiceRoller from "~/components/ui/generic/DiceRoller"
 import { MasterboardPhase } from "@/models/game"
 import { Stack } from "@/models/stack"
+import { diceIcon } from "~/icons"
 import { useSelectionStore } from "~/stores/ui/selection"
 
 const diceRoller = inject<Readonly<Ref<InstanceType<typeof DiceRoller> | null>>>("diceRoller")
@@ -101,15 +103,15 @@ const engagedStacks = computed<Stack[]>(() => store.getters["game/engagedStacks"
 const icon = computed(() => {
   switch (activePhase.value) {
     case MasterboardPhase.SPLIT:
-      return "mdi-call-split"
+      return mdiCallSplit
     case MasterboardPhase.MOVE:
-      return `mdi-dice-${activeRoll.value ?? "multiple"}`
+      return diceIcon(activeRoll.value)
     case MasterboardPhase.BATTLE:
-      return "mdi-sword-cross"
+      return mdiSwordCross
     case MasterboardPhase.MUSTER:
-      return "mdi-account-multiple-plus"
+      return mdiAccountMultiplePlus
     default:
-      return "mdi-dice-multiple"
+      return mdiDiceMultiple
   }
 })
 const sevenHighCount = computed(() => sum(activeStacks.value.map(stack => stack.creatures.length === 7)))

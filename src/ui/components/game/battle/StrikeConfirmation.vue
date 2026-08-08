@@ -26,7 +26,7 @@
           select-strategy="single-leaf"
         >
           <v-list-item
-            :prepend-icon="`mdi-dice-${targetedStrike.toHit}`"
+            :prepend-icon="diceIcon(targetedStrike.toHit)"
             :value="targetedStrike.toHit"
           >
             {{ normalCarryovers.map(creature => creature.name()).join(", ") }}
@@ -34,7 +34,7 @@
           <v-list-item
             v-for="(creatures, toHit) in toHitAdjustments"
             :key="toHit"
-            :prepend-icon="`mdi-dice-${toHit}`"
+            :prepend-icon="diceIcon(toHit)"
             :value="Number(toHit)"
           >
             {{ [...normalCarryovers, ...creatures].map(creature => creature.name()).join(", ") }}
@@ -66,6 +66,7 @@ import { computed } from "vue"
 import { isEqual, range } from "lodash-es"
 import { useStore } from "vuex"
 import { BattleCreature, isRangestrike, Strike } from "@/models/battle"
+import { diceIcon } from "~/icons"
 import { useSelectionStore } from "~/stores/ui/selection"
 
 const props = defineProps<{
