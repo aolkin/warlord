@@ -2,11 +2,10 @@
   <v-expand-transition>
     <v-card
       v-if="strike"
-      v-bind="$props as any"
       width="300"
     >
       <StrikePanelTitle
-        :attacker="selectionStore.selectedCreature!"
+        :attacker="props.selectedCreature!"
         :target="(target ?? rangedTarget)!"
       />
       <v-card-text>
@@ -23,6 +22,10 @@ import { useGameStore } from "~/stores/game"
 import { useSelectionStore } from "~/stores/ui/selection"
 import StrikePanelTitle from "./StrikePanelTitle.vue"
 
+const props = defineProps<{
+  selectedCreature: BattleCreature | undefined
+}>()
+
 const gameStore = useGameStore()
 const selectionStore = useSelectionStore()
 
@@ -37,11 +40,12 @@ const rangedFocus = computed<RangestrikeTarget | undefined>(() =>
     (rangestrike: RangestrikeTarget) => rangestrike.creature === selectionStore.focusedCreature)[0])
 const rangedTarget = computed<BattleCreature | undefined>(() => rangedFocus.value?.creature)
 const strike = computed<Strike | undefined>(() => {
-  if (selectionStore.selectedCreature) {
+  const selectedCreature = props.selectedCreature
+  if (selectedCreature) {
     if (target.value) {
-      return activeBattle.value.getAdjustedStrike(selectionStore.selectedCreature, target.value)
+      return activeBattle.value.getAdjustedStrike(selectedCreature, target.value)
     } else if (rangedFocus.value) {
-      return activeBattle.value.getRangestrike(selectionStore.selectedCreature, rangedFocus.value)
+      return activeBattle.value.getRangestrike(selectedCreature, rangedFocus.value)
     }
   }
   return undefined

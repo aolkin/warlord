@@ -100,6 +100,7 @@
 
       <CreaturePanel
         :local-player-is-defender="localPlayerIsDefender"
+        :selected-creature="selectionStore.selectedCreature"
         position="fixed"
         location="top right"
         class="ma-3"
@@ -116,7 +117,10 @@
         class="ma-3 ml-14 mb-10"
         rounded
       >
-        <FocusedStrikePanel rounded />
+        <FocusedStrikePanel
+          rounded
+          :selected-creature="selectionStore.selectedCreature"
+        />
         <ActiveStrikePanel
           rounded
           :battle="activeBattle"
