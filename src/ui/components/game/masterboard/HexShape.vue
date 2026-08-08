@@ -11,7 +11,10 @@
       :transform="inverted ? 'rotate(180)' : ''"
       class="hex"
     />
-    <slot :inverted="inverted" />
+    <slot
+      :inverted="inverted"
+      :hex-points="HEX_POINTS"
+    />
   </g>
 </template>
 

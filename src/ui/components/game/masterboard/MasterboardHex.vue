@@ -3,19 +3,19 @@
     :class="terrain"
     :hex="hex"
   >
-    <template #default="{ inverted }">
+    <template #default="{ inverted, hexPoints }">
       <clipPath
         v-if="preferencesStore.fancyGraphics"
         :id="`hex-${hex.id}-clip`"
       >
         <polygon
-          :points="HEX_POINTS"
+          :points="hexPoints"
         />
       </clipPath>
       <polygon
         v-if="preferencesStore.fancyGraphics"
         :clip-path="`url(#hex-${hex.id}-clip)`"
-        :points="HEX_POINTS"
+        :points="hexPoints"
         :transform="inverted ? 'rotate(180) scale(0.99)' : 'scale(0.99)'"
         class="outline"
       />
@@ -42,7 +42,6 @@ import { computed } from "vue"
 import { MasterboardHex, Terrain } from "@/models/masterboard"
 import { usePreferencesStore } from "~/stores/ui/preferences"
 import HexShape from "./HexShape.vue"
-import { HEX_POINTS } from "./utils"
 
 const props = defineProps<{
   hex: MasterboardHex
