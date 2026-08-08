@@ -59,7 +59,7 @@ export class TitanGame {
     this.activeBattle = undefined
     this.activeBattleHex = undefined
     this.activePhase = MasterboardPhase.SPLIT
-    const colors = random.shuffle(range(0, 6))
+    const colors = random.shuffle(range(0, 5))
     this.players = range(0, numPlayers).map(i => new Player(colors[i], `Player ${i + 1}`))
     this.stacks = this.players.map((player: Player, i: number) =>
       new Stack(player?.id, INITIAL_HEXES[numPlayers][i], 0))

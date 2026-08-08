@@ -39,21 +39,11 @@ const props = withDefaults(defineProps<{
   transform: ""
 })
 
-const markerUrls = import.meta.glob<string>("../../assets/markers/*.svg", {
-  eager: true,
-  import: "default",
-  query: "?url"
-})
-
+// TODO: BROWN has no crest SVGs (only 5 colors x 12 markers exist), so 6-player
+// support can't return until stack marker art is created for it.
 const imageUrl = computed(() => {
   const id = padStart(String(props.color * 12 + props.marker + 1), 2, "0")
-  const path = `../../assets/markers/marker-${id}.svg`
-  const url = markerUrls[path]
-  if (url === undefined) {
-    console.warn(`Marker.vue: no crest asset for computed marker id "${id}" ` +
-      `(color=${props.color}, marker=${props.marker}); rendering without a crest image.`)
-  }
-  return url
+  return new URL(`../../assets/markers/marker-${id}.svg`, import.meta.url).href
 })
 
 const fullTransform = computed(() => props.inSvg ? props.transform + " translate(-50 -50)" : "")
