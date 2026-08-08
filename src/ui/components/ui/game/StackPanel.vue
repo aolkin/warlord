@@ -117,25 +117,25 @@ import { MasterboardPhase } from "@/models/game"
 import masterboard, { Terrain } from "@/models/masterboard"
 import { Player } from "@/models/player"
 import { MusterChoice, MusterPossibility, Stack, togglePendingSplit } from "@/models/stack"
-import { useTypedStore } from "~/plugins/vuex"
+import { useGameStore } from "~/stores/game"
 import { useSelectionStore } from "~/stores/ui/selection"
 import { mod } from "~/utils/math"
 import Creature from "../../game/Creature.vue"
 import PlayerMarker from "../../game/Marker.vue"
 import MusterChoices from "./MusterChoices.vue"
 
+const gameStore = useGameStore()
 const selectionStore = useSelectionStore()
-const store = useTypedStore()
 
-const activePhase = computed(() => store.state.game.activePhase)
-const activePlayerId = computed(() => store.getters["game/activePlayerId"])
-const playerById = computed(() => store.getters["game/playerById"])
-const firstRound = computed(() => store.getters["game/firstRound"])
-const activeStacks = computed(() => store.getters["game/activeStacks"])
+const activePhase = computed(() => gameStore.game.activePhase)
+const activePlayerId = computed(() => gameStore.activePlayerId)
+const firstRound = computed(() => gameStore.firstRound)
 
 const owned = computed((): boolean => activePlayerId.value === selectionStore.focusedStack?.owner)
 
-const stackPlayer = computed((): Player | undefined => playerById.value(selectionStore.focusedStack?.owner))
+const stackPlayer = computed((): Player | undefined => selectionStore.focusedStack === undefined
+  ? undefined
+  : gameStore.playerById(selectionStore.focusedStack.owner))
 
 const musteringTerrain = computed((): Terrain => activePhase.value === MasterboardPhase.MUSTER
   ? masterboard.getHex(selectionStore.focusedStack?.hex as number).terrain
@@ -154,7 +154,7 @@ const mustering = computed({
     if (activePhase.value !== MasterboardPhase.MUSTER) {
       return
     }
-    store.dispatch("game/setRecruit", { stack: selectionStore.focusedStack, recruit: value })
+    void gameStore.setRecruit({ stack: selectionStore.focusedStack!, recruit: value })
   }
 })
 
@@ -184,18 +184,19 @@ const musteringCaption = computed(() => {
 })
 
 function toggleSplit(index: number): void {
-  if (activePhase.value === MasterboardPhase.SPLIT && (selectionStore.focusedStack?.creatures.length ?? 0) > 2) {
+  if (activePhase.value === MasterboardPhase.SPLIT &&
+    (selectionStore.focusedStack?.creatures.length ?? 0) > 2) {
     const stack = selectionStore.focusedStack!
     togglePendingSplit(stack, index)
   }
 }
 
 function cycleStacks(by: number): void {
-  let index = activeStacks.value.indexOf(selectionStore.selectedStack)
+  let index = gameStore.activeStacks.indexOf(selectionStore.selectedStack as Stack)
   let candidateStack: Stack
   do {
     index += by
-    candidateStack = activeStacks.value[mod(index, activeStacks.value.length)]
+    candidateStack = gameStore.activeStacks[mod(index, gameStore.activeStacks.length)]
   } while ((activePhase.value === MasterboardPhase.MOVE && candidateStack.hasMoved()) ||
   (activePhase.value === MasterboardPhase.MUSTER && !candidateStack.canMuster()))
   selectionStore.selectStack(candidateStack)

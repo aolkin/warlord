@@ -35,9 +35,9 @@
           :elevation="board.getElevation(hex)"
           :hazard="board.getHazard(hex)"
           :edge-hazards="edgeHazardsByHex[hex]"
-          :interactive="battlePhaseType === BattlePhaseType.MOVE && movementHexes.has(hex)"
+          :interactive="gameStore.battlePhaseType === BattlePhaseType.MOVE && selectionStore.movementHexes.has(hex)"
           :transform="hexTransformStr(hex)"
-          :class="{ [`hex-${hex}`]: true, 'available-move': movementHexes.has(hex) }"
+          :class="{ [`hex-${hex}`]: true, 'available-move': selectionStore.movementHexes.has(hex) }"
           @click="moveSelected(hex)"
           @mouseenter="selectionStore.enterBattleHex(hex)"
           @mouseleave="selectionStore.leaveBattleHex(hex)"
@@ -60,7 +60,7 @@
           v-for="(creature) in activeCreatures"
           :key="creature.hex"
           :type="creature.type"
-          :player="playerById(creature.player)"
+          :player="gameStore.playerById(creature.player)"
           :wounds="creature.wounds"
           class="battle-creature"
           :class="creatureClasses(creature)"
@@ -72,7 +72,7 @@
           @mouseleave="selectionStore.leaveCreature(creature)"
         />
         <EngageIcon
-          v-for="(creature) in (battleCarryoverTargets ?? engagements)"
+          v-for="(creature) in (gameStore.battleCarryoverTargets ?? selectionStore.engagements)"
           :key="creature.hex"
           interactive
           transparent-hover
@@ -83,7 +83,7 @@
           @mouseleave="selectionStore.leaveCreature(creature)"
         />
         <RangestrikeIcon
-          v-for="(rangestrikeTarget) in rangestrikes"
+          v-for="(rangestrikeTarget) in selectionStore.rangestrikes"
           :key="rangestrikeTarget.creature.hex"
           interactive
           transparent-hover
@@ -118,7 +118,7 @@
         <ActiveStrikePanel rounded />
       </v-sheet>
 
-      <template v-if="selectedCreature && target">
+      <template v-if="selectionStore.selectedCreature && target">
         <StrikeConfirmation
           v-if="!isRangestrike(target)"
           v-model="attackCreatureDialog"
@@ -158,7 +158,7 @@ import {
 } from "@/models/battle"
 import { Terrain } from "@/models/masterboard"
 import { PlayerId } from "@/models/player"
-import { useTypedStore } from "~/plugins/vuex"
+import { useGameStore } from "~/stores/game"
 import { usePreferencesStore } from "~/stores/ui/preferences"
 import { useSelectionStore } from "~/stores/ui/selection"
 import type DiceRoller from "~/components/ui/generic/DiceRoller"
@@ -176,25 +176,15 @@ import { hexTransformStr } from "./utils"
 
 const diceRoller = inject<Readonly<Ref<InstanceType<typeof DiceRoller> | null>>>("diceRoller")
 
+const gameStore = useGameStore()
 const preferencesStore = usePreferencesStore()
 const selectionStore = useSelectionStore()
-const store = useTypedStore()
 
 const target = ref<BattleCreature | RangestrikeTarget | undefined>(undefined)
 const optionalToHit = ref<number | undefined>(undefined)
 const debugHex = ref(0)
 
-const activeBattle = computed(() => store.state.game.activeBattle)
-const playerById = computed(() => store.getters["game/playerById"])
-const battleActivePlayer = computed(() => store.getters["game/battleActivePlayer"])
-const battlePhaseType = computed((): BattlePhaseType => store.getters["game/battlePhaseType"])
-const battleEngagements = computed(() => store.getters["game/battleEngagements"])
-const battleCarryoverTargets = computed(() => store.getters["game/battleCarryoverTargets"])
-const battleRangestrikeTargets = computed(() => store.getters["game/battleRangestrikeTargets"])
-const movementHexes = computed(() => selectionStore.movementHexes)
-const selectedCreature = computed((): BattleCreature | undefined => selectionStore.selectedCreature)
-const engagements = computed(() => selectionStore.engagements)
-const rangestrikes = computed(() => selectionStore.rangestrikes)
+const activeBattle = computed(() => gameStore.game.activeBattle)
 
 const attackCreatureDialog = computed({
   get: (): boolean => target.value !== undefined,
@@ -227,12 +217,12 @@ const activeCreatures = computed((): BattleCreature[] =>
     creature.hex > 0 && creature.hex < 36))
 
 function creatureEnabled(creature: BattleCreature): boolean {
-  if (creature.player !== battleActivePlayer.value) {
+  if (creature.player !== gameStore.battleActivePlayer) {
     return false
   }
-  const engagementsCount = battleEngagements.value(creature).length
-  const rangestrikesCount = battleRangestrikeTargets.value(creature).length
-  switch (battlePhaseType.value) {
+  const engagementsCount = gameStore.battleEngagements(creature).length
+  const rangestrikesCount = gameStore.battleRangestrikeTargets(creature).length
+  switch (gameStore.battlePhaseType) {
     case BattlePhaseType.MOVE:
       return engagementsCount === 0
     case BattlePhaseType.STRIKE:
@@ -241,7 +231,7 @@ function creatureEnabled(creature: BattleCreature): boolean {
       }
 
     case BattlePhaseType.STRIKEBACK:
-      return battleCarryoverTargets.value === undefined && !creature.hasStruck && engagementsCount > 0
+      return gameStore.battleCarryoverTargets === undefined && !creature.hasStruck && engagementsCount > 0
     default:
       return false
   }
@@ -249,9 +239,9 @@ function creatureEnabled(creature: BattleCreature): boolean {
 
 function creatureClasses(creature: BattleCreature): object {
   return {
-    "active-player": creature.player === battleActivePlayer.value,
+    "active-player": creature.player === gameStore.battleActivePlayer,
     interactive: creatureEnabled(creature),
-    selected: creature === selectedCreature.value,
+    selected: creature === selectionStore.selectedCreature,
     attacker: activeStrike.value?.attacker === creature.hex,
     target: activeStrike.value?.target === creature.hex
   }
@@ -260,15 +250,15 @@ function creatureClasses(creature: BattleCreature): object {
 const activeStrike = computed((): ActiveStrike | undefined => activeBattle.value!.activeStrike)
 
 const targetedStrike = computed((): Strike =>
-  selectedCreature.value && target.value
-    ? activeBattle.value!.getTargetedStrike(selectedCreature.value, target.value)
+  selectionStore.selectedCreature && target.value
+    ? activeBattle.value!.getTargetedStrike(selectionStore.selectedCreature, target.value)
     : { toHit: 0, dice: 0 })
 
 const debugHexAdjacencies = computed((): number[] => BATTLE_BOARD_ADJACENCIES[debugHex.value] ?? [])
 
 function moveSelected(hex: number): void {
-  if (selectedCreature.value && movementHexes.value.has(hex)) {
-    store.dispatch("game/moveCreature", { creature: selectedCreature.value, hex })
+  if (selectionStore.selectedCreature && selectionStore.movementHexes.has(hex)) {
+    void gameStore.moveCreature({ creature: selectionStore.selectedCreature, hex })
   }
 }
 
@@ -279,9 +269,9 @@ function chooseCreature(creature: BattleCreature): void {
 }
 
 function targetCreature(creature: BattleCreature | RangestrikeTarget): void {
-  if (!("creature" in creature) && activeStrike.value?.canCarryover && battleCarryoverTargets.value) {
-    if (battleCarryoverTargets.value.includes(creature)) {
-      store.dispatch("game/assignCarryover", creature)
+  if (!("creature" in creature) && activeStrike.value?.canCarryover && gameStore.battleCarryoverTargets) {
+    if (gameStore.battleCarryoverTargets.includes(creature)) {
+      void gameStore.assignCarryover(creature)
     }
   } else {
     target.value = creature
@@ -289,19 +279,22 @@ function targetCreature(creature: BattleCreature | RangestrikeTarget): void {
 }
 
 async function attackTargetedCreature(): Promise<void> {
-  console.log(selectedCreature.value, target.value)
+  console.log(selectionStore.selectedCreature, target.value)
   if (diceRoller?.value == null) {
     throw new Error("diceRoller ref is not set")
   }
   const rolls = await diceRoller.value.roll(targetedStrike.value.dice)
   // Only invoked from StrikeConfirmation/RangestrikeConfirmation, which only render
-  // inside a `v-if="selectedCreature && target"` block.
-  await store.dispatch(isRangestrike(target.value!) ? "game/rangestrikeCreature" : "game/attackCreature", {
-    attacker: selectedCreature.value,
-    target: target.value,
-    optionalToHit: optionalToHit.value,
-    rolls
-  })
+  // inside a `v-if="selectionStore.selectedCreature && target"` block.
+  const attacker = selectionStore.selectedCreature!
+  await (isRangestrike(target.value!)
+    ? gameStore.rangestrikeCreature({ attacker, target: target.value as RangestrikeTarget, rolls })
+    : gameStore.attackCreature({
+      attacker,
+      target: target.value as BattleCreature,
+      optionalToHit: optionalToHit.value,
+      rolls
+    }))
   console.log(activeBattle.value!.activeStrike)
   resetAttack()
   selectionStore.deselectCreature()

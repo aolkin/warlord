@@ -74,28 +74,33 @@
 </template>
 <script setup lang="ts">
 import { computed, ref } from "vue"
-import { useStore } from "vuex"
 import { BattleCreature, BattlePhase } from "@/models/battle"
 import { Player } from "@/models/player"
+import { useGameStore } from "~/stores/game"
 import { usePlayerStore } from "~/stores/ui/player"
 import { useSelectionStore } from "~/stores/ui/selection"
 import Creature from "../Creature.vue"
 import PendingCreatures from "./PendingCreatures.vue"
 
-const store = useStore()
+const gameStore = useGameStore()
 const playerStore = usePlayerStore()
 const selectionStore = useSelectionStore()
 
 const minimized = ref(false)
 
-const activeBattle = computed(() => store.state.game.activeBattle)
-const players = computed<Player[]>(() => store.state.game.players)
-const playerById = computed(() => store.getters["game/playerById"])
+const activeBattle = computed(() => gameStore.game.activeBattle!)
 
 const orderingClasses = computed(() =>
-  ({ "flex-column-reverse": activeBattle.value.defender === players.value[playerStore.localPlayer].id }))
-const attacker = computed<Player>(() => playerById.value(activeBattle.value.attacker))
-const defender = computed<Player>(() => playerById.value(activeBattle.value.defender))
+  ({
+    "flex-column-reverse":
+      activeBattle.value.defender === gameStore.players[playerStore.localPlayer].id
+  }))
+// activeBattle.attacker/defender are always a Stack.owner, which is only ever set from a
+// PlayerId already present in gameStore.players, so these lookups cannot miss.
+const attacker = computed<Player>(() =>
+  gameStore.playerById(activeBattle.value.attacker)!)
+const defender = computed<Player>(() =>
+  gameStore.playerById(activeBattle.value.defender)!)
 const pendingOffense = computed<BattleCreature[]>(() =>
   activeBattle.value.getOffense().filter((creature: BattleCreature) => creature.hex >= 36))
 const pendingDefense = computed<BattleCreature[]>(() =>

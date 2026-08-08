@@ -1,7 +1,7 @@
 <template>
   <v-card
     width="300"
-    :title="`${playerById(battleActivePlayer).name}'s Turn`"
+    :title="`${battleActivePlayer?.name}'s Turn`"
   >
     <template #prepend>
       <v-icon
@@ -54,20 +54,19 @@ import {
   BattlePhaseType,
   Hazard
 } from "@/models/battle"
-import { useTypedStore } from "~/plugins/vuex"
+import { useGameStore } from "~/stores/game"
 import { usePreferencesStore } from "~/stores/ui/preferences"
 import { useSelectionStore } from "~/stores/ui/selection"
 
-const store = useTypedStore()
+const gameStore = useGameStore()
 const selectionStore = useSelectionStore()
 const preferencesStore = usePreferencesStore()
 
-// ActionPanel only renders inside BattleBoard's v-else branch (active battle present).
-const activeBattle = computed(() => store.state.game.activeBattle!)
-const battlePhaseType = computed((): BattlePhaseType => store.getters["game/battlePhaseType"])
-const battleActivePlayer = computed(() => store.getters["game/battleActivePlayer"])
-const playerById = computed(() => store.getters["game/playerById"])
-const battleCarryoverTargets = computed(() => store.getters["game/battleCarryoverTargets"])
+// ActionPanel only renders inside BattleBoard's v-else branch, which requires an active battle.
+const activeBattle = computed(() => gameStore.game.activeBattle!)
+const battlePhaseType = computed(() => gameStore.battlePhaseType)
+const battleActivePlayerId = computed(() => gameStore.battleActivePlayer!)
+const battleActivePlayer = computed(() => gameStore.playerById(battleActivePlayerId.value))
 
 const phaseTypeTitle = computed((): string => {
   switch (battlePhaseType.value) {
@@ -105,22 +104,22 @@ const pendingStrikes = computed((): BattleCreature[] => {
 })
 
 const mayProceed = computed((): boolean =>
-  pendingStrikes.value.length === 0 && !battleCarryoverTargets.value)
+  pendingStrikes.value.length === 0 && !gameStore.battleCarryoverTargets)
 
 const roundIcon = computed((): string => {
   const name = `mdi-numeric-${activeBattle.value.round + 1}-box`
-  return name + (battleActivePlayer.value === activeBattle.value.defender ? "-outline" : "")
+  return name + (battleActivePlayerId.value === activeBattle.value.defender ? "-outline" : "")
 })
 
 const land = computed((): BattleBoard => activeBattle.value.getBoard())
 
 const pendingCreatures = computed((): number =>
   activeBattle.value.creatures.filter((creature: BattleCreature) =>
-    creature.player === battleActivePlayer.value && creature.hex >= 36).length)
+    creature.player === battleActivePlayerId.value && creature.hex >= 36).length)
 
 function nextPhase(): void {
   selectionStore.deselectCreature()
-  store.dispatch("game/nextBattlePhase")
+  void gameStore.nextBattlePhase()
 }
 </script>
 <style scoped lang="sass">

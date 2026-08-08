@@ -3,7 +3,7 @@
     border
     width="300"
     :prepend-icon="icon"
-    :title="`${activePlayer.name}'s Turn`"
+    :title="`${gameStore.activePlayer.name}'s Turn`"
   >
     <template #prepend>
       <v-icon size="x-large" />
@@ -44,7 +44,7 @@
       </v-card-actions>
       <v-card-actions v-else-if="activePhase === MasterboardPhase.MOVE">
         <v-btn
-          v-if="mulliganAvailable"
+          v-if="gameStore.mulliganAvailable"
           block
           variant="outlined"
           title="On the first round only, you may opt to re-roll your die once."
@@ -79,24 +79,21 @@
 <script setup lang="ts">
 import { computed, inject, Ref } from "vue"
 import { sum } from "lodash-es"
-import { useStore } from "vuex"
 import type DiceRoller from "~/components/ui/generic/DiceRoller"
 import { MasterboardPhase } from "@/models/game"
-import { Stack } from "@/models/stack"
+import { useGameStore } from "~/stores/game"
 import { useSelectionStore } from "~/stores/ui/selection"
 
 const diceRoller = inject<Readonly<Ref<InstanceType<typeof DiceRoller> | null>>>("diceRoller")
 
-const store = useStore()
+const gameStore = useGameStore()
 const selectionStore = useSelectionStore()
 
-const activeRoll = computed<number | undefined>(() => store.state.game.activeRoll)
-const activePhase = computed<MasterboardPhase>(() => store.state.game.activePhase)
-const activePlayer = computed(() => store.getters["game/activePlayer"])
-const activeStacks = computed<Stack[]>(() => store.getters["game/activeStacks"])
-const mayProceed = computed<boolean>(() => store.getters["game/mayProceed"])
-const mulliganAvailable = computed<boolean>(() => store.getters["game/mulliganAvailable"])
-const engagedStacks = computed<Stack[]>(() => store.getters["game/engagedStacks"])
+const activePhase = computed(() => gameStore.game.activePhase)
+const activeRoll = computed(() => gameStore.game.activeRoll)
+const activeStacks = computed(() => gameStore.activeStacks)
+const mayProceed = computed(() => gameStore.mayProceed)
+const engagedStacks = computed(() => gameStore.engagedStacks)
 
 const icon = computed(() => {
   switch (activePhase.value) {
@@ -114,7 +111,8 @@ const icon = computed(() => {
 })
 const sevenHighCount = computed(() => sum(activeStacks.value.map(stack => stack.creatures.length === 7)))
 const movedCount = computed(() => sum(activeStacks.value.map(stack => stack.hasMoved())))
-const musteredCount = computed(() => sum(activeStacks.value.map(stack => stack.currentMuster !== undefined)))
+const musteredCount = computed(() =>
+  sum(activeStacks.value.map(stack => stack.currentMuster !== undefined)))
 const engagementsMessage = computed(() => {
   if (engagedStacks.value.length < 1) {
     return ""
@@ -125,19 +123,15 @@ const engagementsMessage = computed(() => {
   }
 })
 
-function setRoll(payload?: number): Promise<void> {
-  return store.dispatch("game/setRoll", payload)
-}
-
 function nextPhase(): void {
-  void store.dispatch("game/nextPhase")
+  void gameStore.nextPhase()
 }
 
 function roll(): void {
   if (activeRoll.value !== undefined) {
-    void setRoll(undefined)
+    void gameStore.setRoll(undefined)
   }
-  diceRoller?.value?.roll().then(async(rolled: number[]) => await setRoll(rolled[0]))
+  diceRoller?.value?.roll().then(async(rolled: number[]) => await gameStore.setRoll(rolled[0]))
 }
 
 function proceedToRoll(): void {

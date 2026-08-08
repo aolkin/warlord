@@ -58,7 +58,7 @@
 <script setup lang="ts">
 import { computed } from "vue"
 import { MasterboardHex, Terrain } from "@/models/masterboard"
-import { useTypedStore } from "~/plugins/vuex"
+import { useGameStore } from "~/stores/game"
 import { usePreferencesStore } from "~/stores/ui/preferences"
 import { useSelectionStore } from "~/stores/ui/selection"
 import {
@@ -81,9 +81,9 @@ const props = withDefaults(defineProps<{
   containsEnemy: false
 })
 
+const gameStore = useGameStore()
 const preferencesStore = usePreferencesStore()
 const selectionStore = useSelectionStore()
-const store = useTypedStore()
 
 const terrain = computed(() => Terrain[props.hex?.terrain].toLowerCase())
 
@@ -124,7 +124,7 @@ const inverted = computed(() => isHexInverted(props.hex.id))
 // populated once the selection store's "paths" getter is non-empty and therefore
 // activeRoll is defined - see src/ui/stores/ui/selection.ts.
 const pathCount = computed((): number =>
-  store.state.game.activeRoll! - (props.distanceToDest ?? 0) + 1)
+  gameStore.game.activeRoll! - (props.distanceToDest ?? 0) + 1)
 </script>
 
 <style lang="sass" scoped>

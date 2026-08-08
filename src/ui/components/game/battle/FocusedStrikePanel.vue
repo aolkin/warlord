@@ -18,15 +18,15 @@
 
 <script setup lang="ts">
 import { computed } from "vue"
-import { useStore } from "vuex"
 import { BattleCreature, RangestrikeTarget, Strike } from "@/models/battle"
+import { useGameStore } from "~/stores/game"
 import { useSelectionStore } from "~/stores/ui/selection"
 import StrikePanelTitle from "./StrikePanelTitle.vue"
 
-const store = useStore()
+const gameStore = useGameStore()
 const selectionStore = useSelectionStore()
 
-const activeBattle = computed(() => store.state.game.activeBattle)
+const activeBattle = computed(() => gameStore.game.activeBattle!)
 
 const target = computed<BattleCreature | undefined>(() =>
   selectionStore.focusedCreature !== undefined && selectionStore.engagements.includes(selectionStore.focusedCreature)

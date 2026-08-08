@@ -1,56 +1,21 @@
 import { defineStore } from "pinia"
 import { computed, ref, shallowReactive, shallowRef, watch } from "vue"
-import type { Store } from "vuex"
-import { Battle, BattleCreature, RangestrikeTarget } from "@/models/battle"
-import { MasterboardPhase, Path } from "@/models/game"
+import { BattleCreature, RangestrikeTarget } from "@/models/battle"
+import { Path } from "@/models/game"
 import masterboard, { MasterboardHex } from "@/models/masterboard"
 import { Stack } from "@/models/stack"
+import { useGameStore } from "~/stores/game"
 
 export enum View {
   MASTERBOARD,
   BATTLEBOARD
 }
 
-// The "game" module (src/game/store/game) still lives in Vuex and is reflected off TitanGame's
-// prototype (see proposals/04-state-management.md), so its state and getters aren't typed
-// through Pinia. Importing the Vuex store instance directly here would cycle back through
-// plugins/vuex.ts, which itself imports this file (for provideVuexStore, and to call
-// useSelectionStore().reset() from its own "reset" action) - so plugins/vuex.ts hands us the
-// instance at runtime via provideVuexStore instead of a static import.
-// Vuex also types Store#getters as `any` and doesn't merge module state into Store#state's
-// type, so reads of the game module below go through a local cast to the shape TitanGame
-// actually exposes at runtime.
-let vuexStore: Store<unknown> | undefined
-
-export function provideVuexStore(instance: Store<unknown>): void {
-  vuexStore = instance
-}
-
-const requireVuexStore = (): Store<unknown> => {
-  if (vuexStore === undefined) {
-    throw new Error("Vuex store used before provideVuexStore() registered it")
-  }
-  return vuexStore
-}
-
-const activeRoll = (): number | undefined =>
-  (requireVuexStore().state as unknown as { game: { activeRoll?: number } }).game.activeRoll
-const activePhase = (): MasterboardPhase =>
-  (requireVuexStore().state as unknown as { game: { activePhase: MasterboardPhase } }).game.activePhase
-const activeBattle = (): Battle | undefined =>
-  (requireVuexStore().state as unknown as { game: { activeBattle?: Battle } }).game.activeBattle
-const pathsForHex = (): (hex: number) => Path[] =>
-  requireVuexStore().getters["game/pathsForHex"] as (hex: number) => Path[]
-const battleMoves = (): (creature: BattleCreature) => Set<number> =>
-  requireVuexStore().getters["game/battleMoves"] as (creature: BattleCreature) => Set<number>
-const battleEngagements = (): (creature: BattleCreature) => BattleCreature[] =>
-  requireVuexStore().getters["game/battleEngagements"] as (creature: BattleCreature) => BattleCreature[]
-const battleRangestrikeTargets = (): (creature: BattleCreature) => RangestrikeTarget[] =>
-  requireVuexStore().getters["game/battleRangestrikeTargets"] as (creature: BattleCreature) => RangestrikeTarget[]
-
 export const useSelectionStore = defineStore("selection", () => {
-  // Stack/MasterboardHex/BattleCreature instances here always come from the "game" module's
-  // own (Vuex-)reactive state, so they're already reactive proxies by the time they reach
+  const gameStore = useGameStore()
+
+  // Stack/MasterboardHex/BattleCreature instances here always come from the game store's
+  // own reactive state, so they're already reactive proxies by the time they reach
   // this store - shallow refs/collections avoid Vue re-wrapping their internals a second time,
   // which for class instances with private fields also trips up TypeScript (Vue's deep
   // UnwrapRef can't reconstruct a private field, so the mapped type stops matching the class).
@@ -79,17 +44,17 @@ export const useSelectionStore = defineStore("selection", () => {
 
   const paths = computed<Path[]>(() => {
     if (stack.value?.hex === undefined || masterboard.getHex(stack.value.hex) === undefined ||
-      activeRoll() === undefined) {
+      gameStore.game.activeRoll === undefined) {
       return []
     }
-    return pathsForHex()(stack.value.hex)
+    return gameStore.pathsForHex(stack.value.hex)
   })
   const movementHexes = computed<Set<number>>(() =>
-    creature.value === undefined ? new Set<number>() : battleMoves()(creature.value))
+    creature.value === undefined ? new Set<number>() : gameStore.battleMoves(creature.value))
   const engagements = computed<BattleCreature[]>(() =>
-    creature.value === undefined ? [] : battleEngagements()(creature.value))
+    creature.value === undefined ? [] : gameStore.battleEngagements(creature.value))
   const rangestrikes = computed<RangestrikeTarget[]>(() =>
-    creature.value === undefined ? [] : battleRangestrikeTargets()(creature.value))
+    creature.value === undefined ? [] : gameStore.battleRangestrikeTargets(creature.value))
 
   function setView(value: View): void {
     view.value = value
@@ -176,11 +141,11 @@ export const useSelectionStore = defineStore("selection", () => {
     }
   }
 
-  watch(activePhase, deselectStack)
+  watch(() => gameStore.game.activePhase, deselectStack)
 
   // Only the empty->present transition should navigate to the battle board - subsequent
   // mutations within the same battle (strikes, wounds, etc.) also change activeBattle.
-  watch(() => activeBattle() !== undefined, (hasBattle, hadBattle) => {
+  watch(() => gameStore.game.activeBattle !== undefined, (hasBattle, hadBattle) => {
     if (hasBattle && !hadBattle) {
       setView(View.BATTLEBOARD)
     }
