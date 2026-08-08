@@ -4,7 +4,6 @@ import { map } from "lodash-es"
 
 // Vuetify
 import { createVuetify } from "vuetify"
-import "vuetify/styles"
 import { PlayerId } from "@/models/player"
 
 const titanColors = {
