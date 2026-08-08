@@ -36,12 +36,11 @@ import { computed } from "vue"
 import { EdgeHazard, Hazard } from "@/models/battle"
 
 const props = withDefaults(defineProps<{
-  elevation?: number
+  elevation: number
   hazard?: Hazard
   edgeHazards: Record<number, EdgeHazard>
   interactive?: boolean
 }>(), {
-  elevation: 0,
   hazard: Hazard.NONE,
   interactive: false
 })
