@@ -116,7 +116,7 @@ const transform = computed((): string => {
 
 const isActivePlayer = computed(() => gameStore.activePlayerId === props.stack.owner)
 
-const stackPlayer = computed((): Player | undefined => gameStore.playerById(props.stack.owner))
+const stackPlayer = computed((): Player => gameStore.playerById(props.stack.owner))
 
 const potentialEngagements = computed((): HexEdge[] => {
   if (selectionStore.selectedStack === undefined) {

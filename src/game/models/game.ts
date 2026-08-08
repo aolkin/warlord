@@ -37,7 +37,7 @@ export interface Getters {
   readonly firstRound: boolean
   readonly players: Player[]
   readonly activeStacks: Stack[]
-  readonly playerById: (player: PlayerId) => Player | undefined
+  readonly playerById: (player: PlayerId) => Player
   readonly stacksForPlayer: (owner: PlayerId) => Stack[]
   readonly stacksForHex: (hex: number) => Stack[]
   readonly pathsForHex: (hex: number) => Path[]
@@ -105,8 +105,10 @@ export class TitanGame {
     return this.players
   }
 
-  getPlayerById(id: PlayerId): Player | undefined {
-    return this.players.find(player => player.id === id)
+  getPlayerById(id: PlayerId): Player {
+    const player = this.players.find(player => player.id === id)
+    assert(player !== undefined, `No player with id ${id}`)
+    return player
   }
 
   getStacksForPlayer(owner: PlayerId): Stack[] {

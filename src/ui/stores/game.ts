@@ -26,7 +26,7 @@ export const useGameStore = defineStore("game", () => {
   const battlePhaseType = computed(() => game.getBattlePhaseType())
   const battleCarryoverTargets = computed(() => game.getBattleCarryoverTargets())
 
-  function playerById(id: PlayerId): Player | undefined {
+  function playerById(id: PlayerId): Player {
     return game.getPlayerById(id)
   }
 
