@@ -20,7 +20,7 @@
           <div
             v-if="pendingOffense.length > 0 ||
               (activeBattle.phase === BattlePhase.ATTACKER_MOVE &&
-                (selectionStore.selectedCreature?.initialHex ?? -1) >= 36)"
+                props.selectedStartedOffBoard)"
           >
             <v-card-title>{{ attacker.name }}'s Pending Creatures</v-card-title>
             <PendingCreatures
@@ -32,7 +32,7 @@
           <div
             v-if="pendingDefense.length > 0 ||
               (activeBattle.phase === BattlePhase.DEFENDER_MOVE &&
-                (selectionStore.selectedCreature?.initialHex ?? -1) >= 36)"
+                props.selectedStartedOffBoard)"
           >
             <v-card-title>{{ defender.name }}'s Pending Creatures</v-card-title>
             <PendingCreatures
@@ -77,16 +77,15 @@ import { computed, ref } from "vue"
 import { BattleCreature, BattlePhase } from "@/models/battle"
 import { Player } from "@/models/player"
 import { useGameStore } from "~/stores/game"
-import { useSelectionStore } from "~/stores/ui/selection"
 import Creature from "../Creature.vue"
 import PendingCreatures from "./PendingCreatures.vue"
 
 const props = defineProps<{
   localPlayerIsDefender: boolean
+  selectedStartedOffBoard: boolean
 }>()
 
 const gameStore = useGameStore()
-const selectionStore = useSelectionStore()
 
 const minimized = ref(false)
 

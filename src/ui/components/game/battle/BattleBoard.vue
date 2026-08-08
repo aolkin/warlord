@@ -100,6 +100,7 @@
 
       <CreaturePanel
         :local-player-is-defender="localPlayerIsDefender"
+        :selected-started-off-board="selectedStartedOffBoard"
         position="fixed"
         location="top right"
         class="ma-3"
@@ -116,7 +117,11 @@
         class="ma-3 ml-14 mb-10"
         rounded
       >
-        <FocusedStrikePanel rounded />
+        <FocusedStrikePanel
+          v-if="selectionStore.selectedCreature"
+          rounded
+          :attacker="selectionStore.selectedCreature"
+        />
         <ActiveStrikePanel
           rounded
           :battle="activeBattle"
@@ -228,6 +233,9 @@ const defender = computed((): PlayerId => activeBattle.value!.defender)
 
 const localPlayerIsDefender = computed((): boolean =>
   defender.value === gameStore.players[playerStore.localPlayer].id)
+
+const selectedStartedOffBoard = computed((): boolean =>
+  (selectionStore.selectedCreature?.initialHex ?? -1) >= 36)
 
 const activeCreatures = computed((): BattleCreature[] =>
   activeBattle.value!.creatures.filter((creature: BattleCreature) =>
