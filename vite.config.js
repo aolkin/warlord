@@ -1,5 +1,6 @@
 import { defineConfig } from "vite"
 import vue from "@vitejs/plugin-vue"
+import vuetify from "vite-plugin-vuetify"
 
 import path from "path"
 import { fileURLToPath } from "url"
@@ -9,7 +10,8 @@ const configDir = path.dirname(fileURLToPath(import.meta.url))
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [
-    vue()
+    vue(),
+    vuetify({ autoImport: true })
   ],
   define: { "process.env": {} },
   resolve: {
