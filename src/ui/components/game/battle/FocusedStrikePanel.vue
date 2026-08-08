@@ -19,25 +19,29 @@
 import { computed } from "vue"
 import { BattleCreature, RangestrikeTarget, Strike } from "@/models/battle"
 import { useGameStore } from "~/stores/game"
-import { useSelectionStore } from "~/stores/ui/selection"
 import StrikePanelTitle from "./StrikePanelTitle.vue"
 
 const props = defineProps<{
   attacker: BattleCreature
+  focusedCreature: BattleCreature | undefined
 }>()
 
 const gameStore = useGameStore()
-const selectionStore = useSelectionStore()
 
 const activeBattle = computed(() => gameStore.game.activeBattle!)
 
+const engagements = computed<BattleCreature[]>(() =>
+  props.attacker === undefined ? [] : gameStore.battleEngagements(props.attacker))
+const rangestrikes = computed<RangestrikeTarget[]>(() =>
+  props.attacker === undefined ? [] : gameStore.battleRangestrikeTargets(props.attacker))
+
 const target = computed<BattleCreature | undefined>(() =>
-  selectionStore.focusedCreature !== undefined && selectionStore.engagements.includes(selectionStore.focusedCreature)
-    ? selectionStore.focusedCreature
+  props.focusedCreature !== undefined && engagements.value.includes(props.focusedCreature)
+    ? props.focusedCreature
     : undefined)
 const rangedFocus = computed<RangestrikeTarget | undefined>(() =>
-  selectionStore.focusedCreature && selectionStore.rangestrikes.filter(
-    (rangestrike: RangestrikeTarget) => rangestrike.creature === selectionStore.focusedCreature)[0])
+  props.focusedCreature && rangestrikes.value.filter(
+    (rangestrike: RangestrikeTarget) => rangestrike.creature === props.focusedCreature)[0])
 const rangedTarget = computed<BattleCreature | undefined>(() => rangedFocus.value?.creature)
 const strike = computed<Strike | undefined>(() => {
   if (target.value) {
