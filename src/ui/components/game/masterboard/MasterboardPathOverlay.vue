@@ -2,7 +2,7 @@
   <g
     :class="rootClass"
     :transform="transform"
-    class="parent path"
+    class="parent"
     @mouseenter="selectionStore.enterHex(hex)"
     @mouseleave="selectionStore.leaveHex(hex)"
   >
@@ -73,11 +73,11 @@ const inverted = computed(() => isHexInverted(props.hex.id))
   font-size: 0.75em
   text-transform: uppercase
 
-.path .hex
+.hex
   stroke-width: 0
   transition: 0.25s ease-out
 
-.path .label
+.label
   font-size: 20pt
 
 @for $path from 0 through 2
@@ -97,7 +97,7 @@ const inverted = computed(() => isHexInverted(props.hex.id))
       &:hover .hex
         fill: rgba($path-color, 0.25)
 
-g.paths:hover .path
+g.paths:hover .parent
   .label
     opacity: 0.2
 
@@ -111,7 +111,7 @@ g.paths:hover .path
     .hex
       stroke-width: 2px
 
-.path.distance-1:not(.foe)
+.distance-1:not(.foe)
   cursor: pointer
 
   &:hover .hex
