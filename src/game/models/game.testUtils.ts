@@ -34,10 +34,10 @@ export function createGetters(game: TitanGame): Getters {
   lazy("activePlayerId", () => game.getActivePlayerId())
   lazy("activeStacks", () => game.getActiveStacks())
   lazy("nextMarker", () => game.getNextMarker())
-  lazy("pathsForHex", () => (hex: number) => game.getPathsForHex(getters, hex))
+  lazy("pathsForHex", () => (hex: number) => game.getPathsForHex(hex))
   lazy("mandatoryMoves", () => game.getMandatoryMoves(getters))
   lazy("mayProceed", () => game.getMayProceed(getters))
   lazy("mulliganAvailable", () => game.getMulliganAvailable())
-  lazy("engagedStacks", () => game.getEngagedStacks(getters))
+  lazy("engagedStacks", () => game.getEngagedStacks())
   return getters
 }

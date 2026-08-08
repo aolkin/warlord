@@ -4,7 +4,7 @@ import { Battle, BATTLE_PHASE_TYPES, BattleCreature, BattlePhaseType, BattleSide
 import masterboard from "../masterboard"
 import { PlayerId } from "../player"
 import { Stack } from "../stack"
-import type { Getters, TitanGame } from "../game"
+import type { TitanGame } from "../game"
 
 export interface BattleMovePayload { creature: BattleCreature, hex: number }
 interface BattlePayload { attacking: Stack, defending: Stack }
@@ -30,7 +30,7 @@ export interface GameBattle {
   mRangestrikeCreature(payload: RangestrikePayload): void
   mAssignCarryover(target: BattleCreature): void
   mSkipCarryover(): void
-  doInitiateBattle(getters: Getters, attacking: Stack): Promise<void>
+  doInitiateBattle(attacking: Stack): Promise<void>
   doMoveCreature(payload: BattleMovePayload): Promise<void>
   doNextBattlePhase(): Promise<void>
   doAttackCreature(payload: AttackPayload): Promise<void>
@@ -122,9 +122,10 @@ export const gameBattle: GameBattle & ThisType<TitanGame> = {
     }
   },
 
-  async doInitiateBattle(getters: Getters, attacking: Stack): Promise<void> {
-    const defending = getters.stacksForHex(attacking.hex)
-      .find(stack => stack.owner !== getters.activePlayerId) as Stack
+  async doInitiateBattle(attacking: Stack): Promise<void> {
+    const activePlayerId = this.getActivePlayerId()
+    const defending = this.getStacksForHex(attacking.hex)
+      .find(stack => stack.owner !== activePlayerId) as Stack
     assert(defending !== undefined,
       `No engagement present on hex ${attacking.hex}!`)
     this.mInitiateBattle({ attacking, defending })

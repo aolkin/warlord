@@ -21,7 +21,7 @@ export const useGameStore = defineStore("game", () => {
   const mandatoryMoves = computed(() => game.getMandatoryMoves(getters))
   const mayProceed = computed(() => game.getMayProceed(getters))
   const mulliganAvailable = computed(() => game.getMulliganAvailable())
-  const engagedStacks = computed(() => game.getEngagedStacks(getters))
+  const engagedStacks = computed(() => game.getEngagedStacks())
   const battleActivePlayer = computed(() => game.getBattleActivePlayer())
   const battlePhaseType = computed(() => game.getBattlePhaseType())
   const battleCarryoverTargets = computed(() => game.getBattleCarryoverTargets())
@@ -39,7 +39,7 @@ export const useGameStore = defineStore("game", () => {
   }
 
   function pathsForHex(hex: number): Path[] {
-    return game.getPathsForHex(getters, hex)
+    return game.getPathsForHex(hex)
   }
 
   function battleMoves(creature: BattleCreature): Set<number> {
