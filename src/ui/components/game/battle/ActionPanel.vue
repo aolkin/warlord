@@ -15,9 +15,9 @@
         :title="phaseTypeTitle"
       />
     </template>
-    <v-card-subtitle v-if="preferencesStore.debugUi && selectionStore.focusedBattleHex !== undefined">
-      Hex: {{ selectionStore.focusedBattleHex }} ({{ Hazard[land.getHazard(selectionStore.focusedBattleHex!)] }})
-      <span v-if="land.getElevation(selectionStore.focusedBattleHex!) > 0">+{{ land.getElevation(selectionStore.focusedBattleHex!) }}</span>
+    <v-card-subtitle v-if="preferencesStore.debugUi && props.focusedBattleHex !== undefined">
+      Hex: {{ props.focusedBattleHex }} ({{ Hazard[land.getHazard(props.focusedBattleHex!)] }})
+      <span v-if="land.getElevation(props.focusedBattleHex!) > 0">+{{ land.getElevation(props.focusedBattleHex!) }}</span>
     </v-card-subtitle>
     <v-card-text v-if="battlePhaseType === BattlePhaseType.MOVE && pendingCreatures > 0">
       You have {{ pendingCreatures }} creature{{ pendingCreatures > 1 ? 's' : '' }} that
@@ -58,10 +58,10 @@ import {
 import { PlayerId } from "@/models/player"
 import { useGameStore } from "~/stores/game"
 import { usePreferencesStore } from "~/stores/ui/preferences"
-import { useSelectionStore } from "~/stores/ui/selection"
 
 const props = defineProps<{
   battle: Battle
+  focusedBattleHex: number | undefined
 }>()
 
 const emit = defineEmits<{
@@ -69,7 +69,6 @@ const emit = defineEmits<{
 }>()
 
 const gameStore = useGameStore()
-const selectionStore = useSelectionStore()
 const preferencesStore = usePreferencesStore()
 
 const battlePhaseType = computed(() => gameStore.battlePhaseType)
