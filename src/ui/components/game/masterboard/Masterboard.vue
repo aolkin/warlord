@@ -20,11 +20,13 @@
             <MasterboardHexComponent
               v-for="([foe, hex], index) in step"
               :key="hex.id"
-              :path-index="index"
-              :distance-to-dest="activeRoll! - distance"
-              :distance-from-start="distance + 1"
               :hex="hex"
-              :contains-enemy="foe"
+              :path-info="{
+                pathIndex: index,
+                distanceToDest: activeRoll! - distance,
+                distanceFromStart: distance + 1,
+                containsEnemy: foe
+              }"
               @click.stop="moveStack(distance, foe, hex)"
             />
           </g>

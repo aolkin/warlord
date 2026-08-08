@@ -12,7 +12,7 @@
       :transform="inverted ? 'rotate(180)' : ''"
       class="hex"
     />
-    <template v-if="!path">
+    <template v-if="!pathInfo">
       <clipPath
         v-if="preferencesStore.fancyGraphics"
         :id="`hex-${hex.id}-clip`"
@@ -49,7 +49,7 @@
         class="label"
         text-anchor="middle"
       >
-        {{ distanceFromStart }}
+        {{ pathInfo.distanceFromStart }}
       </text>
     </template>
   </g>
@@ -69,34 +69,34 @@ import {
   TRIANGLE_SIDE
 } from "./utils"
 
-const props = withDefaults(defineProps<{
+// Populated only when this hex is a step on a stack's move path; its absence means
+// the hex is being rendered as a plain board hex.
+export interface PathInfo {
+  distanceToDest: number
+  distanceFromStart: number
+  pathIndex: number
+  containsEnemy: boolean
+}
+
+const props = defineProps<{
   hex: MasterboardHex
-  distanceToDest?: number
-  distanceFromStart?: number
-  pathIndex?: number
-  containsEnemy?: boolean
-}>(), {
-  distanceToDest: undefined,
-  distanceFromStart: undefined,
-  pathIndex: 0,
-  containsEnemy: false
-})
+  pathInfo?: PathInfo
+}>()
 
 const preferencesStore = usePreferencesStore()
 const selectionStore = useSelectionStore()
 
 const terrain = computed(() => Terrain[props.hex?.terrain].toLowerCase())
 
-const path = computed((): boolean => props.distanceToDest !== undefined)
-
 const rootClass = computed(() => {
-  if (path.value) {
+  if (props.pathInfo) {
+    const { distanceToDest, pathIndex, containsEnemy } = props.pathInfo
     return {
       path: true,
-      foe: props.containsEnemy,
-      [`distance-${props.distanceToDest}`]: true,
-      [`path-${props.pathIndex}`]: true,
-      destination: props.distanceToDest === 1
+      foe: containsEnemy,
+      [`distance-${distanceToDest}`]: true,
+      [`path-${pathIndex}`]: true,
+      destination: distanceToDest === 1
     }
   } else {
     return {
