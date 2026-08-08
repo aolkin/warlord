@@ -42,12 +42,12 @@
 <script setup lang="ts">
 import { computed } from "vue"
 import { isEqual } from "lodash-es"
-import { BattleCreature, RangestrikeTarget, Strike } from "@/models/battle"
-import { useGameStore } from "~/stores/game"
-import { useSelectionStore } from "~/stores/ui/selection"
+import { Battle, BattleCreature, RangestrikeTarget, Strike } from "@/models/battle"
 import { div } from "~/utils/math"
 
 const props = defineProps<{
+  battle: Battle
+  attacker: BattleCreature
   target: RangestrikeTarget
 }>()
 
@@ -56,18 +56,13 @@ defineEmits<{
   attack: []
 }>()
 
-const gameStore = useGameStore()
-const selectionStore = useSelectionStore()
-
-const activeBattle = computed(() => gameStore.game.activeBattle!)
-
-const selectedCreatureName = computed(() => selectionStore.selectedCreature?.name() ?? "")
+const selectedCreatureName = computed(() => props.attacker.name())
 const targetedCreature = computed<BattleCreature>(() => props.target.creature)
 const targetedCreatureName = computed(() => targetedCreature.value?.name() ?? "")
 const targetedStrike = computed<Strike>(() =>
-  activeBattle.value.getTargetedStrike(selectionStore.selectedCreature!, props.target))
+  props.battle.getTargetedStrike(props.attacker, props.target))
 const targetedStrikeUnadjusted = computed<Strike>(() => {
-  const rawStrike = activeBattle.value.getRawStrike(selectionStore.selectedCreature!, targetedCreature.value)
+  const rawStrike = props.battle.getRawStrike(props.attacker, targetedCreature.value)
   return {
     toHit: props.target.longDistance ? rawStrike.toHit + 1 : rawStrike.toHit,
     dice: div(rawStrike.dice, 2)

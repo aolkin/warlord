@@ -123,15 +123,19 @@
           v-if="!isRangestrike(target)"
           v-model="attackCreatureDialog"
           v-model:optional-to-hit="optionalToHit"
+          :battle="activeBattle"
+          :attacker="selectionStore.selectedCreature"
           :targeted-creature="target"
-          @attack="attackTargetedCreature"
+          @attack="attackTargetedCreature(selectionStore.selectedCreature, target)"
           @cancel="resetAttack"
         />
         <RangestrikeConfirmation
           v-else
           v-model="attackCreatureDialog"
+          :battle="activeBattle"
+          :attacker="selectionStore.selectedCreature"
           :target="target"
-          @attack="attackTargetedCreature"
+          @attack="attackTargetedCreature(selectionStore.selectedCreature, target)"
           @cancel="resetAttack"
         />
       </template>
@@ -147,6 +151,7 @@ import {
   BATTLE_BOARD_HEXES,
   BATTLE_BOARDS,
   BATTLE_PHASE_TITLES,
+  Battle,
   BattleBoard,
   BattleCreature,
   BattlePhaseType,
@@ -184,7 +189,9 @@ const target = ref<BattleCreature | RangestrikeTarget | undefined>(undefined)
 const optionalToHit = ref<number | undefined>(undefined)
 const debugHex = ref(0)
 
-const activeBattle = computed(() => gameStore.game.activeBattle)
+// gameStore.game is deeply reactive, and Vue's UnwrapNestedRefs can't reconstruct Battle's
+// private methods, so the inferred type structurally mismatches the class - cast it back.
+const activeBattle = computed(() => gameStore.game.activeBattle as Battle | undefined)
 
 const attackCreatureDialog = computed({
   get: (): boolean => target.value !== undefined,
@@ -278,20 +285,20 @@ function targetCreature(creature: BattleCreature | RangestrikeTarget): void {
   }
 }
 
-async function attackTargetedCreature(): Promise<void> {
-  console.log(selectionStore.selectedCreature, target.value)
+async function attackTargetedCreature(
+  attacker: BattleCreature,
+  attackTarget: BattleCreature | RangestrikeTarget
+): Promise<void> {
+  console.log(attacker, target.value)
   if (diceRoller?.value == null) {
     throw new Error("diceRoller ref is not set")
   }
   const rolls = await diceRoller.value.roll(targetedStrike.value.dice)
-  // Only invoked from StrikeConfirmation/RangestrikeConfirmation, which only render
-  // inside a `v-if="selectionStore.selectedCreature && target"` block.
-  const attacker = selectionStore.selectedCreature!
-  await (isRangestrike(target.value!)
-    ? gameStore.rangestrikeCreature({ attacker, target: target.value as RangestrikeTarget, rolls })
+  await (isRangestrike(attackTarget)
+    ? gameStore.rangestrikeCreature({ attacker, target: attackTarget, rolls })
     : gameStore.attackCreature({
       attacker,
-      target: target.value as BattleCreature,
+      target: attackTarget,
       optionalToHit: optionalToHit.value,
       rolls
     }))
