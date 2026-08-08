@@ -1,6 +1,6 @@
 import { defineStore } from "pinia"
 import { computed, reactive } from "vue"
-import { BattleCreature, RangestrikeTarget } from "@/models/battle"
+import { BattleCreature } from "@/models/battle"
 import { Getters, MovePayload, MusterPayload, Path, TitanGame } from "@/models/game"
 import { AttackPayload, BattleMovePayload, RangestrikePayload } from "@/models/game/battle"
 import { Player, PlayerId } from "@/models/player"
@@ -50,10 +50,6 @@ export const useGameStore = defineStore("game", () => {
     return game.getBattleEngagements(creature)
   }
 
-  function battleRangestrikeTargets(creature: BattleCreature): RangestrikeTarget[] {
-    return game.getBattleRangestrikeTargets(creature)
-  }
-
   // A getXxx method that builds on other derived values takes them as a Getters object.
   // reactive() unwraps each computed on access, so those reads go through the cache above;
   // the parameterized entries are plain functions and pass through unchanged.
@@ -100,7 +96,7 @@ export const useGameStore = defineStore("game", () => {
     battleMoves,
     battleEngagements,
     battleCarryoverTargets,
-    battleRangestrikeTargets,
+    battleRangestrikeTargets: (creature: BattleCreature) => game.getBattleRangestrikeTargets(creature),
     nextPhase: (): Promise<void> => game.doNextPhase(getters),
     setRoll: (roll?: number): Promise<void> => game.doSetRoll(getters, roll),
     move: (payload: MovePayload): Promise<void> => game.doMove(payload),
