@@ -95,12 +95,10 @@ const orderingClasses = computed(() =>
     "flex-column-reverse":
       activeBattle.value.defender === gameStore.players[playerStore.localPlayer].id
   }))
-// activeBattle.attacker/defender are always a Stack.owner, which is only ever set from a
-// PlayerId already present in gameStore.players, so these lookups cannot miss.
 const attacker = computed<Player>(() =>
-  gameStore.playerById(activeBattle.value.attacker)!)
+  gameStore.playerById(activeBattle.value.attacker))
 const defender = computed<Player>(() =>
-  gameStore.playerById(activeBattle.value.defender)!)
+  gameStore.playerById(activeBattle.value.defender))
 const pendingOffense = computed<BattleCreature[]>(() =>
   activeBattle.value.getOffense().filter((creature: BattleCreature) => creature.hex >= 36))
 const pendingDefense = computed<BattleCreature[]>(() =>

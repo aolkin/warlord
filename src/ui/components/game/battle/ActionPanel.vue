@@ -1,7 +1,7 @@
 <template>
   <v-card
     width="300"
-    :title="`${battleActivePlayer?.name}'s Turn`"
+    :title="`${battleActivePlayer.name}'s Turn`"
   >
     <template #prepend>
       <v-icon
