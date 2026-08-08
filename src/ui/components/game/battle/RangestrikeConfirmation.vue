@@ -59,13 +59,15 @@ defineEmits<{
 const gameStore = useGameStore()
 const selectionStore = useSelectionStore()
 
+const activeBattle = computed(() => gameStore.game.activeBattle!)
+
 const selectedCreatureName = computed(() => selectionStore.selectedCreature?.name() ?? "")
 const targetedCreature = computed<BattleCreature>(() => props.target.creature)
 const targetedCreatureName = computed(() => targetedCreature.value?.name() ?? "")
 const targetedStrike = computed<Strike>(() =>
-  gameStore.game.activeBattle!.getTargetedStrike(selectionStore.selectedCreature!, props.target))
+  activeBattle.value.getTargetedStrike(selectionStore.selectedCreature!, props.target))
 const targetedStrikeUnadjusted = computed<Strike>(() => {
-  const rawStrike = gameStore.game.activeBattle!.getRawStrike(selectionStore.selectedCreature!, targetedCreature.value)
+  const rawStrike = activeBattle.value.getRawStrike(selectionStore.selectedCreature!, targetedCreature.value)
   return {
     toHit: props.target.longDistance ? rawStrike.toHit + 1 : rawStrike.toHit,
     dice: div(rawStrike.dice, 2)

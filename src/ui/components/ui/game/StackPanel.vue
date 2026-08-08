@@ -42,21 +42,21 @@
           :type="creature"
           :player="stackPlayer"
           :class="{ splitting: selectionStore.focusedStack.split[index],
-                    interactive: gameStore.game.activePhase === MasterboardPhase.SPLIT && owned }"
+                    interactive: activePhase === MasterboardPhase.SPLIT && owned }"
           class="ma-1"
           @click="toggleSplit(index)"
         />
       </div>
-      <template v-if="gameStore.activePlayerId === selectionStore.focusedStack.owner">
+      <template v-if="activePlayerId === selectionStore.focusedStack.owner">
         <v-card-actions
-          v-if="gameStore.game.activePhase === MasterboardPhase.SPLIT"
+          v-if="activePhase === MasterboardPhase.SPLIT"
           class="split-guide"
         >
-          <v-card-text v-if="gameStore.firstRound">
+          <v-card-text v-if="firstRound">
             You must split your starting creatures. Please select four creatures (including one lord) above
             to split into a separate stack.
             <div
-              v-if="selectionStore.focusedStack?.isValidSplit(gameStore.firstRound)"
+              v-if="selectionStore.focusedStack?.isValidSplit(firstRound)"
               class="first-round-success"
             >
               You have selected a valid split and may roll the die
@@ -85,20 +85,20 @@
           </v-card-text>
         </v-card-actions>
         <template
-          v-else-if="gameStore.game.activePhase === MasterboardPhase.MUSTER ||
-            (gameStore.game.activePhase === MasterboardPhase.MOVE &&
+          v-else-if="activePhase === MasterboardPhase.MUSTER ||
+            (activePhase === MasterboardPhase.MOVE &&
               selectionStore.focusedHex !== undefined && selectionStore.focusedStack.hex !== selectionStore.focusedHex.id)"
         >
           <v-card-title>Mustering Options ({{ musteringTerrainName }})</v-card-title>
           <MusterChoices
-            v-if="gameStore.game.activePhase === MasterboardPhase.MOVE || selectionStore.focusedStack.canMuster()"
+            v-if="activePhase === MasterboardPhase.MOVE || selectionStore.focusedStack.canMuster()"
             v-model="mustering"
             class="px-2 pb-1"
             :musterable="musterable"
             :player="stackPlayer"
           />
           <v-card-subtitle
-            v-if="gameStore.game.activePhase === MasterboardPhase.MUSTER"
+            v-if="activePhase === MasterboardPhase.MUSTER"
             class="mb-3"
           >
             {{ musteringCaption }}
@@ -127,14 +127,18 @@ import MusterChoices from "./MusterChoices.vue"
 const gameStore = useGameStore()
 const selectionStore = useSelectionStore()
 
-const owned = computed((): boolean => gameStore.activePlayerId === selectionStore.focusedStack?.owner)
+const activePhase = computed(() => gameStore.game.activePhase)
+const activePlayerId = computed(() => gameStore.activePlayerId)
+const firstRound = computed(() => gameStore.firstRound)
+
+const owned = computed((): boolean => activePlayerId.value === selectionStore.focusedStack?.owner)
 
 const stackPlayer = computed((): Player | undefined => selectionStore.focusedStack === undefined
   ? undefined
   : gameStore.playerById(selectionStore.focusedStack.owner))
 
 const musteringTerrain = computed((): Terrain =>
-  gameStore.game.activePhase === MasterboardPhase.MUSTER
+  activePhase.value === MasterboardPhase.MUSTER
     ? masterboard.getHex(selectionStore.focusedStack?.hex as number).terrain
     : selectionStore.focusedHex?.terrain as Terrain)
 
@@ -148,7 +152,7 @@ const mustering = computed({
     return selectionStore.focusedStack?.currentMuster
   },
   set(value: MusterChoice) {
-    if (gameStore.game.activePhase !== MasterboardPhase.MUSTER) {
+    if (activePhase.value !== MasterboardPhase.MUSTER) {
       return
     }
     void gameStore.setRecruit({ stack: selectionStore.focusedStack!, recruit: value })
@@ -181,7 +185,7 @@ const musteringCaption = computed(() => {
 })
 
 function toggleSplit(index: number): void {
-  if (gameStore.game.activePhase === MasterboardPhase.SPLIT &&
+  if (activePhase.value === MasterboardPhase.SPLIT &&
     (selectionStore.focusedStack?.creatures.length ?? 0) > 2) {
     const stack = selectionStore.focusedStack!
     togglePendingSplit(stack, index)
@@ -195,8 +199,8 @@ function cycleStacks(by: number): void {
   do {
     index += by
     candidateStack = activeStacks[mod(index, activeStacks.length)]
-  } while ((gameStore.game.activePhase === MasterboardPhase.MOVE && candidateStack.hasMoved()) ||
-  (gameStore.game.activePhase === MasterboardPhase.MUSTER && !candidateStack.canMuster()))
+  } while ((activePhase.value === MasterboardPhase.MOVE && candidateStack.hasMoved()) ||
+  (activePhase.value === MasterboardPhase.MUSTER && !candidateStack.canMuster()))
   selectionStore.selectStack(candidateStack)
 }
 </script>

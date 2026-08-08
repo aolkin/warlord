@@ -82,12 +82,14 @@ const emit = defineEmits<{
 const gameStore = useGameStore()
 const selectionStore = useSelectionStore()
 
+const activeBattle = computed(() => gameStore.game.activeBattle!)
+
 const selectedCreatureName = computed(() => selectionStore.selectedCreature?.name() ?? "")
 const targetedCreatureName = computed(() => props.targetedCreature?.name() ?? "")
 const targetedStrike = computed<Strike>(() =>
-  gameStore.game.activeBattle!.getTargetedStrike(selectionStore.selectedCreature!, props.targetedCreature))
+  activeBattle.value.getTargetedStrike(selectionStore.selectedCreature!, props.targetedCreature))
 const targetedStrikeUnadjusted = computed<Strike>(() =>
-  gameStore.game.activeBattle!.getRawStrike(selectionStore.selectedCreature!,
+  activeBattle.value.getRawStrike(selectionStore.selectedCreature!,
     isRangestrike(props.targetedCreature) ? props.targetedCreature.creature : props.targetedCreature))
 const targetedStrikeWasAdjusted = computed(() =>
   !isEqual(targetedStrikeUnadjusted.value, targetedStrike.value))
@@ -97,16 +99,16 @@ const normalCarryovers = computed<BattleCreature[]>(() => carryoversImpossible.v
   ? []
   : selectionStore.engagements
     .filter((target: BattleCreature) =>
-      gameStore.game.activeBattle!.toHitAdjusted(selectionStore.selectedCreature!, target) <= targetedStrike.value.toHit)
+      activeBattle.value.toHitAdjusted(selectionStore.selectedCreature!, target) <= targetedStrike.value.toHit)
     .filter((target: BattleCreature) => props.targetedCreature !== target))
 const tougherCarryovers = computed<BattleCreature[]>(() => carryoversImpossible.value
   ? []
   : selectionStore.engagements
     .filter((target: BattleCreature) =>
-      gameStore.game.activeBattle!.toHitAdjusted(selectionStore.selectedCreature!, target) > targetedStrike.value.toHit))
+      activeBattle.value.toHitAdjusted(selectionStore.selectedCreature!, target) > targetedStrike.value.toHit))
 const toHitAdjustments = computed<Record<number, BattleCreature[]>>(() =>
   tougherCarryovers.value.reduce((adjustments: Record<number, BattleCreature[]>, creature) => {
-    const toHit = gameStore.game.activeBattle!.toHitAdjusted(selectionStore.selectedCreature!, creature)
+    const toHit = activeBattle.value.toHitAdjusted(selectionStore.selectedCreature!, creature)
     range(toHit, 7).forEach(numToUpdate =>
       adjustments[numToUpdate] = [...(adjustments[numToUpdate] ?? []), creature])
     return adjustments
