@@ -34,7 +34,7 @@
           :key="hex"
           :elevation="board.getElevation(hex)"
           :hazard="board.getHazard(hex)"
-          :edge-hazards="edgesForHex(hex)"
+          :edge-hazards="edgeHazardsByHex[hex]"
           :interactive="battlePhaseType === BattlePhaseType.MOVE && movementHexes.has(hex)"
           :transform="hexTransformStr(hex)"
           :class="{ [`hex-${hex}`]: true, 'available-move': movementHexes.has(hex) }"
@@ -208,13 +208,14 @@ const attackCreatureDialog = computed({
 const terrain = computed((): Terrain => activeBattle.value!.terrain)
 const board = computed((): BattleBoard => BATTLE_BOARDS[terrain.value as Terrain])
 
-function edgesForHex(hex: number): Record<number, EdgeHazard> {
-  return Object.fromEntries(BATTLE_BOARD_ADJACENCIES[hex]
-    .map((adjacency: number): [number, EdgeHazard] =>
-      [relationToHex(hex, adjacency), board.value.getEdgeHazard(adjacency, hex)])
-    .filter(([, hazard]: [number, EdgeHazard]) => hazard !== EdgeHazard.NONE)
-  )
-}
+const edgeHazardsByHex = computed((): Record<number, Record<number, EdgeHazard>> =>
+  Object.fromEntries(BATTLE_BOARD_HEXES.map((hex: number): [number, Record<number, EdgeHazard>] =>
+    [hex, Object.fromEntries(BATTLE_BOARD_ADJACENCIES[hex]
+      .map((adjacency: number): [number, EdgeHazard] =>
+        [relationToHex(hex, adjacency), board.value.getEdgeHazard(adjacency, hex)])
+      .filter(([, hazard]: [number, EdgeHazard]) => hazard !== EdgeHazard.NONE)
+    )]
+  )))
 
 const defender = computed((): PlayerId => activeBattle.value!.defender)
 
