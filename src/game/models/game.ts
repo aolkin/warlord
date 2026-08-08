@@ -128,10 +128,11 @@ export class TitanGame {
     return this.stacks.filter(stack => stack.hex === hex)
   }
 
-  getPathsForHex(getters: Getters, hexNum: number): Path[] {
+  getPathsForHex(hexNum: number): Path[] {
     if (this.activeRoll === undefined) {
       return []
     }
+    const activePlayerId = this.getActivePlayerId()
     const initialHex = masterboard.getHex(hexNum)
     const paths: Path[] = []
     // [Array of hexes to get where we are, first hex with enemies, current hex]
@@ -141,15 +142,15 @@ export class TitanGame {
     while ((entry = stack.pop()) !== undefined) {
       const [path, , hex] = entry
       let foe = entry[1]
-      const occupants: Stack[] = getters.stacksForHex(hex.id)
+      const occupants: Stack[] = this.getStacksForHex(hex.id)
       if (foe === undefined) {
-        const foes = occupants.filter((stack: Stack) => stack.owner !== getters.activePlayerId)
+        const foes = occupants.filter((stack: Stack) => stack.owner !== activePlayerId)
         if (foes.length > 0) {
           foe = foes[0]
         }
       }
       if (path.length === this.activeRoll) {
-        if (!occupants.some((stack: Stack) => stack.owner === getters.activePlayerId)) {
+        if (!occupants.some((stack: Stack) => stack.owner === activePlayerId)) {
           paths.push({ foe, path: [...path, hex] })
         }
       } else {
@@ -196,10 +197,11 @@ export class TitanGame {
       !this.getActiveStacks().some(stack => stack.hasMoved())
   }
 
-  getEngagedStacks(getters: Getters): Stack[] {
-    return getters.activeStacks
-      .filter(stack => getters.stacksForHex(stack.hex)
-        .some(occupant => occupant.owner !== getters.activePlayerId))
+  getEngagedStacks(): Stack[] {
+    const activePlayerId = this.getActivePlayerId()
+    return this.getActiveStacks()
+      .filter(stack => this.getStacksForHex(stack.hex)
+        .some(occupant => occupant.owner !== activePlayerId))
   }
 
   // Actions
@@ -223,7 +225,7 @@ export class TitanGame {
         if (getters.engagedStacks.length === 0) {
           nextPhase(this)
         } else {
-          void this.doInitiateBattle(getters, getters.engagedStacks[0])
+          void this.doInitiateBattle(getters.engagedStacks[0])
         }
         break
       case MasterboardPhase.BATTLE:
