@@ -35,15 +35,12 @@
 import { computed } from "vue"
 import { EdgeHazard, Hazard } from "@/models/battle"
 
-const props = withDefaults(defineProps<{
+const props = defineProps<{
   elevation: number
-  hazard?: Hazard
+  hazard: Hazard
   edgeHazards: Record<number, EdgeHazard>
-  interactive?: boolean
-}>(), {
-  hazard: Hazard.NONE,
-  interactive: false
-})
+  interactive: boolean
+}>()
 
 const hexClasses = computed(() => ({
   [`elevation-${props.elevation}`]: true,
