@@ -80,7 +80,7 @@
 import { computed, inject, Ref } from "vue"
 import { sum } from "lodash-es"
 import { useStore } from "vuex"
-import DiceRoller from "~/components/ui/generic/DiceRoller"
+import type DiceRoller from "~/components/ui/generic/DiceRoller"
 import { MasterboardPhase } from "@/models/game"
 import { Stack } from "@/models/stack"
 import { useSelectionStore } from "~/stores/ui/selection"

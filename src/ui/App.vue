@@ -77,18 +77,21 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeMount, provide, readonly, ref } from "vue"
+import { computed, defineAsyncComponent, onBeforeMount, provide, readonly, ref } from "vue"
 import { useStore } from "vuex"
 import BattleBoard from "~/components/game/battle/BattleBoard"
 import Masterboard from "~/components/game/masterboard/Masterboard"
 import PlayerStatus from "~/components/ui/game/PlayerStatus"
-import DiceRoller from "~/components/ui/generic/DiceRoller"
+import type DiceRollerComponent from "~/components/ui/generic/DiceRoller"
 import GameMenu from "~/components/ui/menus/GameMenu"
 import SystemMenu from "~/components/ui/menus/SystemMenu"
 import { usePreferencesStore } from "~/stores/ui/preferences"
 import { useSelectionStore, View } from "~/stores/ui/selection"
 
-const diceRoller = ref<InstanceType<typeof DiceRoller> | null>(null)
+// Keeps @3d-dice/dice-box's chunks out of the main bundle for sessions that never roll dice.
+const DiceRoller = defineAsyncComponent(() => import("~/components/ui/generic/DiceRoller"))
+
+const diceRoller = ref<InstanceType<typeof DiceRollerComponent> | null>(null)
 provide("diceRoller", readonly(diceRoller))
 
 const store = useStore()
