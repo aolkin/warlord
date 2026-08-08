@@ -81,6 +81,7 @@ import {
   BattlePhaseType,
   Hazard
 } from "@/models/battle"
+import { indexedIcon } from "~/icons"
 import { useTypedStore } from "~/plugins/vuex"
 import { usePreferencesStore } from "~/stores/ui/preferences"
 import { useSelectionStore } from "~/stores/ui/selection"
@@ -149,7 +150,7 @@ const roundIcon = computed((): string => {
   const round = activeBattle.value.round + 1
   const outline = battleActivePlayer.value === activeBattle.value.defender
   const icons = outline ? NUMERIC_BOX_OUTLINE_ICONS : NUMERIC_BOX_ICONS
-  return icons[round] ?? (outline ? mdiNumeric9PlusBoxOutline : mdiNumeric9PlusBox)
+  return indexedIcon(icons, round, outline ? mdiNumeric9PlusBoxOutline : mdiNumeric9PlusBox)
 })
 
 const land = computed((): BattleBoard => activeBattle.value.getBoard())
