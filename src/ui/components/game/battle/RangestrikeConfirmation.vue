@@ -42,8 +42,8 @@
 <script setup lang="ts">
 import { computed } from "vue"
 import { isEqual } from "lodash-es"
-import { useStore } from "vuex"
 import { BattleCreature, RangestrikeTarget, Strike } from "@/models/battle"
+import { useGameStore } from "~/stores/game"
 import { useSelectionStore } from "~/stores/ui/selection"
 import { div } from "~/utils/math"
 
@@ -56,17 +56,16 @@ defineEmits<{
   attack: []
 }>()
 
-const store = useStore()
+const gameStore = useGameStore()
 const selectionStore = useSelectionStore()
 
-const activeBattle = computed(() => store.state.game.activeBattle)
 const selectedCreatureName = computed(() => selectionStore.selectedCreature?.name() ?? "")
 const targetedCreature = computed<BattleCreature>(() => props.target.creature)
 const targetedCreatureName = computed(() => targetedCreature.value?.name() ?? "")
 const targetedStrike = computed<Strike>(() =>
-  activeBattle.value.getTargetedStrike(selectionStore.selectedCreature, props.target))
+  gameStore.game.activeBattle!.getTargetedStrike(selectionStore.selectedCreature!, props.target))
 const targetedStrikeUnadjusted = computed<Strike>(() => {
-  const rawStrike = activeBattle.value.getRawStrike(selectionStore.selectedCreature, targetedCreature.value)
+  const rawStrike = gameStore.game.activeBattle!.getRawStrike(selectionStore.selectedCreature!, targetedCreature.value)
   return {
     toHit: props.target.longDistance ? rawStrike.toHit + 1 : rawStrike.toHit,
     dice: div(rawStrike.dice, 2)

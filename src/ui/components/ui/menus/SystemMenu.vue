@@ -76,7 +76,7 @@
         v-model="uiPlayer"
         label="Local Player"
         min="1"
-        :max="players.length"
+        :max="gameStore.players.length"
         step="1"
       />
     </v-list-item>
@@ -133,22 +133,20 @@
 import { computed, inject, Ref, ref } from "vue"
 import DiceRoller from "~/components/ui/generic/DiceRoller"
 import { Creature, CREATURE_LIST } from "@/models/creature"
-import { useTypedStore } from "~/plugins/vuex"
+import { useGameStore } from "~/stores/game"
 import { usePlayerStore } from "~/stores/ui/player"
 import { CreatureColorMode, usePreferencesStore } from "~/stores/ui/preferences"
 import { useSelectionStore } from "~/stores/ui/selection"
 
 const diceRoller = inject<Readonly<Ref<InstanceType<typeof DiceRoller> | null>>>("diceRoller")
 
+const gameStore = useGameStore()
 const preferencesStore = usePreferencesStore()
 const playerStore = usePlayerStore()
 const selectionStore = useSelectionStore()
-const store = useTypedStore()
 
 const diceQuantity = ref(1)
 const saveText = ref("")
-
-const players = computed(() => store.getters["game/players"])
 
 const colorModes = computed(() => ({
   [CreatureColorMode.STANDARD]: "Standard",
@@ -183,7 +181,8 @@ const uiPlayer = computed({
 })
 
 function reset(): void {
-  store.dispatch("reset")
+  gameStore.reset()
+  selectionStore.reset()
 }
 
 function summon(creature: Creature): void {
@@ -197,7 +196,7 @@ function roll(): void {
 }
 
 async function persistToClipboard(): Promise<void> {
-  const value = await store.dispatch("game/persist")
+  const value = await gameStore.persist()
   if (value) {
     saveText.value = value
     await navigator.clipboard.writeText(value)
@@ -205,11 +204,11 @@ async function persistToClipboard(): Promise<void> {
 }
 
 function loadSave(): void {
-  store.dispatch("game/restore", saveText.value)
+  void gameStore.restore(saveText.value)
 }
 
 function loadJson(): void {
-  store.commit("game/rehydrate", JSON.parse(saveText.value))
+  gameStore.rehydrate(JSON.parse(saveText.value))
 }
 </script>
 

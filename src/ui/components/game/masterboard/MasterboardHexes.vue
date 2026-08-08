@@ -5,7 +5,7 @@
         v-for="id in hexes"
         :key="id"
         :hex="masterboard.getHex(id)"
-        @click="canFreeMove && move({ stack: selectionStore.selectedStack, hex: id })"
+        @click="canFreeMove && move(id)"
       />
     </g>
     <MasterboardEdges />
@@ -13,8 +13,8 @@
 </template>
 <script setup lang="ts">
 import { computed } from "vue"
-import { useStore } from "vuex"
 import masterboard from "@/models/masterboard"
+import { useGameStore } from "~/stores/game"
 import { useSelectionStore } from "~/stores/ui/selection"
 import MasterboardEdges from "./MasterboardEdges.vue"
 import MasterboardHex from "./MasterboardHex.vue"
@@ -25,12 +25,12 @@ withDefaults(defineProps<{
   canFreeMove: false
 })
 
-const store = useStore()
+const gameStore = useGameStore()
 const selectionStore = useSelectionStore()
 
 const hexes = computed(() => masterboard.getHexIds())
 
-function move(payload: unknown): void {
-  void store.dispatch("game/move", payload)
+function move(hex: number): void {
+  void gameStore.move({ stack: selectionStore.selectedStack!, hex })
 }
 </script>

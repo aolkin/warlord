@@ -42,21 +42,21 @@
           :type="creature"
           :player="stackPlayer"
           :class="{ splitting: selectionStore.focusedStack.split[index],
-                    interactive: activePhase === MasterboardPhase.SPLIT && owned }"
+                    interactive: gameStore.game.activePhase === MasterboardPhase.SPLIT && owned }"
           class="ma-1"
           @click="toggleSplit(index)"
         />
       </div>
-      <template v-if="activePlayerId === selectionStore.focusedStack.owner">
+      <template v-if="gameStore.activePlayerId === selectionStore.focusedStack.owner">
         <v-card-actions
-          v-if="activePhase === MasterboardPhase.SPLIT"
+          v-if="gameStore.game.activePhase === MasterboardPhase.SPLIT"
           class="split-guide"
         >
-          <v-card-text v-if="firstRound">
+          <v-card-text v-if="gameStore.firstRound">
             You must split your starting creatures. Please select four creatures (including one lord) above
             to split into a separate stack.
             <div
-              v-if="selectionStore.focusedStack?.isValidSplit(firstRound)"
+              v-if="selectionStore.focusedStack?.isValidSplit(gameStore.firstRound)"
               class="first-round-success"
             >
               You have selected a valid split and may roll the die
@@ -85,20 +85,20 @@
           </v-card-text>
         </v-card-actions>
         <template
-          v-else-if="activePhase === MasterboardPhase.MUSTER ||
-            (activePhase === MasterboardPhase.MOVE &&
+          v-else-if="gameStore.game.activePhase === MasterboardPhase.MUSTER ||
+            (gameStore.game.activePhase === MasterboardPhase.MOVE &&
               selectionStore.focusedHex !== undefined && selectionStore.focusedStack.hex !== selectionStore.focusedHex.id)"
         >
           <v-card-title>Mustering Options ({{ musteringTerrainName }})</v-card-title>
           <MusterChoices
-            v-if="activePhase === MasterboardPhase.MOVE || selectionStore.focusedStack.canMuster()"
+            v-if="gameStore.game.activePhase === MasterboardPhase.MOVE || selectionStore.focusedStack.canMuster()"
             v-model="mustering"
             class="px-2 pb-1"
             :musterable="musterable"
             :player="stackPlayer"
           />
           <v-card-subtitle
-            v-if="activePhase === MasterboardPhase.MUSTER"
+            v-if="gameStore.game.activePhase === MasterboardPhase.MUSTER"
             class="mb-3"
           >
             {{ musteringCaption }}
@@ -117,29 +117,26 @@ import { MasterboardPhase } from "@/models/game"
 import masterboard, { Terrain } from "@/models/masterboard"
 import { Player } from "@/models/player"
 import { MusterChoice, MusterPossibility, Stack, togglePendingSplit } from "@/models/stack"
-import { useTypedStore } from "~/plugins/vuex"
+import { useGameStore } from "~/stores/game"
 import { useSelectionStore } from "~/stores/ui/selection"
 import { mod } from "~/utils/math"
 import Creature from "../../game/Creature.vue"
 import PlayerMarker from "../../game/Marker.vue"
 import MusterChoices from "./MusterChoices.vue"
 
+const gameStore = useGameStore()
 const selectionStore = useSelectionStore()
-const store = useTypedStore()
 
-const activePhase = computed(() => store.state.game.activePhase)
-const activePlayerId = computed(() => store.getters["game/activePlayerId"])
-const playerById = computed(() => store.getters["game/playerById"])
-const firstRound = computed(() => store.getters["game/firstRound"])
-const activeStacks = computed(() => store.getters["game/activeStacks"])
+const owned = computed((): boolean => gameStore.activePlayerId === selectionStore.focusedStack?.owner)
 
-const owned = computed((): boolean => activePlayerId.value === selectionStore.focusedStack?.owner)
+const stackPlayer = computed((): Player | undefined => selectionStore.focusedStack === undefined
+  ? undefined
+  : gameStore.playerById(selectionStore.focusedStack.owner))
 
-const stackPlayer = computed((): Player | undefined => playerById.value(selectionStore.focusedStack?.owner))
-
-const musteringTerrain = computed((): Terrain => activePhase.value === MasterboardPhase.MUSTER
-  ? masterboard.getHex(selectionStore.focusedStack?.hex as number).terrain
-  : selectionStore.focusedHex?.terrain as Terrain)
+const musteringTerrain = computed((): Terrain =>
+  gameStore.game.activePhase === MasterboardPhase.MUSTER
+    ? masterboard.getHex(selectionStore.focusedStack?.hex as number).terrain
+    : selectionStore.focusedHex?.terrain as Terrain)
 
 const musteringTerrainName = computed((): string => capitalize(Terrain[musteringTerrain.value]))
 
@@ -151,10 +148,10 @@ const mustering = computed({
     return selectionStore.focusedStack?.currentMuster
   },
   set(value: MusterChoice) {
-    if (activePhase.value !== MasterboardPhase.MUSTER) {
+    if (gameStore.game.activePhase !== MasterboardPhase.MUSTER) {
       return
     }
-    store.dispatch("game/setRecruit", { stack: selectionStore.focusedStack, recruit: value })
+    void gameStore.setRecruit({ stack: selectionStore.focusedStack!, recruit: value })
   }
 })
 
@@ -184,20 +181,22 @@ const musteringCaption = computed(() => {
 })
 
 function toggleSplit(index: number): void {
-  if (activePhase.value === MasterboardPhase.SPLIT && (selectionStore.focusedStack?.creatures.length ?? 0) > 2) {
+  if (gameStore.game.activePhase === MasterboardPhase.SPLIT &&
+    (selectionStore.focusedStack?.creatures.length ?? 0) > 2) {
     const stack = selectionStore.focusedStack!
     togglePendingSplit(stack, index)
   }
 }
 
 function cycleStacks(by: number): void {
-  let index = activeStacks.value.indexOf(selectionStore.selectedStack)
+  const activeStacks = gameStore.activeStacks
+  let index = activeStacks.indexOf(selectionStore.selectedStack as Stack)
   let candidateStack: Stack
   do {
     index += by
-    candidateStack = activeStacks.value[mod(index, activeStacks.value.length)]
-  } while ((activePhase.value === MasterboardPhase.MOVE && candidateStack.hasMoved()) ||
-  (activePhase.value === MasterboardPhase.MUSTER && !candidateStack.canMuster()))
+    candidateStack = activeStacks[mod(index, activeStacks.length)]
+  } while ((gameStore.game.activePhase === MasterboardPhase.MOVE && candidateStack.hasMoved()) ||
+  (gameStore.game.activePhase === MasterboardPhase.MUSTER && !candidateStack.canMuster()))
   selectionStore.selectStack(candidateStack)
 }
 </script>

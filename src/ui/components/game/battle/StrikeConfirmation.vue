@@ -64,8 +64,8 @@
 <script setup lang="ts">
 import { computed } from "vue"
 import { isEqual, range } from "lodash-es"
-import { useStore } from "vuex"
 import { BattleCreature, isRangestrike, Strike } from "@/models/battle"
+import { useGameStore } from "~/stores/game"
 import { useSelectionStore } from "~/stores/ui/selection"
 
 const props = defineProps<{
@@ -79,16 +79,15 @@ const emit = defineEmits<{
   "update:optionalToHit": [value: number | undefined]
 }>()
 
-const store = useStore()
+const gameStore = useGameStore()
 const selectionStore = useSelectionStore()
 
-const activeBattle = computed(() => store.state.game.activeBattle)
 const selectedCreatureName = computed(() => selectionStore.selectedCreature?.name() ?? "")
 const targetedCreatureName = computed(() => props.targetedCreature?.name() ?? "")
 const targetedStrike = computed<Strike>(() =>
-  activeBattle.value.getTargetedStrike(selectionStore.selectedCreature, props.targetedCreature))
+  gameStore.game.activeBattle!.getTargetedStrike(selectionStore.selectedCreature!, props.targetedCreature))
 const targetedStrikeUnadjusted = computed<Strike>(() =>
-  activeBattle.value.getRawStrike(selectionStore.selectedCreature,
+  gameStore.game.activeBattle!.getRawStrike(selectionStore.selectedCreature!,
     isRangestrike(props.targetedCreature) ? props.targetedCreature.creature : props.targetedCreature))
 const targetedStrikeWasAdjusted = computed(() =>
   !isEqual(targetedStrikeUnadjusted.value, targetedStrike.value))
@@ -98,16 +97,16 @@ const normalCarryovers = computed<BattleCreature[]>(() => carryoversImpossible.v
   ? []
   : selectionStore.engagements
     .filter((target: BattleCreature) =>
-      activeBattle.value.toHitAdjusted(selectionStore.selectedCreature, target) <= targetedStrike.value.toHit)
+      gameStore.game.activeBattle!.toHitAdjusted(selectionStore.selectedCreature!, target) <= targetedStrike.value.toHit)
     .filter((target: BattleCreature) => props.targetedCreature !== target))
 const tougherCarryovers = computed<BattleCreature[]>(() => carryoversImpossible.value
   ? []
   : selectionStore.engagements
     .filter((target: BattleCreature) =>
-      activeBattle.value.toHitAdjusted(selectionStore.selectedCreature, target) > targetedStrike.value.toHit))
+      gameStore.game.activeBattle!.toHitAdjusted(selectionStore.selectedCreature!, target) > targetedStrike.value.toHit))
 const toHitAdjustments = computed<Record<number, BattleCreature[]>>(() =>
   tougherCarryovers.value.reduce((adjustments: Record<number, BattleCreature[]>, creature) => {
-    const toHit = activeBattle.value.toHitAdjusted(selectionStore.selectedCreature, creature)
+    const toHit = gameStore.game.activeBattle!.toHitAdjusted(selectionStore.selectedCreature!, creature)
     range(toHit, 7).forEach(numToUpdate =>
       adjustments[numToUpdate] = [...(adjustments[numToUpdate] ?? []), creature])
     return adjustments

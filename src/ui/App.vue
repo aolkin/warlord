@@ -78,13 +78,13 @@
 
 <script setup lang="ts">
 import { computed, defineAsyncComponent, onBeforeMount, provide, readonly, ref } from "vue"
-import { useStore } from "vuex"
 import BattleBoard from "~/components/game/battle/BattleBoard"
 import Masterboard from "~/components/game/masterboard/Masterboard"
 import PlayerStatus from "~/components/ui/game/PlayerStatus"
 import type DiceRollerComponent from "~/components/ui/generic/DiceRoller"
 import GameMenu from "~/components/ui/menus/GameMenu"
 import SystemMenu from "~/components/ui/menus/SystemMenu"
+import { useGameStore } from "~/stores/game"
 import { usePreferencesStore } from "~/stores/ui/preferences"
 import { useSelectionStore, View } from "~/stores/ui/selection"
 
@@ -94,14 +94,13 @@ const DiceRoller = defineAsyncComponent(() => import("~/components/ui/generic/Di
 const diceRoller = ref<InstanceType<typeof DiceRollerComponent> | null>(null)
 provide("diceRoller", readonly(diceRoller))
 
-const store = useStore()
+const gameStore = useGameStore()
 const selectionStore = useSelectionStore()
 const preferencesStore = usePreferencesStore()
 
 const menuVisible = ref(false)
 const prefsPaneVisible = ref(false)
 
-const activeBattle = computed(() => store.state.game.activeBattle)
 const view = computed<View>({
   get() {
     return selectionStore.view
@@ -112,7 +111,7 @@ const view = computed<View>({
 })
 
 onBeforeMount(() => {
-  if (activeBattle.value !== undefined) {
+  if (gameStore.game.activeBattle !== undefined) {
     selectionStore.setView(View.BATTLEBOARD)
   }
 })

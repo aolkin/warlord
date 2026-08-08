@@ -1,13 +1,13 @@
 <template>
   <v-card
     width="300"
-    :title="`${playerById(battleActivePlayer).name}'s Turn`"
+    :title="`${gameStore.playerById(gameStore.battleActivePlayer!)?.name}'s Turn`"
   >
     <template #prepend>
       <v-icon
         :icon="roundIcon"
         size="x-large"
-        :title="`Round ${activeBattle.round + 1}`"
+        :title="`Round ${gameStore.game.activeBattle!.round + 1}`"
       />
       <v-icon
         :icon="phaseIcon"
@@ -19,7 +19,7 @@
       Hex: {{ selectionStore.focusedBattleHex }} ({{ Hazard[land.getHazard(selectionStore.focusedBattleHex!)] }})
       <span v-if="land.getElevation(selectionStore.focusedBattleHex!) > 0">+{{ land.getElevation(selectionStore.focusedBattleHex!) }}</span>
     </v-card-subtitle>
-    <v-card-text v-if="battlePhaseType === BattlePhaseType.MOVE && pendingCreatures > 0">
+    <v-card-text v-if="gameStore.battlePhaseType === BattlePhaseType.MOVE && pendingCreatures > 0">
       You have {{ pendingCreatures }} creature{{ pendingCreatures > 1 ? 's' : '' }} that
       {{ pendingCreatures > 1 ? 'have' : 'has' }} not entered the battle board. If they do
       not do so this round, they will be eliminated.
@@ -54,23 +54,18 @@ import {
   BattlePhaseType,
   Hazard
 } from "@/models/battle"
-import { useTypedStore } from "~/plugins/vuex"
+import { useGameStore } from "~/stores/game"
 import { usePreferencesStore } from "~/stores/ui/preferences"
 import { useSelectionStore } from "~/stores/ui/selection"
 
-const store = useTypedStore()
+const gameStore = useGameStore()
 const selectionStore = useSelectionStore()
 const preferencesStore = usePreferencesStore()
 
-// ActionPanel only renders inside BattleBoard's v-else branch (active battle present).
-const activeBattle = computed(() => store.state.game.activeBattle!)
-const battlePhaseType = computed((): BattlePhaseType => store.getters["game/battlePhaseType"])
-const battleActivePlayer = computed(() => store.getters["game/battleActivePlayer"])
-const playerById = computed(() => store.getters["game/playerById"])
-const battleCarryoverTargets = computed(() => store.getters["game/battleCarryoverTargets"])
-
+// Every read of activeBattle below is non-null asserted: ActionPanel only renders inside
+// BattleBoard's v-else branch, which requires an active battle.
 const phaseTypeTitle = computed((): string => {
-  switch (battlePhaseType.value) {
+  switch (gameStore.battlePhaseType) {
     case BattlePhaseType.MOVE:
       return "Movement"
     case BattlePhaseType.STRIKE:
@@ -83,7 +78,7 @@ const phaseTypeTitle = computed((): string => {
 })
 
 const phaseIcon = computed((): string => {
-  switch (battlePhaseType.value) {
+  switch (gameStore.battlePhaseType) {
     case BattlePhaseType.MOVE:
       return "mdi-cursor-move"
     case BattlePhaseType.STRIKE:
@@ -96,31 +91,31 @@ const phaseIcon = computed((): string => {
 })
 
 const pendingStrikes = computed((): BattleCreature[] => {
-  if (battlePhaseType.value === BattlePhaseType.STRIKE ||
-    battlePhaseType.value === BattlePhaseType.STRIKEBACK) {
-    return activeBattle.value.getPendingStrikes()
+  if (gameStore.battlePhaseType === BattlePhaseType.STRIKE ||
+    gameStore.battlePhaseType === BattlePhaseType.STRIKEBACK) {
+    return gameStore.game.activeBattle!.getPendingStrikes()
   } else {
     return []
   }
 })
 
 const mayProceed = computed((): boolean =>
-  pendingStrikes.value.length === 0 && !battleCarryoverTargets.value)
+  pendingStrikes.value.length === 0 && !gameStore.battleCarryoverTargets)
 
 const roundIcon = computed((): string => {
-  const name = `mdi-numeric-${activeBattle.value.round + 1}-box`
-  return name + (battleActivePlayer.value === activeBattle.value.defender ? "-outline" : "")
+  const name = `mdi-numeric-${gameStore.game.activeBattle!.round + 1}-box`
+  return name + (gameStore.battleActivePlayer === gameStore.game.activeBattle!.defender ? "-outline" : "")
 })
 
-const land = computed((): BattleBoard => activeBattle.value.getBoard())
+const land = computed((): BattleBoard => gameStore.game.activeBattle!.getBoard())
 
 const pendingCreatures = computed((): number =>
-  activeBattle.value.creatures.filter((creature: BattleCreature) =>
-    creature.player === battleActivePlayer.value && creature.hex >= 36).length)
+  gameStore.game.activeBattle!.creatures.filter((creature: BattleCreature) =>
+    creature.player === gameStore.battleActivePlayer && creature.hex >= 36).length)
 
 function nextPhase(): void {
   selectionStore.deselectCreature()
-  store.dispatch("game/nextBattlePhase")
+  void gameStore.nextBattlePhase()
 }
 </script>
 <style scoped lang="sass">

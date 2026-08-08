@@ -18,15 +18,14 @@
 
 <script setup lang="ts">
 import { computed } from "vue"
-import { useStore } from "vuex"
 import { BattleCreature, RangestrikeTarget, Strike } from "@/models/battle"
+import { useGameStore } from "~/stores/game"
 import { useSelectionStore } from "~/stores/ui/selection"
 import StrikePanelTitle from "./StrikePanelTitle.vue"
 
-const store = useStore()
+const gameStore = useGameStore()
 const selectionStore = useSelectionStore()
 
-const activeBattle = computed(() => store.state.game.activeBattle)
 
 const target = computed<BattleCreature | undefined>(() =>
   selectionStore.focusedCreature !== undefined && selectionStore.engagements.includes(selectionStore.focusedCreature)
@@ -39,9 +38,9 @@ const rangedTarget = computed<BattleCreature | undefined>(() => rangedFocus.valu
 const strike = computed<Strike | undefined>(() => {
   if (selectionStore.selectedCreature) {
     if (target.value) {
-      return activeBattle.value.getAdjustedStrike(selectionStore.selectedCreature, target.value)
+      return gameStore.game.activeBattle!.getAdjustedStrike(selectionStore.selectedCreature, target.value)
     } else if (rangedFocus.value) {
-      return activeBattle.value.getRangestrike(selectionStore.selectedCreature, rangedFocus.value)
+      return gameStore.game.activeBattle!.getRangestrike(selectionStore.selectedCreature, rangedFocus.value)
     }
   }
   return undefined
