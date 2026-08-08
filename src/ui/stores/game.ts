@@ -1,8 +1,10 @@
 import { defineStore } from "pinia"
 import { computed, reactive } from "vue"
 import { BattleCreature } from "@/models/battle"
-import { Getters, MovePayload, MusterPayload, TitanGame } from "@/models/game"
+import { Getters, MovePayload, MusterPayload, Path, TitanGame } from "@/models/game"
 import { AttackPayload, BattleMovePayload, RangestrikePayload } from "@/models/game/battle"
+import { Player, PlayerId } from "@/models/player"
+import { Stack } from "@/models/stack"
 
 export const useGameStore = defineStore("game", () => {
   // TitanGame holds both the serializable game state and the rules deriving from it
@@ -12,27 +14,45 @@ export const useGameStore = defineStore("game", () => {
   const round = computed(() => game.getRound())
   const firstRound = computed(() => game.getFirstRound())
   const players = computed(() => game.getPlayers())
-  const playerById = computed(() => game.getPlayerById())
-  const stacksForPlayer = computed(() => game.getStacksForPlayer())
-  const stacksForHex = computed(() => game.getStacksForHex())
   const activePlayer = computed(() => game.getActivePlayer())
   const activePlayerId = computed(() => game.getActivePlayerId(getters))
   const activeStacks = computed(() => game.getActiveStacks(getters))
   const nextMarker = computed(() => game.getNextMarker(getters))
-  const pathsForHex = computed(() => game.getPathsForHex(getters))
   const mandatoryMoves = computed(() => game.getMandatoryMoves(getters))
   const mayProceed = computed(() => game.getMayProceed(getters))
   const mulliganAvailable = computed(() => game.getMulliganAvailable(getters))
   const engagedStacks = computed(() => game.getEngagedStacks(getters))
   const battleActivePlayer = computed(() => game.getBattleActivePlayer())
   const battlePhaseType = computed(() => game.getBattlePhaseType())
-  const battleMoves = computed(() => game.getBattleMoves())
-  const battleEngagements = computed(() => game.getBattleEngagements())
   const battleCarryoverTargets = computed(() => game.getBattleCarryoverTargets())
-  const battleRangestrikeTargets = computed(() => game.getBattleRangestrikeTargets())
+
+  function playerById(id: PlayerId): Player | undefined {
+    return game.getPlayerById(id)
+  }
+
+  function stacksForPlayer(owner: PlayerId): Stack[] {
+    return game.getStacksForPlayer(owner)
+  }
+
+  function stacksForHex(hex: number): Stack[] {
+    return game.getStacksForHex(hex)
+  }
+
+  function pathsForHex(hex: number): Path[] {
+    return game.getPathsForHex(getters, hex)
+  }
+
+  function battleMoves(creature: BattleCreature): Set<number> {
+    return game.getBattleMoves(creature)
+  }
+
+  function battleEngagements(creature: BattleCreature): BattleCreature[] {
+    return game.getBattleEngagements(creature)
+  }
 
   // A getXxx method that builds on other derived values takes them as a Getters object.
-  // reactive() unwraps each computed on access, so those reads go through the cache above.
+  // reactive() unwraps each computed on access, so those reads go through the cache above;
+  // the parameterized entries are plain functions and pass through unchanged.
   const getters: Getters = reactive({
     round,
     firstRound,
@@ -76,7 +96,7 @@ export const useGameStore = defineStore("game", () => {
     battleMoves,
     battleEngagements,
     battleCarryoverTargets,
-    battleRangestrikeTargets,
+    battleRangestrikeTargets: (creature: BattleCreature) => game.getBattleRangestrikeTargets(creature),
     nextPhase: (): Promise<void> => game.doNextPhase(getters),
     setRoll: (roll?: number): Promise<void> => game.doSetRoll(getters, roll),
     move: (payload: MovePayload): Promise<void> => game.doMove(payload),
