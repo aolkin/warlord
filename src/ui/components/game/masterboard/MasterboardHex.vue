@@ -71,8 +71,8 @@ import {
 
 // Populated only when this hex is a step on a stack's move path; its absence means
 // the hex is being rendered as a plain board hex. pathLength and positionOnPath are
-// the roll length and this step's zero-based offset along the path; distanceToDest
-// and distanceFromStart are derived from them below.
+// the roll length and this step's zero-based offset along the path; distanceFromStart
+// is derived from them below (distanceToDest is derived inline in rootClass).
 export interface PathInfo {
   pathLength: number
   positionOnPath: number
@@ -90,18 +90,18 @@ const selectionStore = useSelectionStore()
 
 const terrain = computed(() => Terrain[props.hex?.terrain].toLowerCase())
 
-const distanceToDest = computed(() => props.pathInfo!.pathLength - props.pathInfo!.positionOnPath)
 const distanceFromStart = computed(() => props.pathInfo!.positionOnPath + 1)
 
 const rootClass = computed(() => {
   if (props.pathInfo) {
-    const { pathIndex, containsEnemy } = props.pathInfo
+    const { pathLength, positionOnPath, pathIndex, containsEnemy } = props.pathInfo
+    const distanceToDest = pathLength - positionOnPath
     return {
       path: true,
       foe: containsEnemy,
-      [`distance-${distanceToDest.value}`]: true,
+      [`distance-${distanceToDest}`]: true,
       [`path-${pathIndex}`]: true,
-      destination: distanceToDest.value === 1
+      destination: distanceToDest === 1
     }
   } else {
     return {
