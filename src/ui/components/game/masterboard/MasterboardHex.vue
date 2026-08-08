@@ -12,7 +12,7 @@
       :transform="inverted ? 'rotate(180)' : ''"
       class="hex"
     />
-    <template v-if="!path">
+    <template v-if="!pathInfo">
       <clipPath
         v-if="preferencesStore.fancyGraphics"
         :id="`hex-${hex.id}-clip`"
@@ -49,7 +49,7 @@
         class="label"
         text-anchor="middle"
       >
-        {{ pathCount }}
+        {{ distanceFromStart }}
       </text>
     </template>
   </g>
@@ -58,7 +58,6 @@
 <script setup lang="ts">
 import { computed } from "vue"
 import { MasterboardHex, Terrain } from "@/models/masterboard"
-import { useGameStore } from "~/stores/game"
 import { usePreferencesStore } from "~/stores/ui/preferences"
 import { useSelectionStore } from "~/stores/ui/selection"
 import {
@@ -70,33 +69,39 @@ import {
   TRIANGLE_SIDE
 } from "./utils"
 
-const props = withDefaults(defineProps<{
-  hex: MasterboardHex
-  distanceToDest?: number
-  pathIndex?: number
-  containsEnemy?: boolean
-}>(), {
-  distanceToDest: undefined,
-  pathIndex: 0,
-  containsEnemy: false
-})
+// Populated only when this hex is a step on a stack's move path; its absence means
+// the hex is being rendered as a plain board hex. pathLength and positionOnPath are
+// the roll length and this step's zero-based offset along the path; distanceFromStart
+// is derived from them below (distanceToDest is derived inline in rootClass).
+export interface PathInfo {
+  pathLength: number
+  positionOnPath: number
+  pathIndex: number
+  containsEnemy: boolean
+}
 
-const gameStore = useGameStore()
+const props = defineProps<{
+  hex: MasterboardHex
+  pathInfo?: PathInfo
+}>()
+
 const preferencesStore = usePreferencesStore()
 const selectionStore = useSelectionStore()
 
 const terrain = computed(() => Terrain[props.hex?.terrain].toLowerCase())
 
-const path = computed((): boolean => props.distanceToDest !== undefined)
+const distanceFromStart = computed(() => props.pathInfo!.positionOnPath + 1)
 
 const rootClass = computed(() => {
-  if (path.value) {
+  if (props.pathInfo) {
+    const { pathLength, positionOnPath, pathIndex, containsEnemy } = props.pathInfo
+    const distanceToDest = pathLength - positionOnPath
     return {
       path: true,
-      foe: props.containsEnemy,
-      [`distance-${props.distanceToDest}`]: true,
-      [`path-${props.pathIndex}`]: true,
-      destination: props.distanceToDest === 1
+      foe: containsEnemy,
+      [`distance-${distanceToDest}`]: true,
+      [`path-${pathIndex}`]: true,
+      destination: distanceToDest === 1
     }
   } else {
     return {
@@ -118,13 +123,6 @@ const points = computed(() => [
 const transform = computed((): string => hexTransform(props.hex.id).toString())
 
 const inverted = computed(() => isHexInverted(props.hex.id))
-
-// Only read in the "path" branch (path === true), which only occurs when this
-// hex was given a distanceToDest by Masterboard's path rendering, itself only
-// populated once the selection store's "paths" getter is non-empty and therefore
-// activeRoll is defined - see src/ui/stores/ui/selection.ts.
-const pathCount = computed((): number =>
-  gameStore.game.activeRoll! - (props.distanceToDest ?? 0) + 1)
 </script>
 
 <style lang="sass" scoped>
