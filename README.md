@@ -36,5 +36,5 @@ pnpm typecheck
 The project is organized into three main layers:
 
 - **Models** (`src/game/models/`) — Plain TypeScript game engine. Contains the core `TitanGame` class and supporting types (Player, Stack, Battle, etc.) with no UI dependencies.
-- **Store** (`src/game/store/`) — Vuex state management layer. Wraps TitanGame's getter/mutation/action methods (prefixed with `get*`, `m*`, `do*`) as Vuex actions and getters to make state reactive and accessible to components.
+- **Stores** (`src/ui/stores/`) — Pinia state management layer. Wraps TitanGame methods as Pinia store actions and getters to make state reactive and accessible to components.
 - **Components** (`src/ui/components/`) — Vue UI layer. Renders the game state, handles user input, and dispatches store actions.
