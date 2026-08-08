@@ -2,28 +2,28 @@
   <v-list density="compact">
     <v-list-item>
       <v-switch
-        v-model="fancyGraphics"
+        v-model="preferencesStore.fancyGraphics"
         label="Fancy Graphics"
         inset
       />
     </v-list-item>
     <v-list-item>
       <v-switch
-        v-model="quickDice"
+        v-model="preferencesStore.quickDice"
         label="Quick Dice"
         inset
       />
     </v-list-item>
     <v-list-item>
       <v-switch
-        v-model="freeMovement"
+        v-model="preferencesStore.freeMovement"
         label="Free Teleportation"
         inset
       />
     </v-list-item>
     <v-list-item>
       <v-switch
-        v-model="offscreenDice"
+        v-model="preferencesStore.offscreenDice"
         label="Offscreen Dice Rendering"
         hint="Smoother dice rolls at the cost of a larger download; off renders on the main thread instead. Takes effect after reload."
         persistent-hint
@@ -164,29 +164,9 @@ const colorModes = computed(() => ({
   [CreatureColorMode.PLAYER_UNIFORM_TEXT]: "Player Color with Uniform Text"
 }))
 
-const fancyGraphics = computed({
-  get: () => preferencesStore.fancyGraphics,
-  set: (value: boolean) => preferencesStore.setFancyGraphics(value)
-})
-
-const quickDice = computed({
-  get: () => preferencesStore.quickDice,
-  set: (value: boolean) => preferencesStore.setQuickDice(value)
-})
-
-const freeMovement = computed({
-  get: () => preferencesStore.freeMovement,
-  set: (value: boolean) => preferencesStore.setFreeMovement(value)
-})
-
-const offscreenDice = computed({
-  get: () => preferencesStore.offscreenDice,
-  set: (value: boolean) => preferencesStore.setOffscreenDice(value)
-})
-
 const creatureColorMode = computed({
   get: () => `${preferencesStore.creatureColorMode}`,
-  set: (value: string) => preferencesStore.setCreatureColorMode(Number(value))
+  set: (value: string) => { preferencesStore.creatureColorMode = Number(value) }
 })
 
 const uiPlayer = computed({
