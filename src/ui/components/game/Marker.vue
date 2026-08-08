@@ -39,8 +39,6 @@ const props = withDefaults(defineProps<{
   transform: ""
 })
 
-// TODO: BROWN has no crest SVGs (only 5 colors x 12 markers exist), so 6-player
-// support can't return until stack marker art is created for it.
 const imageUrl = computed(() => {
   const id = padStart(String(props.color * 12 + props.marker + 1), 2, "0")
   return new URL(`../../assets/markers/marker-${id}.svg`, import.meta.url).href
