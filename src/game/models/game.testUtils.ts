@@ -14,10 +14,8 @@ export function newGame(numPlayers = 2): TitanGame {
 }
 
 /**
- * A getter that depends on another (e.g. getMandatoryMoves needs pathsForHex) reads it off
- * the Getters object handed to it rather than recomputing it. This mirrors that wiring without
- * a store: each property recomputes from current game state on every access, which behaves the
- * same as the store's cached computeds for the synchronous scenarios below.
+ * Exposes a game's derived values in the store's shape, recomputing each property from
+ * current game state on every access.
  */
 export function createGetters(game: TitanGame): Getters {
   const getters = {} as Getters
@@ -35,8 +33,8 @@ export function createGetters(game: TitanGame): Getters {
   lazy("activeStacks", () => game.getActiveStacks())
   lazy("nextMarker", () => game.getNextMarker())
   lazy("pathsForHex", () => (hex: number) => game.getPathsForHex(hex))
-  lazy("mandatoryMoves", () => game.getMandatoryMoves(getters))
-  lazy("mayProceed", () => game.getMayProceed(getters))
+  lazy("mandatoryMoves", () => game.getMandatoryMoves())
+  lazy("mayProceed", () => game.getMayProceed())
   lazy("mulliganAvailable", () => game.getMulliganAvailable())
   lazy("engagedStacks", () => game.getEngagedStacks())
   return getters
