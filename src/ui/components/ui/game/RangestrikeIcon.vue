@@ -27,39 +27,27 @@
   </g>
 </template>
 
-<script lang="ts">
-import { defineComponent, PropType } from "vue"
+<script setup lang="ts">
+import { computed } from "vue"
 import { Strike } from "@/models/battle"
 
-export default defineComponent({
-  name: "RangestrikeIcon",
-  props: {
-    interactive: {
-      type: Boolean,
-      required: false,
-      default: false
-    },
-    transparentHover: {
-      type: Boolean,
-      required: false,
-      default: false
-    },
-    longDistance: {
-      type: Boolean,
-      required: false,
-      default: false
-    },
-    adjustment: {
-      type: Object as PropType<Strike>,
-      required: false,
-      default: undefined
-    }
-  },
-  computed: {
-    totalAdjustment() {
-      return 0 // Disable this for now // this.adjustment + (this.longDistance ? -1 : 0)
-    }
+withDefaults(
+  defineProps<{
+    interactive?: boolean
+    transparentHover?: boolean
+    longDistance?: boolean
+    adjustment?: Strike
+  }>(),
+  {
+    interactive: false,
+    transparentHover: false,
+    longDistance: false,
+    adjustment: undefined
   }
+)
+
+const totalAdjustment = computed(() => {
+  return 0 // Disable this for now // this.adjustment + (this.longDistance ? -1 : 0)
 })
 </script>
 

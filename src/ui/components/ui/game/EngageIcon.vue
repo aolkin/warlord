@@ -19,24 +19,17 @@
   </g>
 </template>
 
-<script lang="ts">
-import { defineComponent } from "vue"
-
-export default defineComponent({
-  name: "EngageIcon",
-  props: {
-    interactive: {
-      type: Boolean,
-      required: false,
-      default: false
-    },
-    transparentHover: {
-      type: Boolean,
-      required: false,
-      default: false
-    }
+<script setup lang="ts">
+withDefaults(
+  defineProps<{
+    interactive?: boolean
+    transparentHover?: boolean
+  }>(),
+  {
+    interactive: false,
+    transparentHover: false
   }
-})
+)
 </script>
 
 <style lang="sass" scoped>
