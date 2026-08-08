@@ -34,6 +34,7 @@ onMounted(() => {
     container: "#dicebox-container",
     assetPath: "/assets/dice-box/",
     theme: "diceOfRolling",
+    offscreen: false,
     scale: 6,
     restitution: 0.6,
     friction: 0.9,
