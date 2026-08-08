@@ -99,7 +99,7 @@
       </svg>
 
       <CreaturePanel
-        :local-player-id="localPlayerId"
+        :local-player-is-defender="localPlayerIsDefender"
         position="fixed"
         location="top right"
         class="ma-3"
@@ -192,8 +192,6 @@ const playerStore = usePlayerStore()
 const preferencesStore = usePreferencesStore()
 const selectionStore = useSelectionStore()
 
-const localPlayerId = computed((): PlayerId => gameStore.players[playerStore.localPlayer].id)
-
 const target = ref<BattleCreature | RangestrikeTarget | undefined>(undefined)
 const optionalToHit = ref<number | undefined>(undefined)
 const debugHex = ref(0)
@@ -227,6 +225,9 @@ const edgeHazardsByHex = computed((): Record<number, Record<number, EdgeHazard>>
     [hex, edgesForHex(hex)])))
 
 const defender = computed((): PlayerId => activeBattle.value!.defender)
+
+const localPlayerIsDefender = computed((): boolean =>
+  defender.value === gameStore.players[playerStore.localPlayer].id)
 
 const activeCreatures = computed((): BattleCreature[] =>
   activeBattle.value!.creatures.filter((creature: BattleCreature) =>
