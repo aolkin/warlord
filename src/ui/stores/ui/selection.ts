@@ -24,7 +24,6 @@ export const useSelectionStore = defineStore("selection", () => {
   const focusedStacks = shallowReactive<Stack[]>([])
   const focusedHexes = shallowReactive<MasterboardHex[]>([])
   const creature = shallowRef<BattleCreature>()
-  const focusedCreatures = shallowReactive<BattleCreature[]>([])
   const focusedBattleHexes = shallowReactive<number[]>([])
 
   const selectedStack = computed<Stack | undefined>(() => stack.value)
@@ -35,9 +34,6 @@ export const useSelectionStore = defineStore("selection", () => {
     ? focusedHexes[focusedHexes.length - 1]
     : undefined)
   const selectedCreature = computed<BattleCreature | undefined>(() => creature.value)
-  const focusedCreature = computed<BattleCreature | undefined>(() => focusedCreatures.length > 0
-    ? focusedCreatures[focusedCreatures.length - 1]
-    : creature.value)
   const focusedBattleHex = computed<number | undefined>(() => focusedBattleHexes.length > 0
     ? focusedBattleHexes[focusedBattleHexes.length - 1]
     : undefined)
@@ -65,7 +61,6 @@ export const useSelectionStore = defineStore("selection", () => {
     creature.value = undefined
     focusedStacks.splice(0, focusedStacks.length)
     focusedHexes.splice(0, focusedHexes.length)
-    focusedCreatures.splice(0, focusedCreatures.length)
     focusedBattleHexes.splice(0, focusedBattleHexes.length)
   }
 
@@ -122,19 +117,6 @@ export const useSelectionStore = defineStore("selection", () => {
     creature.value = undefined
   }
 
-  function enterCreature(entering: BattleCreature): void {
-    if (!focusedCreatures.includes(entering)) {
-      focusedCreatures.push(entering)
-    }
-  }
-
-  function leaveCreature(leaving: BattleCreature): void {
-    const index = focusedCreatures.indexOf(leaving)
-    if (index !== -1) {
-      focusedCreatures.splice(index)
-    }
-  }
-
   function enterBattleHex(entering: number): void {
     if (!focusedBattleHexes.includes(entering)) {
       focusedBattleHexes.push(entering)
@@ -164,13 +146,11 @@ export const useSelectionStore = defineStore("selection", () => {
     focusedStacks,
     focusedHexes,
     creature,
-    focusedCreatures,
     focusedBattleHexes,
     selectedStack,
     focusedStack,
     focusedHex,
     selectedCreature,
-    focusedCreature,
     focusedBattleHex,
     paths,
     movementHexes,
@@ -187,8 +167,6 @@ export const useSelectionStore = defineStore("selection", () => {
     leaveHex,
     selectCreature,
     deselectCreature,
-    enterCreature,
-    leaveCreature,
     enterBattleHex,
     leaveBattleHex
   }

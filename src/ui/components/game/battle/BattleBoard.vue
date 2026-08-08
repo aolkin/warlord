@@ -68,8 +68,8 @@
            rotate(${120 * (activeBattle.attackerEdge - 1) + (creature.player === defender ? 180 : 0)})`"
           in-svg
           @click.stop="chooseCreature(creature)"
-          @mouseenter="selectionStore.enterCreature(creature)"
-          @mouseleave="selectionStore.leaveCreature(creature)"
+          @mouseenter="enterCreature(creature)"
+          @mouseleave="leaveCreature(creature)"
         />
         <EngageIcon
           v-for="(creature) in (gameStore.battleCarryoverTargets ?? selectionStore.engagements)"
@@ -79,8 +79,8 @@
           :transform="`${hexTransformStr(creature.hex)} scale(0.9)
            rotate(${120 * (activeBattle.attackerEdge - 1) + (creature.player === defender ? 0 : 180)})`"
           @click.stop="targetCreature(creature)"
-          @mouseenter="selectionStore.enterCreature(creature)"
-          @mouseleave="selectionStore.leaveCreature(creature)"
+          @mouseenter="enterCreature(creature)"
+          @mouseleave="leaveCreature(creature)"
         />
         <RangestrikeIcon
           v-for="(rangestrikeTarget) in selectionStore.rangestrikes"
@@ -93,8 +93,8 @@
            rotate(${120 * (activeBattle.attackerEdge - 1) +
           (rangestrikeTarget.creature.player === defender ? 0 : 180)})`"
           @click.stop="targetCreature(rangestrikeTarget)"
-          @mouseenter="selectionStore.enterCreature(rangestrikeTarget.creature)"
-          @mouseleave="selectionStore.leaveCreature(rangestrikeTarget.creature)"
+          @mouseenter="enterCreature(rangestrikeTarget.creature)"
+          @mouseleave="leaveCreature(rangestrikeTarget.creature)"
         />
       </svg>
 
@@ -121,6 +121,7 @@
           v-if="selectionStore.selectedCreature"
           rounded
           :attacker="selectionStore.selectedCreature"
+          :focused-creature="focusedCreature"
         />
         <ActiveStrikePanel
           rounded
@@ -154,7 +155,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, inject, Ref, ref } from "vue"
+import { computed, inject, Ref, ref, shallowReactive } from "vue"
 import {
   ActiveStrike,
   BATTLE_BOARD_ADJACENCIES,
@@ -200,6 +201,30 @@ const selectionStore = useSelectionStore()
 const target = ref<BattleCreature | RangestrikeTarget | undefined>(undefined)
 const optionalToHit = ref<number | undefined>(undefined)
 const debugHex = ref(0)
+
+// BattleCreature instances here always come from the game store's own reactive state, so
+// they're already reactive proxies by the time they reach this array - a shallow collection
+// avoids Vue re-wrapping their internals a second time, which for a class with private fields
+// also trips up TypeScript (Vue's deep UnwrapRef can't reconstruct a private field, so the
+// mapped type stops matching the class).
+const focusedCreatures = shallowReactive<BattleCreature[]>([])
+
+const focusedCreature = computed<BattleCreature | undefined>(() => focusedCreatures.length > 0
+  ? focusedCreatures[focusedCreatures.length - 1]
+  : selectionStore.selectedCreature)
+
+function enterCreature(entering: BattleCreature): void {
+  if (!focusedCreatures.includes(entering)) {
+    focusedCreatures.push(entering)
+  }
+}
+
+function leaveCreature(leaving: BattleCreature): void {
+  const index = focusedCreatures.indexOf(leaving)
+  if (index !== -1) {
+    focusedCreatures.splice(index)
+  }
+}
 
 // gameStore.game is deeply reactive, and Vue's UnwrapNestedRefs can't reconstruct Battle's
 // private methods, so the inferred type structurally mismatches the class - cast it back.

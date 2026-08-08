@@ -65,7 +65,7 @@
 import { computed } from "vue"
 import { isEqual, range } from "lodash-es"
 import { Battle, BattleCreature, isRangestrike, Strike } from "@/models/battle"
-import { useSelectionStore } from "~/stores/ui/selection"
+import { useGameStore } from "~/stores/game"
 
 const props = defineProps<{
   battle: Battle
@@ -80,7 +80,9 @@ const emit = defineEmits<{
   "update:optionalToHit": [value: number | undefined]
 }>()
 
-const selectionStore = useSelectionStore()
+const gameStore = useGameStore()
+
+const engagements = computed<BattleCreature[]>(() => gameStore.battleEngagements(props.attacker))
 
 const selectedCreatureName = computed(() => props.attacker.name())
 const targetedCreatureName = computed(() => props.targetedCreature?.name() ?? "")
@@ -91,17 +93,17 @@ const targetedStrikeUnadjusted = computed<Strike>(() =>
     isRangestrike(props.targetedCreature) ? props.targetedCreature.creature : props.targetedCreature))
 const targetedStrikeWasAdjusted = computed(() =>
   !isEqual(targetedStrikeUnadjusted.value, targetedStrike.value))
-const carryoversImpossible = computed(() => selectionStore.engagements.length < 2 ||
+const carryoversImpossible = computed(() => engagements.value.length < 2 ||
   targetedStrike.value.dice - props.targetedCreature.getRemainingHp() <= 0)
 const normalCarryovers = computed<BattleCreature[]>(() => carryoversImpossible.value
   ? []
-  : selectionStore.engagements
+  : engagements.value
     .filter((target: BattleCreature) =>
       props.battle.toHitAdjusted(props.attacker, target) <= targetedStrike.value.toHit)
     .filter((target: BattleCreature) => props.targetedCreature !== target))
 const tougherCarryovers = computed<BattleCreature[]>(() => carryoversImpossible.value
   ? []
-  : selectionStore.engagements
+  : engagements.value
     .filter((target: BattleCreature) =>
       props.battle.toHitAdjusted(props.attacker, target) > targetedStrike.value.toHit))
 const toHitAdjustments = computed<Record<number, BattleCreature[]>>(() =>
