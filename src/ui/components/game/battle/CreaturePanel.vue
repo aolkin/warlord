@@ -75,15 +75,17 @@
 <script setup lang="ts">
 import { computed, ref } from "vue"
 import { BattleCreature, BattlePhase } from "@/models/battle"
-import { Player } from "@/models/player"
+import { Player, PlayerId } from "@/models/player"
 import { useGameStore } from "~/stores/game"
-import { usePlayerStore } from "~/stores/ui/player"
 import { useSelectionStore } from "~/stores/ui/selection"
 import Creature from "../Creature.vue"
 import PendingCreatures from "./PendingCreatures.vue"
 
+const props = defineProps<{
+  localPlayerId: PlayerId
+}>()
+
 const gameStore = useGameStore()
-const playerStore = usePlayerStore()
 const selectionStore = useSelectionStore()
 
 const minimized = ref(false)
@@ -93,7 +95,7 @@ const activeBattle = computed(() => gameStore.game.activeBattle!)
 const orderingClasses = computed(() =>
   ({
     "flex-column-reverse":
-      activeBattle.value.defender === gameStore.players[playerStore.localPlayer].id
+      activeBattle.value.defender === props.localPlayerId
   }))
 const attacker = computed<Player>(() =>
   gameStore.playerById(activeBattle.value.attacker))
