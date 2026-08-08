@@ -1,79 +1,48 @@
 <template>
-  <g
+  <HexShape
     :class="rootClass"
-    :transform="transform"
-    class="parent"
-    @mouseenter="selectionStore.enterHex(hex)"
-    @mouseleave="selectionStore.leaveHex(hex)"
+    :hex="hex"
   >
-    <polygon
-      :class="{ fancy: preferencesStore.fancyGraphics }"
-      :points="HEX_POINTS"
-      :transform="inverted ? 'rotate(180)' : ''"
-      class="hex"
-    />
-    <text
-      :y="inverted ? -10 : 20"
-      class="label"
-      text-anchor="middle"
-    >
-      {{ pathStepLabel }}
-    </text>
-  </g>
+    <template #default="{ inverted }">
+      <text
+        :y="inverted ? -10 : 20"
+        class="label"
+        text-anchor="middle"
+      >
+        {{ pathStepLabel }}
+      </text>
+    </template>
+  </HexShape>
 </template>
 
 <script setup lang="ts">
 import { computed } from "vue"
 import { MasterboardHex } from "@/models/masterboard"
-import { usePreferencesStore } from "~/stores/ui/preferences"
-import { useSelectionStore } from "~/stores/ui/selection"
-import { HEX_POINTS, hexTransform, isHexInverted } from "./utils"
+import HexShape from "./HexShape.vue"
 
-// pathLength and positionOnPath are the roll length and this step's zero-based
-// offset along the path; pathStepLabel is derived from them below
-// (distanceToDest is derived inline in rootClass). They only ever appear
-// together, so they're grouped into a single required prop.
-export interface PathInfo {
+const props = defineProps<{
+  hex: MasterboardHex
   pathLength: number
   positionOnPath: number
   pathIndex: number
   containsEnemy: boolean
-}
-
-const props = defineProps<{
-  hex: MasterboardHex
-  pathInfo: PathInfo
 }>()
 
-const preferencesStore = usePreferencesStore()
-const selectionStore = useSelectionStore()
-
-const pathStepLabel = computed(() => props.pathInfo.positionOnPath + 1)
+const pathStepLabel = computed(() => props.positionOnPath + 1)
 
 const rootClass = computed(() => {
-  const { pathLength, positionOnPath, pathIndex, containsEnemy } = props.pathInfo
-  const distanceToDest = pathLength - positionOnPath
+  const distanceToDest = props.pathLength - props.positionOnPath
   return {
-    foe: containsEnemy,
+    foe: props.containsEnemy,
     [`distance-${distanceToDest}`]: true,
-    [`path-${pathIndex}`]: true,
-    destination: pathStepLabel.value === pathLength
+    [`path-${props.pathIndex}`]: true,
+    destination: pathStepLabel.value === props.pathLength
   }
 })
-
-const transform = computed((): string => hexTransform(props.hex.id).toString())
-
-const inverted = computed(() => isHexInverted(props.hex.id))
 </script>
 
 <style lang="sass" scoped>
-.parent
-  font-family: Quintessential, "Fanwood Text", serif
-  font-weight: bold
-  font-size: 0.75em
-  text-transform: uppercase
-
-.hex
+:deep(.hex)
   stroke-width: 0
   transition: 0.25s ease-out
 
@@ -87,33 +56,33 @@ const inverted = computed(() => isHexInverted(props.hex.id))
     $dist-opacity: calc(0.75 - $dist / 6 * 0.5)
 
     .path-#{$path}.distance-#{$dist}
-      .hex
+      :deep(.hex)
         fill: rgba($path-color, $dist-opacity)
         stroke: darken($path-color, 25%)
 
       .label
         fill: darken($path-color, 35%)
 
-      &:hover .hex
+      &:hover :deep(.hex)
         fill: rgba($path-color, 0.25)
 
 g.paths:hover .parent
   .label
     opacity: 0.2
 
-  .hex
+  :deep(.hex)
     fill: transparent
 
   &:hover
     .label
       opacity: 1
 
-    .hex
+    :deep(.hex)
       stroke-width: 2px
 
 .distance-1:not(.foe)
   cursor: pointer
 
-  &:hover .hex
+  &:hover :deep(.hex)
     stroke-width: 8px !important
 </style>

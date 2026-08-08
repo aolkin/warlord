@@ -20,13 +20,11 @@
             <MasterboardPathOverlay
               v-for="([foe, hex], index) in step"
               :key="hex.id"
+              :contains-enemy="foe"
               :hex="hex"
-              :path-info="{
-                pathIndex: index,
-                pathLength: activeRoll!,
-                positionOnPath: distance,
-                containsEnemy: foe
-              }"
+              :path-index="index"
+              :path-length="activeRoll!"
+              :position-on-path="distance"
               @click.stop="moveStack(distance, foe, hex)"
             />
           </g>
