@@ -2,7 +2,7 @@
   <g
     :class="rootClass"
     :transform="transform"
-    class="parent"
+    class="parent path"
     @mouseenter="selectionStore.enterHex(hex)"
     @mouseleave="selectionStore.leaveHex(hex)"
   >
@@ -17,7 +17,7 @@
       class="label"
       text-anchor="middle"
     >
-      {{ distanceFromStart }}
+      {{ pathStepLabel }}
     </text>
   </g>
 </template>
@@ -30,7 +30,7 @@ import { useSelectionStore } from "~/stores/ui/selection"
 import { HEX_POINTS, hexTransform, isHexInverted } from "./utils"
 
 // pathLength and positionOnPath are the roll length and this step's zero-based
-// offset along the path; distanceFromStart is derived from them below
+// offset along the path; pathStepLabel is derived from them below
 // (distanceToDest is derived inline in rootClass). They only ever appear
 // together, so they're grouped into a single required prop.
 export interface PathInfo {
@@ -48,13 +48,12 @@ const props = defineProps<{
 const preferencesStore = usePreferencesStore()
 const selectionStore = useSelectionStore()
 
-const distanceFromStart = computed(() => props.pathInfo.positionOnPath + 1)
+const pathStepLabel = computed(() => props.pathInfo.positionOnPath + 1)
 
 const rootClass = computed(() => {
   const { pathLength, positionOnPath, pathIndex, containsEnemy } = props.pathInfo
   const distanceToDest = pathLength - positionOnPath
   return {
-    path: true,
     foe: containsEnemy,
     [`distance-${distanceToDest}`]: true,
     [`path-${pathIndex}`]: true,
