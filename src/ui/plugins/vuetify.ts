@@ -25,6 +25,12 @@ const playerColors = Object.fromEntries(map(titanColors,
 
 // https://vuetifyjs.com/en/introduction/why-vuetify/#feature-guides
 export default createVuetify({
+  defaults: {
+    // Buttons render with uppercase text throughout the app.
+    VBtn: {
+      class: "text-uppercase"
+    }
+  },
   theme: {
     defaultTheme: "dark",
     themes: {
