@@ -120,10 +120,6 @@ export const useSelectionStore = defineStore("selection", () => {
 
   return {
     view,
-    stack,
-    focusedStacks,
-    focusedHexes,
-    focusedBattleHexes,
     selectedStack,
     focusedStack,
     focusedHex,
