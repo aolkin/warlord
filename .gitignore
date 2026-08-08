@@ -8,3 +8,5 @@ nuxt.d.ts
 .env
 *.iml
 .idea/*
+test-results
+playwright-report
