@@ -31,6 +31,6 @@ const selectionStore = useSelectionStore()
 const hexes = computed(() => masterboard.getHexIds())
 
 function move(hex: number): void {
-  void gameStore.move({ stack: selectionStore.selectedStack!, hex })
+  void gameStore.move({ stack: selectionStore.requireSelectedStack(), hex })
 }
 </script>

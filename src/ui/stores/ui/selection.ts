@@ -77,6 +77,13 @@ export const useSelectionStore = defineStore("selection", () => {
     stack.value = undefined
   }
 
+  function requireSelectedStack(): Stack {
+    if (stack.value === undefined) {
+      throw new Error("No stack selected")
+    }
+    return stack.value
+  }
+
   function enterStack(entering: Stack): void {
     if (!focusedStacks.includes(entering)) {
       focusedStacks.push(entering)
@@ -173,6 +180,7 @@ export const useSelectionStore = defineStore("selection", () => {
     reset,
     selectStack,
     deselectStack,
+    requireSelectedStack,
     enterStack,
     leaveStack,
     enterHex,

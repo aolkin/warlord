@@ -193,7 +193,7 @@ function toggleSplit(index: number): void {
 }
 
 function cycleStacks(by: number): void {
-  let index = gameStore.activeStacks.indexOf(selectionStore.selectedStack as Stack)
+  let index = gameStore.activeStacks.indexOf(selectionStore.requireSelectedStack())
   let candidateStack: Stack
   do {
     index += by

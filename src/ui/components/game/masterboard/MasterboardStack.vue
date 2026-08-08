@@ -212,7 +212,7 @@ function select(): void {
 }
 
 function attack(edge: HexEdge): void {
-  void gameStore.move({ stack: selectionStore.selectedStack!, hex: props.stack.hex, edge })
+  void gameStore.move({ stack: selectionStore.requireSelectedStack(), hex: props.stack.hex, edge })
   selectionStore.deselectStack()
 }
 
