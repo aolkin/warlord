@@ -129,19 +129,16 @@ export const gameBattle: GameBattle & ThisType<TitanGame> = {
     assert(defending !== undefined,
       `No engagement present on hex ${attacking.hex}!`)
     this.mInitiateBattle({ attacking, defending })
-    await this.persist()
   },
 
   async moveCreature(payload: BattleMovePayload): Promise<void> {
     assert(this.getBattlePhaseType() === BattlePhaseType.MOVE, "Not in movement phase")
     assert(payload.creature.player === this.getBattleActivePlayer(), "Incorrect player")
     this.mMoveCreature(payload)
-    await this.persist()
   },
 
   async nextBattlePhase(): Promise<void> {
     this.mNextBattlePhase()
-    await this.persist()
   },
 
   async attackCreature(payload: AttackPayload): Promise<void> {
@@ -149,7 +146,6 @@ export const gameBattle: GameBattle & ThisType<TitanGame> = {
     assert(this.getBattlePhaseType() !== BattlePhaseType.MOVE, "Cannot strike in movement phase")
     assert(payload.attacker.player === this.getBattleActivePlayer(), "Incorrect player")
     this.mAttackCreature(payload)
-    await this.persist()
   },
 
   async rangestrikeCreature(payload: RangestrikePayload): Promise<void> {
@@ -157,14 +153,12 @@ export const gameBattle: GameBattle & ThisType<TitanGame> = {
     assert(this.getBattlePhaseType() !== BattlePhaseType.MOVE, "Cannot strike in movement phase")
     assert(payload.attacker.player === this.getBattleActivePlayer(), "Incorrect player")
     this.mRangestrikeCreature(payload)
-    await this.persist()
   },
 
   async assignCarryover(payload: BattleCreature): Promise<void> {
     if (this.activeBattle === undefined) { throw new Error("Must be in a battle!") }
     assert(this.getBattlePhaseType() !== BattlePhaseType.MOVE, "Cannot carryover in movement phase")
     this.mAssignCarryover(payload)
-    await this.persist()
   },
 
   async skipCarryover(): Promise<void> {
@@ -172,6 +166,5 @@ export const gameBattle: GameBattle & ThisType<TitanGame> = {
     if (this.activeBattle.activeStrike === undefined) { throw new Error("Must have an active strike!") }
     assert(this.getBattlePhaseType() !== BattlePhaseType.MOVE, "Cannot carryover in movement phase")
     this.mSkipCarryover()
-    await this.persist()
   }
 }

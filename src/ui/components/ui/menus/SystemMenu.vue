@@ -142,6 +142,7 @@
 import { computed, inject, Ref, ref } from "vue"
 import DiceRoller from "~/components/ui/generic/DiceRoller"
 import { Creature, CREATURE_LIST } from "@/models/creature"
+import { compressAndEncode, decodeAndDecompress } from "@/utils/base64"
 import { useGameStore } from "~/stores/game"
 import { usePlayerStore } from "~/stores/ui/player"
 import { CreatureColorMode, usePreferencesStore } from "~/stores/ui/preferences"
@@ -191,15 +192,19 @@ function roll(): void {
 }
 
 async function persistToClipboard(): Promise<void> {
-  const value = await game.persist()
+  const value = await compressAndEncode(JSON.stringify(game))
   if (value) {
     saveText.value = value
     await navigator.clipboard.writeText(value)
   }
 }
 
-function loadSave(): void {
-  void game.doRestore(saveText.value)
+async function loadSave(): Promise<void> {
+  const hydration = await decodeAndDecompress(saveText.value)
+  if (hydration === undefined) {
+    throw new Error("Failed to load save data")
+  }
+  game.mRehydrate(JSON.parse(hydration))
 }
 
 function loadJson(): void {
