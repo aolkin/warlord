@@ -1,6 +1,5 @@
 import { defineStore } from "pinia"
 import { computed, ref, shallowReactive, shallowRef, watch } from "vue"
-import { BattleCreature, RangestrikeTarget } from "@/models/battle"
 import { Path } from "@/models/game"
 import masterboard, { MasterboardHex } from "@/models/masterboard"
 import { Stack } from "@/models/stack"
@@ -14,16 +13,15 @@ export enum View {
 export const useSelectionStore = defineStore("selection", () => {
   const gameStore = useGameStore()
 
-  // Stack/MasterboardHex/BattleCreature instances here always come from the game store's
-  // own reactive state, so they're already reactive proxies by the time they reach
-  // this store - shallow refs/collections avoid Vue re-wrapping their internals a second time,
-  // which for class instances with private fields also trips up TypeScript (Vue's deep
-  // UnwrapRef can't reconstruct a private field, so the mapped type stops matching the class).
+  // Stack/MasterboardHex instances here always come from the game store's own reactive
+  // state, so they're already reactive proxies by the time they reach this store - shallow
+  // refs/collections avoid Vue re-wrapping their internals a second time, which for class
+  // instances with private fields also trips up TypeScript (Vue's deep UnwrapRef can't
+  // reconstruct a private field, so the mapped type stops matching the class).
   const view = ref<View>(View.MASTERBOARD)
   const stack = shallowRef<Stack>()
   const focusedStacks = shallowReactive<Stack[]>([])
   const focusedHexes = shallowReactive<MasterboardHex[]>([])
-  const creature = shallowRef<BattleCreature>()
   const focusedBattleHexes = shallowReactive<number[]>([])
 
   const selectedStack = computed<Stack | undefined>(() => stack.value)
@@ -33,7 +31,6 @@ export const useSelectionStore = defineStore("selection", () => {
   const focusedHex = computed<MasterboardHex | undefined>(() => focusedHexes.length > 0
     ? focusedHexes[focusedHexes.length - 1]
     : undefined)
-  const selectedCreature = computed<BattleCreature | undefined>(() => creature.value)
   const focusedBattleHex = computed<number | undefined>(() => focusedBattleHexes.length > 0
     ? focusedBattleHexes[focusedBattleHexes.length - 1]
     : undefined)
@@ -45,12 +42,6 @@ export const useSelectionStore = defineStore("selection", () => {
     }
     return gameStore.pathsForHex(stack.value.hex)
   })
-  const movementHexes = computed<Set<number>>(() =>
-    creature.value === undefined ? new Set<number>() : gameStore.battleMoves(creature.value))
-  const engagements = computed<BattleCreature[]>(() =>
-    creature.value === undefined ? [] : gameStore.battleEngagements(creature.value))
-  const rangestrikes = computed<RangestrikeTarget[]>(() =>
-    creature.value === undefined ? [] : gameStore.battleRangestrikeTargets(creature.value))
 
   function setView(value: View): void {
     view.value = value
@@ -58,7 +49,6 @@ export const useSelectionStore = defineStore("selection", () => {
 
   function reset(): void {
     stack.value = undefined
-    creature.value = undefined
     focusedStacks.splice(0, focusedStacks.length)
     focusedHexes.splice(0, focusedHexes.length)
     focusedBattleHexes.splice(0, focusedBattleHexes.length)
@@ -105,18 +95,6 @@ export const useSelectionStore = defineStore("selection", () => {
     }
   }
 
-  function selectCreature(selection: BattleCreature): void {
-    if (creature.value === selection) {
-      creature.value = undefined
-    } else {
-      creature.value = selection
-    }
-  }
-
-  function deselectCreature(): void {
-    creature.value = undefined
-  }
-
   function enterBattleHex(entering: number): void {
     if (!focusedBattleHexes.includes(entering)) {
       focusedBattleHexes.push(entering)
@@ -131,7 +109,6 @@ export const useSelectionStore = defineStore("selection", () => {
   }
 
   watch(() => gameStore.game.activePhase, deselectStack)
-  watch(() => gameStore.battlePhaseType, deselectCreature)
 
   // Only the empty->present transition should navigate to the battle board - subsequent
   // mutations within the same battle (strikes, wounds, etc.) also change activeBattle.
@@ -146,17 +123,12 @@ export const useSelectionStore = defineStore("selection", () => {
     stack,
     focusedStacks,
     focusedHexes,
-    creature,
     focusedBattleHexes,
     selectedStack,
     focusedStack,
     focusedHex,
-    selectedCreature,
     focusedBattleHex,
     paths,
-    movementHexes,
-    engagements,
-    rangestrikes,
     setView,
     reset,
     selectStack,
@@ -166,8 +138,6 @@ export const useSelectionStore = defineStore("selection", () => {
     leaveStack,
     enterHex,
     leaveHex,
-    selectCreature,
-    deselectCreature,
     enterBattleHex,
     leaveBattleHex
   }
