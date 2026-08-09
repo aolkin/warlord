@@ -362,20 +362,6 @@ describe("Battle board movement cost", () => {
   })
 })
 
-describe("creatureOnHex", () => {
-  it("reflects a creature's hex mutation with no intervening nextPhase call", () => {
-    const { battle, offense } = setupBattle(Terrain.PLAINS, [CreatureType.LION], [CreatureType.CENTAUR])
-    const [lion] = offense
-    place(lion, 8)
-    expect(battle.creatureOnHex(8)).toBe(lion)
-
-    lion.hex = 9 // mMoveCreature mutates hex directly, without calling nextPhase()
-
-    expect(battle.creatureOnHex(8)).toBeUndefined()
-    expect(battle.creatureOnHex(9)).toBe(lion)
-  })
-})
-
 describe("Movement legality (movementFor)", () => {
   it("returns an empty set for a creature that is not on the board", () => {
     const { battle, offense } = setupBattle(Terrain.PLAINS, [CreatureType.LION], [CreatureType.CENTAUR])
@@ -404,6 +390,13 @@ describe("Movement legality (movementFor)", () => {
     place(centaur, 4)
 
     expect(battle.movementFor(lion).has(4)).toBe(false)
+
+    // mMoveCreature mutates hex directly and doesn't call nextPhase(), so a recomputed
+    // movementFor within the same move phase must use the centaur's new position, not
+    // whatever occupancy applied to the earlier call.
+    centaur.hex = 10
+    expect(battle.movementFor(lion).has(4)).toBe(true)
+    expect(battle.movementFor(lion).has(10)).toBe(false)
   })
 
   it("lets a flying creature path through hexes blocked for grounded creatures, reaching further", () => {
