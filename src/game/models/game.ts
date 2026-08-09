@@ -3,7 +3,7 @@ import { assert } from "@/utils/assert"
 import { Battle } from "./battle"
 import { CREATURE_DATA, CREATURE_LIST, CreatureType } from "./creature"
 import { GameBattle, gameBattle } from "./game/battle"
-import { GamePersistence, gamePersistence, GAME_PERSISTENCE_KEY } from "./game/persistence"
+import { GamePersistence, gamePersistence } from "./game/persistence"
 import masterboard, { HexEdge, MasterboardHex } from "./masterboard"
 import { Player, PlayerId } from "./player"
 import { defaultRandom, Random } from "./random"
@@ -223,7 +223,6 @@ export class TitanGame {
       // only wrapping past END back to SPLIT lands here.
       this.getActiveStacks().forEach(startPlayerTurn)
     }
-    await this.persist()
   }
 
   async setRoll(payload?: number): Promise<void> {
@@ -235,7 +234,6 @@ export class TitanGame {
       this.mulliganTaken = true
     }
     this.activeRoll = payload
-    await this.persist()
   }
 
   async move({ stack, hex, edge }: MovePayload): Promise<void> {
@@ -246,7 +244,6 @@ export class TitanGame {
     } else {
       stack.hex = hex
     }
-    await this.persist()
   }
 
   async setRecruit({ stack, recruit }: MusterPayload): Promise<void> {
@@ -259,14 +256,13 @@ export class TitanGame {
     }
     assert(this.activePhase === MasterboardPhase.MUSTER, "Innappropriate phase")
     stack.currentMuster = recruit
-    await this.persist()
   }
 
-  static hydrate(): TitanGame {
+  static hydrate(persisted?: string): TitanGame {
     const game = new TitanGame(2)
     try {
-      if (localStorage[GAME_PERSISTENCE_KEY] !== undefined) {
-        const hydration = JSON.parse(localStorage[GAME_PERSISTENCE_KEY])
+      if (persisted !== undefined) {
+        const hydration = JSON.parse(persisted)
         game.mRehydrate(hydration)
       }
     } catch (e) {
