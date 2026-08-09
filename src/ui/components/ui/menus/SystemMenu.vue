@@ -150,6 +150,7 @@ import { useSelectionStore } from "~/stores/ui/selection"
 const diceRoller = inject<Readonly<Ref<InstanceType<typeof DiceRoller> | null>>>("diceRoller")
 
 const gameStore = useGameStore()
+const game = gameStore.game
 const preferencesStore = usePreferencesStore()
 const playerStore = usePlayerStore()
 const selectionStore = useSelectionStore()
@@ -190,7 +191,7 @@ function roll(): void {
 }
 
 async function persistToClipboard(): Promise<void> {
-  const value = await gameStore.persist()
+  const value = await game.persist()
   if (value) {
     saveText.value = value
     await navigator.clipboard.writeText(value)
@@ -198,11 +199,11 @@ async function persistToClipboard(): Promise<void> {
 }
 
 function loadSave(): void {
-  void gameStore.restore(saveText.value)
+  void game.doRestore(saveText.value)
 }
 
 function loadJson(): void {
-  gameStore.rehydrate(JSON.parse(saveText.value))
+  game.mRehydrate(JSON.parse(saveText.value))
 }
 </script>
 

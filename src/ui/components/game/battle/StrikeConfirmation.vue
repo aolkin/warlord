@@ -80,9 +80,9 @@ const emit = defineEmits<{
   "update:optionalToHit": [value: number | undefined]
 }>()
 
-const gameStore = useGameStore()
+const game = useGameStore().game
 
-const engagements = computed<BattleCreature[]>(() => gameStore.battleEngagements(props.attacker))
+const engagements = computed<BattleCreature[]>(() => game.getBattleEngagements(props.attacker))
 
 const selectedCreatureName = computed(() => props.attacker.name())
 const targetedCreatureName = computed(() => props.targetedCreature?.name() ?? "")

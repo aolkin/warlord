@@ -19,7 +19,7 @@
     >
       <div
         class="text-center"
-        v-text="gameStore.stacksForPlayer(player.id).length"
+        v-text="game.getStacksForPlayer(player.id).length"
       />
       <v-tooltip right>
         <template #activator="{ props }">
@@ -44,6 +44,7 @@
 import { useGameStore } from "~/stores/game"
 
 const gameStore = useGameStore()
+const game = gameStore.game
 </script>
 
 <style lang="sass" scoped>

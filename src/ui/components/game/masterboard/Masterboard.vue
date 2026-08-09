@@ -30,10 +30,7 @@
           </g>
         </g>
       </v-fade-transition>
-      <g
-        v-if="gameStore.game.stacks.length > 0"
-        class="stacks"
-      >
+      <g class="stacks">
         <MasterboardStack
           v-for="stack in sortedStacks"
           :key="stack.id"
@@ -75,21 +72,21 @@ import MasterboardStack from "./MasterboardStack.vue"
 
 let lastSortedStacks: Stack[] = []
 
-const gameStore = useGameStore()
+const game = useGameStore().game
 const preferencesStore = usePreferencesStore()
 const selectionStore = useSelectionStore()
 
 // activeRoll is only read from template branches that are only rendered once "paths"
 // below is non-empty, which itself requires activeRoll to be defined.
-const activeRoll = computed(() => gameStore.game.activeRoll!)
+const activeRoll = computed(() => game.activeRoll!)
 
 const paths = computed<Path[]>(() => {
   if (selectionStore.selectedStack?.hex === undefined ||
     masterboard.getHex(selectionStore.selectedStack.hex) === undefined ||
-    gameStore.game.activeRoll === undefined) {
+    game.activeRoll === undefined) {
     return []
   }
-  return gameStore.pathsForHex(selectionStore.selectedStack.hex)
+  return game.getPathsForHex(selectionStore.selectedStack.hex)
 })
 
 // Stack instances here always come from the game store's own reactive state, so they're
@@ -117,7 +114,7 @@ function leaveStack(leaving: Stack): void {
 }
 
 const sortedStacks = computed((): Stack[] => {
-  lastSortedStacks = sortBy(gameStore.game.stacks, stack =>
+  lastSortedStacks = sortBy(game.stacks, stack =>
     stack === selectionStore.selectedStack ? 999 : lastSortedStacks.indexOf(stack))
   return lastSortedStacks
 })
@@ -127,14 +124,14 @@ const interleavedPaths = computed((): [boolean, MasterboardHex][][] =>
       [row.foe !== undefined, row.path[colIndex]])).slice(1))
 
 const canFreeMove = computed((): boolean =>
-  gameStore.game.activePhase === MasterboardPhase.MOVE &&
+  game.activePhase === MasterboardPhase.MOVE &&
   selectionStore.selectedStack !== undefined && preferencesStore.freeMovement)
 
 function moveStack(distance: number, foe: boolean, hex: MasterboardHex): void {
   if (distance !== activeRoll.value - 1 || focusedStack.value?.hasMoved() || foe) {
     return
   }
-  void gameStore.move({ stack: focusedStack.value!, hex })
+  void game.move({ stack: focusedStack.value!, hex })
   selectionStore.deselectStack()
 }
 </script>

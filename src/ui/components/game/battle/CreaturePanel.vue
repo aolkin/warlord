@@ -92,11 +92,11 @@ const emit = defineEmits<{
   select: [creature: BattleCreature]
 }>()
 
-const gameStore = useGameStore()
+const game = useGameStore().game
 
 const minimized = ref(false)
 
-const activeBattle = computed(() => gameStore.game.activeBattle!)
+const activeBattle = computed(() => game.activeBattle!)
 
 const attackerMoveActive = computed(() => activeBattle.value.phase === BattlePhase.ATTACKER_MOVE)
 const defenderMoveActive = computed(() => activeBattle.value.phase === BattlePhase.DEFENDER_MOVE)
@@ -106,9 +106,9 @@ const orderingClasses = computed(() =>
     "flex-column-reverse": props.localPlayerIsDefender
   }))
 const attacker = computed<Player>(() =>
-  gameStore.playerById(activeBattle.value.attacker))
+  game.getPlayerById(activeBattle.value.attacker))
 const defender = computed<Player>(() =>
-  gameStore.playerById(activeBattle.value.defender))
+  game.getPlayerById(activeBattle.value.defender))
 const pendingOffense = computed<BattleCreature[]>(() =>
   activeBattle.value.getOffense().filter((creature: BattleCreature) => creature.hex >= 36))
 const pendingDefense = computed<BattleCreature[]>(() =>
