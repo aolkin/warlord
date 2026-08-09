@@ -1,7 +1,6 @@
 import { defineStore } from "pinia"
 import { computed, shallowReactive, shallowRef, watch } from "vue"
-import { Path } from "@/models/game"
-import masterboard, { MasterboardHex } from "@/models/masterboard"
+import { MasterboardHex } from "@/models/masterboard"
 import { Stack } from "@/models/stack"
 import { useGameStore } from "~/stores/game"
 
@@ -20,14 +19,6 @@ export const useSelectionStore = defineStore("selection", () => {
   const focusedHex = computed<MasterboardHex | undefined>(() => focusedHexes.length > 0
     ? focusedHexes[focusedHexes.length - 1]
     : undefined)
-
-  const paths = computed<Path[]>(() => {
-    if (stack.value?.hex === undefined || masterboard.getHex(stack.value.hex) === undefined ||
-      gameStore.game.activeRoll === undefined) {
-      return []
-    }
-    return gameStore.pathsForHex(stack.value.hex)
-  })
 
   function reset(): void {
     stack.value = undefined
@@ -67,7 +58,6 @@ export const useSelectionStore = defineStore("selection", () => {
   return {
     selectedStack,
     focusedHex,
-    paths,
     reset,
     selectStack,
     deselectStack,
