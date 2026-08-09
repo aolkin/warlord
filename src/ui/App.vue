@@ -94,6 +94,7 @@ const diceRoller = ref<InstanceType<typeof DiceRollerComponent> | null>(null)
 provide("diceRoller", readonly(diceRoller))
 
 const gameStore = useGameStore()
+const game = gameStore.game
 const preferencesStore = usePreferencesStore()
 
 const menuVisible = ref(false)
@@ -102,14 +103,14 @@ const prefsPaneVisible = ref(false)
 const battleVisible = ref(false)
 
 onBeforeMount(() => {
-  if (gameStore.game.activeBattle !== undefined) {
+  if (game.activeBattle !== undefined) {
     battleVisible.value = true
   }
 })
 
 // Only the empty->present transition should navigate to the battle board - subsequent
 // mutations within the same battle (strikes, wounds, etc.) also change activeBattle.
-watch(() => gameStore.game.activeBattle !== undefined, (hasBattle, hadBattle) => {
+watch(() => game.activeBattle !== undefined, (hasBattle, hadBattle) => {
   if (hasBattle && !hadBattle) {
     battleVisible.value = true
   }

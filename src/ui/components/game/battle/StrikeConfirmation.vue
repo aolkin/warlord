@@ -81,8 +81,9 @@ const emit = defineEmits<{
 }>()
 
 const gameStore = useGameStore()
+const game = gameStore.game
 
-const engagements = computed<BattleCreature[]>(() => gameStore.game.getBattleEngagements(props.attacker))
+const engagements = computed<BattleCreature[]>(() => game.getBattleEngagements(props.attacker))
 
 const selectedCreatureName = computed(() => props.attacker.name())
 const targetedCreatureName = computed(() => props.targetedCreature?.name() ?? "")

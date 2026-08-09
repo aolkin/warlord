@@ -131,7 +131,7 @@ const potentialEngagements = computed((): HexEdge[] => {
   } else if (game.getStacksForHex(props.stack.hex)
     .some((stack: Stack) => stack.owner === gameStore.activePlayerId)) {
     return []
-  } else if (gameStore.game.activeRoll === 6 && gameStore.activePlayer.score >= 400 &&
+  } else if (game.activeRoll === 6 && gameStore.activePlayer.score >= 400 &&
     selectionStore.selectedStack.creatures.includes(CreatureType.TITAN)) {
     return [HexEdge.FIRST, HexEdge.SECOND, HexEdge.THIRD]
   } else {
@@ -156,7 +156,7 @@ const isMandatory = computed(() => {
   if (!isActivePlayer.value) {
     return false
   }
-  switch (gameStore.game.activePhase) {
+  switch (game.activePhase) {
     case MasterboardPhase.SPLIT:
       return !props.stack.isValidSplit(gameStore.firstRound)
     case MasterboardPhase.MOVE:
@@ -169,7 +169,7 @@ const isDisabled = computed(() => {
   if (!isActivePlayer.value) {
     return false
   }
-  switch (gameStore.game.activePhase) {
+  switch (game.activePhase) {
     case MasterboardPhase.SPLIT:
       return props.stack.creatures.length < 4
     case MasterboardPhase.MOVE:
@@ -190,7 +190,7 @@ const classes = computed(() => ({
   [`player-${props.stack.owner}`]: true,
   "multiple-stacks": stacksOnHex.value.length > 1,
   [`stack-on-hex-${stacksOnHexIndex.value}`]: true,
-  [`phase-${MasterboardPhase[gameStore.game.activePhase].toLowerCase()}`]: true
+  [`phase-${MasterboardPhase[game.activePhase].toLowerCase()}`]: true
 }))
 
 const stackSize = computed((): string => {
@@ -204,7 +204,7 @@ function select(): void {
   if (!isActivePlayer.value) {
     return
   }
-  if (gameStore.game.activePhase === MasterboardPhase.MOVE && props.stack.hasMoved()) {
+  if (game.activePhase === MasterboardPhase.MOVE && props.stack.hasMoved()) {
     if (!game.getStacksForHex(props.stack.origin).some((stack: Stack) => stack.hasMoved())) {
       void game.move({ stack: props.stack, hex: props.stack.origin })
     }

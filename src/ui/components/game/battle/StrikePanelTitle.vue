@@ -22,8 +22,9 @@ const props = defineProps<{
 }>()
 
 const gameStore = useGameStore()
+const game = gameStore.game
 
-const board = computed((): BattleBoard => gameStore.game.activeBattle!.getBoard())
+const board = computed((): BattleBoard => game.activeBattle!.getBoard())
 const attackerHazard = computed((): Hazard =>
   props.attacker ? board.value.getHazard(props.attacker.hex) : Hazard.NONE)
 const targetHazard = computed((): Hazard =>

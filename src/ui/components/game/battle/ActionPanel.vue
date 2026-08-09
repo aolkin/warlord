@@ -57,10 +57,11 @@ const props = defineProps<{
 }>()
 
 const gameStore = useGameStore()
+const game = gameStore.game
 
 const battlePhaseType = computed(() => gameStore.battlePhaseType)
 const battleActivePlayerId = computed((): PlayerId => props.battle.getActivePlayer())
-const battleActivePlayer = computed(() => gameStore.game.getPlayerById(battleActivePlayerId.value))
+const battleActivePlayer = computed(() => game.getPlayerById(battleActivePlayerId.value))
 
 const phaseTypeTitle = computed((): string => {
   switch (battlePhaseType.value) {
@@ -110,7 +111,7 @@ const pendingCreatures = computed((): number =>
     creature.player === battleActivePlayerId.value && creature.hex >= 36).length)
 
 function nextPhase(): void {
-  void gameStore.game.nextBattlePhase()
+  void game.nextBattlePhase()
 }
 </script>
 <style scoped lang="sass">

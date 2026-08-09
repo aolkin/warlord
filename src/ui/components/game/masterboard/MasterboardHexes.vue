@@ -26,11 +26,12 @@ withDefaults(defineProps<{
 })
 
 const gameStore = useGameStore()
+const game = gameStore.game
 const selectionStore = useSelectionStore()
 
 const hexes = computed(() => masterboard.getHexIds())
 
 function move(hex: number): void {
-  void gameStore.game.move({ stack: selectionStore.requireSelectedStack(), hex })
+  void game.move({ stack: selectionStore.requireSelectedStack(), hex })
 }
 </script>

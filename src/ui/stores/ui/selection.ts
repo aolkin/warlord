@@ -6,6 +6,7 @@ import { useGameStore } from "~/stores/game"
 
 export const useSelectionStore = defineStore("selection", () => {
   const gameStore = useGameStore()
+  const game = gameStore.game
 
   // Stack/MasterboardHex instances here always come from the game store's own reactive
   // state, so they're already reactive proxies by the time they reach this store - shallow
@@ -53,7 +54,7 @@ export const useSelectionStore = defineStore("selection", () => {
     }
   }
 
-  watch(() => gameStore.game.activePhase, deselectStack)
+  watch(() => game.activePhase, deselectStack)
 
   return {
     selectedStack,

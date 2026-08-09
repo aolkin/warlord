@@ -87,10 +87,11 @@ import { useSelectionStore } from "~/stores/ui/selection"
 const diceRoller = inject<Readonly<Ref<InstanceType<typeof DiceRoller> | null>>>("diceRoller")
 
 const gameStore = useGameStore()
+const game = gameStore.game
 const selectionStore = useSelectionStore()
 
-const activePhase = computed(() => gameStore.game.activePhase)
-const activeRoll = computed(() => gameStore.game.activeRoll)
+const activePhase = computed(() => game.activePhase)
+const activeRoll = computed(() => game.activeRoll)
 const activeStacks = computed(() => gameStore.activeStacks)
 const mayProceed = computed(() => gameStore.mayProceed)
 const engagedStacks = computed(() => gameStore.engagedStacks)
@@ -124,14 +125,14 @@ const engagementsMessage = computed(() => {
 })
 
 function nextPhase(): void {
-  void gameStore.game.doNextPhase()
+  void game.doNextPhase()
 }
 
 function roll(): void {
   if (activeRoll.value !== undefined) {
-    void gameStore.game.setRoll(undefined)
+    void game.setRoll(undefined)
   }
-  diceRoller?.value?.roll().then(async(rolled: number[]) => await gameStore.game.setRoll(rolled[0]))
+  diceRoller?.value?.roll().then(async(rolled: number[]) => await game.setRoll(rolled[0]))
 }
 
 function proceedToRoll(): void {

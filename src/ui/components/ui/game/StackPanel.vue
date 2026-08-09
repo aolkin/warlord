@@ -130,9 +130,10 @@ const props = defineProps<{
 }>()
 
 const gameStore = useGameStore()
+const game = gameStore.game
 const selectionStore = useSelectionStore()
 
-const activePhase = computed(() => gameStore.game.activePhase)
+const activePhase = computed(() => game.activePhase)
 const activePlayerId = computed(() => gameStore.activePlayerId)
 const firstRound = computed(() => gameStore.firstRound)
 
@@ -140,7 +141,7 @@ const owned = computed((): boolean => activePlayerId.value === props.focusedStac
 
 const stackPlayer = computed((): Player | undefined => props.focusedStack === undefined
   ? undefined
-  : gameStore.game.getPlayerById(props.focusedStack.owner))
+  : game.getPlayerById(props.focusedStack.owner))
 
 const musteringTerrain = computed((): Terrain => activePhase.value === MasterboardPhase.MUSTER
   ? masterboard.getHex(props.focusedStack?.hex as number).terrain
@@ -159,7 +160,7 @@ const mustering = computed({
     if (activePhase.value !== MasterboardPhase.MUSTER) {
       return
     }
-    void gameStore.game.setRecruit({ stack: props.focusedStack!, recruit: value })
+    void game.setRecruit({ stack: props.focusedStack!, recruit: value })
   }
 })
 

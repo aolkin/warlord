@@ -267,9 +267,9 @@ function leaveBattleHex(leaving: number): void {
   }
 }
 
-// gameStore.game is deeply reactive, and Vue's UnwrapNestedRefs can't reconstruct Battle's
+// game is deeply reactive, and Vue's UnwrapNestedRefs can't reconstruct Battle's
 // private methods, so the inferred type structurally mismatches the class - cast it back.
-const activeBattle = computed(() => gameStore.game.activeBattle as Battle | undefined)
+const activeBattle = computed(() => game.activeBattle as Battle | undefined)
 
 // A creature only exists within the battle it was selected in.
 watch(activeBattle, deselectCreature)
