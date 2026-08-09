@@ -11,11 +11,11 @@
       @click="activeBattle.phase === expectedPhase && emit('select', creature)"
     />
     <Creature
-      v-if="showRemove"
+      v-if="showRemove && selectedCreature"
       :player="gameStore.playerById(gameStore.battleActivePlayer!)"
       none-label="Put Back"
       class="ma-1 interactive"
-      @click="removeSelected"
+      @click="removeSelected(selectedCreature)"
     />
   </div>
 </template>
@@ -43,8 +43,7 @@ const showRemove = computed(() => activeBattle.value.phase === props.expectedPha
   (props.selectedCreature?.initialHex ?? -1) >= 36 &&
   (props.selectedCreature?.hex ?? -1) < 36)
 
-function removeSelected(): void {
-  const creature = props.selectedCreature!
+function removeSelected(creature: BattleCreature): void {
   void gameStore.moveCreature({ creature, hex: creature.initialHex })
 }
 </script>
