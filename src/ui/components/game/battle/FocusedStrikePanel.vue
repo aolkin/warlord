@@ -23,7 +23,7 @@ import StrikePanelTitle from "./StrikePanelTitle.vue"
 
 const props = defineProps<{
   attacker: BattleCreature
-  focusedCreature: BattleCreature | undefined
+  focusedCreature: BattleCreature
 }>()
 
 const gameStore = useGameStore()
@@ -34,11 +34,11 @@ const engagements = computed<BattleCreature[]>(() => gameStore.battleEngagements
 const rangestrikes = computed<RangestrikeTarget[]>(() => gameStore.battleRangestrikeTargets(props.attacker))
 
 const target = computed<BattleCreature | undefined>(() =>
-  props.focusedCreature !== undefined && engagements.value.includes(props.focusedCreature)
+  engagements.value.includes(props.focusedCreature)
     ? props.focusedCreature
     : undefined)
 const rangedFocus = computed<RangestrikeTarget | undefined>(() =>
-  props.focusedCreature && rangestrikes.value.filter(
+  rangestrikes.value.filter(
     (rangestrike: RangestrikeTarget) => rangestrike.creature === props.focusedCreature)[0])
 const rangedTarget = computed<BattleCreature | undefined>(() => rangedFocus.value?.creature)
 const strike = computed<Strike | undefined>(() => {

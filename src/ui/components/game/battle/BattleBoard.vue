@@ -121,7 +121,7 @@
         rounded
       >
         <FocusedStrikePanel
-          v-if="selectedCreature"
+          v-if="selectedCreature && focusedCreature"
           rounded
           :attacker="selectedCreature"
           :focused-creature="focusedCreature"
