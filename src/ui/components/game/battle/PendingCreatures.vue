@@ -4,7 +4,7 @@
       v-for="creature in creatures"
       :key="creature.id"
       :type="creature.type"
-      :player="gameStore.playerById(creature.player)"
+      :player="game.getPlayerById(creature.player)"
       :class="{ interactive,
                 selected: creature === selectedCreature }"
       class="ma-1 pending"
@@ -12,7 +12,7 @@
     />
     <Creature
       v-if="showRemove && selectedCreature"
-      :player="gameStore.playerById(gameStore.battleActivePlayer!)"
+      :player="game.getPlayerById(gameStore.battleActivePlayer!)"
       none-label="Put Back"
       class="ma-1 interactive"
       @click="removeSelected(selectedCreature)"
@@ -36,13 +36,14 @@ const emit = defineEmits<{
 }>()
 
 const gameStore = useGameStore()
+const game = gameStore.game
 
 const showRemove = computed(() => props.interactive &&
   (props.selectedCreature?.initialHex ?? -1) >= 36 &&
   (props.selectedCreature?.hex ?? -1) < 36)
 
 function removeSelected(creature: BattleCreature): void {
-  void gameStore.moveCreature({ creature, hex: creature.initialHex })
+  void game.doMoveCreature({ creature, hex: creature.initialHex })
 }
 </script>
 <style scoped lang="sass">

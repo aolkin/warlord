@@ -13,7 +13,7 @@ describe("game store", () => {
     const gameStore = useGameStore()
 
     expect(gameStore.activePlayerId).toBe(gameStore.activePlayer.id)
-    expect(gameStore.activeStacks).toEqual(gameStore.stacksForPlayer(gameStore.activePlayerId))
+    expect(gameStore.activeStacks).toEqual(gameStore.game.getStacksForPlayer(gameStore.activePlayerId))
   })
 
   it("advances the phase and splits stacks through its own action", async () => {
@@ -24,7 +24,7 @@ describe("game store", () => {
     stack.split[6] = true
     const before = gameStore.game.stacks.length
 
-    await gameStore.nextPhase()
+    await gameStore.game.doNextPhase()
 
     expect(gameStore.game.activePhase).toBe(MasterboardPhase.MOVE)
     expect(gameStore.game.stacks).toHaveLength(before + 1)
@@ -34,7 +34,7 @@ describe("game store", () => {
     const gameStore = useGameStore()
     gameStore.game.activePhase = MasterboardPhase.MOVE
 
-    await gameStore.setRoll(4)
+    await gameStore.game.doSetRoll(4)
 
     expect(gameStore.game.activeRoll).toBe(4)
     expect(gameStore.mulliganAvailable).toBe(true)

@@ -124,14 +124,14 @@ const engagementsMessage = computed(() => {
 })
 
 function nextPhase(): void {
-  void gameStore.nextPhase()
+  void gameStore.game.doNextPhase()
 }
 
 function roll(): void {
   if (activeRoll.value !== undefined) {
-    void gameStore.setRoll(undefined)
+    void gameStore.game.doSetRoll(undefined)
   }
-  diceRoller?.value?.roll().then(async(rolled: number[]) => await gameStore.setRoll(rolled[0]))
+  diceRoller?.value?.roll().then(async(rolled: number[]) => await gameStore.game.doSetRoll(rolled[0]))
 }
 
 function proceedToRoll(): void {

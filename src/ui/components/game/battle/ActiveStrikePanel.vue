@@ -51,7 +51,7 @@
         <v-btn
           block
           variant="outlined"
-          @click="gameStore.skipCarryover()"
+          @click="gameStore.game.doSkipCarryover()"
         >
           Skip Carry Over
         </v-btn>

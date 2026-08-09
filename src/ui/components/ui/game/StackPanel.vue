@@ -140,7 +140,7 @@ const owned = computed((): boolean => activePlayerId.value === props.focusedStac
 
 const stackPlayer = computed((): Player | undefined => props.focusedStack === undefined
   ? undefined
-  : gameStore.playerById(props.focusedStack.owner))
+  : gameStore.game.getPlayerById(props.focusedStack.owner))
 
 const musteringTerrain = computed((): Terrain => activePhase.value === MasterboardPhase.MUSTER
   ? masterboard.getHex(props.focusedStack?.hex as number).terrain
@@ -159,7 +159,7 @@ const mustering = computed({
     if (activePhase.value !== MasterboardPhase.MUSTER) {
       return
     }
-    void gameStore.setRecruit({ stack: props.focusedStack!, recruit: value })
+    void gameStore.game.doSetRecruit({ stack: props.focusedStack!, recruit: value })
   }
 })
 

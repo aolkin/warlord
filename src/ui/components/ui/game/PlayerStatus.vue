@@ -19,7 +19,7 @@
     >
       <div
         class="text-center"
-        v-text="gameStore.stacksForPlayer(player.id).length"
+        v-text="gameStore.game.getStacksForPlayer(player.id).length"
       />
       <v-tooltip right>
         <template #activator="{ props }">

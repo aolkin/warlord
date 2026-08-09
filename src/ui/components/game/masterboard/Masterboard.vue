@@ -89,7 +89,7 @@ const paths = computed<Path[]>(() => {
     gameStore.game.activeRoll === undefined) {
     return []
   }
-  return gameStore.pathsForHex(selectionStore.selectedStack.hex)
+  return gameStore.game.getPathsForHex(selectionStore.selectedStack.hex)
 })
 
 // Stack instances here always come from the game store's own reactive state, so they're
@@ -134,7 +134,7 @@ function moveStack(distance: number, foe: boolean, hex: MasterboardHex): void {
   if (distance !== activeRoll.value - 1 || focusedStack.value?.hasMoved() || foe) {
     return
   }
-  void gameStore.move({ stack: focusedStack.value!, hex })
+  void gameStore.game.doMove({ stack: focusedStack.value!, hex })
   selectionStore.deselectStack()
 }
 </script>
