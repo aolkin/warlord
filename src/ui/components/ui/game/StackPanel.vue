@@ -40,7 +40,7 @@
           v-for="(creature, index) in (props.focusedStack.creatures as CreatureType[])"
           :key="index"
           :type="creature"
-          :player="stackPlayer"
+          :player-id="props.focusedStack.owner"
           :class="{ splitting: props.focusedStack.split[index],
                     interactive: activePhase === MasterboardPhase.SPLIT && owned }"
           class="ma-1"
@@ -96,7 +96,7 @@
             class="px-2 pb-1"
             :can-decline="activePhase === MasterboardPhase.MUSTER"
             :musterable="musterable"
-            :player="stackPlayer"
+            :player-id="props.focusedStack.owner"
           />
           <v-card-subtitle
             v-if="activePhase === MasterboardPhase.MUSTER"
