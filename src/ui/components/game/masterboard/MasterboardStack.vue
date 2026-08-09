@@ -89,6 +89,11 @@ const props = defineProps<{
   stack: Stack
 }>()
 
+const emit = defineEmits<{
+  enter: [stack: Stack]
+  leave: [stack: Stack]
+}>()
+
 const gameStore = useGameStore()
 const selectionStore = useSelectionStore()
 
@@ -217,12 +222,12 @@ function attack(edge: HexEdge): void {
 }
 
 function enter(): void {
-  selectionStore.enterStack(props.stack)
+  emit("enter", props.stack)
   selectionStore.enterHex(masterboard.getHex(props.stack.hex))
 }
 
 function leave(): void {
-  selectionStore.leaveStack(props.stack)
+  emit("leave", props.stack)
   selectionStore.leaveHex(masterboard.getHex(props.stack.hex))
 }
 </script>

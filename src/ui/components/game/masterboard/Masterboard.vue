@@ -38,6 +38,8 @@
           v-for="stack in sortedStacks"
           :key="stack.id"
           :stack="stack"
+          @enter="enterStack"
+          @leave="leaveStack"
         />
       </g>
     </svg>
@@ -45,6 +47,7 @@
       class="ma-3"
       position="fixed"
       location="top right"
+      :focused-stack="focusedStack"
     />
     <TurnPanel
       class="ma-3 mb-10"
@@ -55,7 +58,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue"
+import { computed, shallowReactive } from "vue"
 import { range, sortBy } from "lodash-es"
 import { MasterboardPhase, Path } from "@/models/game"
 import { MasterboardHex } from "@/models/masterboard"
@@ -80,6 +83,30 @@ const selectionStore = useSelectionStore()
 // to be defined - see src/ui/stores/ui/selection.ts.
 const activeRoll = computed(() => gameStore.game.activeRoll!)
 
+// Stack instances here always come from the game store's own reactive state, so they're
+// already reactive proxies by the time they reach this array - a shallow collection avoids
+// Vue re-wrapping their internals a second time, which for a class with private fields also
+// trips up TypeScript (Vue's deep UnwrapRef can't reconstruct a private field, so the mapped
+// type stops matching the class).
+const focusedStacks = shallowReactive<Stack[]>([])
+
+const focusedStack = computed<Stack | undefined>(() => focusedStacks.length > 0
+  ? focusedStacks[focusedStacks.length - 1]
+  : selectionStore.selectedStack)
+
+function enterStack(entering: Stack): void {
+  if (!focusedStacks.includes(entering)) {
+    focusedStacks.push(entering)
+  }
+}
+
+function leaveStack(leaving: Stack): void {
+  const index = focusedStacks.indexOf(leaving)
+  if (index !== -1) {
+    focusedStacks.splice(index)
+  }
+}
+
 const sortedStacks = computed((): Stack[] => {
   lastSortedStacks = sortBy(gameStore.game.stacks, stack =>
     stack === selectionStore.selectedStack ? 999 : lastSortedStacks.indexOf(stack))
@@ -95,10 +122,10 @@ const canFreeMove = computed((): boolean =>
   selectionStore.selectedStack !== undefined && preferencesStore.freeMovement)
 
 function moveStack(distance: number, foe: boolean, hex: MasterboardHex): void {
-  if (distance !== activeRoll.value - 1 || selectionStore.focusedStack?.hasMoved() || foe) {
+  if (distance !== activeRoll.value - 1 || focusedStack.value?.hasMoved() || foe) {
     return
   }
-  void gameStore.move({ stack: selectionStore.focusedStack!, hex })
+  void gameStore.move({ stack: focusedStack.value!, hex })
   selectionStore.deselectStack()
 }
 </script>
