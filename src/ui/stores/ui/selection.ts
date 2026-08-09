@@ -22,7 +22,6 @@ export const useSelectionStore = defineStore("selection", () => {
   const stack = shallowRef<Stack>()
   const focusedStacks = shallowReactive<Stack[]>([])
   const focusedHexes = shallowReactive<MasterboardHex[]>([])
-  const focusedBattleHexes = shallowReactive<number[]>([])
 
   const selectedStack = computed<Stack | undefined>(() => stack.value)
   const focusedStack = computed<Stack | undefined>(() => focusedStacks.length > 0
@@ -30,9 +29,6 @@ export const useSelectionStore = defineStore("selection", () => {
     : stack.value)
   const focusedHex = computed<MasterboardHex | undefined>(() => focusedHexes.length > 0
     ? focusedHexes[focusedHexes.length - 1]
-    : undefined)
-  const focusedBattleHex = computed<number | undefined>(() => focusedBattleHexes.length > 0
-    ? focusedBattleHexes[focusedBattleHexes.length - 1]
     : undefined)
 
   const paths = computed<Path[]>(() => {
@@ -51,7 +47,6 @@ export const useSelectionStore = defineStore("selection", () => {
     stack.value = undefined
     focusedStacks.splice(0, focusedStacks.length)
     focusedHexes.splice(0, focusedHexes.length)
-    focusedBattleHexes.splice(0, focusedBattleHexes.length)
   }
 
   function selectStack(selection: Stack): void {
@@ -95,19 +90,6 @@ export const useSelectionStore = defineStore("selection", () => {
     }
   }
 
-  function enterBattleHex(entering: number): void {
-    if (!focusedBattleHexes.includes(entering)) {
-      focusedBattleHexes.push(entering)
-    }
-  }
-
-  function leaveBattleHex(leaving: number): void {
-    const index = focusedBattleHexes.indexOf(leaving)
-    if (index !== -1) {
-      focusedBattleHexes.splice(index)
-    }
-  }
-
   watch(() => gameStore.game.activePhase, deselectStack)
 
   // Only the empty->present transition should navigate to the battle board - subsequent
@@ -120,14 +102,9 @@ export const useSelectionStore = defineStore("selection", () => {
 
   return {
     view,
-    stack,
-    focusedStacks,
-    focusedHexes,
-    focusedBattleHexes,
     selectedStack,
     focusedStack,
     focusedHex,
-    focusedBattleHex,
     paths,
     setView,
     reset,
@@ -137,8 +114,6 @@ export const useSelectionStore = defineStore("selection", () => {
     enterStack,
     leaveStack,
     enterHex,
-    leaveHex,
-    enterBattleHex,
-    leaveBattleHex
+    leaveHex
   }
 })
