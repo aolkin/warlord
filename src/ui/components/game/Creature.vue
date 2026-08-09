@@ -203,7 +203,7 @@ const classes = computed(() => {
     .includes(preferencesStore.creatureColorMode) && !creature.value?.lord) {
     classMap.standard = true
   } else {
-    classMap[`text-player-${player.value?.id ?? 0}`] = true
+    classMap[`text-player-${props.playerId ?? 0}`] = true
   }
   return classMap
 })
@@ -215,10 +215,10 @@ const titanStrength = computed(() => ({
 
 const filter = computed(() => {
   let color = theme.current.value.colors[STANDARD_CREATURE_COLORS[props.type ?? 0]]
-  if (player.value !== undefined) {
+  if (props.playerId !== undefined) {
     if (creature.value?.lord || [CreatureColorMode.PLAYER_UNIFORM_TEXT,
       CreatureColorMode.PLAYER].includes(preferencesStore.creatureColorMode)) {
-      color = theme.current.value.colors[`player-${player.value.id}`]
+      color = theme.current.value.colors[`player-${props.playerId}`]
     }
   }
   return FilterCache.getForHex(color).filter
