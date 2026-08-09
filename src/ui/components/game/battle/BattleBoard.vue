@@ -100,16 +100,19 @@
 
       <CreaturePanel
         :local-player-is-defender="localPlayerIsDefender"
+        :selected-creature="selectionStore.selectedCreature"
         :selected-started-off-board="selectedStartedOffBoard"
         position="fixed"
         location="top right"
         class="ma-3"
+        @select="selectionStore.selectCreature"
       />
       <ActionPanel
         position="fixed"
         location="bottom right"
         class="ma-3 mb-10"
         :battle="activeBattle"
+        :focused-battle-hex="selectionStore.focusedBattleHex"
       />
       <v-sheet
         position="fixed"

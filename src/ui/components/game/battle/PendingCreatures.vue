@@ -5,43 +5,43 @@
       :key="creature.id"
       :type="creature.type"
       :player="gameStore.playerById(creature.player)"
-      :class="{ interactive: activeBattle.phase === expectedPhase,
-                selected: creature === selectionStore.selectedCreature }"
+      :class="{ interactive,
+                selected: creature === selectedCreature }"
       class="ma-1 pending"
-      @click="activeBattle.phase === expectedPhase && selectionStore.selectCreature(creature)"
+      @click="interactive && emit('select', creature)"
     />
     <Creature
-      v-if="showRemove"
+      v-if="showRemove && selectedCreature"
       :player="gameStore.playerById(gameStore.battleActivePlayer!)"
       none-label="Put Back"
       class="ma-1 interactive"
-      @click="removeSelected"
+      @click="removeSelected(selectedCreature)"
     />
   </div>
 </template>
 <script setup lang="ts">
 import { computed } from "vue"
-import { BattleCreature, BattlePhase } from "@/models/battle"
+import { BattleCreature } from "@/models/battle"
 import { useGameStore } from "~/stores/game"
-import { useSelectionStore } from "~/stores/ui/selection"
 import Creature from "../Creature.vue"
 
 const props = defineProps<{
   creatures: BattleCreature[]
-  expectedPhase: BattlePhase
+  interactive: boolean
+  selectedCreature: BattleCreature | undefined
+}>()
+
+const emit = defineEmits<{
+  select: [creature: BattleCreature]
 }>()
 
 const gameStore = useGameStore()
-const selectionStore = useSelectionStore()
 
-const activeBattle = computed(() => gameStore.game.activeBattle!)
+const showRemove = computed(() => props.interactive &&
+  (props.selectedCreature?.initialHex ?? -1) >= 36 &&
+  (props.selectedCreature?.hex ?? -1) < 36)
 
-const showRemove = computed(() => activeBattle.value.phase === props.expectedPhase &&
-  (selectionStore.selectedCreature?.initialHex ?? -1) >= 36 &&
-  (selectionStore.selectedCreature?.hex ?? -1) < 36)
-
-function removeSelected(): void {
-  const creature = selectionStore.selectedCreature!
+function removeSelected(creature: BattleCreature): void {
   void gameStore.moveCreature({ creature, hex: creature.initialHex })
 }
 </script>

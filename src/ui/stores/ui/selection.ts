@@ -131,6 +131,7 @@ export const useSelectionStore = defineStore("selection", () => {
   }
 
   watch(() => gameStore.game.activePhase, deselectStack)
+  watch(() => gameStore.battlePhaseType, deselectCreature)
 
   // Only the empty->present transition should navigate to the battle board - subsequent
   // mutations within the same battle (strikes, wounds, etc.) also change activeBattle.
