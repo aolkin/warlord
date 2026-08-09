@@ -39,8 +39,8 @@
           :transform="hexTransformStr(hex)"
           :class="{ [`hex-${hex}`]: true, 'available-move': movementHexes.has(hex) }"
           @click="moveSelected(hex)"
-          @mouseenter="selectionStore.enterBattleHex(hex)"
-          @mouseleave="selectionStore.leaveBattleHex(hex)"
+          @mouseenter="enterBattleHex(hex)"
+          @mouseleave="leaveBattleHex(hex)"
         />
         <g
           v-if="preferencesStore.debugUi"
@@ -112,7 +112,7 @@
         location="bottom right"
         class="ma-3 mb-10"
         :battle="activeBattle"
-        :focused-battle-hex="selectionStore.focusedBattleHex"
+        :focused-battle-hex="focusedBattleHex"
       />
       <v-sheet
         position="fixed"
@@ -180,7 +180,6 @@ import { PlayerId } from "@/models/player"
 import { useGameStore } from "~/stores/game"
 import { usePlayerStore } from "~/stores/ui/player"
 import { usePreferencesStore } from "~/stores/ui/preferences"
-import { useSelectionStore } from "~/stores/ui/selection"
 import type DiceRoller from "~/components/ui/generic/DiceRoller"
 import EngageIcon from "../../ui/game/EngageIcon.vue"
 import RangestrikeIcon from "../../ui/game/RangestrikeIcon.vue"
@@ -199,7 +198,6 @@ const diceRoller = inject<Readonly<Ref<InstanceType<typeof DiceRoller> | null>>>
 const gameStore = useGameStore()
 const playerStore = usePlayerStore()
 const preferencesStore = usePreferencesStore()
-const selectionStore = useSelectionStore()
 
 const target = ref<BattleCreature | RangestrikeTarget | undefined>(undefined)
 const optionalToHit = ref<number | undefined>(undefined)
@@ -242,6 +240,25 @@ function leaveCreature(leaving: BattleCreature): void {
   const index = focusedCreatures.indexOf(leaving)
   if (index !== -1) {
     focusedCreatures.splice(index)
+  }
+}
+
+const focusedBattleHexes = shallowReactive<number[]>([])
+
+const focusedBattleHex = computed<number | undefined>(() => focusedBattleHexes.length > 0
+  ? focusedBattleHexes[focusedBattleHexes.length - 1]
+  : undefined)
+
+function enterBattleHex(entering: number): void {
+  if (!focusedBattleHexes.includes(entering)) {
+    focusedBattleHexes.push(entering)
+  }
+}
+
+function leaveBattleHex(leaving: number): void {
+  const index = focusedBattleHexes.indexOf(leaving)
+  if (index !== -1) {
+    focusedBattleHexes.splice(index)
   }
 }
 
