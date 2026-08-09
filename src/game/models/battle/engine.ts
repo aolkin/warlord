@@ -1,4 +1,4 @@
-import { assign, memoize } from "lodash-es"
+import { assign } from "lodash-es"
 import { assert } from "@/utils/assert"
 import { div } from "@/utils/math"
 import { CREATURE_DATA, CreatureType } from "../creature"
@@ -50,7 +50,6 @@ export class Battle {
   activeStrike?: ActiveStrike
 
   constructor(terrain: Terrain, edge: HexEdge, attacking: BattleSide, defending: BattleSide) {
-    this.creatureOnHex = memoize(this.creatureOnHex)
     this.round = 0
     this.phase = BattlePhase.DEFENDER_MOVE
     this.terrain = terrain
@@ -76,7 +75,6 @@ export class Battle {
       creatures: battle.creatures.map(creature => assign(new BattleCreature(creature), creature)),
       activeStrike: battle.activeStrike === undefined ? undefined : new ActiveStrike(battle.activeStrike)
     })
-    hydrated.creatureOnHex = memoize(hydrated.creatureOnHex)
     return hydrated
   }
 
@@ -512,8 +510,6 @@ export function nextPhase(battle: Battle): void {
       })
     }
   }
-  // @ts-expect-error memoize's .cache is not part of the method's declared type
-  battle.creatureOnHex.cache.clear()
   if (battle.phase === BattlePhase.DEFENDER_STRIKEBACK) {
     battle.round += 1
     battle.phase = BattlePhase.DEFENDER_MOVE

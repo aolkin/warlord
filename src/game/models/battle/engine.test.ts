@@ -390,6 +390,13 @@ describe("Movement legality (movementFor)", () => {
     place(centaur, 4)
 
     expect(battle.movementFor(lion).has(4)).toBe(false)
+
+    // mMoveCreature mutates hex directly and doesn't call nextPhase(), so a recomputed
+    // movementFor within the same move phase must use the centaur's new position, not
+    // whatever occupancy applied to the earlier call.
+    centaur.hex = 10
+    expect(battle.movementFor(lion).has(4)).toBe(true)
+    expect(battle.movementFor(lion).has(10)).toBe(false)
   })
 
   it("lets a flying creature path through hexes blocked for grounded creatures, reaching further", () => {
