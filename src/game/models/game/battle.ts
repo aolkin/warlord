@@ -1,7 +1,6 @@
 import { matches } from "lodash-es"
 import { assert } from "@/utils/assert"
 import { Battle, BATTLE_PHASE_TYPES, BattleCreature, BattlePhaseType, BattleSide, RangestrikeTarget, nextPhase, performAttack, wound } from "../battle"
-import { getActivePlayerId, getPlayerById, getStacksForHex } from "../game"
 import masterboard from "../masterboard"
 import { PlayerId } from "../player"
 import { Stack } from "../stack"
@@ -17,13 +16,13 @@ function toBattleSide(stack: Stack, score: number): BattleSide {
   return { player: stack.owner, score, creatures: stack.creatures }
 }
 
-// Vue's reactive() unwrapping loses Battle's private members at the type level (though not at
-// runtime), so a reactive-wrapped Battle fails structural assignability against the full Battle
-// type; these getters only need its public read surface, so accept that instead.
-type BattleView = Pick<Battle,
-  "phase" | "getActivePlayer" | "movementFor" | "engagedWith" | "carryoverTargets" | "rangestrikeTargets">
-
 export interface GameBattle {
+  getBattleActivePlayer(): PlayerId | undefined
+  getBattlePhaseType(): BattlePhaseType | undefined
+  getBattleMoves(creature: BattleCreature): Set<number>
+  getBattleEngagements(creature: BattleCreature): BattleCreature[]
+  getBattleCarryoverTargets(): BattleCreature[] | undefined
+  getBattleRangestrikeTargets(creature: BattleCreature): RangestrikeTarget[]
   mInitiateBattle(payload: BattlePayload): void
   mNextBattlePhase(): void
   mMoveCreature(payload: BattleMovePayload): void
@@ -41,11 +40,35 @@ export interface GameBattle {
 }
 
 export const gameBattle: GameBattle & ThisType<TitanGame> = {
+  getBattleActivePlayer(): PlayerId | undefined {
+    return this.activeBattle?.getActivePlayer()
+  },
+
+  getBattlePhaseType(): BattlePhaseType | undefined {
+    return this.activeBattle === undefined ? undefined : BATTLE_PHASE_TYPES[this.activeBattle.phase]
+  },
+
+  getBattleMoves(creature: BattleCreature): Set<number> {
+    return this.activeBattle === undefined ? new Set<number>() : this.activeBattle.movementFor(creature)
+  },
+
+  getBattleEngagements(creature: BattleCreature): BattleCreature[] {
+    return this.activeBattle === undefined ? [] : this.activeBattle.engagedWith(creature)
+  },
+
+  getBattleCarryoverTargets(): BattleCreature[] | undefined {
+    return this.activeBattle?.carryoverTargets()
+  },
+
+  getBattleRangestrikeTargets(creature: BattleCreature): RangestrikeTarget[] {
+    return this.activeBattle === undefined ? [] : this.activeBattle.rangestrikeTargets(creature)
+  },
+
   mInitiateBattle({ attacking, defending }: BattlePayload): void {
     assert(attacking.attackEdge !== undefined, "Cannot attack without coming from somewhere")
     const terrain = masterboard.getHex(attacking.hex).terrain
-    const attackingSide = toBattleSide(attacking, getPlayerById(this.players, attacking.owner).score)
-    const defendingSide = toBattleSide(defending, getPlayerById(this.players, defending.owner).score)
+    const attackingSide = toBattleSide(attacking, this.getPlayerById(attacking.owner).score)
+    const defendingSide = toBattleSide(defending, this.getPlayerById(defending.owner).score)
     this.activeBattle = new Battle(terrain, attacking.attackEdge, attackingSide, defendingSide)
     this.activeBattleHex = attacking.hex
   },
@@ -100,8 +123,8 @@ export const gameBattle: GameBattle & ThisType<TitanGame> = {
   },
 
   async doInitiateBattle(attacking: Stack): Promise<void> {
-    const activePlayerId = getActivePlayerId(this.players, this.activePlayer)
-    const defending = getStacksForHex(this.stacks, attacking.hex)
+    const activePlayerId = this.getActivePlayerId()
+    const defending = this.getStacksForHex(attacking.hex)
       .find(stack => stack.owner !== activePlayerId) as Stack
     assert(defending !== undefined,
       `No engagement present on hex ${attacking.hex}!`)
@@ -110,8 +133,8 @@ export const gameBattle: GameBattle & ThisType<TitanGame> = {
   },
 
   async doMoveCreature(payload: BattleMovePayload): Promise<void> {
-    assert(getBattlePhaseType(this.activeBattle) === BattlePhaseType.MOVE, "Not in movement phase")
-    assert(payload.creature.player === getBattleActivePlayer(this.activeBattle), "Incorrect player")
+    assert(this.getBattlePhaseType() === BattlePhaseType.MOVE, "Not in movement phase")
+    assert(payload.creature.player === this.getBattleActivePlayer(), "Incorrect player")
     this.mMoveCreature(payload)
     await this.persist()
   },
@@ -123,23 +146,23 @@ export const gameBattle: GameBattle & ThisType<TitanGame> = {
 
   async doAttackCreature(payload: AttackPayload): Promise<void> {
     if (this.activeBattle === undefined) { throw new Error("Must be in a battle!") }
-    assert(getBattlePhaseType(this.activeBattle) !== BattlePhaseType.MOVE, "Cannot strike in movement phase")
-    assert(payload.attacker.player === getBattleActivePlayer(this.activeBattle), "Incorrect player")
+    assert(this.getBattlePhaseType() !== BattlePhaseType.MOVE, "Cannot strike in movement phase")
+    assert(payload.attacker.player === this.getBattleActivePlayer(), "Incorrect player")
     this.mAttackCreature(payload)
     await this.persist()
   },
 
   async doRangestrikeCreature(payload: RangestrikePayload): Promise<void> {
     if (this.activeBattle === undefined) { throw new Error("Must be in a battle!") }
-    assert(getBattlePhaseType(this.activeBattle) !== BattlePhaseType.MOVE, "Cannot strike in movement phase")
-    assert(payload.attacker.player === getBattleActivePlayer(this.activeBattle), "Incorrect player")
+    assert(this.getBattlePhaseType() !== BattlePhaseType.MOVE, "Cannot strike in movement phase")
+    assert(payload.attacker.player === this.getBattleActivePlayer(), "Incorrect player")
     this.mRangestrikeCreature(payload)
     await this.persist()
   },
 
   async doAssignCarryover(payload: BattleCreature): Promise<void> {
     if (this.activeBattle === undefined) { throw new Error("Must be in a battle!") }
-    assert(getBattlePhaseType(this.activeBattle) !== BattlePhaseType.MOVE, "Cannot carryover in movement phase")
+    assert(this.getBattlePhaseType() !== BattlePhaseType.MOVE, "Cannot carryover in movement phase")
     this.mAssignCarryover(payload)
     await this.persist()
   },
@@ -147,36 +170,8 @@ export const gameBattle: GameBattle & ThisType<TitanGame> = {
   async doSkipCarryover(): Promise<void> {
     if (this.activeBattle === undefined) { throw new Error("Must be in a battle!") }
     if (this.activeBattle.activeStrike === undefined) { throw new Error("Must have an active strike!") }
-    assert(getBattlePhaseType(this.activeBattle) !== BattlePhaseType.MOVE, "Cannot carryover in movement phase")
+    assert(this.getBattlePhaseType() !== BattlePhaseType.MOVE, "Cannot carryover in movement phase")
     this.mSkipCarryover()
     await this.persist()
   }
-}
-
-export function getBattleActivePlayer(activeBattle: BattleView | undefined): PlayerId | undefined {
-  return activeBattle?.getActivePlayer()
-}
-
-export function getBattlePhaseType(activeBattle: BattleView | undefined): BattlePhaseType | undefined {
-  return activeBattle === undefined ? undefined : BATTLE_PHASE_TYPES[activeBattle.phase]
-}
-
-export function getBattleMoves(activeBattle: BattleView | undefined, creature: BattleCreature): Set<number> {
-  return activeBattle === undefined ? new Set<number>() : activeBattle.movementFor(creature)
-}
-
-export function getBattleEngagements(
-  activeBattle: BattleView | undefined, creature: BattleCreature
-): BattleCreature[] {
-  return activeBattle === undefined ? [] : activeBattle.engagedWith(creature)
-}
-
-export function getBattleCarryoverTargets(activeBattle: BattleView | undefined): BattleCreature[] | undefined {
-  return activeBattle?.carryoverTargets()
-}
-
-export function getBattleRangestrikeTargets(
-  activeBattle: BattleView | undefined, creature: BattleCreature
-): RangestrikeTarget[] {
-  return activeBattle === undefined ? [] : activeBattle.rangestrikeTargets(creature)
 }

@@ -7,7 +7,7 @@ import { HexEdge } from "@/models/masterboard"
 import { PlayerId } from "@/models/player"
 import { Random } from "@/models/random"
 import { Stack } from "@/models/stack"
-import { getMandatoryMoves, getMayProceed, getPathsForHex, MasterboardPhase, TitanGame } from "./game"
+import { MasterboardPhase, TitanGame } from "./game"
 
 // doNextPhase deselects the selected stack via the Pinia selection store directly
 // (not through commit), so an active Pinia is needed for it to run at all.
@@ -32,9 +32,9 @@ describe("TitanGame movement legality", () => {
     game.activeRoll = 1
 
     // Player 0 (BLUE) starts at tower hex 100, whose 3 exits are all plain arrows.
-    const destinations = getPathsForHex(game, 100).map(p => p.path.at(-1)!.id).sort((a, b) => a - b)
+    const destinations = game.getPathsForHex(100).map(p => p.path.at(-1)!.id).sort((a, b) => a - b)
     expect(destinations).toEqual([3, 41, 101])
-    expect(getPathsForHex(game, 100).every(p => p.foe === undefined)).toBe(true)
+    expect(game.getPathsForHex(100).every(p => p.foe === undefined)).toBe(true)
   })
 
   it("excludes a destination occupied by the mover's own stack, but flags one occupied by an enemy stack", () => {
@@ -42,7 +42,7 @@ describe("TitanGame movement legality", () => {
     ownStackGame.stacks.push(new Stack(ownStackGame.players[0].id, 3, 5))
     ownStackGame.activePhase = MasterboardPhase.MOVE
     ownStackGame.activeRoll = 1
-    const ownDestinations = getPathsForHex(ownStackGame, 100)
+    const ownDestinations = ownStackGame.getPathsForHex(100)
       .map(p => p.path.at(-1)!.id).sort((a, b) => a - b)
     expect(ownDestinations).toEqual([41, 101])
 
@@ -50,7 +50,7 @@ describe("TitanGame movement legality", () => {
     enemyStackGame.stacks.push(new Stack(enemyStackGame.players[1].id, 3, 5))
     enemyStackGame.activePhase = MasterboardPhase.MOVE
     enemyStackGame.activeRoll = 1
-    const toEnemyHex = getPathsForHex(enemyStackGame, 100).find(p => p.path.at(-1)!.id === 3)
+    const toEnemyHex = enemyStackGame.getPathsForHex(100).find(p => p.path.at(-1)!.id === 3)
     expect(toEnemyHex?.foe?.owner).toBe(enemyStackGame.players[1].id)
   })
 
@@ -65,7 +65,7 @@ describe("TitanGame movement legality", () => {
     game.activePhase = MasterboardPhase.MOVE
     game.activeRoll = 1
 
-    const destinations = getPathsForHex(game, startHex).map(p => p.path.at(-1)!.id).sort((a, b) => a - b)
+    const destinations = game.getPathsForHex(startHex).map(p => p.path.at(-1)!.id).sort((a, b) => a - b)
     expect(destinations).toEqual(expected)
   })
 
@@ -75,7 +75,7 @@ describe("TitanGame movement legality", () => {
     game.activePhase = MasterboardPhase.MOVE
     game.activeRoll = 2
 
-    const paths = getPathsForHex(game, 4)
+    const paths = game.getPathsForHex(4)
     expect(paths).toHaveLength(1)
     expect(paths[0].path.map(h => h.id)).toEqual([4, 103, 102])
   })
@@ -93,15 +93,15 @@ describe("TitanGame mandatory moves (stack splitting during movement)", () => {
     const sibling = game.stacks.at(-1)!
     game.activeRoll = 1
 
-    expect(getMandatoryMoves(game)).toEqual(expect.arrayContaining([original, sibling]))
-    expect(getMandatoryMoves(game)).toHaveLength(2)
-    expect(getMayProceed(game)).toBe(false)
+    expect(game.getMandatoryMoves()).toEqual(expect.arrayContaining([original, sibling]))
+    expect(game.getMandatoryMoves()).toHaveLength(2)
+    expect(game.getMayProceed()).toBe(false)
 
     await game.doMove({ stack: original, hex: 3 })
 
     // Once split apart, the remaining stack alone on the origin hex is no longer mandatory.
-    expect(getMandatoryMoves(game)).toEqual([])
-    expect(getMayProceed(game)).toBe(true)
+    expect(game.getMandatoryMoves()).toEqual([])
+    expect(game.getMayProceed()).toBe(true)
   })
 })
 
@@ -109,7 +109,7 @@ describe("TitanGame mayProceed for the split phase", () => {
   it("blocks proceeding out of the split phase in round 1 until every active stack has a valid split", () => {
     const game = newGame()
     expect(game.round).toBe(0)
-    expect(getMayProceed(game)).toBe(false)
+    expect(game.getMayProceed()).toBe(false)
 
     const stack = game.stacks[0]
     stack.split[0] = true
@@ -117,7 +117,7 @@ describe("TitanGame mayProceed for the split phase", () => {
     stack.split[4] = true
     stack.split[6] = true
 
-    expect(getMayProceed(game)).toBe(true)
+    expect(game.getMayProceed()).toBe(true)
   })
 })
 
