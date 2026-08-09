@@ -20,13 +20,9 @@ export const useSelectionStore = defineStore("selection", () => {
   // reconstruct a private field, so the mapped type stops matching the class).
   const view = ref<View>(View.MASTERBOARD)
   const stack = shallowRef<Stack>()
-  const focusedStacks = shallowReactive<Stack[]>([])
   const focusedHexes = shallowReactive<MasterboardHex[]>([])
 
   const selectedStack = computed<Stack | undefined>(() => stack.value)
-  const focusedStack = computed<Stack | undefined>(() => focusedStacks.length > 0
-    ? focusedStacks[focusedStacks.length - 1]
-    : stack.value)
   const focusedHex = computed<MasterboardHex | undefined>(() => focusedHexes.length > 0
     ? focusedHexes[focusedHexes.length - 1]
     : undefined)
@@ -45,7 +41,6 @@ export const useSelectionStore = defineStore("selection", () => {
 
   function reset(): void {
     stack.value = undefined
-    focusedStacks.splice(0, focusedStacks.length)
     focusedHexes.splice(0, focusedHexes.length)
   }
 
@@ -62,19 +57,6 @@ export const useSelectionStore = defineStore("selection", () => {
       throw new Error("No stack selected")
     }
     return stack.value
-  }
-
-  function enterStack(entering: Stack): void {
-    if (!focusedStacks.includes(entering)) {
-      focusedStacks.push(entering)
-    }
-  }
-
-  function leaveStack(leaving: Stack): void {
-    const index = focusedStacks.indexOf(leaving)
-    if (index !== -1) {
-      focusedStacks.splice(index)
-    }
   }
 
   function enterHex(entering: MasterboardHex): void {
@@ -103,7 +85,6 @@ export const useSelectionStore = defineStore("selection", () => {
   return {
     view,
     selectedStack,
-    focusedStack,
     focusedHex,
     paths,
     setView,
@@ -111,8 +92,6 @@ export const useSelectionStore = defineStore("selection", () => {
     selectStack,
     deselectStack,
     requireSelectedStack,
-    enterStack,
-    leaveStack,
     enterHex,
     leaveHex
   }
