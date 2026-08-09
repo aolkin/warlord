@@ -34,7 +34,7 @@
           block
           variant="outlined"
           :disabled="!mayProceed"
-          @click="nextPhase"
+          @click="game.nextBattlePhase()"
         >
           End {{ phaseTypeTitle }}
         </v-btn>
@@ -57,10 +57,11 @@ const props = defineProps<{
 }>()
 
 const gameStore = useGameStore()
+const game = gameStore.game
 
 const battlePhaseType = computed(() => gameStore.battlePhaseType)
 const battleActivePlayerId = computed((): PlayerId => props.battle.getActivePlayer())
-const battleActivePlayer = computed(() => gameStore.playerById(battleActivePlayerId.value))
+const battleActivePlayer = computed(() => game.getPlayerById(battleActivePlayerId.value))
 
 const phaseTypeTitle = computed((): string => {
   switch (battlePhaseType.value) {
@@ -108,10 +109,6 @@ const roundIcon = computed((): string => {
 const pendingCreatures = computed((): number =>
   props.battle.creatures.filter((creature: BattleCreature) =>
     creature.player === battleActivePlayerId.value && creature.hex >= 36).length)
-
-function nextPhase(): void {
-  void gameStore.nextBattlePhase()
-}
 </script>
 <style scoped lang="sass">
 @import "~/styles/terrain-colors.sass"

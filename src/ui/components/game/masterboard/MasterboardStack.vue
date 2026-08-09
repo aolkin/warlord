@@ -53,7 +53,7 @@
       >
         <Creature
           :type="stack.currentMuster[0]"
-          :player="stackPlayer"
+          :player-id="stack.owner"
           in-svg
         />
       </g>
@@ -66,7 +66,6 @@ import { computed } from "vue"
 import { CreatureType } from "@/models/creature"
 import { MasterboardPhase, Path } from "@/models/game"
 import masterboard, { HexEdge, MasterboardEdge, MasterboardHex } from "@/models/masterboard"
-import { Player } from "@/models/player"
 import { Stack } from "@/models/stack"
 import { useGameStore } from "~/stores/game"
 import { useSelectionStore } from "~/stores/ui/selection"
@@ -96,11 +95,12 @@ const emit = defineEmits<{
 }>()
 
 const gameStore = useGameStore()
+const game = gameStore.game
 const selectionStore = useSelectionStore()
 
 const selected = computed(() => props.stack === selectionStore.selectedStack)
 
-const stacksOnHex = computed((): Stack[] => gameStore.stacksForHex(props.stack.hex))
+const stacksOnHex = computed((): Stack[] => game.getStacksForHex(props.stack.hex))
 
 const stacksOnHexIndex = computed((): number => stacksOnHex.value.indexOf(props.stack))
 
@@ -122,15 +122,13 @@ const transform = computed((): string => {
 
 const isActivePlayer = computed(() => gameStore.activePlayerId === props.stack.owner)
 
-const stackPlayer = computed((): Player => gameStore.playerById(props.stack.owner))
-
 const potentialEngagements = computed((): HexEdge[] => {
   if (selectionStore.selectedStack === undefined) {
     return []
-  } else if (gameStore.stacksForHex(props.stack.hex)
+  } else if (game.getStacksForHex(props.stack.hex)
     .some((stack: Stack) => stack.owner === gameStore.activePlayerId)) {
     return []
-  } else if (gameStore.game.activeRoll === 6 && gameStore.activePlayer.score >= 400 &&
+  } else if (game.activeRoll === 6 && gameStore.activePlayer.score >= 400 &&
     selectionStore.selectedStack.creatures.includes(CreatureType.TITAN)) {
     return [HexEdge.FIRST, HexEdge.SECOND, HexEdge.THIRD]
   } else {
@@ -148,14 +146,14 @@ const potentialEngagements = computed((): HexEdge[] => {
 const engageable = computed((): [HexEdge, Transformations][] =>
   potentialEngagements.value.map(edge => [edge, getEngageTransformForEdge(edge)]))
 
-const engaged = computed((): boolean => isActivePlayer.value && gameStore.stacksForHex(props.stack.hex)
+const engaged = computed((): boolean => isActivePlayer.value && game.getStacksForHex(props.stack.hex)
   .some((stack: Stack) => stack.owner !== gameStore.activePlayerId))
 
 const isMandatory = computed(() => {
   if (!isActivePlayer.value) {
     return false
   }
-  switch (gameStore.game.activePhase) {
+  switch (game.activePhase) {
     case MasterboardPhase.SPLIT:
       return !props.stack.isValidSplit(gameStore.firstRound)
     case MasterboardPhase.MOVE:
@@ -168,7 +166,7 @@ const isDisabled = computed(() => {
   if (!isActivePlayer.value) {
     return false
   }
-  switch (gameStore.game.activePhase) {
+  switch (game.activePhase) {
     case MasterboardPhase.SPLIT:
       return props.stack.creatures.length < 4
     case MasterboardPhase.MOVE:
@@ -189,7 +187,7 @@ const classes = computed(() => ({
   [`player-${props.stack.owner}`]: true,
   "multiple-stacks": stacksOnHex.value.length > 1,
   [`stack-on-hex-${stacksOnHexIndex.value}`]: true,
-  [`phase-${MasterboardPhase[gameStore.game.activePhase].toLowerCase()}`]: true
+  [`phase-${MasterboardPhase[game.activePhase].toLowerCase()}`]: true
 }))
 
 const stackSize = computed((): string => {
@@ -203,9 +201,9 @@ function select(): void {
   if (!isActivePlayer.value) {
     return
   }
-  if (gameStore.game.activePhase === MasterboardPhase.MOVE && props.stack.hasMoved()) {
-    if (!gameStore.stacksForHex(props.stack.origin).some((stack: Stack) => stack.hasMoved())) {
-      void gameStore.move({ stack: props.stack, hex: props.stack.origin })
+  if (game.activePhase === MasterboardPhase.MOVE && props.stack.hasMoved()) {
+    if (!game.getStacksForHex(props.stack.origin).some((stack: Stack) => stack.hasMoved())) {
+      void game.move({ stack: props.stack, hex: props.stack.origin })
     }
   }
   if (selected.value) {
@@ -218,7 +216,7 @@ function select(): void {
 }
 
 function attack(edge: HexEdge): void {
-  void gameStore.move({ stack: selectionStore.requireSelectedStack(), hex: props.stack.hex, edge })
+  void game.move({ stack: selectionStore.requireSelectedStack(), hex: props.stack.hex, edge })
   selectionStore.deselectStack()
 }
 

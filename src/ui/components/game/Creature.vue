@@ -118,7 +118,8 @@
 import { computed } from "vue"
 import { useTheme } from "vuetify"
 import { Creature, CREATURE_DATA, CreatureType } from "@/models/creature"
-import { Player } from "@/models/player"
+import { PlayerId } from "@/models/player"
+import { useGameStore } from "~/stores/game"
 import { CreatureColorMode, usePreferencesStore } from "~/stores/ui/preferences"
 import FilterCache from "./color-util"
 import { TitanColor } from "./types"
@@ -152,22 +153,25 @@ const STANDARD_CREATURE_COLORS: Record<CreatureType, TitanColor> = {
 
 const props = withDefaults(defineProps<{
   type?: CreatureType
-  player?: Player
+  playerId?: PlayerId
   inSvg?: boolean
   transform?: string
   wounds?: number
   noneLabel?: string
 }>(), {
   type: undefined,
-  player: undefined,
+  playerId: undefined,
   inSvg: false,
   transform: "",
   wounds: 0,
   noneLabel: undefined
 })
 
+const gameStore = useGameStore()
 const preferencesStore = usePreferencesStore()
 const theme = useTheme()
+
+const player = computed(() => props.playerId !== undefined ? gameStore.game.getPlayerById(props.playerId) : undefined)
 
 const creature = computed((): Creature | undefined =>
   props.type !== undefined ? CREATURE_DATA[props.type] : undefined)
@@ -181,7 +185,7 @@ const fullTransform = computed(() => props.inSvg ? props.transform + " translate
 
 const strength = computed(() => {
   if (props.type === CreatureType.TITAN) {
-    return Math.floor((props.player?.score ?? 0) / 100) + (creature.value?.strength ?? 0)
+    return Math.floor((player.value?.score ?? 0) / 100) + (creature.value?.strength ?? 0)
   } else {
     return creature.value?.strength
   }
@@ -199,22 +203,22 @@ const classes = computed(() => {
     .includes(preferencesStore.creatureColorMode) && !creature.value?.lord) {
     classMap.standard = true
   } else {
-    classMap[`text-player-${props.player?.id ?? 0}`] = true
+    classMap[`text-player-${props.playerId ?? 0}`] = true
   }
   return classMap
 })
 
 const titanStrength = computed(() => ({
   "double-digits": (creature.value?.type === CreatureType.TITAN &&
-    (props.player?.score ?? 0) >= 400)
+    (player.value?.score ?? 0) >= 400)
 }))
 
 const filter = computed(() => {
   let color = theme.current.value.colors[STANDARD_CREATURE_COLORS[props.type ?? 0]]
-  if (props.player !== undefined) {
+  if (props.playerId !== undefined) {
     if (creature.value?.lord || [CreatureColorMode.PLAYER_UNIFORM_TEXT,
       CreatureColorMode.PLAYER].includes(preferencesStore.creatureColorMode)) {
-      color = theme.current.value.colors[`player-${props.player.id}`]
+      color = theme.current.value.colors[`player-${props.playerId}`]
     }
   }
   return FilterCache.getForHex(color).filter

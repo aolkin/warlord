@@ -64,7 +64,7 @@
           v-for="(creature) in activeCreatures"
           :key="creature.hex"
           :type="creature.type"
-          :player="gameStore.playerById(creature.player)"
+          :player-id="creature.player"
           :wounds="creature.wounds"
           class="battle-creature"
           :class="creatureClasses(creature)"
@@ -200,6 +200,7 @@ import { hexTransformStr } from "./utils"
 const diceRoller = inject<Readonly<Ref<InstanceType<typeof DiceRoller> | null>>>("diceRoller")
 
 const gameStore = useGameStore()
+const game = gameStore.game
 const playerStore = usePlayerStore()
 const preferencesStore = usePreferencesStore()
 
@@ -220,11 +221,11 @@ const focusedCreature = computed<BattleCreature | undefined>(() => focusedCreatu
   : selectedCreature.value)
 
 const movementHexes = computed<Set<number>>(() =>
-  selectedCreature.value === undefined ? new Set<number>() : gameStore.battleMoves(selectedCreature.value))
+  selectedCreature.value === undefined ? new Set<number>() : game.getBattleMoves(selectedCreature.value))
 const engagements = computed<BattleCreature[]>(() =>
-  selectedCreature.value === undefined ? [] : gameStore.battleEngagements(selectedCreature.value))
+  selectedCreature.value === undefined ? [] : game.getBattleEngagements(selectedCreature.value))
 const rangestrikes = computed<RangestrikeTarget[]>(() =>
-  selectedCreature.value === undefined ? [] : gameStore.battleRangestrikeTargets(selectedCreature.value))
+  selectedCreature.value === undefined ? [] : game.getBattleRangestrikeTargets(selectedCreature.value))
 
 function selectCreature(selection: BattleCreature): void {
   selectedCreature.value = selectedCreature.value === selection ? undefined : selection
@@ -266,9 +267,9 @@ function leaveBattleHex(leaving: number): void {
   }
 }
 
-// gameStore.game is deeply reactive, and Vue's UnwrapNestedRefs can't reconstruct Battle's
+// game is deeply reactive, and Vue's UnwrapNestedRefs can't reconstruct Battle's
 // private methods, so the inferred type structurally mismatches the class - cast it back.
-const activeBattle = computed(() => gameStore.game.activeBattle as Battle | undefined)
+const activeBattle = computed(() => game.activeBattle as Battle | undefined)
 
 // A creature only exists within the battle it was selected in.
 watch(activeBattle, deselectCreature)
@@ -314,8 +315,8 @@ function creatureEnabled(creature: BattleCreature): boolean {
   if (creature.player !== gameStore.battleActivePlayer) {
     return false
   }
-  const engagementsCount = gameStore.battleEngagements(creature).length
-  const rangestrikesCount = gameStore.battleRangestrikeTargets(creature).length
+  const engagementsCount = game.getBattleEngagements(creature).length
+  const rangestrikesCount = game.getBattleRangestrikeTargets(creature).length
   switch (gameStore.battlePhaseType) {
     case BattlePhaseType.MOVE:
       return engagementsCount === 0
@@ -352,7 +353,7 @@ const debugHexAdjacencies = computed((): number[] => BATTLE_BOARD_ADJACENCIES[de
 
 function moveSelected(hex: number): void {
   if (selectedCreature.value && movementHexes.value.has(hex)) {
-    void gameStore.moveCreature({ creature: selectedCreature.value, hex })
+    void game.moveCreature({ creature: selectedCreature.value, hex })
   }
 }
 
@@ -365,7 +366,7 @@ function chooseCreature(creature: BattleCreature): void {
 function targetCreature(creature: BattleCreature | RangestrikeTarget): void {
   if (!("creature" in creature) && activeStrike.value?.canCarryover && gameStore.battleCarryoverTargets) {
     if (gameStore.battleCarryoverTargets.includes(creature)) {
-      void gameStore.assignCarryover(creature)
+      void game.assignCarryover(creature)
     }
   } else {
     target.value = creature
@@ -382,8 +383,8 @@ async function attackTargetedCreature(
   }
   const rolls = await diceRoller.value.roll(targetedStrike.value.dice)
   await (isRangestrike(attackTarget)
-    ? gameStore.rangestrikeCreature({ attacker, target: attackTarget, rolls })
-    : gameStore.attackCreature({
+    ? game.rangestrikeCreature({ attacker, target: attackTarget, rolls })
+    : game.attackCreature({
       attacker,
       target: attackTarget,
       optionalToHit: optionalToHit.value,

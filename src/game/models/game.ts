@@ -181,7 +181,7 @@ export class TitanGame {
 
   // Actions
 
-  async doNextPhase(): Promise<void> {
+  async nextPhase(): Promise<void> {
     switch (this.activePhase) {
       case MasterboardPhase.SPLIT:
         // TODO: check mayProceed before advancing — round-1 split rule (exactly 4 creatures with 1 lord) not yet enforced
@@ -200,9 +200,9 @@ export class TitanGame {
         this.activeRoll = undefined
         // TODO: recombine splits that failed to move
         if (engagedStacks.length === 0) {
-          nextPhase(this)
+          advancePhase(this)
         } else {
-          void this.doInitiateBattle(engagedStacks[0])
+          void this.initiateBattle(engagedStacks[0])
         }
         break
       }
@@ -217,7 +217,7 @@ export class TitanGame {
             this.creaturePool[recruitedCreature]--
           })
     }
-    nextPhase(this)
+    advancePhase(this)
     if (this.activePhase === MasterboardPhase.SPLIT) {
       // Every other case above leaves activePhase at MOVE, BATTLE, or MUSTER;
       // only wrapping past END back to SPLIT lands here.
@@ -226,7 +226,7 @@ export class TitanGame {
     await this.persist()
   }
 
-  async doSetRoll(payload?: number): Promise<void> {
+  async setRoll(payload?: number): Promise<void> {
     if (payload === undefined && this.activeRoll !== undefined) {
       assert(this.getMulliganAvailable(), "Mulligan unavailable")
     }
@@ -238,7 +238,7 @@ export class TitanGame {
     await this.persist()
   }
 
-  async doMove({ stack, hex, edge }: MovePayload): Promise<void> {
+  async move({ stack, hex, edge }: MovePayload): Promise<void> {
     assert(this.activePhase === MasterboardPhase.MOVE, "Innappropriate phase")
     stack.attackEdge = edge
     if (hex instanceof MasterboardHex) {
@@ -249,7 +249,7 @@ export class TitanGame {
     await this.persist()
   }
 
-  async doSetRecruit({ stack, recruit }: MusterPayload): Promise<void> {
+  async setRecruit({ stack, recruit }: MusterPayload): Promise<void> {
     if (!stack.canMuster()) {
       throw new Error("Stack is not eligible to muster!")
     }
@@ -291,7 +291,7 @@ function finalizeMuster(round: number, stack: Stack & { currentMuster: MusterCho
   return stack.currentMuster[0]
 }
 
-function nextPhase(game: TitanGame): void {
+function advancePhase(game: TitanGame): void {
   game.activePhase += 1
   if (game.activePhase === MasterboardPhase.END) {
     game.activePlayer += 1
