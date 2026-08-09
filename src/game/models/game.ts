@@ -33,6 +33,11 @@ export interface Path {
 export interface MovePayload { stack: Stack, hex: number | MasterboardHex, edge?: HexEdge }
 export interface MusterPayload { stack: Stack, recruit: MusterChoice }
 
+// Vue's reactive() unwrapping loses Battle's private members at the type level (though not at
+// runtime), so a reactive TitanGame fails structural assignability against the full TitanGame
+// type; none of the getters below touch activeBattle, so exclude it from what they require.
+type GameState = Omit<TitanGame, "activeBattle">
+
 // gameBattle/gamePersistence are mixed onto TitanGame.prototype by the Object.assign below,
 // which the type checker cannot see; this interface declares what they contribute.
 // eslint-disable-next-line @typescript-eslint/no-unsafe-declaration-merging
@@ -72,131 +77,20 @@ export class TitanGame {
     this.stacks.flatMap(stack => stack.creatures).forEach(creature => this.creaturePool[creature]--)
   }
 
-  getRound(): number {
-    return this.round + 1
-  }
-
-  getFirstRound(): boolean {
-    return this.round === 0
-  }
-
-  getPlayers(): Player[] {
-    return this.players
-  }
-
-  getPlayerById(id: PlayerId): Player {
-    const player = this.players.find(player => player.id === id)
-    assert(player !== undefined, `No player with id ${id}`)
-    return player
-  }
-
-  getStacksForPlayer(owner: PlayerId): Stack[] {
-    return this.stacks.filter(stack => stack.owner === owner)
-  }
-
-  getActiveStacks(): Stack[] {
-    return this.getStacksForPlayer(this.getActivePlayerId())
-  }
-
-  getNextMarker(): number | undefined {
-    const usedMarkers = this.getActiveStacks().map(stack => stack.marker)
-    return range(0, 12).find(marker => !usedMarkers.includes(marker))
-  }
-
-  getStacksForHex(hex: number): Stack[] {
-    return this.stacks.filter(stack => stack.hex === hex)
-  }
-
-  getPathsForHex(hexNum: number): Path[] {
-    if (this.activeRoll === undefined) {
-      return []
-    }
-    const activePlayerId = this.getActivePlayerId()
-    const initialHex = masterboard.getHex(hexNum)
-    const paths: Path[] = []
-    // [Array of hexes to get where we are, first hex with enemies, current hex]
-    type pathing = [MasterboardHex[], Stack | undefined, MasterboardHex]
-    const stack: pathing[] = initialHex.getMovement(true).map(edge => [[initialHex], undefined, edge.hex])
-    let entry: pathing | undefined
-    while ((entry = stack.pop()) !== undefined) {
-      const [path, , hex] = entry
-      let foe = entry[1]
-      const occupants: Stack[] = this.getStacksForHex(hex.id)
-      if (foe === undefined) {
-        const foes = occupants.filter((stack: Stack) => stack.owner !== activePlayerId)
-        if (foes.length > 0) {
-          foe = foes[0]
-        }
-      }
-      if (path.length === this.activeRoll) {
-        if (!occupants.some((stack: Stack) => stack.owner === activePlayerId)) {
-          paths.push({ foe, path: [...path, hex] })
-        }
-      } else {
-        stack.push(...hex.getMovement(false)
-          .filter(edge => path[path.length - 1] !== edge.hex)
-          .map(edge => [[...path, hex], foe, edge.hex] as pathing))
-      }
-    }
-    return paths
-  }
-
-  getMandatoryMoves(): Stack[] {
-    return this.getActiveStacks().filter(stack => !stack.hasMoved() &&
-      this.getStacksForHex(stack.origin).length > 1 &&
-      this.getPathsForHex(stack.hex).length > 0)
-  }
-
-  getActivePlayer(): Player {
-    return this.players[this.activePlayer]
-  }
-
-  getActivePlayerId(): PlayerId {
-    return this.getActivePlayer().id
-  }
-
-  getMayProceed(): boolean {
-    switch (this.activePhase) {
-      case MasterboardPhase.SPLIT:
-        return this.getActiveStacks().every(stack => stack.isValidSplit(this.round === 0))
-      case MasterboardPhase.MOVE:
-        return this.getMandatoryMoves().length === 0 &&
-          this.getActiveStacks().some(stack => stack.hasMoved())
-      case MasterboardPhase.BATTLE:
-        return true
-      case MasterboardPhase.MUSTER:
-        return true
-      case MasterboardPhase.END:
-        return true
-    }
-  }
-
-  getMulliganAvailable(): boolean {
-    return this.round === 0 && !this.mulliganTaken &&
-      !this.getActiveStacks().some(stack => stack.hasMoved())
-  }
-
-  getEngagedStacks(): Stack[] {
-    const activePlayerId = this.getActivePlayerId()
-    return this.getActiveStacks()
-      .filter(stack => this.getStacksForHex(stack.hex)
-        .some(occupant => occupant.owner !== activePlayerId))
-  }
-
   // Actions
 
   async doNextPhase(): Promise<void> {
     switch (this.activePhase) {
       case MasterboardPhase.SPLIT:
         // TODO: check mayProceed before advancing — round-1 split rule (exactly 4 creatures with 1 lord) not yet enforced
-        this.getActiveStacks().filter(stack => stack.numSplitting() > 0).forEach(stack => {
+        getActiveStacks(this).filter(stack => stack.numSplitting() > 0).forEach(stack => {
           // Each pushed stack claims a marker, so the next split needs a fresh read.
-          this.stacks.push(finalizeSplit(stack, this.getNextMarker()!))
+          this.stacks.push(finalizeSplit(stack, getNextMarker(this)!))
         })
         this.mulliganTaken = false
         break
       case MasterboardPhase.MOVE: {
-        const engagedStacks = this.getEngagedStacks()
+        const engagedStacks = getEngagedStacks(this)
         // TODO: handle 2+ simultaneous engagements — no UI yet exists to let the player choose
         // which battle to resolve first. Refusing to advance keeps the game out of a battle
         // phase with no battle to resolve.
@@ -214,7 +108,7 @@ export class TitanGame {
         assert(this.activeBattle !== undefined, "Incomplete battle!")
         break
       case MasterboardPhase.MUSTER:
-        this.getActiveStacks()
+        getActiveStacks(this)
           .filter((stack): stack is Stack & { currentMuster: MusterChoice } => stack.currentMuster !== undefined)
           .forEach(stack => {
             const recruitedCreature = finalizeMuster(this.round, stack)
@@ -225,14 +119,14 @@ export class TitanGame {
     if (this.activePhase === MasterboardPhase.SPLIT) {
       // Every other case above leaves activePhase at MOVE, BATTLE, or MUSTER;
       // only wrapping past END back to SPLIT lands here.
-      this.getActiveStacks().forEach(startPlayerTurn)
+      getActiveStacks(this).forEach(startPlayerTurn)
     }
     await this.persist()
   }
 
   async doSetRoll(payload?: number): Promise<void> {
     if (payload === undefined && this.activeRoll !== undefined) {
-      assert(this.getMulliganAvailable(), "Mulligan unavailable")
+      assert(getMulliganAvailable(this), "Mulligan unavailable")
     }
     assert(this.activePhase === MasterboardPhase.MOVE, "Innappropriate phase")
     if (payload === undefined && this.activeRoll !== undefined) {
@@ -282,6 +176,117 @@ export class TitanGame {
 }
 
 Object.assign(TitanGame.prototype, gameBattle, gamePersistence)
+
+export function getRound(round: number): number {
+  return round + 1
+}
+
+export function getFirstRound(round: number): boolean {
+  return round === 0
+}
+
+export function getPlayers(players: Player[]): Player[] {
+  return players
+}
+
+export function getPlayerById(players: Player[], id: PlayerId): Player {
+  const player = players.find(player => player.id === id)
+  assert(player !== undefined, `No player with id ${id}`)
+  return player
+}
+
+export function getStacksForPlayer(stacks: Stack[], owner: PlayerId): Stack[] {
+  return stacks.filter(stack => stack.owner === owner)
+}
+
+export function getStacksForHex(stacks: Stack[], hex: number): Stack[] {
+  return stacks.filter(stack => stack.hex === hex)
+}
+
+export function getActivePlayer(players: Player[], activePlayer: number): Player {
+  return players[activePlayer]
+}
+
+export function getActivePlayerId(players: Player[], activePlayer: number): PlayerId {
+  return getActivePlayer(players, activePlayer).id
+}
+
+export function getActiveStacks(game: GameState): Stack[] {
+  return getStacksForPlayer(game.stacks, getActivePlayerId(game.players, game.activePlayer))
+}
+
+export function getNextMarker(game: GameState): number | undefined {
+  const usedMarkers = getActiveStacks(game).map(stack => stack.marker)
+  return range(0, 12).find(marker => !usedMarkers.includes(marker))
+}
+
+export function getPathsForHex(game: GameState, hexNum: number): Path[] {
+  if (game.activeRoll === undefined) {
+    return []
+  }
+  const activePlayerId = getActivePlayerId(game.players, game.activePlayer)
+  const initialHex = masterboard.getHex(hexNum)
+  const paths: Path[] = []
+  // [Array of hexes to get where we are, first hex with enemies, current hex]
+  type pathing = [MasterboardHex[], Stack | undefined, MasterboardHex]
+  const stack: pathing[] = initialHex.getMovement(true).map(edge => [[initialHex], undefined, edge.hex])
+  let entry: pathing | undefined
+  while ((entry = stack.pop()) !== undefined) {
+    const [path, , hex] = entry
+    let foe = entry[1]
+    const occupants: Stack[] = getStacksForHex(game.stacks, hex.id)
+    if (foe === undefined) {
+      const foes = occupants.filter((stack: Stack) => stack.owner !== activePlayerId)
+      if (foes.length > 0) {
+        foe = foes[0]
+      }
+    }
+    if (path.length === game.activeRoll) {
+      if (!occupants.some((stack: Stack) => stack.owner === activePlayerId)) {
+        paths.push({ foe, path: [...path, hex] })
+      }
+    } else {
+      stack.push(...hex.getMovement(false)
+        .filter(edge => path[path.length - 1] !== edge.hex)
+        .map(edge => [[...path, hex], foe, edge.hex] as pathing))
+    }
+  }
+  return paths
+}
+
+export function getMandatoryMoves(game: GameState): Stack[] {
+  return getActiveStacks(game).filter(stack => !stack.hasMoved() &&
+    getStacksForHex(game.stacks, stack.origin).length > 1 &&
+    getPathsForHex(game, stack.hex).length > 0)
+}
+
+export function getMayProceed(game: GameState): boolean {
+  switch (game.activePhase) {
+    case MasterboardPhase.SPLIT:
+      return getActiveStacks(game).every(stack => stack.isValidSplit(game.round === 0))
+    case MasterboardPhase.MOVE:
+      return getMandatoryMoves(game).length === 0 &&
+        getActiveStacks(game).some(stack => stack.hasMoved())
+    case MasterboardPhase.BATTLE:
+      return true
+    case MasterboardPhase.MUSTER:
+      return true
+    case MasterboardPhase.END:
+      return true
+  }
+}
+
+export function getMulliganAvailable(game: GameState): boolean {
+  return game.round === 0 && !game.mulliganTaken &&
+    !getActiveStacks(game).some(stack => stack.hasMoved())
+}
+
+export function getEngagedStacks(game: GameState): Stack[] {
+  const activePlayerId = getActivePlayerId(game.players, game.activePlayer)
+  return getActiveStacks(game)
+    .filter(stack => getStacksForHex(game.stacks, stack.hex)
+      .some(occupant => occupant.owner !== activePlayerId))
+}
 
 function startPlayerTurn(stack: Stack): void {
   stack.origin = stack.hex

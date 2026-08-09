@@ -1,8 +1,15 @@
 import { defineStore } from "pinia"
 import { computed, reactive } from "vue"
 import { BattleCreature } from "@/models/battle"
-import { MovePayload, MusterPayload, Path, TitanGame } from "@/models/game"
-import { AttackPayload, BattleMovePayload, RangestrikePayload } from "@/models/game/battle"
+import {
+  getActivePlayer, getActivePlayerId, getActiveStacks, getEngagedStacks, getFirstRound, getMandatoryMoves,
+  getMayProceed, getMulliganAvailable, getPathsForHex, getPlayerById, getPlayers, getRound, getStacksForHex,
+  getStacksForPlayer, MovePayload, MusterPayload, Path, TitanGame
+} from "@/models/game"
+import {
+  AttackPayload, BattleMovePayload, getBattleActivePlayer, getBattleCarryoverTargets, getBattleEngagements,
+  getBattleMoves, getBattlePhaseType, getBattleRangestrikeTargets, RangestrikePayload
+} from "@/models/game/battle"
 import { Player, PlayerId } from "@/models/player"
 import { Stack } from "@/models/stack"
 
@@ -11,42 +18,42 @@ export const useGameStore = defineStore("game", () => {
   // (see proposals/04-state-management.md), so the instance itself is the store's state.
   const game = reactive(TitanGame.hydrate())
 
-  const round = computed(() => game.getRound())
-  const firstRound = computed(() => game.getFirstRound())
-  const players = computed(() => game.getPlayers())
-  const activePlayer = computed(() => game.getActivePlayer())
-  const activePlayerId = computed(() => game.getActivePlayerId())
-  const activeStacks = computed(() => game.getActiveStacks())
-  const mandatoryMoves = computed(() => game.getMandatoryMoves())
-  const mayProceed = computed(() => game.getMayProceed())
-  const mulliganAvailable = computed(() => game.getMulliganAvailable())
-  const engagedStacks = computed(() => game.getEngagedStacks())
-  const battleActivePlayer = computed(() => game.getBattleActivePlayer())
-  const battlePhaseType = computed(() => game.getBattlePhaseType())
-  const battleCarryoverTargets = computed(() => game.getBattleCarryoverTargets())
+  const round = computed(() => getRound(game.round))
+  const firstRound = computed(() => getFirstRound(game.round))
+  const players = computed(() => getPlayers(game.players))
+  const activePlayer = computed(() => getActivePlayer(game.players, game.activePlayer))
+  const activePlayerId = computed(() => getActivePlayerId(game.players, game.activePlayer))
+  const activeStacks = computed(() => getActiveStacks(game))
+  const mandatoryMoves = computed(() => getMandatoryMoves(game))
+  const mayProceed = computed(() => getMayProceed(game))
+  const mulliganAvailable = computed(() => getMulliganAvailable(game))
+  const engagedStacks = computed(() => getEngagedStacks(game))
+  const battleActivePlayer = computed(() => getBattleActivePlayer(game.activeBattle))
+  const battlePhaseType = computed(() => getBattlePhaseType(game.activeBattle))
+  const battleCarryoverTargets = computed(() => getBattleCarryoverTargets(game.activeBattle))
 
   function playerById(id: PlayerId): Player {
-    return game.getPlayerById(id)
+    return getPlayerById(game.players, id)
   }
 
   function stacksForPlayer(owner: PlayerId): Stack[] {
-    return game.getStacksForPlayer(owner)
+    return getStacksForPlayer(game.stacks, owner)
   }
 
   function stacksForHex(hex: number): Stack[] {
-    return game.getStacksForHex(hex)
+    return getStacksForHex(game.stacks, hex)
   }
 
   function pathsForHex(hex: number): Path[] {
-    return game.getPathsForHex(hex)
+    return getPathsForHex(game, hex)
   }
 
   function battleMoves(creature: BattleCreature): Set<number> {
-    return game.getBattleMoves(creature)
+    return getBattleMoves(game.activeBattle, creature)
   }
 
   function battleEngagements(creature: BattleCreature): BattleCreature[] {
-    return game.getBattleEngagements(creature)
+    return getBattleEngagements(game.activeBattle, creature)
   }
 
   return {
@@ -70,7 +77,7 @@ export const useGameStore = defineStore("game", () => {
     battleMoves,
     battleEngagements,
     battleCarryoverTargets,
-    battleRangestrikeTargets: (creature: BattleCreature) => game.getBattleRangestrikeTargets(creature),
+    battleRangestrikeTargets: (creature: BattleCreature) => getBattleRangestrikeTargets(game.activeBattle, creature),
     nextPhase: (): Promise<void> => game.doNextPhase(),
     setRoll: (roll?: number): Promise<void> => game.doSetRoll(roll),
     move: (payload: MovePayload): Promise<void> => game.doMove(payload),
