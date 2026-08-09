@@ -5,10 +5,10 @@
       :key="creature.id"
       :type="creature.type"
       :player="gameStore.playerById(creature.player)"
-      :class="{ interactive: activeBattle.phase === expectedPhase,
+      :class="{ interactive,
                 selected: creature === selectedCreature }"
       class="ma-1 pending"
-      @click="activeBattle.phase === expectedPhase && emit('select', creature)"
+      @click="interactive && emit('select', creature)"
     />
     <Creature
       v-if="showRemove && selectedCreature"
@@ -21,13 +21,13 @@
 </template>
 <script setup lang="ts">
 import { computed } from "vue"
-import { BattleCreature, BattlePhase } from "@/models/battle"
+import { BattleCreature } from "@/models/battle"
 import { useGameStore } from "~/stores/game"
 import Creature from "../Creature.vue"
 
 const props = defineProps<{
   creatures: BattleCreature[]
-  expectedPhase: BattlePhase
+  interactive: boolean
   selectedCreature: BattleCreature | undefined
 }>()
 
@@ -37,9 +37,7 @@ const emit = defineEmits<{
 
 const gameStore = useGameStore()
 
-const activeBattle = computed(() => gameStore.game.activeBattle!)
-
-const showRemove = computed(() => activeBattle.value.phase === props.expectedPhase &&
+const showRemove = computed(() => props.interactive &&
   (props.selectedCreature?.initialHex ?? -1) >= 36 &&
   (props.selectedCreature?.hex ?? -1) < 36)
 

@@ -19,13 +19,12 @@
         >
           <div
             v-if="pendingOffense.length > 0 ||
-              (activeBattle.phase === BattlePhase.ATTACKER_MOVE &&
-                props.selectedStartedOffBoard)"
+              (attackerMoveActive && props.selectedStartedOffBoard)"
           >
             <v-card-title>{{ attacker.name }}'s Pending Creatures</v-card-title>
             <PendingCreatures
               :creatures="pendingOffense"
-              :expected-phase="BattlePhase.ATTACKER_MOVE"
+              :interactive="attackerMoveActive"
               :selected-creature="props.selectedCreature"
               class="px-2 pb-1"
               @select="emit('select', $event)"
@@ -33,13 +32,12 @@
           </div>
           <div
             v-if="pendingDefense.length > 0 ||
-              (activeBattle.phase === BattlePhase.DEFENDER_MOVE &&
-                props.selectedStartedOffBoard)"
+              (defenderMoveActive && props.selectedStartedOffBoard)"
           >
             <v-card-title>{{ defender.name }}'s Pending Creatures</v-card-title>
             <PendingCreatures
               :creatures="pendingDefense"
-              :expected-phase="BattlePhase.DEFENDER_MOVE"
+              :interactive="defenderMoveActive"
               :selected-creature="props.selectedCreature"
               class="px-2 pb-1"
               @select="emit('select', $event)"
@@ -99,6 +97,9 @@ const gameStore = useGameStore()
 const minimized = ref(false)
 
 const activeBattle = computed(() => gameStore.game.activeBattle!)
+
+const attackerMoveActive = computed(() => activeBattle.value.phase === BattlePhase.ATTACKER_MOVE)
+const defenderMoveActive = computed(() => activeBattle.value.phase === BattlePhase.DEFENDER_MOVE)
 
 const orderingClasses = computed(() =>
   ({
