@@ -30,10 +30,7 @@
           </g>
         </g>
       </v-fade-transition>
-      <g
-        v-if="game.stacks.length > 0"
-        class="stacks"
-      >
+      <g class="stacks">
         <MasterboardStack
           v-for="stack in sortedStacks"
           :key="stack.id"
