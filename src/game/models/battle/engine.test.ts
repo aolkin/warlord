@@ -32,7 +32,7 @@ function place(creature: BattleCreature, hex: number): void {
 }
 
 describe("Battle engagement", () => {
-  it("moves into contact, resolves a strike, and inflicts casualties", () => {
+  it("moves into contact, resolves a strike, and inflicts casualties", async () => {
     const { battle, offense, defense } = setupBattle(Terrain.PLAINS, [CreatureType.LION], [CreatureType.CENTAUR])
     const [lion] = offense
     const [centaur] = defense
@@ -56,7 +56,7 @@ describe("Battle engagement", () => {
     const toHit = battle.toHitAdjusted(lion, centaur)
     expect(toHit).toBe(5) // 4 - (lion skill 3 - centaur skill 4), no terrain adjustment
     const game = createGameWithActiveBattle(battle)
-    game.mAttackCreature({ attacker: lion, target: centaur, rolls: [6, 6, 6, 6, 6] })
+    await game.attackCreature({ attacker: lion, target: centaur, rolls: [6, 6, 6, 6, 6] })
 
     expect(lion.hasStruck).toBe(true)
     expect(centaur.wounds).toBe(3) // Centaur's full strength (3); capped, not overkill
@@ -252,30 +252,30 @@ describe("Carryover", () => {
     return { battle, lion, centaur1, centaur2 }
   }
 
-  it("assigns overflow hits from an overkill strike to another engaged target", () => {
+  it("assigns overflow hits from an overkill strike to another engaged target", async () => {
     const { battle, lion, centaur1, centaur2 } = setupTripleEngagement()
 
     const game = createGameWithActiveBattle(battle)
-    game.mAttackCreature({ attacker: lion, target: centaur1, rolls: [6, 6, 6, 6, 6] })
+    await game.attackCreature({ attacker: lion, target: centaur1, rolls: [6, 6, 6, 6, 6] })
     expect(centaur1.getRemainingHp()).toBe(0)
     expect(battle.activeStrike?.canCarryover).toBe(true)
     // getCarryoverHits = 5 total hits - 3 assigned to centaur1
     expect(battle.activeStrike?.getCarryoverHits()).toBe(2)
     expect(battle.carryoverTargets()).toEqual([centaur2])
 
-    game.mAssignCarryover(centaur2)
+    await game.assignCarryover(centaur2)
     expect(centaur2.wounds).toBe(2)
     expect(battle.activeStrike?.canCarryover).toBe(false) // no hits left to carry over
   })
 
-  it("stops carryover once skipCarryover is called", () => {
+  it("stops carryover once skipCarryover is called", async () => {
     const { battle, lion, centaur1 } = setupTripleEngagement()
 
     const game = createGameWithActiveBattle(battle)
-    game.mAttackCreature({ attacker: lion, target: centaur1, rolls: [6, 6, 6, 6, 6] })
+    await game.attackCreature({ attacker: lion, target: centaur1, rolls: [6, 6, 6, 6, 6] })
     expect(battle.activeStrike?.canCarryover).toBe(true)
 
-    game.mSkipCarryover()
+    await game.skipCarryover()
 
     expect(battle.activeStrike?.canCarryover).toBe(false)
     expect(battle.carryoverTargets()).toBeUndefined()
@@ -391,7 +391,7 @@ describe("Movement legality (movementFor)", () => {
 
     expect(battle.movementFor(lion).has(4)).toBe(false)
 
-    // mMoveCreature mutates hex directly and doesn't call nextPhase(), so a recomputed
+    // moveCreature mutates hex directly and doesn't call nextPhase(), so a recomputed
     // movementFor within the same move phase must use the centaur's new position, not
     // whatever occupancy applied to the earlier call.
     centaur.hex = 10
@@ -470,7 +470,7 @@ describe("Engagement edge cases", () => {
     expect(battle.engagedWith(centaur)).toEqual([])
   })
 
-  it("excludes an engaged creature from carryover if the attacker cannot hit it at the toHit it just rolled", () => {
+  it("excludes an engaged creature from carryover if the attacker cannot hit it at the toHit it just rolled", async () => {
     // Terrain.TOWER's battle board has battle-hex 8 atop a wall edge from battle-hex 2,
     // which raises toHit by 1 for an attacker striking up through it.
     const { battle, offense, defense } = setupBattle(Terrain.TOWER,
@@ -483,12 +483,12 @@ describe("Engagement edge cases", () => {
     place(included, 3) // toHit 5, no hazard - matches the rolled toHit, so carryover-eligible
     place(excluded, 8) // toHit 6, raised by the wall - harder than the rolled toHit
 
-    createGameWithActiveBattle(battle).mAttackCreature({ attacker: lion, target: primary, rolls: [6, 6, 6, 6, 6] })
+    await createGameWithActiveBattle(battle).attackCreature({ attacker: lion, target: primary, rolls: [6, 6, 6, 6, 6] })
     expect(primary.getRemainingHp()).toBe(0) // overkilled, so it drops out of engagedWith too
     expect(battle.carryoverTargets()).toEqual([included])
   })
 
-  it("lets a strike choose a higher toHit than computed, but rejects a lower one", () => {
+  it("lets a strike choose a higher toHit than computed, but rejects a lower one", async () => {
     const { battle, offense, defense } = setupBattle(Terrain.PLAINS, [CreatureType.LION], [CreatureType.CENTAUR])
     battle.phase = BattlePhase.ATTACKER_STRIKE
     const [lion] = offense
@@ -499,11 +499,11 @@ describe("Engagement edge cases", () => {
     const computedToHit = battle.toHitAdjusted(lion, centaur)
     expect(computedToHit).toBe(5)
     const game = createGameWithActiveBattle(battle)
-    expect(() => game.mAttackCreature({
+    await expect(game.attackCreature({
       attacker: lion, target: centaur, rolls: [6, 6, 6, 6, 6], optionalToHit: computedToHit - 1
-    })).toThrow("Cannot choose a lower to-hit")
+    })).rejects.toThrow("Cannot choose a lower to-hit")
 
-    game.mAttackCreature({
+    await game.attackCreature({
       attacker: lion, target: centaur, rolls: [6, 6, 6, 6, 6], optionalToHit: computedToHit + 1
     })
     expect(battle.activeStrike?.toHit).toBe(computedToHit + 1)
@@ -511,7 +511,7 @@ describe("Engagement edge cases", () => {
     expect(centaur.wounds).toBe(3)
   })
 
-  it("resolves a rangestrike attack the same way as a melee strike, but never allows carryover", () => {
+  it("resolves a rangestrike attack the same way as a melee strike, but never allows carryover", async () => {
     const { battle, offense, defense } = setupBattle(Terrain.PLAINS, [CreatureType.RANGER], [CreatureType.CENTAUR])
     battle.phase = BattlePhase.ATTACKER_STRIKE
     const [ranger] = offense
@@ -524,7 +524,7 @@ describe("Engagement edge cases", () => {
     // Ranger has strength 4, so per rule 12.2 (dice = floor(power / 2)) a rangestrike rolls
     // exactly 2 dice.
     expect(battle.getRangestrike(ranger, targets[0]).dice).toBe(2)
-    createGameWithActiveBattle(battle).mRangestrikeCreature({ attacker: ranger, target: targets[0], rolls: [6, 6] })
+    await createGameWithActiveBattle(battle).rangestrikeCreature({ attacker: ranger, target: targets[0], rolls: [6, 6] })
 
     expect(ranger.hasStruck).toBe(true)
     expect(centaur.wounds).toBe(2)
