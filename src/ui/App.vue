@@ -77,7 +77,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, defineAsyncComponent, onBeforeMount, provide, readonly, ref } from "vue"
+import { defineAsyncComponent, onBeforeMount, provide, readonly, ref, watch } from "vue"
 import BattleBoard from "~/components/game/battle/BattleBoard"
 import Masterboard from "~/components/game/masterboard/Masterboard"
 import PlayerStatus from "~/components/ui/game/PlayerStatus"
@@ -86,33 +86,37 @@ import GameMenu from "~/components/ui/menus/GameMenu"
 import SystemMenu from "~/components/ui/menus/SystemMenu"
 import { useGameStore } from "~/stores/game"
 import { usePreferencesStore } from "~/stores/ui/preferences"
-import { useSelectionStore, View } from "~/stores/ui/selection"
 
 // Keeps @3d-dice/dice-box's chunks out of the main bundle for sessions that never roll dice.
 const DiceRoller = defineAsyncComponent(() => import("~/components/ui/generic/DiceRoller"))
+
+enum View {
+  MASTERBOARD,
+  BATTLEBOARD
+}
 
 const diceRoller = ref<InstanceType<typeof DiceRollerComponent> | null>(null)
 provide("diceRoller", readonly(diceRoller))
 
 const gameStore = useGameStore()
-const selectionStore = useSelectionStore()
 const preferencesStore = usePreferencesStore()
 
 const menuVisible = ref(false)
 const prefsPaneVisible = ref(false)
 
-const view = computed<View>({
-  get() {
-    return selectionStore.view
-  },
-  set(value: View) {
-    selectionStore.setView(value)
-  }
-})
+const view = ref<View>(View.MASTERBOARD)
 
 onBeforeMount(() => {
   if (gameStore.game.activeBattle !== undefined) {
-    selectionStore.setView(View.BATTLEBOARD)
+    view.value = View.BATTLEBOARD
+  }
+})
+
+// Only the empty->present transition should navigate to the battle board - subsequent
+// mutations within the same battle (strikes, wounds, etc.) also change activeBattle.
+watch(() => gameStore.game.activeBattle !== undefined, (hasBattle, hadBattle) => {
+  if (hasBattle && !hadBattle) {
+    view.value = View.BATTLEBOARD
   }
 })
 
