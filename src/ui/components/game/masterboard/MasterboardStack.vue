@@ -87,6 +87,7 @@ const getEngageTransformForEdge = (edge: HexEdge): Transformations => {
 
 const props = defineProps<{
   stack: Stack
+  paths: Path[]
 }>()
 
 const emit = defineEmits<{
@@ -134,7 +135,7 @@ const potentialEngagements = computed((): HexEdge[] => {
     return [HexEdge.FIRST, HexEdge.SECOND, HexEdge.THIRD]
   } else {
     // For paths where this stack is the enemy...
-    return selectionStore.paths.filter((path: Path) => path.foe === props.stack).flatMap(({ path }: Path) =>
+    return props.paths.filter((path: Path) => path.foe === props.stack).flatMap(({ path }: Path) =>
       // Find the index on the path where this stack resides...
       path.map((hex: MasterboardHex, i: number) => hex.id === props.stack.hex
         // Figure out where the stack would enter this hex from

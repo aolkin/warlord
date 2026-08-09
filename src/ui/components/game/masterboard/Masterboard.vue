@@ -9,7 +9,7 @@
       <MasterboardHexes :can-free-move="canFreeMove" />
       <v-fade-transition>
         <g
-          v-if="selectionStore.paths.length > 0"
+          v-if="paths.length > 0"
           :key="selectionStore.selectedStack!.hex"
           class="paths"
         >
@@ -38,6 +38,7 @@
           v-for="stack in sortedStacks"
           :key="stack.id"
           :stack="stack"
+          :paths="paths"
           @enter="enterStack"
           @leave="leaveStack"
         />
@@ -61,7 +62,7 @@
 import { computed, shallowReactive } from "vue"
 import { range, sortBy } from "lodash-es"
 import { MasterboardPhase, Path } from "@/models/game"
-import { MasterboardHex } from "@/models/masterboard"
+import masterboard, { MasterboardHex } from "@/models/masterboard"
 import { Stack } from "@/models/stack"
 import { useGameStore } from "~/stores/game"
 import { usePreferencesStore } from "~/stores/ui/preferences"
@@ -78,10 +79,18 @@ const gameStore = useGameStore()
 const preferencesStore = usePreferencesStore()
 const selectionStore = useSelectionStore()
 
-// activeRoll is only read from template branches that are only rendered once the
-// selection store's "paths" getter is non-empty, which itself requires activeRoll
-// to be defined - see src/ui/stores/ui/selection.ts.
+// activeRoll is only read from template branches that are only rendered once "paths"
+// below is non-empty, which itself requires activeRoll to be defined.
 const activeRoll = computed(() => gameStore.game.activeRoll!)
+
+const paths = computed<Path[]>(() => {
+  if (selectionStore.selectedStack?.hex === undefined ||
+    masterboard.getHex(selectionStore.selectedStack.hex) === undefined ||
+    gameStore.game.activeRoll === undefined) {
+    return []
+  }
+  return gameStore.pathsForHex(selectionStore.selectedStack.hex)
+})
 
 // Stack instances here always come from the game store's own reactive state, so they're
 // already reactive proxies by the time they reach this array - a shallow collection avoids
@@ -113,8 +122,8 @@ const sortedStacks = computed((): Stack[] => {
   return lastSortedStacks
 })
 const interleavedPaths = computed((): [boolean, MasterboardHex][][] =>
-  range(selectionStore.paths[0].path.length).map((colIndex: number) =>
-    selectionStore.paths.map((row: Path): [boolean, MasterboardHex] =>
+  range(paths.value[0].path.length).map((colIndex: number) =>
+    paths.value.map((row: Path): [boolean, MasterboardHex] =>
       [row.foe !== undefined, row.path[colIndex]])).slice(1))
 
 const canFreeMove = computed((): boolean =>
