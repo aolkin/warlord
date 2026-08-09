@@ -13,14 +13,14 @@
           @click="menuVisible = !menuVisible"
         />
         <v-btn
-          :variant="view === View.MASTERBOARD ? 'text' : 'plain'"
+          :variant="!battleVisible ? 'text' : 'plain'"
           icon="mdi-dots-hexagon"
-          @click="view = View.MASTERBOARD"
+          @click="battleVisible = false"
         />
         <v-btn
-          :variant="view === View.BATTLEBOARD ? 'text' : 'plain'"
+          :variant="battleVisible ? 'text' : 'plain'"
           icon="mdi-hexagon-multiple-outline"
-          @click="view = View.BATTLEBOARD"
+          @click="battleVisible = true"
         />
       </div>
       <PlayerStatus />
@@ -60,8 +60,8 @@
     <v-main>
       <!-- Constructing the boards is very expensive, so we hide them with v-show instead of
            destroying and recreating them with v-if -->
-      <Masterboard v-show="view === View.MASTERBOARD" />
-      <BattleBoard v-show="view === View.BATTLEBOARD" />
+      <Masterboard v-show="!battleVisible" />
+      <BattleBoard v-show="battleVisible" />
       <DiceRoller ref="diceRoller" />
     </v-main>
     <v-footer
@@ -90,11 +90,6 @@ import { usePreferencesStore } from "~/stores/ui/preferences"
 // Keeps @3d-dice/dice-box's chunks out of the main bundle for sessions that never roll dice.
 const DiceRoller = defineAsyncComponent(() => import("~/components/ui/generic/DiceRoller"))
 
-enum View {
-  MASTERBOARD,
-  BATTLEBOARD
-}
-
 const diceRoller = ref<InstanceType<typeof DiceRollerComponent> | null>(null)
 provide("diceRoller", readonly(diceRoller))
 
@@ -104,11 +99,11 @@ const preferencesStore = usePreferencesStore()
 const menuVisible = ref(false)
 const prefsPaneVisible = ref(false)
 
-const view = ref<View>(View.MASTERBOARD)
+const battleVisible = ref(false)
 
 onBeforeMount(() => {
   if (gameStore.game.activeBattle !== undefined) {
-    view.value = View.BATTLEBOARD
+    battleVisible.value = true
   }
 })
 
@@ -116,7 +111,7 @@ onBeforeMount(() => {
 // mutations within the same battle (strikes, wounds, etc.) also change activeBattle.
 watch(() => gameStore.game.activeBattle !== undefined, (hasBattle, hadBattle) => {
   if (hasBattle && !hadBattle) {
-    view.value = View.BATTLEBOARD
+    battleVisible.value = true
   }
 })
 
