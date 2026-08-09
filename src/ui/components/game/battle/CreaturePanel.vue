@@ -92,8 +92,7 @@ const emit = defineEmits<{
   select: [creature: BattleCreature]
 }>()
 
-const gameStore = useGameStore()
-const game = gameStore.game
+const game = useGameStore().game
 
 const minimized = ref(false)
 

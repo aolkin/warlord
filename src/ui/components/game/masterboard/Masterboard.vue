@@ -75,8 +75,7 @@ import MasterboardStack from "./MasterboardStack.vue"
 
 let lastSortedStacks: Stack[] = []
 
-const gameStore = useGameStore()
-const game = gameStore.game
+const game = useGameStore().game
 const preferencesStore = usePreferencesStore()
 const selectionStore = useSelectionStore()
 

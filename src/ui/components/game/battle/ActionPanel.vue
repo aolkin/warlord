@@ -34,7 +34,7 @@
           block
           variant="outlined"
           :disabled="!mayProceed"
-          @click="nextPhase"
+          @click="game.nextBattlePhase()"
         >
           End {{ phaseTypeTitle }}
         </v-btn>
@@ -109,10 +109,6 @@ const roundIcon = computed((): string => {
 const pendingCreatures = computed((): number =>
   props.battle.creatures.filter((creature: BattleCreature) =>
     creature.player === battleActivePlayerId.value && creature.hex >= 36).length)
-
-function nextPhase(): void {
-  void game.nextBattlePhase()
-}
 </script>
 <style scoped lang="sass">
 @import "~/styles/terrain-colors.sass"

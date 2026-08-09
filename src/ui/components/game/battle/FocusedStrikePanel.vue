@@ -26,8 +26,7 @@ const props = defineProps<{
   focusedCreature: BattleCreature
 }>()
 
-const gameStore = useGameStore()
-const game = gameStore.game
+const game = useGameStore().game
 
 const activeBattle = computed(() => game.activeBattle!)
 

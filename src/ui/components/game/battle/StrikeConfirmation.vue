@@ -80,8 +80,7 @@ const emit = defineEmits<{
   "update:optionalToHit": [value: number | undefined]
 }>()
 
-const gameStore = useGameStore()
-const game = gameStore.game
+const game = useGameStore().game
 
 const engagements = computed<BattleCreature[]>(() => game.getBattleEngagements(props.attacker))
 

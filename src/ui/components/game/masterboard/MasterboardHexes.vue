@@ -25,8 +25,7 @@ withDefaults(defineProps<{
   canFreeMove: false
 })
 
-const gameStore = useGameStore()
-const game = gameStore.game
+const game = useGameStore().game
 const selectionStore = useSelectionStore()
 
 const hexes = computed(() => masterboard.getHexIds())
