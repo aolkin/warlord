@@ -200,15 +200,7 @@ export class TitanGame {
         this.activeRoll = undefined
         // TODO: recombine splits that failed to move
         if (engagedStacks.length === 0) {
-          this.activePhase += 1
-          if (this.activePhase === MasterboardPhase.END) {
-            this.activePlayer += 1
-            if (this.activePlayer >= this.players.length) {
-              this.activePlayer = 0
-              this.round++
-            }
-            this.activePhase = MasterboardPhase.SPLIT
-          }
+          advancePhase(this)
         } else {
           void this.initiateBattle(engagedStacks[0])
         }
@@ -225,15 +217,7 @@ export class TitanGame {
             this.creaturePool[recruitedCreature]--
           })
     }
-    this.activePhase += 1
-    if (this.activePhase === MasterboardPhase.END) {
-      this.activePlayer += 1
-      if (this.activePlayer >= this.players.length) {
-        this.activePlayer = 0
-        this.round++
-      }
-      this.activePhase = MasterboardPhase.SPLIT
-    }
+    advancePhase(this)
     if (this.activePhase === MasterboardPhase.SPLIT) {
       // Every other case above leaves activePhase at MOVE, BATTLE, or MUSTER;
       // only wrapping past END back to SPLIT lands here.
@@ -305,4 +289,16 @@ function finalizeMuster(round: number, stack: Stack & { currentMuster: MusterCho
   stack.recruits[round] = stack.currentMuster
   stack.creatures.push(stack.currentMuster[0])
   return stack.currentMuster[0]
+}
+
+function advancePhase(game: TitanGame): void {
+  game.activePhase += 1
+  if (game.activePhase === MasterboardPhase.END) {
+    game.activePlayer += 1
+    if (game.activePlayer >= game.players.length) {
+      game.activePlayer = 0
+      game.round++
+    }
+    game.activePhase = MasterboardPhase.SPLIT
+  }
 }
