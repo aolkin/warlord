@@ -24,7 +24,7 @@ describe("game store", () => {
     stack.split[6] = true
     const before = gameStore.game.stacks.length
 
-    await gameStore.game.doNextPhase()
+    await gameStore.game.nextPhase()
 
     expect(gameStore.game.activePhase).toBe(MasterboardPhase.MOVE)
     expect(gameStore.game.stacks).toHaveLength(before + 1)

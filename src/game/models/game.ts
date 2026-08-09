@@ -181,7 +181,7 @@ export class TitanGame {
 
   // Actions
 
-  async doNextPhase(): Promise<void> {
+  async nextPhase(): Promise<void> {
     switch (this.activePhase) {
       case MasterboardPhase.SPLIT:
         // TODO: check mayProceed before advancing — round-1 split rule (exactly 4 creatures with 1 lord) not yet enforced
@@ -200,7 +200,15 @@ export class TitanGame {
         this.activeRoll = undefined
         // TODO: recombine splits that failed to move
         if (engagedStacks.length === 0) {
-          nextPhase(this)
+          this.activePhase += 1
+          if (this.activePhase === MasterboardPhase.END) {
+            this.activePlayer += 1
+            if (this.activePlayer >= this.players.length) {
+              this.activePlayer = 0
+              this.round++
+            }
+            this.activePhase = MasterboardPhase.SPLIT
+          }
         } else {
           void this.initiateBattle(engagedStacks[0])
         }
@@ -217,7 +225,15 @@ export class TitanGame {
             this.creaturePool[recruitedCreature]--
           })
     }
-    nextPhase(this)
+    this.activePhase += 1
+    if (this.activePhase === MasterboardPhase.END) {
+      this.activePlayer += 1
+      if (this.activePlayer >= this.players.length) {
+        this.activePlayer = 0
+        this.round++
+      }
+      this.activePhase = MasterboardPhase.SPLIT
+    }
     if (this.activePhase === MasterboardPhase.SPLIT) {
       // Every other case above leaves activePhase at MOVE, BATTLE, or MUSTER;
       // only wrapping past END back to SPLIT lands here.
@@ -289,16 +305,4 @@ function finalizeMuster(round: number, stack: Stack & { currentMuster: MusterCho
   stack.recruits[round] = stack.currentMuster
   stack.creatures.push(stack.currentMuster[0])
   return stack.currentMuster[0]
-}
-
-function nextPhase(game: TitanGame): void {
-  game.activePhase += 1
-  if (game.activePhase === MasterboardPhase.END) {
-    game.activePlayer += 1
-    if (game.activePlayer >= game.players.length) {
-      game.activePlayer = 0
-      game.round++
-    }
-    game.activePhase = MasterboardPhase.SPLIT
-  }
 }

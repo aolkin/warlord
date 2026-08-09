@@ -125,7 +125,7 @@ const engagementsMessage = computed(() => {
 })
 
 function nextPhase(): void {
-  void game.doNextPhase()
+  void game.nextPhase()
 }
 
 function roll(): void {

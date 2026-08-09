@@ -9,7 +9,7 @@ import { Random } from "@/models/random"
 import { Stack } from "@/models/stack"
 import { MasterboardPhase, TitanGame } from "./game"
 
-// doNextPhase deselects the selected stack via the Pinia selection store directly
+// nextPhase deselects the selected stack via the Pinia selection store directly
 // (not through commit), so an active Pinia is needed for it to run at all.
 beforeEach(() => setActivePinia(createPinia()))
 
@@ -89,7 +89,7 @@ describe("TitanGame mandatory moves (stack splitting during movement)", () => {
     original.split[2] = true // CENTAUR
     original.split[4] = true // OGRE
     original.split[6] = true // GARGOYLE
-    await game.doNextPhase()
+    await game.nextPhase()
     const sibling = game.stacks.at(-1)!
     game.activeRoll = 1
 
@@ -132,7 +132,7 @@ describe("TitanGame turn and phase transitions", () => {
     original.split[4] = true // OGRE
     original.split[6] = true // GARGOYLE
 
-    await game.doNextPhase()
+    await game.nextPhase()
 
     expect(game.activePhase).toBe(MasterboardPhase.MOVE)
     expect(game.stacks).toHaveLength(3)
@@ -155,7 +155,7 @@ describe("TitanGame turn and phase transitions", () => {
     game.activePhase = MasterboardPhase.MOVE
     game.activeRoll = 1
 
-    await game.doNextPhase()
+    await game.nextPhase()
 
     expect(game.activePhase).toBe(MasterboardPhase.MUSTER)
     expect(game.activeRoll).toBeUndefined()
@@ -170,7 +170,7 @@ describe("TitanGame turn and phase transitions", () => {
     game.activePhase = MasterboardPhase.MOVE
     game.activeRoll = 1
 
-    await game.doNextPhase()
+    await game.nextPhase()
 
     expect(game.activeBattle?.attacker).toBe(attacker.owner)
     expect(game.activeBattle?.defender).toBe(defender.owner)
@@ -179,7 +179,7 @@ describe("TitanGame turn and phase transitions", () => {
   })
 
   // Real Titan rules allow multiple simultaneous engagements, resolved one battle at a time.
-  // Until a player can choose the resolution order, doNextPhase refuses to leave the move
+  // Until a player can choose the resolution order, nextPhase refuses to leave the move
   // phase rather than advancing into a battle phase with no battle. See its TODO.
   it("refuses to leave the move phase with multiple simultaneous engagements", async () => {
     const game = newGame(3) // BLUE @ 100, GREEN @ 300, RED @ 500
@@ -188,13 +188,13 @@ describe("TitanGame turn and phase transitions", () => {
     original.split[2] = true
     original.split[4] = true
     original.split[6] = true
-    await game.doNextPhase()
+    await game.nextPhase()
     const sibling = game.stacks.at(-1)!
     original.hex = game.stacks[1].hex // engage GREEN
     sibling.hex = game.stacks[2].hex // engage RED
     game.activeRoll = 1
 
-    await expect(game.doNextPhase()).rejects.toThrow("Multiple simultaneous engagements")
+    await expect(game.nextPhase()).rejects.toThrow("Multiple simultaneous engagements")
 
     expect(game.activePhase).toBe(MasterboardPhase.MOVE)
     expect(game.activeBattle).toBeUndefined()
@@ -207,7 +207,7 @@ describe("TitanGame turn and phase transitions", () => {
     // phase-transition gating (an active battle must exist) is under test here.
     game.activeBattle = {} as unknown as Battle
 
-    await game.doNextPhase()
+    await game.nextPhase()
 
     expect(game.activePhase).toBe(MasterboardPhase.MUSTER)
   })
@@ -216,7 +216,7 @@ describe("TitanGame turn and phase transitions", () => {
     const game = newGame()
     game.activePhase = MasterboardPhase.MUSTER
 
-    await game.doNextPhase()
+    await game.nextPhase()
     expect(game.activePhase).toBe(MasterboardPhase.SPLIT)
     expect(game.activePlayer).toBe(1)
     expect(game.round).toBe(0)
@@ -227,7 +227,7 @@ describe("TitanGame turn and phase transitions", () => {
     game.stacks[0].attackEdge = HexEdge.FIRST
     game.stacks[0].origin = 3
 
-    await game.doNextPhase()
+    await game.nextPhase()
     expect(game.activePhase).toBe(MasterboardPhase.SPLIT)
     expect(game.activePlayer).toBe(0)
     expect(game.round).toBe(1)
@@ -316,7 +316,7 @@ describe("TitanGame mustering (setRecruit)", () => {
     game.activePhase = MasterboardPhase.MUSTER
     await game.setRecruit({ stack, recruit: [CreatureType.LION, [CreatureType.CENTAUR, 2]] })
 
-    await game.doNextPhase()
+    await game.nextPhase()
 
     expect(stack.creatures).toContain(CreatureType.LION)
     expect(game.creaturePool[CreatureType.LION]).toBe(poolBefore - 1)
