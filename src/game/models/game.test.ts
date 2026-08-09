@@ -97,7 +97,7 @@ describe("TitanGame mandatory moves (stack splitting during movement)", () => {
     expect(game.getMandatoryMoves()).toHaveLength(2)
     expect(game.getMayProceed()).toBe(false)
 
-    await game.doMove({ stack: original, hex: 3 })
+    await game.move({ stack: original, hex: 3 })
 
     // Once split apart, the remaining stack alone on the origin hex is no longer mandatory.
     expect(game.getMandatoryMoves()).toEqual([])
@@ -239,12 +239,12 @@ describe("TitanGame turn and phase transitions", () => {
   })
 })
 
-describe("TitanGame roll setting (doSetRoll)", () => {
+describe("TitanGame roll setting (setRoll)", () => {
   it("records the roll during the move phase", async () => {
     const game = newGame()
     game.activePhase = MasterboardPhase.MOVE
 
-    await game.doSetRoll(4)
+    await game.setRoll(4)
 
     expect(game.activeRoll).toBe(4)
   })
@@ -254,20 +254,20 @@ describe("TitanGame roll setting (doSetRoll)", () => {
     game.activePhase = MasterboardPhase.MOVE
     game.activeRoll = 3
 
-    await game.doSetRoll(undefined)
+    await game.setRoll(undefined)
 
     expect(game.activeRoll).toBeUndefined()
     expect(game.mulliganTaken).toBe(true)
   })
 })
 
-describe("TitanGame mustering (doSetRecruit)", () => {
+describe("TitanGame mustering (setRecruit)", () => {
   it("refuses to record a recruit for a stack that isn't eligible to muster", async () => {
     const game = newGame()
     const stack = game.stacks[0] // hasn't moved this turn
     game.activePhase = MasterboardPhase.MUSTER
 
-    await expect(game.doSetRecruit({
+    await expect(game.setRecruit({
       stack, recruit: [CreatureType.CENTAUR, [CreatureType.CENTAUR, 0]]
     })).rejects.toThrow("not eligible to muster")
   })
@@ -279,7 +279,7 @@ describe("TitanGame mustering (doSetRecruit)", () => {
     game.stacks.push(stack)
     game.activePhase = MasterboardPhase.MOVE
 
-    await expect(game.doSetRecruit({
+    await expect(game.setRecruit({
       stack, recruit: [CreatureType.LION, [CreatureType.CENTAUR, 2]]
     })).rejects.toThrow("Innappropriate phase")
   })
@@ -299,10 +299,10 @@ describe("TitanGame mustering (doSetRecruit)", () => {
     const recruit: [CreatureType, [CreatureType, number]] = [creatureType, [CreatureType.CENTAUR, 2]]
 
     if (expectSuccess) {
-      await game.doSetRecruit({ stack, recruit })
+      await game.setRecruit({ stack, recruit })
       expect(stack.currentMuster).toEqual(recruit)
     } else {
-      await expect(game.doSetRecruit({ stack, recruit }))
+      await expect(game.setRecruit({ stack, recruit }))
         .rejects.toThrow("No more of the requested creature remaining")
     }
   })
@@ -314,7 +314,7 @@ describe("TitanGame mustering (doSetRecruit)", () => {
     game.stacks.push(stack)
     const poolBefore = game.creaturePool[CreatureType.LION]
     game.activePhase = MasterboardPhase.MUSTER
-    await game.doSetRecruit({ stack, recruit: [CreatureType.LION, [CreatureType.CENTAUR, 2]] })
+    await game.setRecruit({ stack, recruit: [CreatureType.LION, [CreatureType.CENTAUR, 2]] })
 
     await game.doNextPhase()
 

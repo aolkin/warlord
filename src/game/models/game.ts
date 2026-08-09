@@ -202,7 +202,7 @@ export class TitanGame {
         if (engagedStacks.length === 0) {
           nextPhase(this)
         } else {
-          void this.doInitiateBattle(engagedStacks[0])
+          void this.initiateBattle(engagedStacks[0])
         }
         break
       }
@@ -226,7 +226,7 @@ export class TitanGame {
     await this.persist()
   }
 
-  async doSetRoll(payload?: number): Promise<void> {
+  async setRoll(payload?: number): Promise<void> {
     if (payload === undefined && this.activeRoll !== undefined) {
       assert(this.getMulliganAvailable(), "Mulligan unavailable")
     }
@@ -238,7 +238,7 @@ export class TitanGame {
     await this.persist()
   }
 
-  async doMove({ stack, hex, edge }: MovePayload): Promise<void> {
+  async move({ stack, hex, edge }: MovePayload): Promise<void> {
     assert(this.activePhase === MasterboardPhase.MOVE, "Innappropriate phase")
     stack.attackEdge = edge
     if (hex instanceof MasterboardHex) {
@@ -249,7 +249,7 @@ export class TitanGame {
     await this.persist()
   }
 
-  async doSetRecruit({ stack, recruit }: MusterPayload): Promise<void> {
+  async setRecruit({ stack, recruit }: MusterPayload): Promise<void> {
     if (!stack.canMuster()) {
       throw new Error("Stack is not eligible to muster!")
     }

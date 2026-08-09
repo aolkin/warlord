@@ -43,7 +43,7 @@ const showRemove = computed(() => props.interactive &&
   (props.selectedCreature?.hex ?? -1) < 36)
 
 function removeSelected(creature: BattleCreature): void {
-  void game.doMoveCreature({ creature, hex: creature.initialHex })
+  void game.moveCreature({ creature, hex: creature.initialHex })
 }
 </script>
 <style scoped lang="sass">

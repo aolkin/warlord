@@ -129,9 +129,9 @@ function nextPhase(): void {
 
 function roll(): void {
   if (activeRoll.value !== undefined) {
-    void gameStore.game.doSetRoll(undefined)
+    void gameStore.game.setRoll(undefined)
   }
-  diceRoller?.value?.roll().then(async(rolled: number[]) => await gameStore.game.doSetRoll(rolled[0]))
+  diceRoller?.value?.roll().then(async(rolled: number[]) => await gameStore.game.setRoll(rolled[0]))
 }
 
 function proceedToRoll(): void {

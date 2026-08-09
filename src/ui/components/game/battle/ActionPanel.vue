@@ -110,7 +110,7 @@ const pendingCreatures = computed((): number =>
     creature.player === battleActivePlayerId.value && creature.hex >= 36).length)
 
 function nextPhase(): void {
-  void gameStore.game.doNextBattlePhase()
+  void gameStore.game.nextBattlePhase()
 }
 </script>
 <style scoped lang="sass">

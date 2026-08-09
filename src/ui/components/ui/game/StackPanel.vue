@@ -159,7 +159,7 @@ const mustering = computed({
     if (activePhase.value !== MasterboardPhase.MUSTER) {
       return
     }
-    void gameStore.game.doSetRecruit({ stack: props.focusedStack!, recruit: value })
+    void gameStore.game.setRecruit({ stack: props.focusedStack!, recruit: value })
   }
 })
 

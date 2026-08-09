@@ -34,7 +34,7 @@ describe("game store", () => {
     const gameStore = useGameStore()
     gameStore.game.activePhase = MasterboardPhase.MOVE
 
-    await gameStore.game.doSetRoll(4)
+    await gameStore.game.setRoll(4)
 
     expect(gameStore.game.activeRoll).toBe(4)
     expect(gameStore.mulliganAvailable).toBe(true)

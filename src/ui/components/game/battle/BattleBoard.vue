@@ -353,7 +353,7 @@ const debugHexAdjacencies = computed((): number[] => BATTLE_BOARD_ADJACENCIES[de
 
 function moveSelected(hex: number): void {
   if (selectedCreature.value && movementHexes.value.has(hex)) {
-    void game.doMoveCreature({ creature: selectedCreature.value, hex })
+    void game.moveCreature({ creature: selectedCreature.value, hex })
   }
 }
 
@@ -366,7 +366,7 @@ function chooseCreature(creature: BattleCreature): void {
 function targetCreature(creature: BattleCreature | RangestrikeTarget): void {
   if (!("creature" in creature) && activeStrike.value?.canCarryover && gameStore.battleCarryoverTargets) {
     if (gameStore.battleCarryoverTargets.includes(creature)) {
-      void game.doAssignCarryover(creature)
+      void game.assignCarryover(creature)
     }
   } else {
     target.value = creature
@@ -383,8 +383,8 @@ async function attackTargetedCreature(
   }
   const rolls = await diceRoller.value.roll(targetedStrike.value.dice)
   await (isRangestrike(attackTarget)
-    ? game.doRangestrikeCreature({ attacker, target: attackTarget, rolls })
-    : game.doAttackCreature({
+    ? game.rangestrikeCreature({ attacker, target: attackTarget, rolls })
+    : game.attackCreature({
       attacker,
       target: attackTarget,
       optionalToHit: optionalToHit.value,

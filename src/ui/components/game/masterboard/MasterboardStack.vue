@@ -206,7 +206,7 @@ function select(): void {
   }
   if (gameStore.game.activePhase === MasterboardPhase.MOVE && props.stack.hasMoved()) {
     if (!game.getStacksForHex(props.stack.origin).some((stack: Stack) => stack.hasMoved())) {
-      void game.doMove({ stack: props.stack, hex: props.stack.origin })
+      void game.move({ stack: props.stack, hex: props.stack.origin })
     }
   }
   if (selected.value) {
@@ -219,7 +219,7 @@ function select(): void {
 }
 
 function attack(edge: HexEdge): void {
-  void game.doMove({ stack: selectionStore.requireSelectedStack(), hex: props.stack.hex, edge })
+  void game.move({ stack: selectionStore.requireSelectedStack(), hex: props.stack.hex, edge })
   selectionStore.deselectStack()
 }
 
