@@ -15,10 +15,6 @@
         :title="phaseTypeTitle"
       />
     </template>
-    <v-card-subtitle v-if="preferencesStore.debugUi && props.focusedBattleHex !== undefined">
-      Hex: {{ props.focusedBattleHex }} ({{ Hazard[land.getHazard(props.focusedBattleHex!)] }})
-      <span v-if="land.getElevation(props.focusedBattleHex!) > 0">+{{ land.getElevation(props.focusedBattleHex!) }}</span>
-    </v-card-subtitle>
     <v-card-text v-if="battlePhaseType === BattlePhaseType.MOVE && pendingCreatures > 0">
       You have {{ pendingCreatures }} creature{{ pendingCreatures > 1 ? 's' : '' }} that
       {{ pendingCreatures > 1 ? 'have' : 'has' }} not entered the battle board. If they do
@@ -50,22 +46,17 @@
 import { computed } from "vue"
 import {
   Battle,
-  BattleBoard,
   BattleCreature,
-  BattlePhaseType,
-  Hazard
+  BattlePhaseType
 } from "@/models/battle"
 import { PlayerId } from "@/models/player"
 import { useGameStore } from "~/stores/game"
-import { usePreferencesStore } from "~/stores/ui/preferences"
 
 const props = defineProps<{
   battle: Battle
-  focusedBattleHex: number | undefined
 }>()
 
 const gameStore = useGameStore()
-const preferencesStore = usePreferencesStore()
 
 const battlePhaseType = computed(() => gameStore.battlePhaseType)
 const battleActivePlayerId = computed((): PlayerId => props.battle.getActivePlayer())
@@ -113,8 +104,6 @@ const roundIcon = computed((): string => {
   const name = `mdi-numeric-${props.battle.round + 1}-box`
   return name + (battleActivePlayerId.value === props.battle.defender ? "-outline" : "")
 })
-
-const land = computed((): BattleBoard => props.battle.getBoard())
 
 const pendingCreatures = computed((): number =>
   props.battle.creatures.filter((creature: BattleCreature) =>

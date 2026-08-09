@@ -23,6 +23,10 @@
         <v-card-title>
           Round: {{ activeBattle.round + 1 }} - {{ BATTLE_PHASE_TITLES[activeBattle.phase] }}
         </v-card-title>
+        <v-card-subtitle v-if="preferencesStore.debugUi && focusedBattleHex !== undefined">
+          Hex: {{ focusedBattleHex }} ({{ Hazard[board.getHazard(focusedBattleHex)] }})
+          <span v-if="board.getElevation(focusedBattleHex) > 0">+{{ board.getElevation(focusedBattleHex) }}</span>
+        </v-card-subtitle>
       </v-card>
       <svg
         class="board"
@@ -112,7 +116,6 @@
         location="bottom right"
         class="ma-3 mb-10"
         :battle="activeBattle"
-        :focused-battle-hex="focusedBattleHex"
       />
       <v-sheet
         position="fixed"
@@ -170,6 +173,7 @@ import {
   BattleCreature,
   BattlePhaseType,
   EdgeHazard,
+  Hazard,
   isRangestrike,
   RangestrikeTarget,
   relationToHex,
