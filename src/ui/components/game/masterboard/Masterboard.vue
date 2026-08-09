@@ -38,8 +38,8 @@
           v-for="stack in sortedStacks"
           :key="stack.id"
           :stack="stack"
-          @mouseenter="enterStack"
-          @mouseleave="leaveStack"
+          @enter="enterStack"
+          @leave="leaveStack"
         />
       </g>
     </svg>
