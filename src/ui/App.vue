@@ -13,14 +13,14 @@
           @click="menuVisible = !menuVisible"
         />
         <v-btn
-          :variant="view === View.MASTERBOARD ? 'text' : 'plain'"
+          :variant="!battleVisible ? 'text' : 'plain'"
           icon="mdi-dots-hexagon"
-          @click="view = View.MASTERBOARD"
+          @click="battleVisible = false"
         />
         <v-btn
-          :variant="view === View.BATTLEBOARD ? 'text' : 'plain'"
+          :variant="battleVisible ? 'text' : 'plain'"
           icon="mdi-hexagon-multiple-outline"
-          @click="view = View.BATTLEBOARD"
+          @click="battleVisible = true"
         />
       </div>
       <PlayerStatus />
@@ -60,8 +60,8 @@
     <v-main>
       <!-- Constructing the boards is very expensive, so we hide them with v-show instead of
            destroying and recreating them with v-if -->
-      <Masterboard v-show="view === View.MASTERBOARD" />
-      <BattleBoard v-show="view === View.BATTLEBOARD" />
+      <Masterboard v-show="!battleVisible" />
+      <BattleBoard v-show="battleVisible" />
       <DiceRoller ref="diceRoller" />
     </v-main>
     <v-footer
@@ -77,7 +77,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, defineAsyncComponent, onBeforeMount, provide, readonly, ref } from "vue"
+import { defineAsyncComponent, onBeforeMount, provide, readonly, ref, watch } from "vue"
 import BattleBoard from "~/components/game/battle/BattleBoard"
 import Masterboard from "~/components/game/masterboard/Masterboard"
 import PlayerStatus from "~/components/ui/game/PlayerStatus"
@@ -86,7 +86,6 @@ import GameMenu from "~/components/ui/menus/GameMenu"
 import SystemMenu from "~/components/ui/menus/SystemMenu"
 import { useGameStore } from "~/stores/game"
 import { usePreferencesStore } from "~/stores/ui/preferences"
-import { useSelectionStore, View } from "~/stores/ui/selection"
 
 // Keeps @3d-dice/dice-box's chunks out of the main bundle for sessions that never roll dice.
 const DiceRoller = defineAsyncComponent(() => import("~/components/ui/generic/DiceRoller"))
@@ -95,24 +94,24 @@ const diceRoller = ref<InstanceType<typeof DiceRollerComponent> | null>(null)
 provide("diceRoller", readonly(diceRoller))
 
 const gameStore = useGameStore()
-const selectionStore = useSelectionStore()
 const preferencesStore = usePreferencesStore()
 
 const menuVisible = ref(false)
 const prefsPaneVisible = ref(false)
 
-const view = computed<View>({
-  get() {
-    return selectionStore.view
-  },
-  set(value: View) {
-    selectionStore.setView(value)
-  }
-})
+const battleVisible = ref(false)
 
 onBeforeMount(() => {
   if (gameStore.game.activeBattle !== undefined) {
-    selectionStore.setView(View.BATTLEBOARD)
+    battleVisible.value = true
+  }
+})
+
+// Only the empty->present transition should navigate to the battle board - subsequent
+// mutations within the same battle (strikes, wounds, etc.) also change activeBattle.
+watch(() => gameStore.game.activeBattle !== undefined, (hasBattle, hadBattle) => {
+  if (hasBattle && !hadBattle) {
+    battleVisible.value = true
   }
 })
 
