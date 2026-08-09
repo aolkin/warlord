@@ -53,7 +53,7 @@
       >
         <Creature
           :type="stack.currentMuster[0]"
-          :player="stackPlayer"
+          :player-id="stack.owner"
           in-svg
         />
       </g>
@@ -66,7 +66,6 @@ import { computed } from "vue"
 import { CreatureType } from "@/models/creature"
 import { MasterboardPhase, Path } from "@/models/game"
 import masterboard, { HexEdge, MasterboardEdge, MasterboardHex } from "@/models/masterboard"
-import { Player } from "@/models/player"
 import { Stack } from "@/models/stack"
 import { useGameStore } from "~/stores/game"
 import { useSelectionStore } from "~/stores/ui/selection"
@@ -122,8 +121,6 @@ const transform = computed((): string => {
 })
 
 const isActivePlayer = computed(() => gameStore.activePlayerId === props.stack.owner)
-
-const stackPlayer = computed((): Player => game.getPlayerById(props.stack.owner))
 
 const potentialEngagements = computed((): HexEdge[] => {
   if (selectionStore.selectedStack === undefined) {

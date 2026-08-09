@@ -64,7 +64,7 @@
           v-for="(creature) in activeCreatures"
           :key="creature.hex"
           :type="creature.type"
-          :player="game.getPlayerById(creature.player)"
+          :player-id="creature.player"
           :wounds="creature.wounds"
           class="battle-creature"
           :class="creatureClasses(creature)"

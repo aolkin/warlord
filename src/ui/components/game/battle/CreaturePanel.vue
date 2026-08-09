@@ -52,7 +52,7 @@
                 v-for="(creature, index) in deadOffense"
                 :key="index"
                 :type="creature.type"
-                :player="attacker"
+                :player-id="activeBattle.attacker"
                 class="ma-1 dead"
               />
             </div>
@@ -64,7 +64,7 @@
                 v-for="(creature, index) in deadDefense"
                 :key="index"
                 :type="creature.type"
-                :player="defender"
+                :player-id="activeBattle.defender"
                 class="ma-1 dead"
               />
             </div>

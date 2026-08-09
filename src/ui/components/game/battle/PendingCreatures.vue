@@ -4,7 +4,7 @@
       v-for="creature in creatures"
       :key="creature.id"
       :type="creature.type"
-      :player="game.getPlayerById(creature.player)"
+      :player-id="creature.player"
       :class="{ interactive,
                 selected: creature === selectedCreature }"
       class="ma-1 pending"
@@ -12,7 +12,7 @@
     />
     <Creature
       v-if="showRemove && selectedCreature"
-      :player="game.getPlayerById(gameStore.battleActivePlayer!)"
+      :player-id="gameStore.battleActivePlayer"
       none-label="Put Back"
       class="ma-1 interactive"
       @click="removeSelected(selectedCreature)"

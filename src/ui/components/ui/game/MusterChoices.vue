@@ -3,7 +3,7 @@
     <Creature
       v-if="canDecline"
       :type="undefined"
-      :player="player"
+      :player-id="playerId"
       :class="{ selected: chosen === undefined }"
       class="ma-1 recruitment-choice"
       @click="chosen = undefined"
@@ -19,7 +19,7 @@
         <template #activator="{ props: activatorProps }">
           <Creature
             :type="creature"
-            :player="player"
+            :player-id="playerId"
             :class="{ unavailable: creature !== undefined && musterBasis.length < 1,
                       selected: chosen !== undefined && creature === chosen[0] }"
             class="ma-1 recruitment-choice"
@@ -39,7 +39,7 @@
             >
               <Creature
                 :type="basisCreature"
-                :player="player"
+                :player-id="playerId"
                 :in-svg="true"
               />
               <text
@@ -58,18 +58,18 @@
 import { computed, ref, watch } from "vue"
 import { fill } from "lodash-es"
 import { CREATURE_DATA } from "@/models/creature"
-import { Player } from "@/models/player"
+import { PlayerId } from "@/models/player"
 import { MusterChoice, MusterPossibility } from "@/models/stack"
 import Creature from "../../game/Creature.vue"
 
 const props = withDefaults(defineProps<{
   canDecline: boolean
   musterable?: MusterPossibility[]
-  player?: Player
+  playerId?: PlayerId
   modelValue?: MusterChoice
 }>(), {
   musterable: () => [],
-  player: undefined,
+  playerId: undefined,
   modelValue: undefined
 })
 
