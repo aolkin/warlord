@@ -80,10 +80,6 @@ export class TitanGame {
     return this.round === 0
   }
 
-  getPlayers(): Player[] {
-    return this.players
-  }
-
   getPlayerById(id: PlayerId): Player {
     const player = this.players.find(player => player.id === id)
     assert(player !== undefined, `No player with id ${id}`)

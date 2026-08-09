@@ -13,7 +13,7 @@ export const useGameStore = defineStore("game", () => {
 
   const round = computed(() => game.getRound())
   const firstRound = computed(() => game.getFirstRound())
-  const players = computed(() => game.getPlayers())
+  const players = computed(() => game.players)
   const activePlayer = computed(() => game.getActivePlayer())
   const activePlayerId = computed(() => game.getActivePlayerId())
   const activeStacks = computed(() => game.getActiveStacks())
