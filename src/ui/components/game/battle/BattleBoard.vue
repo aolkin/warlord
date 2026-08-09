@@ -113,7 +113,6 @@
         class="ma-3 mb-10"
         :battle="activeBattle"
         :focused-battle-hex="selectionStore.focusedBattleHex"
-        @deselect="selectionStore.deselectCreature"
       />
       <v-sheet
         position="fixed"

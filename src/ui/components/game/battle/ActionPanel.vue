@@ -64,10 +64,6 @@ const props = defineProps<{
   focusedBattleHex: number | undefined
 }>()
 
-const emit = defineEmits<{
-  deselect: []
-}>()
-
 const gameStore = useGameStore()
 const preferencesStore = usePreferencesStore()
 
@@ -125,7 +121,6 @@ const pendingCreatures = computed((): number =>
     creature.player === battleActivePlayerId.value && creature.hex >= 36).length)
 
 function nextPhase(): void {
-  emit("deselect")
   void gameStore.nextBattlePhase()
 }
 </script>
