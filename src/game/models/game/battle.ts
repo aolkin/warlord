@@ -70,10 +70,9 @@ export const gameBattle: GameBattle & ThisType<TitanGame> = {
     this.activeBattleHex = attacking.hex
   },
 
-  async moveCreature(payload: BattleMovePayload): Promise<void> {
+  async moveCreature({ creature, hex }: BattleMovePayload): Promise<void> {
     assert(this.getBattlePhaseType() === BattlePhaseType.MOVE, "Not in movement phase")
-    assert(payload.creature.player === this.getBattleActivePlayer(), "Incorrect player")
-    const { creature, hex } = payload
+    assert(creature.player === this.getBattleActivePlayer(), "Incorrect player")
     assert(this.activeBattle?.creatures.some(matches(creature)) ?? false, "Unexpected creature")
     creature.hex = hex
   },
@@ -83,11 +82,10 @@ export const gameBattle: GameBattle & ThisType<TitanGame> = {
     nextPhase(this.activeBattle)
   },
 
-  async attackCreature(payload: AttackPayload): Promise<void> {
+  async attackCreature({ attacker, target, rolls, optionalToHit }: AttackPayload): Promise<void> {
     if (this.activeBattle === undefined) { throw new Error("Must be in a battle!") }
     assert(this.getBattlePhaseType() !== BattlePhaseType.MOVE, "Cannot strike in movement phase")
-    assert(payload.attacker.player === this.getBattleActivePlayer(), "Incorrect player")
-    const { attacker, target, rolls, optionalToHit } = payload
+    assert(attacker.player === this.getBattleActivePlayer(), "Incorrect player")
     assert(this.activeBattle?.creatures.some(matches(attacker)) ?? false, "Unexpected attacker")
     assert(this.activeBattle?.creatures.some(matches(target)) ?? false, "Unexpected defender")
     const battle = this.activeBattle!
@@ -99,11 +97,10 @@ export const gameBattle: GameBattle & ThisType<TitanGame> = {
     performAttack(battle, attacker, target, rolls, toHit, false)
   },
 
-  async rangestrikeCreature(payload: RangestrikePayload): Promise<void> {
+  async rangestrikeCreature({ attacker, target, rolls }: RangestrikePayload): Promise<void> {
     if (this.activeBattle === undefined) { throw new Error("Must be in a battle!") }
     assert(this.getBattlePhaseType() !== BattlePhaseType.MOVE, "Cannot strike in movement phase")
-    assert(payload.attacker.player === this.getBattleActivePlayer(), "Incorrect player")
-    const { attacker, target, rolls } = payload
+    assert(attacker.player === this.getBattleActivePlayer(), "Incorrect player")
     assert(this.activeBattle?.creatures.some(matches(attacker)) ?? false, "Unexpected attacker")
     assert(this.activeBattle?.creatures.some(matches(target.creature)) ?? false, "Unexpected defender")
     const battle = this.activeBattle!
@@ -129,9 +126,6 @@ export const gameBattle: GameBattle & ThisType<TitanGame> = {
     if (this.activeBattle === undefined) { throw new Error("Must be in a battle!") }
     if (this.activeBattle.activeStrike === undefined) { throw new Error("Must have an active strike!") }
     assert(this.getBattlePhaseType() !== BattlePhaseType.MOVE, "Cannot carryover in movement phase")
-    const activeStrike = this.activeBattle?.activeStrike
-    if (activeStrike !== undefined) {
-      activeStrike.carryoverSkipped = true
-    }
+    this.activeBattle.activeStrike.carryoverSkipped = true
   }
 }
