@@ -2,7 +2,6 @@ import { assign, range } from "lodash-es"
 import { assert } from "@/utils/assert"
 import { Battle, BattleSide } from "./battle"
 import { CREATURE_DATA, CREATURE_LIST, CreatureType } from "./creature"
-import { GameBattle, gameBattle } from "./game/battle"
 import masterboard, { HexEdge, MasterboardHex } from "./masterboard"
 import { Player, PlayerId } from "./player"
 import { defaultRandom, Random } from "./random"
@@ -32,11 +31,6 @@ export interface Path {
 export interface MovePayload { stack: StackRef, hex: number, edge?: HexEdge }
 export interface MusterPayload { stack: StackRef, recruit: MusterChoice }
 
-// gameBattle is mixed onto TitanGame.prototype by the Object.assign below,
-// which the type checker cannot see; this interface declares what it contributes.
-// eslint-disable-next-line @typescript-eslint/no-unsafe-declaration-merging, @typescript-eslint/no-empty-object-type
-export interface TitanGame extends GameBattle {}
-// eslint-disable-next-line @typescript-eslint/no-unsafe-declaration-merging
 export class TitanGame {
   readonly players: Player[]
   readonly stacks: Stack[]
@@ -311,8 +305,6 @@ export class TitanGame {
     return game
   }
 }
-
-Object.assign(TitanGame.prototype, gameBattle)
 
 function toBattleSide(stack: Stack, score: number): BattleSide {
   return { player: stack.owner, score, creatures: stack.creatures }
