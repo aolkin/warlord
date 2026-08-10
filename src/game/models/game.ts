@@ -183,7 +183,7 @@ export class TitanGame {
   }
 
   canTitanTeleport(stack: Stack): boolean {
-    return this.isMovePhase() && this.activeRoll === 6 && this.score[this.getActivePlayerId()] >= 400 &&
+    return this.activeRoll === 6 && this.score[this.getActivePlayerId()] >= 400 &&
       stack.creatures.includes(CreatureType.TITAN)
   }
 

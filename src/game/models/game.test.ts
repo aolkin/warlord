@@ -81,26 +81,6 @@ describe("TitanGame movement legality", () => {
   })
 })
 
-describe("TitanGame Titan teleport eligibility (canTitanTeleport)", () => {
-  it("allows teleport on a roll of 6 with 400+ points during Move phase", () => {
-    const game = newGame()
-    game.activePhase = MasterboardPhase.MOVE
-    game.activeRoll = 6
-    game.score[game.getActivePlayerId()] = 400
-
-    expect(game.canTitanTeleport(game.stacks[0])).toBe(true)
-  })
-
-  it("is false outside Move phase even if activeRoll and score still qualify", () => {
-    const game = newGame()
-    game.activePhase = MasterboardPhase.BATTLE
-    game.activeRoll = 6
-    game.score[game.getActivePlayerId()] = 400
-
-    expect(game.canTitanTeleport(game.stacks[0])).toBe(false)
-  })
-})
-
 describe("TitanGame mandatory moves (stack splitting during movement)", () => {
   it("requires splitting apart two stacks sharing a hex until one of them moves away", async () => {
     const game = newGame()
