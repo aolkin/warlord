@@ -19,28 +19,32 @@
         >
           <div
             v-if="pendingOffense.length > 0 ||
-              (attackerMoveActive && props.selectedStartedOffBoard)"
+              (attackerMoveActive && props.selectedCanLeaveBoard)"
           >
             <v-card-title>{{ attacker.name }}'s Pending Creatures</v-card-title>
             <PendingCreatures
               :creatures="pendingOffense"
               :interactive="attackerMoveActive"
-              :selected-creature="props.selectedCreature"
+              :selected-creature-id="props.selectedCreatureId"
+              :can-leave-board="props.selectedCanLeaveBoard"
               class="px-2 pb-1"
               @select="emit('select', $event)"
+              @remove="emit('remove')"
             />
           </div>
           <div
             v-if="pendingDefense.length > 0 ||
-              (defenderMoveActive && props.selectedStartedOffBoard)"
+              (defenderMoveActive && props.selectedCanLeaveBoard)"
           >
             <v-card-title>{{ defender.name }}'s Pending Creatures</v-card-title>
             <PendingCreatures
               :creatures="pendingDefense"
               :interactive="defenderMoveActive"
-              :selected-creature="props.selectedCreature"
+              :selected-creature-id="props.selectedCreatureId"
+              :can-leave-board="props.selectedCanLeaveBoard"
               class="px-2 pb-1"
               @select="emit('select', $event)"
+              @remove="emit('remove')"
             />
           </div>
         </div>
@@ -84,12 +88,13 @@ import PendingCreatures from "./PendingCreatures.vue"
 
 const props = defineProps<{
   localPlayerIsDefender: boolean
-  selectedCreature: BattleCreature | undefined
-  selectedStartedOffBoard: boolean
+  selectedCreatureId: number | undefined
+  selectedCanLeaveBoard: boolean
 }>()
 
 const emit = defineEmits<{
   select: [creature: BattleCreature]
+  remove: []
 }>()
 
 const game = useGameStore().game
