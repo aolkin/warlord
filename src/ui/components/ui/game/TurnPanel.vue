@@ -3,7 +3,7 @@
     border
     width="300"
     :prepend-icon="icon"
-    :title="`${gameStore.activePlayer.name}'s Turn`"
+    :title="`${game.getActivePlayer().name}'s Turn`"
   >
     <template #prepend>
       <v-icon size="x-large" />
@@ -44,7 +44,7 @@
       </v-card-actions>
       <v-card-actions v-else-if="activePhase === MasterboardPhase.MOVE">
         <v-btn
-          v-if="gameStore.mulliganAvailable"
+          v-if="game.getMulliganAvailable()"
           block
           variant="outlined"
           title="On the first round only, you may opt to re-roll your die once."
@@ -93,8 +93,8 @@ const selectionStore = useSelectionStore()
 const activePhase = computed(() => game.activePhase)
 const activeRoll = computed(() => game.activeRoll)
 const activeStacks = computed(() => gameStore.activeStacks)
-const mayProceed = computed(() => gameStore.mayProceed)
-const engagedStacks = computed(() => gameStore.engagedStacks)
+const mayProceed = computed(() => game.getMayProceed())
+const engagedStacks = computed(() => game.getEngagedStacks())
 
 const icon = computed(() => {
   switch (activePhase.value) {

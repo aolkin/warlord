@@ -134,7 +134,7 @@ const game = gameStore.game
 const selectionStore = useSelectionStore()
 
 const activePhase = computed(() => game.activePhase)
-const activePlayerId = computed(() => gameStore.activePlayerId)
+const activePlayerId = computed(() => game.getActivePlayerId())
 
 const owned = computed((): boolean => activePlayerId.value === props.focusedStack?.owner)
 

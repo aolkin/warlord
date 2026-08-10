@@ -18,32 +18,16 @@ export const useGameStore = defineStore("game", () => {
     localStorage[GAME_PERSISTENCE_KEY] = JSON.stringify(game)
   }, { deep: true })
 
-  const round = computed(() => game.getRound())
-  const players = computed(() => game.players)
-  const activePlayer = computed(() => game.getActivePlayer())
-  const activePlayerId = computed(() => game.getActivePlayerId())
+  // Caching earns its bookkeeping only for rules that scan or search the state graph and are
+  // read from more than one place. Everything cheaper is called straight off `game`.
   const activeStacks = computed(() => game.getActiveStacks())
   const mandatoryMoves = computed(() => game.getMandatoryMoves())
-  const mayProceed = computed(() => game.getMayProceed())
-  const mulliganAvailable = computed(() => game.getMulliganAvailable())
-  const engagedStacks = computed(() => game.getEngagedStacks())
-  const battleActivePlayer = computed(() => game.getBattleActivePlayer())
-  const battlePhaseType = computed(() => game.getBattlePhaseType())
   const battleCarryoverTargets = computed(() => game.getBattleCarryoverTargets())
 
   return {
     game,
-    round,
-    players,
-    activePlayer,
-    activePlayerId,
     activeStacks,
     mandatoryMoves,
-    mayProceed,
-    mulliganAvailable,
-    engagedStacks,
-    battleActivePlayer,
-    battlePhaseType,
     battleCarryoverTargets,
     reset: (): void => { Object.assign(game, new TitanGame(2)) }
   }

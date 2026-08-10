@@ -39,7 +39,7 @@
           :elevation="board.getElevation(hex)"
           :hazard="board.getHazard(hex)"
           :edge-hazards="edgeHazardsByHex[hex]"
-          :interactive="gameStore.battlePhaseType === BattlePhaseType.MOVE && movementHexes.has(hex)"
+          :interactive="game.getBattlePhaseType() === BattlePhaseType.MOVE && movementHexes.has(hex)"
           :transform="hexTransformStr(hex)"
           :class="{ [`hex-${hex}`]: true, 'available-move': movementHexes.has(hex) }"
           @click="moveSelected(hex)"
@@ -274,7 +274,7 @@ const activeBattle = computed(() => game.activeBattle as Battle | undefined)
 
 // A creature only exists within the battle it was selected in.
 watch(activeBattle, deselectCreature)
-watch(() => gameStore.battlePhaseType, deselectCreature)
+watch(() => game.getBattlePhaseType(), deselectCreature)
 
 const attackCreatureDialog = computed({
   get: (): boolean => target.value !== undefined,
@@ -303,7 +303,7 @@ const edgeHazardsByHex = computed((): Record<number, Record<number, EdgeHazard>>
 const defender = computed((): PlayerId => activeBattle.value!.defender)
 
 const localPlayerIsDefender = computed((): boolean =>
-  defender.value === gameStore.players[playerStore.localPlayer].id)
+  defender.value === game.players[playerStore.localPlayer].id)
 
 const selectedCreatureId = computed((): number | undefined => selectedCreature.value?.id)
 
@@ -320,12 +320,12 @@ const activeCreatures = computed((): BattleCreature[] =>
     creature.hex > 0 && creature.hex < 36))
 
 function creatureEnabled(creature: BattleCreature): boolean {
-  if (creature.player !== gameStore.battleActivePlayer) {
+  if (creature.player !== game.getBattleActivePlayer()) {
     return false
   }
   const engagementsCount = game.getBattleEngagements(creature).length
   const rangestrikesCount = game.getBattleRangestrikeTargets(creature).length
-  switch (gameStore.battlePhaseType) {
+  switch (game.getBattlePhaseType()) {
     case BattlePhaseType.MOVE:
       return engagementsCount === 0
     case BattlePhaseType.STRIKE:
@@ -342,7 +342,7 @@ function creatureEnabled(creature: BattleCreature): boolean {
 
 function creatureClasses(creature: BattleCreature): object {
   return {
-    "active-player": creature.player === gameStore.battleActivePlayer,
+    "active-player": creature.player === game.getBattleActivePlayer(),
     interactive: creatureEnabled(creature),
     selected: creature === selectedCreature.value,
     attacker: activeStrike.value?.attacker === creature.hex,

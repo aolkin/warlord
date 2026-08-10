@@ -120,15 +120,15 @@ const transform = computed((): string => {
   return result.toString()
 })
 
-const isActivePlayer = computed(() => gameStore.activePlayerId === props.stack.owner)
+const isActivePlayer = computed(() => game.getActivePlayerId() === props.stack.owner)
 
 const potentialEngagements = computed((): HexEdge[] => {
   if (selectionStore.selectedStack === undefined) {
     return []
   } else if (game.getStacksForHex(props.stack.hex)
-    .some((stack: Stack) => stack.owner === gameStore.activePlayerId)) {
+    .some((stack: Stack) => stack.owner === game.getActivePlayerId())) {
     return []
-  } else if (game.activeRoll === 6 && gameStore.activePlayer.score >= 400 &&
+  } else if (game.activeRoll === 6 && game.getActivePlayer().score >= 400 &&
     selectionStore.selectedStack.creatures.includes(CreatureType.TITAN)) {
     return [HexEdge.FIRST, HexEdge.SECOND, HexEdge.THIRD]
   } else {
@@ -147,7 +147,7 @@ const engageable = computed((): [HexEdge, Transformations][] =>
   potentialEngagements.value.map(edge => [edge, getEngageTransformForEdge(edge)]))
 
 const engaged = computed((): boolean => isActivePlayer.value && game.getStacksForHex(props.stack.hex)
-  .some((stack: Stack) => stack.owner !== gameStore.activePlayerId))
+  .some((stack: Stack) => stack.owner !== game.getActivePlayerId()))
 
 const isMandatory = computed(() => {
   if (!isActivePlayer.value) {

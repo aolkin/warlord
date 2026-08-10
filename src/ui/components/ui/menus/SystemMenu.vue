@@ -85,7 +85,7 @@
         v-model="uiPlayer"
         label="Local Player"
         min="1"
-        :max="gameStore.players.length"
+        :max="game.players.length"
         step="1"
       />
     </v-list-item>

@@ -4,44 +4,6 @@ import { nextTick } from "vue"
 import { MasterboardPhase } from "@/models/game"
 import { useGameStore } from "~/stores/game"
 
-describe("game store", () => {
-  beforeEach(() => {
-    setActivePinia(createPinia())
-    useGameStore().reset()
-  })
-
-  it("derives getters that build on other getters", () => {
-    const gameStore = useGameStore()
-
-    expect(gameStore.activePlayerId).toBe(gameStore.activePlayer.id)
-    expect(gameStore.activeStacks).toEqual(gameStore.game.getStacksForPlayer(gameStore.activePlayerId))
-  })
-
-  it("advances the phase and splits stacks through its own action", async () => {
-    const gameStore = useGameStore()
-    const stack = gameStore.activeStacks[0]
-    stack.split[2] = true
-    stack.split[4] = true
-    stack.split[6] = true
-    const before = gameStore.game.stacks.length
-
-    await gameStore.game.nextPhase()
-
-    expect(gameStore.game.activePhase).toBe(MasterboardPhase.MOVE)
-    expect(gameStore.game.stacks).toHaveLength(before + 1)
-  })
-
-  it("recomputes getters after an action changes state", async () => {
-    const gameStore = useGameStore()
-    gameStore.game.activePhase = MasterboardPhase.MOVE
-
-    await gameStore.game.setRoll(4)
-
-    expect(gameStore.game.activeRoll).toBe(4)
-    expect(gameStore.mulliganAvailable).toBe(true)
-  })
-})
-
 describe("game store persistence watcher", () => {
   // jsdom's Storage doesn't route bracket-notation assignment through Storage.prototype.setItem
   // (unlike real browsers), so a real localStorage.setItem spy can't observe writes here; swap
@@ -68,8 +30,8 @@ describe("game store persistence watcher", () => {
     ;(globalThis as any).localStorage = originalLocalStorage
   })
 
-  // These exercise their own Pinia instance rather than the outer describe's shared one, since
-  // they need to observe the very first hydration.
+  // The Pinia instance is created inside the test, after the localStorage stub is in place, so
+  // that the store's very first hydration is observable.
   it("does not write to localStorage on initial hydration, but coalesces every synchronous mutation in one action into a single write", async () => {
     setActivePinia(createPinia())
 

@@ -59,7 +59,7 @@ const props = defineProps<{
 const gameStore = useGameStore()
 const game = gameStore.game
 
-const battlePhaseType = computed(() => gameStore.battlePhaseType)
+const battlePhaseType = computed(() => game.getBattlePhaseType())
 const battleActivePlayerId = computed((): PlayerId => props.battle.getActivePlayer())
 const battleActivePlayer = computed(() => game.getPlayerById(battleActivePlayerId.value))
 
