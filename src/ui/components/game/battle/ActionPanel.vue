@@ -100,7 +100,7 @@ const pendingStrikes = computed((): BattleCreature[] => {
 })
 
 const mayProceed = computed((): boolean =>
-  pendingStrikes.value.length === 0 && !gameStore.battleCarryoverTargets)
+  pendingStrikes.value.length === 0 && !props.battle.carryoverTargets())
 
 const roundIcon = computed((): string => {
   const name = `mdi-numeric-${props.battle.round + 1}-box`

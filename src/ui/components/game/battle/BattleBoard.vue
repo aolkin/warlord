@@ -76,7 +76,7 @@
           @mouseleave="leaveCreature(creature)"
         />
         <EngageIcon
-          v-for="(creature) in (gameStore.battleCarryoverTargets ?? engagements)"
+          v-for="(creature) in (activeBattle?.carryoverTargets() ?? engagements)"
           :key="creature.hex"
           interactive
           transparent-hover
@@ -338,7 +338,7 @@ function creatureEnabled(creature: BattleCreature): boolean {
       }
 
     case BattlePhaseType.STRIKEBACK:
-      return gameStore.battleCarryoverTargets === undefined && !creature.hasStruck && engagementsCount > 0
+      return activeBattle.value?.carryoverTargets() === undefined && !creature.hasStruck && engagementsCount > 0
     default:
       return false
   }
@@ -382,8 +382,9 @@ function chooseCreature(creature: BattleCreature): void {
 }
 
 function targetCreature(creature: BattleCreature | RangestrikeTarget): void {
-  if (!("creature" in creature) && activeStrike.value?.canCarryover && gameStore.battleCarryoverTargets) {
-    if (gameStore.battleCarryoverTargets.includes(creature)) {
+  const carryoverTargets = activeBattle.value?.carryoverTargets()
+  if (!("creature" in creature) && activeStrike.value?.canCarryover && carryoverTargets) {
+    if (carryoverTargets.includes(creature)) {
       void activeBattle.value!.assignCarryover(creature.id)
     }
   } else {
