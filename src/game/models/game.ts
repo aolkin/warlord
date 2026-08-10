@@ -66,7 +66,7 @@ export class TitanGame {
     const colors = random.shuffle(range(0, 5))
     this.players = range(0, numPlayers).map(i => new Player(colors[i], `Player ${i + 1}`))
     this.stacks = this.players.map((player: Player, i: number) =>
-      new Stack(player?.id, INITIAL_HEXES[numPlayers][i], 0))
+      new Stack(player?.id, INITIAL_HEXES[numPlayers][i], 0, this.round))
     this.score = Object.fromEntries(this.players.map(player => [player.id, 0])) as Record<PlayerId, number>
 
     this.creaturePool = Object.fromEntries(CREATURE_LIST
@@ -202,7 +202,7 @@ export class TitanGame {
         // TODO: check mayProceed before advancing — round-1 split rule (exactly 4 creatures with 1 lord) not yet enforced
         this.getActiveStacks().filter(stack => stack.numSplitting() > 0).forEach(stack => {
           // Each pushed stack claims a marker, so the next split needs a fresh read.
-          this.stacks.push(finalizeSplit(stack, this.getNextMarker()!))
+          this.stacks.push(finalizeSplit(stack, this.getNextMarker()!, this.round))
         })
         this.mulliganTaken = false
         break
