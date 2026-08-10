@@ -266,8 +266,7 @@ const battlePhaseType = computed((): BattlePhaseType => BATTLE_PHASE_TYPES[props
 const battleActivePlayer = computed((): PlayerId => props.battle.getActivePlayer())
 
 // A creature only exists within the battle it was selected in.
-watch(() => props.battle, deselectCreature)
-watch(battlePhaseType, deselectCreature)
+watch([() => props.battle, () => props.battle.phase], deselectCreature)
 
 const attackCreatureDialog = computed({
   get: (): boolean => target.value !== undefined,
