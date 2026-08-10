@@ -73,15 +73,10 @@ import { Transformation, Transformations, TransformationType } from "~/utils/svg
 import EngageIcon from "../../ui/game/EngageIcon.vue"
 import Creature from "../Creature.vue"
 import PlayerMarker from "../Marker.vue"
-import { hexTransform, isHexInverted } from "./utils"
+import { engageIconRotation, hexTransform, isHexInverted } from "./utils"
 
-// hexTransform rotates each hex's local frame by hex.getSide() * -60 to assemble the six
-// board sectors from one shared template, so a child's rotation has to cancel that sector
-// rotation to land on the correct physical side once the two compose. edge * 120 + 60 spaces
-// the three edges evenly; the extra 180 flips inverted hexes (rendered rotated 180 in
-// HexShape.vue) back onto their correct side.
 const getEngageTransformForEdge = (hexId: number, edge: HexEdge): Transformations => {
-  const rotation = edge * 120 + 60 + (isHexInverted(hexId) ? 0 : 180)
+  const rotation = engageIconRotation(hexId, edge)
   const transforms = new Transformations()
   transforms.push(new Transformation(TransformationType.ROTATE, [rotation]))
   transforms.push(new Transformation(TransformationType.TRANSLATE,

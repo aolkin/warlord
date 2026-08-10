@@ -1,4 +1,4 @@
-import MASTERBOARD, { BoardArea, MasterboardHex } from "@/models/masterboard"
+import MASTERBOARD, { BoardArea, HexEdge, MasterboardHex } from "@/models/masterboard"
 import { Transformation, Transformations, TransformationType } from "~/utils/svg"
 
 const TRIANGLE_HEIGHT_FACTOR = Math.sqrt(3) / 2
@@ -61,4 +61,12 @@ export function isHexInverted(hexId: number): boolean {
     default:
       return false
   }
+}
+
+// The rotation (degrees), in hexId's own local frame before hexTransform's sector rotation is
+// layered on top, that places a child on the side of hexId that edge faces. edge * 120 spaces
+// the three edges evenly 120 degrees apart; the extra 180 flips inverted hexes (rendered
+// rotated 180 in HexShape.vue) back onto their correct side.
+export function engageIconRotation(hexId: number, edge: HexEdge): number {
+  return edge * 120 + 60 + (isHexInverted(hexId) ? 0 : 180)
 }
