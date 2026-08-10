@@ -20,14 +20,6 @@ export const useSelectionStore = defineStore("selection", () => {
     ? focusedHexes[focusedHexes.length - 1]
     : undefined)
 
-  // Only the selected stack needs clearing here: it's a reference into the current game's
-  // stacks array, which a game reset replaces wholesale, leaving a stale reference behind if
-  // not cleared. focusedHexes holds references into the masterboard, a frozen singleton that
-  // a game reset never touches, so those references stay valid without any action here.
-  function reset(): void {
-    stack.value = undefined
-  }
-
   function selectStack(selection: Stack): void {
     stack.value = selection
   }
@@ -61,7 +53,6 @@ export const useSelectionStore = defineStore("selection", () => {
   return {
     selectedStack,
     focusedHex,
-    reset,
     selectStack,
     deselectStack,
     requireSelectedStack,

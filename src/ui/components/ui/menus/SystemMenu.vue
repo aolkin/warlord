@@ -178,7 +178,7 @@ const uiPlayer = computed({
 
 function reset(): void {
   gameStore.reset()
-  selectionStore.reset()
+  selectionStore.deselectStack()
 }
 
 function summon(creature: Creature): void {
