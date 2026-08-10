@@ -1,15 +1,16 @@
-import { matches } from "lodash-es"
 import { assert } from "@/utils/assert"
 import { Battle, BATTLE_PHASE_TYPES, BattleCreature, BattlePhaseType, BattleSide, RangestrikeTarget, nextPhase, performAttack, wound } from "../battle"
 import masterboard from "../masterboard"
 import { PlayerId } from "../player"
-import { Stack } from "../stack"
+import { Stack, StackRef } from "../stack"
 import type { TitanGame } from "../game"
 
-export interface BattleMovePayload { creature: BattleCreature, hex: number }
-interface IStrikePayload { attacker: BattleCreature, rolls: number[] }
-export interface AttackPayload extends IStrikePayload { target: BattleCreature, optionalToHit?: number }
-export interface RangestrikePayload extends IStrikePayload { target: RangestrikeTarget }
+export interface BattleMovePayload { creature: BattleCreature["id"], hex: number }
+interface IStrikePayload { attacker: BattleCreature["id"], rolls: number[] }
+export interface AttackPayload extends IStrikePayload { target: BattleCreature["id"], optionalToHit?: number }
+export interface RangestrikePayload extends IStrikePayload {
+  target: Omit<RangestrikeTarget, "creature"> & { creature: BattleCreature["id"] }
+}
 
 function toBattleSide(stack: Stack, score: number): BattleSide {
   return { player: stack.owner, score, creatures: stack.creatures }
@@ -22,12 +23,12 @@ export interface GameBattle {
   getBattleEngagements(creature: BattleCreature): BattleCreature[]
   getBattleCarryoverTargets(): BattleCreature[] | undefined
   getBattleRangestrikeTargets(creature: BattleCreature): RangestrikeTarget[]
-  initiateBattle(attacking: Stack): Promise<void>
+  initiateBattle(attacking: StackRef): Promise<void>
   moveCreature(payload: BattleMovePayload): Promise<void>
   nextBattlePhase(): Promise<void>
   attackCreature(payload: AttackPayload): Promise<void>
   rangestrikeCreature(payload: RangestrikePayload): Promise<void>
-  assignCarryover(target: BattleCreature): Promise<void>
+  assignCarryover(target: BattleCreature["id"]): Promise<void>
   skipCarryover(): Promise<void>
 }
 
@@ -56,7 +57,9 @@ export const gameBattle: GameBattle & ThisType<TitanGame> = {
     return this.activeBattle === undefined ? [] : this.activeBattle.rangestrikeTargets(creature)
   },
 
-  async initiateBattle(attacking: Stack): Promise<void> {
+  async initiateBattle(attackingRef: StackRef): Promise<void> {
+    const attacking = this.stacks.find(stack => stack.id === attackingRef)
+    assert(attacking !== undefined, `No stack with id ${attackingRef}`)
     const activePlayerId = this.getActivePlayerId()
     const defending = this.getStacksForHex(attacking.hex)
       .find(stack => stack.owner !== activePlayerId) as Stack
@@ -70,10 +73,11 @@ export const gameBattle: GameBattle & ThisType<TitanGame> = {
     this.activeBattleHex = attacking.hex
   },
 
-  async moveCreature({ creature, hex }: BattleMovePayload): Promise<void> {
+  async moveCreature({ creature: creatureRef, hex }: BattleMovePayload): Promise<void> {
+    const creature = this.activeBattle?.creatures.find(c => c.id === creatureRef)
+    assert(creature !== undefined, "Unexpected creature")
     assert(this.getBattlePhaseType() === BattlePhaseType.MOVE, "Not in movement phase")
     assert(creature.player === this.getBattleActivePlayer(), "Incorrect player")
-    assert(this.activeBattle?.creatures.some(matches(creature)) ?? false, "Unexpected creature")
     creature.hex = hex
   },
 
@@ -82,13 +86,15 @@ export const gameBattle: GameBattle & ThisType<TitanGame> = {
     nextPhase(this.activeBattle)
   },
 
-  async attackCreature({ attacker, target, rolls, optionalToHit }: AttackPayload): Promise<void> {
+  async attackCreature({ attacker: attackerRef, target: targetRef, rolls, optionalToHit }: AttackPayload): Promise<void> {
     if (this.activeBattle === undefined) { throw new Error("Must be in a battle!") }
+    const battle = this.activeBattle
+    const attacker = battle.creatures.find(c => c.id === attackerRef)
+    assert(attacker !== undefined, "Unexpected attacker")
+    const target = battle.creatures.find(c => c.id === targetRef)
+    assert(target !== undefined, "Unexpected defender")
     assert(this.getBattlePhaseType() !== BattlePhaseType.MOVE, "Cannot strike in movement phase")
     assert(attacker.player === this.getBattleActivePlayer(), "Incorrect player")
-    assert(this.activeBattle.creatures.some(matches(attacker)), "Unexpected attacker")
-    assert(this.activeBattle.creatures.some(matches(target)), "Unexpected defender")
-    const battle = this.activeBattle!
     let toHit = battle.toHitAdjusted(attacker, target)
     if (optionalToHit !== undefined) {
       assert(optionalToHit >= toHit, "Cannot choose a lower to-hit")
@@ -97,22 +103,25 @@ export const gameBattle: GameBattle & ThisType<TitanGame> = {
     performAttack(battle, attacker, target, rolls, toHit, false)
   },
 
-  async rangestrikeCreature({ attacker, target, rolls }: RangestrikePayload): Promise<void> {
+  async rangestrikeCreature({ attacker: attackerRef, target, rolls }: RangestrikePayload): Promise<void> {
     if (this.activeBattle === undefined) { throw new Error("Must be in a battle!") }
+    const battle = this.activeBattle
+    const attacker = battle.creatures.find(c => c.id === attackerRef)
+    assert(attacker !== undefined, "Unexpected attacker")
+    const targetCreature = battle.creatures.find(c => c.id === target.creature)
+    assert(targetCreature !== undefined, "Unexpected defender")
     assert(this.getBattlePhaseType() !== BattlePhaseType.MOVE, "Cannot strike in movement phase")
     assert(attacker.player === this.getBattleActivePlayer(), "Incorrect player")
-    assert(this.activeBattle.creatures.some(matches(attacker)), "Unexpected attacker")
-    assert(this.activeBattle.creatures.some(matches(target.creature)), "Unexpected defender")
-    const battle = this.activeBattle!
-    const computedStrike = battle.getRangestrike(attacker, target)
-    performAttack(battle, attacker, target.creature, rolls, computedStrike.toHit, true)
+    const computedStrike = battle.getRangestrike(attacker, { ...target, creature: targetCreature })
+    performAttack(battle, attacker, targetCreature, rolls, computedStrike.toHit, true)
   },
 
-  async assignCarryover(target: BattleCreature): Promise<void> {
+  async assignCarryover(targetRef: BattleCreature["id"]): Promise<void> {
     if (this.activeBattle === undefined) { throw new Error("Must be in a battle!") }
+    const battle = this.activeBattle
+    const target = battle.creatures.find(c => c.id === targetRef)
+    assert(target !== undefined, "Unexpected target")
     assert(this.getBattlePhaseType() !== BattlePhaseType.MOVE, "Cannot carryover in movement phase")
-    assert(this.activeBattle.creatures.some(matches(target)), "Unexpected target")
-    const battle = this.activeBattle!
     // Using an optional chain prevents typescript from learning that battle.activeStrike is present
     assert(battle.activeStrike !== undefined &&
       battle.activeStrike.canCarryover, "Cannot carryover")

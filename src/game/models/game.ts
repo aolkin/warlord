@@ -202,7 +202,7 @@ export class TitanGame {
         if (engagedStacks.length === 0) {
           advancePhase(this)
         } else {
-          void this.initiateBattle(engagedStacks[0])
+          void this.initiateBattle(engagedStacks[0].id)
         }
         break
       }
