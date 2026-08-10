@@ -131,13 +131,10 @@ const potentialEngagements = computed((): HexEdge[] => {
     return []
   } else if (game.canTitanTeleport(selectionStore.selectedStack) || preferencesStore.freeMovement) {
     if (masterboard.getHex(props.stack.hex).terrain === Terrain.TOWER) {
-      // A Tower battle's attacker always enters from the same fixed edge (the long side
-      // farthest from the tower structure) no matter which direction the attacker actually
-      // arrived from - Battle's constructor normalizes to this same edge for any arrival.
+      // Battle's constructor normalizes all Tower attacks to this edge regardless of
+      // arrival direction.
       return [HexEdge.SECOND]
     }
-    // Titan teleport and the free-movement debug preference both let a stack reach any hex
-    // with no directional path, so either grants all three attack edges.
     return [HexEdge.FIRST, HexEdge.SECOND, HexEdge.THIRD]
   } else {
     // For paths where this stack is the enemy...
