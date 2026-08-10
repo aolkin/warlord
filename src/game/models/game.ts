@@ -1,9 +1,8 @@
-import { range } from "lodash-es"
+import { assign, range } from "lodash-es"
 import { assert } from "@/utils/assert"
 import { Battle } from "./battle"
 import { CREATURE_DATA, CREATURE_LIST, CreatureType } from "./creature"
 import { GameBattle, gameBattle } from "./game/battle"
-import { GamePersistence, gamePersistence } from "./game/persistence"
 import masterboard, { HexEdge, MasterboardHex } from "./masterboard"
 import { Player, PlayerId } from "./player"
 import { defaultRandom, Random } from "./random"
@@ -33,10 +32,10 @@ export interface Path {
 export interface MovePayload { stack: StackRef, hex: number, edge?: HexEdge }
 export interface MusterPayload { stack: StackRef, recruit: MusterChoice }
 
-// gameBattle/gamePersistence are mixed onto TitanGame.prototype by the Object.assign below,
-// which the type checker cannot see; this interface declares what they contribute.
-// eslint-disable-next-line @typescript-eslint/no-unsafe-declaration-merging
-export interface TitanGame extends GameBattle, GamePersistence {}
+// gameBattle is mixed onto TitanGame.prototype by the Object.assign below,
+// which the type checker cannot see; this interface declares what it contributes.
+// eslint-disable-next-line @typescript-eslint/no-unsafe-declaration-merging, @typescript-eslint/no-empty-object-type
+export interface TitanGame extends GameBattle {}
 // eslint-disable-next-line @typescript-eslint/no-unsafe-declaration-merging
 export class TitanGame {
   readonly players: Player[]
@@ -64,7 +63,7 @@ export class TitanGame {
     // markers exist), so 6-player support can't return until stack marker art
     // is created for it.
     const colors = random.shuffle(range(0, 5))
-    this.players = range(0, numPlayers).map(i => new Player(colors[i], `Player ${i + 1}`))
+    this.players = range(0, numPlayers).map(i => ({ id: colors[i], name: `Player ${i + 1}` }))
     this.stacks = this.players.map((player: Player, i: number) =>
       new Stack(player?.id, INITIAL_HEXES[numPlayers][i], 0, this.round))
     this.score = Object.fromEntries(this.players.map(player => [player.id, 0])) as Record<PlayerId, number>
@@ -273,6 +272,15 @@ export class TitanGame {
     recruitingStack.currentMuster = recruit
   }
 
+  mRehydrate(hydration: TitanGame): void {
+    assign(this, {
+      ...hydration,
+      stacks: hydration.stacks.map((stack: Stack) =>
+        assign(new Stack(stack.owner, stack.hex, stack.marker, stack.createdRound, stack.creatures), stack)),
+      activeBattle: hydration.activeBattle !== undefined ? Battle.hydrate(hydration.activeBattle) : undefined
+    })
+  }
+
   static hydrate(persisted?: string): TitanGame {
     const game = new TitanGame(2)
     try {
@@ -288,7 +296,7 @@ export class TitanGame {
   }
 }
 
-Object.assign(TitanGame.prototype, gameBattle, gamePersistence)
+Object.assign(TitanGame.prototype, gameBattle)
 
 function startPlayerTurn(stack: Stack): void {
   stack.origin = stack.hex
