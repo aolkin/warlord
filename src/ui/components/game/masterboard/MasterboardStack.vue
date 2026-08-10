@@ -64,7 +64,7 @@
 <script setup lang="ts">
 import { computed } from "vue"
 import { MasterboardPhase, Path } from "@/models/game"
-import masterboard, { HexEdge, MasterboardEdge, MasterboardHex } from "@/models/masterboard"
+import masterboard, { HexEdge, MasterboardEdge, MasterboardHex, Terrain } from "@/models/masterboard"
 import { Stack } from "@/models/stack"
 import { useGameStore } from "~/stores/game"
 import { usePreferencesStore } from "~/stores/ui/preferences"
@@ -130,6 +130,12 @@ const potentialEngagements = computed((): HexEdge[] => {
     .some((stack: Stack) => stack.owner === game.getActivePlayerId())) {
     return []
   } else if (game.canTitanTeleport(selectionStore.selectedStack) || preferencesStore.freeMovement) {
+    if (masterboard.getHex(props.stack.hex).terrain === Terrain.TOWER) {
+      // A Tower battle's attacker always enters from the same fixed edge (the long side
+      // farthest from the tower structure) no matter which direction the attacker actually
+      // arrived from - Battle's constructor normalizes to this same edge for any arrival.
+      return [HexEdge.SECOND]
+    }
     // Titan teleport and the free-movement debug preference both let a stack reach any hex
     // with no directional path, so either grants all three attack edges.
     return [HexEdge.FIRST, HexEdge.SECOND, HexEdge.THIRD]

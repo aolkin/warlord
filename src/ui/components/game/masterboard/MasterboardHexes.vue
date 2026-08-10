@@ -31,10 +31,12 @@ const selectionStore = useSelectionStore()
 const hexes = computed(() => masterboard.getHexIds())
 
 function move(hex: number): void {
-  const activePlayerId = game.getActivePlayerId()
-  // A foe-occupied hex is an engagement, not a plain move: leave it to the attack-edge
-  // picker on the enemy stack itself, same as normal path-based movement does.
-  if (game.getStacksForHex(hex).some(stack => stack.owner !== activePlayerId)) {
+  // Ending a move on an already-occupied hex is illegal regardless of the occupant's
+  // owner (a Legion may pass through a hex held by another of the mover's own Legions,
+  // but not end its move there - see Titan rules 7.1). A foe-occupied hex is instead an
+  // engagement, handled by the attack-edge picker on the enemy stack itself, same as
+  // normal path-based movement enforces via TitanGame.getPathsForHex.
+  if (game.getStacksForHex(hex).length > 0) {
     return
   }
   void game.move({ stack: selectionStore.requireSelectedStack().id, hex })
