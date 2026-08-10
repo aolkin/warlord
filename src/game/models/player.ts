@@ -10,15 +10,9 @@ export enum PlayerId {
 export class Player {
   readonly id: PlayerId
   readonly name: string
-  score: number
 
   constructor(id: PlayerId, name: string) {
     this.id = id
     this.name = name
-    this.score = 0
-  }
-
-  addPoints(points: number): void {
-    this.score += points
   }
 }

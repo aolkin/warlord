@@ -171,7 +171,7 @@ const gameStore = useGameStore()
 const preferencesStore = usePreferencesStore()
 const theme = useTheme()
 
-const player = computed(() => props.playerId !== undefined ? gameStore.game.getPlayerById(props.playerId) : undefined)
+const playerScore = computed(() => props.playerId !== undefined ? gameStore.game.score[props.playerId] : undefined)
 
 const creature = computed((): Creature | undefined =>
   props.type !== undefined ? CREATURE_DATA[props.type] : undefined)
@@ -183,7 +183,7 @@ const imageUrl = computed(() => new URL(`../../assets/creatures/${CreatureType[p
 
 const fullTransform = computed(() => props.inSvg ? props.transform + " translate(-50 -50)" : "")
 
-const strength = computed(() => creature.value?.getStrength(player.value?.score ?? 0))
+const strength = computed(() => creature.value?.getStrength(playerScore.value ?? 0))
 
 const dead = computed((): boolean => props.wounds >= (strength.value ?? 1))
 
@@ -204,7 +204,7 @@ const classes = computed(() => {
 
 const titanStrength = computed(() => ({
   "double-digits": (creature.value?.type === CreatureType.TITAN &&
-    (player.value?.score ?? 0) >= 400)
+    (playerScore.value ?? 0) >= 400)
 }))
 
 const filter = computed(() => {

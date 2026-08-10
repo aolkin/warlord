@@ -128,7 +128,7 @@ const potentialEngagements = computed((): HexEdge[] => {
   } else if (game.getStacksForHex(props.stack.hex)
     .some((stack: Stack) => stack.owner === game.getActivePlayerId())) {
     return []
-  } else if (game.activeRoll === 6 && game.getActivePlayer().score >= 400 &&
+  } else if (game.activeRoll === 6 && game.score[game.getActivePlayerId()] >= 400 &&
     selectionStore.selectedStack.creatures.includes(CreatureType.TITAN)) {
     return [HexEdge.FIRST, HexEdge.SECOND, HexEdge.THIRD]
   } else {

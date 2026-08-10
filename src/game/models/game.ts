@@ -42,6 +42,7 @@ export class TitanGame {
   readonly players: Player[]
   readonly stacks: Stack[]
   readonly creaturePool: Record<CreatureType, number>
+  readonly score: Record<PlayerId, number>
 
   round: number // 0-indexed
   mulliganTaken: boolean
@@ -66,6 +67,7 @@ export class TitanGame {
     this.players = range(0, numPlayers).map(i => new Player(colors[i], `Player ${i + 1}`))
     this.stacks = this.players.map((player: Player, i: number) =>
       new Stack(player?.id, INITIAL_HEXES[numPlayers][i], 0))
+    this.score = Object.fromEntries(this.players.map(player => [player.id, 0])) as Record<PlayerId, number>
 
     this.creaturePool = Object.fromEntries(CREATURE_LIST
       .map(creature => [creature.type, creature.initialQuantity])) as Record<CreatureType, number>
