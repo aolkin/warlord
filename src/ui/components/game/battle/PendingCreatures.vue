@@ -11,7 +11,7 @@
       @click="interactive && emit('select', creature)"
     />
     <Creature
-      v-if="showRemove && selectedCreatureId !== undefined"
+      v-if="interactive && canLeaveBoard"
       :player-id="gameStore.battleActivePlayer"
       none-label="Put Back"
       class="ma-1 interactive"
@@ -20,12 +20,11 @@
   </div>
 </template>
 <script setup lang="ts">
-import { computed } from "vue"
 import { BattleCreature } from "@/models/battle"
 import { useGameStore } from "~/stores/game"
 import Creature from "../Creature.vue"
 
-const props = defineProps<{
+defineProps<{
   creatures: BattleCreature[]
   interactive: boolean
   selectedCreatureId: number | undefined
@@ -38,8 +37,6 @@ const emit = defineEmits<{
 }>()
 
 const gameStore = useGameStore()
-
-const showRemove = computed(() => props.interactive && props.canLeaveBoard)
 </script>
 <style scoped lang="sass">
 .interactive
