@@ -20,11 +20,6 @@ export const useSelectionStore = defineStore("selection", () => {
     ? focusedHexes[focusedHexes.length - 1]
     : undefined)
 
-  function reset(): void {
-    stack.value = undefined
-    focusedHexes.splice(0, focusedHexes.length)
-  }
-
   function selectStack(selection: Stack): void {
     stack.value = selection
   }
@@ -58,7 +53,6 @@ export const useSelectionStore = defineStore("selection", () => {
   return {
     selectedStack,
     focusedHex,
-    reset,
     selectStack,
     deselectStack,
     requireSelectedStack,
