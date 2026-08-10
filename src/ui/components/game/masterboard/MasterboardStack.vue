@@ -75,14 +75,11 @@ import Creature from "../Creature.vue"
 import PlayerMarker from "../Marker.vue"
 import { hexTransform, isHexInverted, localBearingToNeighbor } from "./utils"
 
-// hexTransform rotates each hex's local frame by hex.getSide() * -60 to assemble the six
-// board sectors from one shared template (see utils.ts); a fixed rotation here would only
-// point at the right physical edge for hexes sharing one particular sector alignment. Look
-// up the edge's real neighbor and derive the rotation that lands on its actual side instead.
-// Some hexes don't model an edge in every HexEdge direction (e.g. Land hexes with no spur
-// connection), which only comes up for Titan Teleportation's "any of the three edges" offer
-// (10.4) rather than a real approach direction; fall back to the fixed angle there since
-// there's no real neighbor to aim at.
+// hexTransform rotates each hex's local frame per sector, so a fixed per-edge angle only
+// lines up for one alignment; derive it from the edge's real neighbor instead. Some hexes
+// have no Sign, and so no neighbor, on one edge; that only matters for Titan Teleportation,
+// which per 10.4 can enter from any of the three edges regardless, so fall back to the
+// fixed angle there.
 const getEngageTransformForEdge = (hexId: number, edge: HexEdge): Transformations => {
   const neighbor = masterboard.getHex(hexId).getEdges().find((e: MasterboardEdge) => e.hexEdge === edge)?.hex
   const rotation = neighbor === undefined ? edge * 120 + 60 : localBearingToNeighbor(hexId, neighbor.id)
