@@ -38,13 +38,6 @@ function hexLocalOffset(hex: MasterboardHex): Point {
   }
 }
 
-function rotatePoint(deg: number, [x, y]: Point): Point {
-  const rad = deg * Math.PI / 180
-  const cos = Math.cos(rad)
-  const sin = Math.sin(rad)
-  return [x * cos - y * sin, x * sin + y * cos]
-}
-
 export function hexTransform(hexId: number): Transformations {
   const hex = MASTERBOARD.hexes.get(hexId)
   if (hex === undefined) {
@@ -53,27 +46,6 @@ export function hexTransform(hexId: number): Transformations {
   const rotation = new Transformation(TransformationType.ROTATE, [hex.getSide() * -60])
   const [x, y] = hexLocalOffset(hex)
   return new Transformations(rotation, new Transformation(TransformationType.TRANSLATE, [x, y]))
-}
-
-export function hexCenter(hexId: number): Point {
-  const hex = MASTERBOARD.hexes.get(hexId)
-  if (hex === undefined) {
-    throw new RangeError("Invalid hex")
-  }
-  return rotatePoint(hex.getSide() * -60, hexLocalOffset(hex))
-}
-
-// The rotation (degrees) that, applied in hexId's own local frame before hexTransform's
-// sector rotation is layered on top, places a child element on the side of hexId that faces
-// neighborId. hexTransform rotates each hex's whole local frame by hex.getSide() * -60 to
-// assemble the six board sectors from one shared template, so a child's rotation has to
-// cancel that sector rotation to land on the correct physical side once the two compose.
-export function localBearingToNeighbor(hexId: number, neighborId: number): number {
-  const [hexX, hexY] = hexCenter(hexId)
-  const [neighborX, neighborY] = hexCenter(neighborId)
-  const worldBearing = Math.atan2(neighborY - hexY, neighborX - hexX) * 180 / Math.PI
-  const sectorRotation = MASTERBOARD.getHex(hexId).getSide() * -60
-  return worldBearing - sectorRotation - 90
 }
 
 export function isHexInverted(hexId: number): boolean {

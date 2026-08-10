@@ -73,16 +73,15 @@ import { Transformation, Transformations, TransformationType } from "~/utils/svg
 import EngageIcon from "../../ui/game/EngageIcon.vue"
 import Creature from "../Creature.vue"
 import PlayerMarker from "../Marker.vue"
-import { hexTransform, isHexInverted, localBearingToNeighbor } from "./utils"
+import { hexTransform, isHexInverted } from "./utils"
 
-// hexTransform rotates each hex's local frame per sector, so a fixed per-edge angle only
-// lines up for one alignment; derive it from the edge's real neighbor instead. Some hexes
-// have no Sign, and so no neighbor, on one edge; that only matters for Titan Teleportation,
-// which per 10.4 can enter from any of the three edges regardless, so fall back to the
-// fixed angle there.
+// hexTransform rotates each hex's local frame by hex.getSide() * -60 to assemble the six
+// board sectors from one shared template, so a child's rotation has to cancel that sector
+// rotation to land on the correct physical side once the two compose. edge * 120 + 60 spaces
+// the three edges evenly; the extra 180 flips inverted hexes (rendered rotated 180 in
+// HexShape.vue) back onto their correct side.
 const getEngageTransformForEdge = (hexId: number, edge: HexEdge): Transformations => {
-  const neighbor = masterboard.getHex(hexId).getEdges().find((e: MasterboardEdge) => e.hexEdge === edge)?.hex
-  const rotation = neighbor === undefined ? edge * 120 + 60 : localBearingToNeighbor(hexId, neighbor.id)
+  const rotation = edge * 120 + 60 + (isHexInverted(hexId) ? 0 : 180)
   const transforms = new Transformations()
   transforms.push(new Transformation(TransformationType.ROTATE, [rotation]))
   transforms.push(new Transformation(TransformationType.TRANSLATE,
