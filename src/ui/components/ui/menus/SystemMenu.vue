@@ -173,7 +173,7 @@ const creatureColorMode = computed({
 
 const uiPlayer = computed({
   get: () => playerStore.localPlayer + 1,
-  set: (value: number) => playerStore.setLocalPlayer(value - 1)
+  set: (value: number) => { playerStore.localPlayer = value - 1 }
 })
 
 function reset(): void {
