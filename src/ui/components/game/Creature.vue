@@ -18,11 +18,11 @@
     <template v-if="!isCreatureType(type)">
       <text
         x="50"
-        :y="18 + (noneLabelWords.length - 1) * -16"
+        :y="18 + (labelWords.length - 1) * -16"
         class="name annotation"
       >
         <tspan
-          v-for="(word, index) in noneLabelWords"
+          v-for="(word, index) in labelWords"
           :key="index"
           x="50"
           dy="32"
@@ -164,7 +164,7 @@ const props = withDefaults(defineProps<{
   wounds: 0
 })
 
-// A plain string `type` (rather than a real CreatureType) signals the placeholder "none" state.
+// `type` is either a real CreatureType (a number) or an arbitrary label string.
 function isCreatureType(type: CreatureType | string): type is CreatureType {
   return typeof type === "number"
 }
@@ -191,12 +191,12 @@ const strength = computed(() => creature.value?.getStrength(playerScore.value ??
 const dead = computed((): boolean => props.wounds >= (strength.value ?? 1))
 
 const classes = computed(() => {
-  // The none state has no owning player to color-code, so it always gets the standard styling.
-  if (!isCreatureType(props.type)) {
-    return { none: true, standard: true }
+  // With no playerId to color-code by, fall back to the fixed per-creature-type styling.
+  if (props.playerId === undefined) {
+    return { label: true, standard: true }
   }
   const classMap: Record<string, boolean> = {
-    [creature.value?.name.toLowerCase() ?? "none"]: true,
+    [creature.value?.name.toLowerCase() ?? "label"]: true,
     "uniform-text": [CreatureColorMode.PLAYER_UNIFORM_TEXT,
       CreatureColorMode.STANDARD_UNIFORM_TEXT].includes(preferencesStore.creatureColorMode)
   }
@@ -225,7 +225,7 @@ const filter = computed(() => {
   return FilterCache.getForHex(color).filter
 })
 
-const noneLabelWords = computed((): string[] =>
+const labelWords = computed((): string[] =>
   isCreatureType(props.type) ? [] : props.type.split(/\s/))
 </script>
 
@@ -324,7 +324,7 @@ const noneLabelWords = computed((): string[] =>
   &.ranger, &.wyvern, &.colossus, &.guardian
     color: rgb(var(--v-theme-titan-purple))
 
-.standard.none
+.standard.label
   color: rgb(var(--v-theme-titan-red))
 
   .name
