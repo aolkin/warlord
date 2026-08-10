@@ -1,9 +1,15 @@
 import { describe, expect, it } from "vitest"
 import masterboard from "@/models/masterboard"
-import { applyTransforms, Transformation, Transformations, TransformationType } from "~/utils/svg"
-import { hexCenter, hexTransform, localBearingToNeighbor } from "./utils"
+import { hexCenter, hexTransform, localBearingToNeighbor, Point } from "./utils"
 
-function bearingDeg([x, y]: [number, number]): number {
+function rotate(deg: number, [x, y]: Point): Point {
+  const rad = deg * Math.PI / 180
+  const cos = Math.cos(rad)
+  const sin = Math.sin(rad)
+  return [x * cos - y * sin, x * sin + y * cos]
+}
+
+function bearingDeg([x, y]: Point): number {
   return Math.atan2(y, x) * 180 / Math.PI
 }
 
@@ -12,6 +18,18 @@ function normalizeDelta(deg: number): number {
   if (wrapped > 180) return wrapped - 360
   if (wrapped < -180) return wrapped + 360
   return wrapped
+}
+
+// Simulates the SVG nesting MasterboardStack.vue relies on for the engage icon: a child
+// rotated locally and pushed out from the hex center, nested inside the hex's own
+// hexTransform (rotate(sector) then translate(hexOffset)). Composed by hand here, independent
+// of localBearingToNeighbor's own angle-addition math, so a sign or ordering bug there
+// wouldn't also be baked into the check.
+function place(hexId: number, localRotationDeg: number, localOffset: Point): Point {
+  const [rotation, translation] = hexTransform(hexId)
+  const [hexOffsetX, hexOffsetY] = translation.values as number[]
+  const [rotatedX, rotatedY] = rotate(localRotationDeg, localOffset)
+  return rotate(rotation.values[0] as number, [rotatedX + hexOffsetX, rotatedY + hexOffsetY])
 }
 
 describe("localBearingToNeighbor", () => {
@@ -24,15 +42,7 @@ describe("localBearingToNeighbor", () => {
           hexCenter(neighborId)[1] - hexCenter(hexId)[1]
         ])
 
-        // Place a point using only the rotation under test plus a fixed-distance translate,
-        // composed with the hex's own hexTransform - mirroring how MasterboardStack.vue
-        // nests an edge-facing child inside a hex's transform - and check it lands in the
-        // true neighbor's direction rather than, say, the opposite side of the hex.
-        const placed = applyTransforms(new Transformations(
-          ...hexTransform(hexId),
-          new Transformation(TransformationType.ROTATE, [localBearingToNeighbor(hexId, neighborId)]),
-          new Transformation(TransformationType.TRANSLATE, [0, 60])
-        ), [0, 0])
+        const placed = place(hexId, localBearingToNeighbor(hexId, neighborId), [0, 60])
         const placedBearing = bearingDeg([placed[0] - hexCenter(hexId)[0], placed[1] - hexCenter(hexId)[1]])
 
         expect(Math.abs(normalizeDelta(placedBearing - trueBearing)),
