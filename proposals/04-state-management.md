@@ -1,17 +1,6 @@
 # State Management
 
-Today: Vuex 4, with the `game` module generated at runtime by reflecting over `TitanGame.prototype` method names — `get*` become getters, `m*` mutations, `do*` actions — and the store state *is* a `TitanGame` class instance (likewise `Battle`), persisted to localStorage by JSON-stringifying the instance and rehydrated through class-specific `hydrate` methods.
-
-## Vuex → Pinia
-
-Vuex is in maintenance mode (last release 2022); Pinia (4.x) is Vue's official successor. The `ui/*` modules are small and port mechanically.
-
-- **Pros:** first-class TS inference (the reflection layer currently erases all types — everything is `any` at the store boundary); devtools support; no `commit("string")` indirection; composes with `<script setup>`.
-- **Cons:** touches every component's store access. It does not have to be a big bang, though: Pinia and Vuex run side by side, so this can go store-by-store (`ui/*` first, `game` last) and component-by-component, converting each component to `<script setup>` + Pinia in the same small PR.
-
-## Retire the reflection bridge
-
-The prefix-reflection wiring defeats TypeScript, hides the store's real API surface, and makes getter caching and devtools tracing opaque. No standalone project needed, though: the state/rules separation below (the more important refactor) removes its reason to exist — once rules are explicit functions, the store defines explicit typed getters/actions that call them, and the bridge falls away as a byproduct.
+Today: Pinia, with `useGameStore` (`src/ui/stores/game.ts`) wrapping a `TitanGame` class instance (likewise `Battle`) in `reactive()`; the store state *is* that instance, persisted to localStorage by JSON-stringifying it and rehydrated through class-specific `hydrate` methods. `TitanGame`'s methods keep the `get*`/`m*`/`do*` naming convention from an earlier Vuex-reflection design, but the store now defines explicit typed getters and actions directly — there is no reflection or naming-based dispatch left.
 
 ## Separate game state from game rules
 
@@ -55,5 +44,6 @@ Persisting a snapshot works for solo play but discards history. If actions becom
 
 ## Miscellaneous cleanup
 
+- `useGameStore` wrapping `TitanGame` in a Pinia store, rather than a module-level singleton, is justified and not an outlier: a module-level singleton would read `localStorage` at import time, coupling the module to a browser environment; the store gives per-test isolation via `setActivePinia`/`createPinia()`; and it gives the persistence watcher from PR #161 an effect scope to be torn down with. `src/ui/stores/ui/preferences.ts` follows the same shape for the same reasons.
 - The global `Object.prototype.guid` extension (main.ts) hands every object a lazily-assigned random-seeded counter id. It arrived in c4b8759 (Feb 2022, "Start work on adding support for mustering"), and its only consumers are three `v-for` `:key` bindings on creatures/stacks — i.e. it exists to give class instances stable list keys. Replace with an explicit id field on those model types. Prototype extension is invisible at use sites and hostile to any future serialization/structured-clone path.
 - `app.config.unwrapInjectedRef` was a transitional flag (default since Vue 3.3); delete with the Vue upgrade.
