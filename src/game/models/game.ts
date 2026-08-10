@@ -287,7 +287,14 @@ export class TitanGame {
       ...hydration,
       stacks: hydration.stacks.map((stack: Stack) =>
         assign(new Stack(stack.owner, stack.hex, stack.marker, stack.createdRound, stack.creatures), stack)),
-      activeBattle: hydration.activeBattle !== undefined ? Battle.hydrate(hydration.activeBattle) : undefined
+      activeBattle: hydration.activeBattle !== undefined ? Battle.hydrate(hydration.activeBattle) : undefined,
+      // A save from before the score map existed has no top-level `score` at all, so spreading
+      // `hydration` directly would leave this.score untouched from whatever this instance had
+      // before hydrating — a roster with no relation to the players just hydrated. Rebuild score
+      // keyed to the hydrated roster instead, carrying over values the save does have.
+      score: Object.fromEntries(
+        hydration.players.map(player => [player.id, hydration.score?.[player.id] ?? 0])
+      ) as Record<PlayerId, number>
     })
   }
 

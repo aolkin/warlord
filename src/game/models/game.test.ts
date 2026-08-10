@@ -271,6 +271,20 @@ describe("TitanGame persistence", () => {
     expect(rehydrated.score[game.players[0].id]).toBe(250)
     expect(rehydrated.score[game.players[1].id]).toBe(0)
   })
+
+  it("rebuilds score for the hydrated roster when the save predates the score map (pre-#187)", () => {
+    const savedGame = newGame() // ids BLUE=0, GREEN=1
+    const legacySave = JSON.stringify(savedGame).replace(/,"score":\{[^}]*\}/, "")
+    expect(legacySave).not.toContain("\"score\"")
+
+    const reverse: Random = { shuffle: collection => [...collection].reverse() }
+    const liveGame = new TitanGame(2, reverse) // ids BLACK=4, YELLOW=3, unrelated to the save
+
+    liveGame.mRehydrate(JSON.parse(legacySave))
+
+    expect(liveGame.score[liveGame.players[0].id]).toBe(0)
+    expect(liveGame.score[liveGame.players[1].id]).toBe(0)
+  })
 })
 
 describe("TitanGame mustering (setRecruit)", () => {
