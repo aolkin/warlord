@@ -131,7 +131,7 @@ function moveStack(distance: number, foe: boolean, hex: MasterboardHex): void {
   if (distance !== activeRoll.value - 1 || focusedStack.value?.hasMoved() || foe) {
     return
   }
-  void game.move({ stack: focusedStack.value!, hex })
+  void game.move({ stack: focusedStack.value!.id, hex })
   selectionStore.deselectStack()
 }
 </script>

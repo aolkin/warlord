@@ -97,7 +97,7 @@ describe("TitanGame mandatory moves (stack splitting during movement)", () => {
     expect(game.getMandatoryMoves()).toHaveLength(2)
     expect(game.getMayProceed()).toBe(false)
 
-    await game.move({ stack: original, hex: 3 })
+    await game.move({ stack: original.id, hex: 3 })
 
     // Once split apart, the remaining stack alone on the origin hex is no longer mandatory.
     expect(game.getMandatoryMoves()).toEqual([])
@@ -268,7 +268,7 @@ describe("TitanGame mustering (setRecruit)", () => {
     game.activePhase = MasterboardPhase.MUSTER
 
     await expect(game.setRecruit({
-      stack, recruit: [CreatureType.CENTAUR, [CreatureType.CENTAUR, 0]]
+      stack: stack.id, recruit: [CreatureType.CENTAUR, [CreatureType.CENTAUR, 0]]
     })).rejects.toThrow("not eligible to muster")
   })
 
@@ -280,7 +280,7 @@ describe("TitanGame mustering (setRecruit)", () => {
     game.activePhase = MasterboardPhase.MOVE
 
     await expect(game.setRecruit({
-      stack, recruit: [CreatureType.LION, [CreatureType.CENTAUR, 2]]
+      stack: stack.id, recruit: [CreatureType.LION, [CreatureType.CENTAUR, 2]]
     })).rejects.toThrow("Innappropriate phase")
   })
 
@@ -299,10 +299,10 @@ describe("TitanGame mustering (setRecruit)", () => {
     const recruit: [CreatureType, [CreatureType, number]] = [creatureType, [CreatureType.CENTAUR, 2]]
 
     if (expectSuccess) {
-      await game.setRecruit({ stack, recruit })
+      await game.setRecruit({ stack: stack.id, recruit })
       expect(stack.currentMuster).toEqual(recruit)
     } else {
-      await expect(game.setRecruit({ stack, recruit }))
+      await expect(game.setRecruit({ stack: stack.id, recruit }))
         .rejects.toThrow("No more of the requested creature remaining")
     }
   })
@@ -314,7 +314,7 @@ describe("TitanGame mustering (setRecruit)", () => {
     game.stacks.push(stack)
     const poolBefore = game.creaturePool[CreatureType.LION]
     game.activePhase = MasterboardPhase.MUSTER
-    await game.setRecruit({ stack, recruit: [CreatureType.LION, [CreatureType.CENTAUR, 2]] })
+    await game.setRecruit({ stack: stack.id, recruit: [CreatureType.LION, [CreatureType.CENTAUR, 2]] })
 
     await game.nextPhase()
 
