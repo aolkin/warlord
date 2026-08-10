@@ -127,11 +127,11 @@ const canFreeMove = computed((): boolean =>
   game.activePhase === MasterboardPhase.MOVE &&
   selectionStore.selectedStack !== undefined && preferencesStore.freeMovement)
 
-function moveStack(distance: number, foe: boolean, hexId: number): void {
+function moveStack(distance: number, foe: boolean, hex: number): void {
   if (distance !== activeRoll.value - 1 || focusedStack.value?.hasMoved() || foe) {
     return
   }
-  void game.move({ stack: focusedStack.value!.id, hex: hexId })
+  void game.move({ stack: focusedStack.value!.id, hex })
   selectionStore.deselectStack()
 }
 </script>
