@@ -189,6 +189,11 @@ export class TitanGame {
         .some(occupant => occupant.owner !== activePlayerId))
   }
 
+  canTitanTeleport(stack: Stack): boolean {
+    return this.activeRoll === 6 && this.score[this.getActivePlayerId()] >= 400 &&
+      stack.creatures.includes(CreatureType.TITAN)
+  }
+
   // Actions
 
   async nextPhase(): Promise<void> {

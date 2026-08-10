@@ -63,7 +63,6 @@
 
 <script setup lang="ts">
 import { computed } from "vue"
-import { CreatureType } from "@/models/creature"
 import { MasterboardPhase, Path } from "@/models/game"
 import masterboard, { HexEdge, MasterboardEdge, MasterboardHex } from "@/models/masterboard"
 import { Stack } from "@/models/stack"
@@ -128,8 +127,7 @@ const potentialEngagements = computed((): HexEdge[] => {
   } else if (game.getStacksForHex(props.stack.hex)
     .some((stack: Stack) => stack.owner === game.getActivePlayerId())) {
     return []
-  } else if (game.activeRoll === 6 && game.score[game.getActivePlayerId()] >= 400 &&
-    selectionStore.selectedStack.creatures.includes(CreatureType.TITAN)) {
+  } else if (game.canTitanTeleport(selectionStore.selectedStack)) {
     return [HexEdge.FIRST, HexEdge.SECOND, HexEdge.THIRD]
   } else {
     // For paths where this stack is the enemy...
