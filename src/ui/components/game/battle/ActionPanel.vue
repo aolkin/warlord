@@ -45,6 +45,7 @@
 <script setup lang="ts">
 import { computed } from "vue"
 import {
+  BATTLE_PHASE_TYPES,
   Battle,
   BattleCreature,
   BattlePhaseType
@@ -59,7 +60,7 @@ const props = defineProps<{
 const gameStore = useGameStore()
 const game = gameStore.game
 
-const battlePhaseType = computed(() => game.getBattlePhaseType())
+const battlePhaseType = computed(() => BATTLE_PHASE_TYPES[props.battle.phase])
 const battleActivePlayerId = computed((): PlayerId => props.battle.getActivePlayer())
 const battleActivePlayer = computed(() => game.getPlayerById(battleActivePlayerId.value))
 

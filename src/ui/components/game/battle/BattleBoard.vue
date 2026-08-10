@@ -39,7 +39,7 @@
           :elevation="board.getElevation(hex)"
           :hazard="board.getHazard(hex)"
           :edge-hazards="edgeHazardsByHex[hex]"
-          :interactive="game.getBattlePhaseType() === BattlePhaseType.MOVE && movementHexes.has(hex)"
+          :interactive="battlePhaseType === BattlePhaseType.MOVE && movementHexes.has(hex)"
           :transform="hexTransformStr(hex)"
           :class="{ [`hex-${hex}`]: true, 'available-move': movementHexes.has(hex) }"
           @click="moveSelected(hex)"
@@ -169,6 +169,7 @@ import {
   BATTLE_BOARD_HEXES,
   BATTLE_BOARDS,
   BATTLE_PHASE_TITLES,
+  BATTLE_PHASE_TYPES,
   Battle,
   BattleBoard,
   BattleCreature,
@@ -222,11 +223,11 @@ const focusedCreature = computed<BattleCreature | undefined>(() => focusedCreatu
   : selectedCreature.value)
 
 const movementHexes = computed<Set<number>>(() =>
-  selectedCreature.value === undefined ? new Set<number>() : game.getBattleMoves(selectedCreature.value))
+  selectedCreature.value === undefined ? new Set<number>() : activeBattle.value!.movementFor(selectedCreature.value))
 const engagements = computed<BattleCreature[]>(() =>
-  selectedCreature.value === undefined ? [] : game.getBattleEngagements(selectedCreature.value))
+  selectedCreature.value === undefined ? [] : activeBattle.value!.engagedWith(selectedCreature.value))
 const rangestrikes = computed<RangestrikeTarget[]>(() =>
-  selectedCreature.value === undefined ? [] : game.getBattleRangestrikeTargets(selectedCreature.value))
+  selectedCreature.value === undefined ? [] : activeBattle.value!.rangestrikeTargets(selectedCreature.value))
 
 function selectCreature(selection: BattleCreature): void {
   selectedCreature.value = selectedCreature.value === selection ? undefined : selection
@@ -271,10 +272,13 @@ function leaveBattleHex(leaving: number): void {
 // game is deeply reactive, and Vue's UnwrapNestedRefs can't reconstruct Battle's
 // private methods, so the inferred type structurally mismatches the class - cast it back.
 const activeBattle = computed(() => game.activeBattle as Battle | undefined)
+const battlePhaseType = computed((): BattlePhaseType | undefined =>
+  activeBattle.value === undefined ? undefined : BATTLE_PHASE_TYPES[activeBattle.value.phase])
+const battleActivePlayer = computed((): PlayerId | undefined => activeBattle.value?.getActivePlayer())
 
 // A creature only exists within the battle it was selected in.
 watch(activeBattle, deselectCreature)
-watch(() => game.getBattlePhaseType(), deselectCreature)
+watch(battlePhaseType, deselectCreature)
 
 const attackCreatureDialog = computed({
   get: (): boolean => target.value !== undefined,
@@ -320,12 +324,12 @@ const activeCreatures = computed((): BattleCreature[] =>
     creature.hex > 0 && creature.hex < 36))
 
 function creatureEnabled(creature: BattleCreature): boolean {
-  if (creature.player !== game.getBattleActivePlayer()) {
+  if (creature.player !== battleActivePlayer.value) {
     return false
   }
-  const engagementsCount = game.getBattleEngagements(creature).length
-  const rangestrikesCount = game.getBattleRangestrikeTargets(creature).length
-  switch (game.getBattlePhaseType()) {
+  const engagementsCount = activeBattle.value!.engagedWith(creature).length
+  const rangestrikesCount = activeBattle.value!.rangestrikeTargets(creature).length
+  switch (battlePhaseType.value) {
     case BattlePhaseType.MOVE:
       return engagementsCount === 0
     case BattlePhaseType.STRIKE:
@@ -342,7 +346,7 @@ function creatureEnabled(creature: BattleCreature): boolean {
 
 function creatureClasses(creature: BattleCreature): object {
   return {
-    "active-player": creature.player === game.getBattleActivePlayer(),
+    "active-player": creature.player === battleActivePlayer.value,
     interactive: creatureEnabled(creature),
     selected: creature === selectedCreature.value,
     attacker: activeStrike.value?.attacker === creature.hex,

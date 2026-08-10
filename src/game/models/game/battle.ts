@@ -1,7 +1,6 @@
 import { assert } from "@/utils/assert"
 import { Battle, BATTLE_PHASE_TYPES, BattleCreature, BattlePhaseType, BattleSide, RangestrikeTarget, nextPhase, performAttack, wound } from "../battle"
 import masterboard from "../masterboard"
-import { PlayerId } from "../player"
 import { Stack, StackRef } from "../stack"
 import type { TitanGame } from "../game"
 
@@ -27,18 +26,12 @@ function resolveStrikingCreatures(game: TitanGame, attackerId: BattleCreature["i
   assert(attackerCreature !== undefined, "Unexpected attacker")
   const targetCreature = battle.creatures.find(c => c.id === targetId)
   assert(targetCreature !== undefined, "Unexpected defender")
-  assert(game.getBattlePhaseType() !== BattlePhaseType.MOVE, "Cannot strike in movement phase")
-  assert(attackerCreature.player === game.getBattleActivePlayer(), "Incorrect player")
+  assert(BATTLE_PHASE_TYPES[battle.phase] !== BattlePhaseType.MOVE, "Cannot strike in movement phase")
+  assert(attackerCreature.player === battle.getActivePlayer(), "Incorrect player")
   return { battle, attackerCreature, targetCreature }
 }
 
 export interface GameBattle {
-  getBattleActivePlayer(): PlayerId | undefined
-  getBattlePhaseType(): BattlePhaseType | undefined
-  getBattleMoves(creature: BattleCreature): Set<number>
-  getBattleEngagements(creature: BattleCreature): BattleCreature[]
-  getBattleCarryoverTargets(): BattleCreature[] | undefined
-  getBattleRangestrikeTargets(creature: BattleCreature): RangestrikeTarget[]
   initiateBattle(attacking: StackRef): Promise<void>
   moveCreature(payload: BattleMovePayload): Promise<void>
   nextBattlePhase(): Promise<void>
@@ -49,30 +42,6 @@ export interface GameBattle {
 }
 
 export const gameBattle: GameBattle & ThisType<TitanGame> = {
-  getBattleActivePlayer(): PlayerId | undefined {
-    return this.activeBattle?.getActivePlayer()
-  },
-
-  getBattlePhaseType(): BattlePhaseType | undefined {
-    return this.activeBattle === undefined ? undefined : BATTLE_PHASE_TYPES[this.activeBattle.phase]
-  },
-
-  getBattleMoves(creature: BattleCreature): Set<number> {
-    return this.activeBattle === undefined ? new Set<number>() : this.activeBattle.movementFor(creature)
-  },
-
-  getBattleEngagements(creature: BattleCreature): BattleCreature[] {
-    return this.activeBattle === undefined ? [] : this.activeBattle.engagedWith(creature)
-  },
-
-  getBattleCarryoverTargets(): BattleCreature[] | undefined {
-    return this.activeBattle?.carryoverTargets()
-  },
-
-  getBattleRangestrikeTargets(creature: BattleCreature): RangestrikeTarget[] {
-    return this.activeBattle === undefined ? [] : this.activeBattle.rangestrikeTargets(creature)
-  },
-
   async initiateBattle(attacking: StackRef): Promise<void> {
     const attackingStack = this.stacks.find(stack => stack.id === attacking)
     assert(attackingStack !== undefined, `No stack with id ${attacking}`)
@@ -90,10 +59,11 @@ export const gameBattle: GameBattle & ThisType<TitanGame> = {
   },
 
   async moveCreature(payload: BattleMovePayload): Promise<void> {
-    const creature = this.activeBattle?.creatures.find(c => c.id === payload.creature)
+    const battle = requireActiveBattle(this)
+    const creature = battle.creatures.find(c => c.id === payload.creature)
     assert(creature !== undefined, "Unexpected creature")
-    assert(this.getBattlePhaseType() === BattlePhaseType.MOVE, "Not in movement phase")
-    assert(creature.player === this.getBattleActivePlayer(), "Incorrect player")
+    assert(BATTLE_PHASE_TYPES[battle.phase] === BattlePhaseType.MOVE, "Not in movement phase")
+    assert(creature.player === battle.getActivePlayer(), "Incorrect player")
     creature.hex = payload.hex
   },
 
@@ -122,7 +92,7 @@ export const gameBattle: GameBattle & ThisType<TitanGame> = {
     const battle = requireActiveBattle(this)
     const targetCreature = battle.creatures.find(c => c.id === target)
     assert(targetCreature !== undefined, "Unexpected target")
-    assert(this.getBattlePhaseType() !== BattlePhaseType.MOVE, "Cannot carryover in movement phase")
+    assert(BATTLE_PHASE_TYPES[battle.phase] !== BattlePhaseType.MOVE, "Cannot carryover in movement phase")
     // Using an optional chain prevents typescript from learning that battle.activeStrike is present
     assert(battle.activeStrike !== undefined &&
       battle.activeStrike.canCarryover, "Cannot carryover")
@@ -135,7 +105,7 @@ export const gameBattle: GameBattle & ThisType<TitanGame> = {
   async skipCarryover(): Promise<void> {
     const battle = requireActiveBattle(this)
     if (battle.activeStrike === undefined) { throw new Error("Must have an active strike!") }
-    assert(this.getBattlePhaseType() !== BattlePhaseType.MOVE, "Cannot carryover in movement phase")
+    assert(BATTLE_PHASE_TYPES[battle.phase] !== BattlePhaseType.MOVE, "Cannot carryover in movement phase")
     battle.activeStrike.carryoverSkipped = true
   }
 }

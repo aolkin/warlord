@@ -12,7 +12,7 @@
     />
     <Creature
       v-if="interactive && canLeaveBoard"
-      :player-id="game.getBattleActivePlayer()"
+      :player-id="game.activeBattle?.getActivePlayer()"
       none-label="Put Back"
       class="ma-1 interactive"
       @click="emit('remove')"
