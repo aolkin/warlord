@@ -19,7 +19,6 @@ export const useGameStore = defineStore("game", () => {
   }, { deep: true })
 
   const round = computed(() => game.getRound())
-  const firstRound = computed(() => game.getFirstRound())
   const players = computed(() => game.players)
   const activePlayer = computed(() => game.getActivePlayer())
   const activePlayerId = computed(() => game.getActivePlayerId())
@@ -35,7 +34,6 @@ export const useGameStore = defineStore("game", () => {
   return {
     game,
     round,
-    firstRound,
     players,
     activePlayer,
     activePlayerId,

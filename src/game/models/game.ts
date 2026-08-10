@@ -76,10 +76,6 @@ export class TitanGame {
     return this.round + 1
   }
 
-  getFirstRound(): boolean {
-    return this.round === 0
-  }
-
   getPlayerById(id: PlayerId): Player {
     const player = this.players.find(player => player.id === id)
     assert(player !== undefined, `No player with id ${id}`)
