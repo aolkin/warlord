@@ -58,10 +58,15 @@
       <SystemMenu />
     </v-navigation-drawer>
     <v-main>
-      <!-- Constructing the boards is very expensive, so we hide them with v-show instead of
-           destroying and recreating them with v-if -->
+      <!-- v-if mounts BattleBoard only when a battle exists (rare - once per battle), so the
+           frequent masterboard/battleboard visibility toggle can still use v-show to switch
+           between them without remounting either one. -->
       <Masterboard v-show="!battleVisible" />
-      <BattleBoard v-show="battleVisible" />
+      <BattleBoard
+        v-if="activeBattle"
+        v-show="battleVisible"
+        :battle="activeBattle"
+      />
       <DiceRoller ref="diceRoller" />
     </v-main>
     <v-footer
@@ -77,7 +82,8 @@
 </template>
 
 <script setup lang="ts">
-import { defineAsyncComponent, onBeforeMount, provide, readonly, ref, watch } from "vue"
+import { computed, defineAsyncComponent, onBeforeMount, provide, readonly, ref, watch } from "vue"
+import type { Battle } from "@/models/battle"
 import BattleBoard from "~/components/game/battle/BattleBoard"
 import Masterboard from "~/components/game/masterboard/Masterboard"
 import PlayerStatus from "~/components/ui/game/PlayerStatus"
@@ -94,6 +100,7 @@ const diceRoller = ref<InstanceType<typeof DiceRollerComponent> | null>(null)
 provide("diceRoller", readonly(diceRoller))
 
 const gameStore = useGameStore()
+const game = gameStore.game
 const preferencesStore = usePreferencesStore()
 
 const menuVisible = ref(false)
@@ -101,15 +108,19 @@ const prefsPaneVisible = ref(false)
 
 const battleVisible = ref(false)
 
+// game is deeply reactive, and Vue's UnwrapNestedRefs can't reconstruct Battle's
+// private methods, so the inferred type structurally mismatches the class - cast it back.
+const activeBattle = computed(() => game.activeBattle as Battle | undefined)
+
 onBeforeMount(() => {
-  if (gameStore.game.activeBattle !== undefined) {
+  if (activeBattle.value !== undefined) {
     battleVisible.value = true
   }
 })
 
 // Only the empty->present transition should navigate to the battle board - subsequent
 // mutations within the same battle (strikes, wounds, etc.) also change activeBattle.
-watch(() => gameStore.game.activeBattle !== undefined, (hasBattle, hadBattle) => {
+watch(() => activeBattle.value !== undefined, (hasBattle, hadBattle) => {
   if (hasBattle && !hadBattle) {
     battleVisible.value = true
   }
