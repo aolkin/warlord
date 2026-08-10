@@ -2,8 +2,7 @@
   <div>
     <Creature
       v-if="canDecline"
-      :type="undefined"
-      :player-id="playerId"
+      type="NONE"
       :class="{ selected: chosen === undefined }"
       class="ma-1 recruitment-choice"
       @click="chosen = undefined"
