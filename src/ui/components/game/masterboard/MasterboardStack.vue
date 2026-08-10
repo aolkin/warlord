@@ -67,6 +67,7 @@ import { MasterboardPhase, Path } from "@/models/game"
 import masterboard, { HexEdge, MasterboardEdge, MasterboardHex } from "@/models/masterboard"
 import { Stack } from "@/models/stack"
 import { useGameStore } from "~/stores/game"
+import { usePreferencesStore } from "~/stores/ui/preferences"
 import { useSelectionStore } from "~/stores/ui/selection"
 import { Transformation, Transformations, TransformationType } from "~/utils/svg"
 import EngageIcon from "../../ui/game/EngageIcon.vue"
@@ -96,6 +97,7 @@ const emit = defineEmits<{
 const gameStore = useGameStore()
 const game = gameStore.game
 const selectionStore = useSelectionStore()
+const preferencesStore = usePreferencesStore()
 
 const selected = computed(() => props.stack === selectionStore.selectedStack)
 
@@ -127,7 +129,9 @@ const potentialEngagements = computed((): HexEdge[] => {
   } else if (game.getStacksForHex(props.stack.hex)
     .some((stack: Stack) => stack.owner === game.getActivePlayerId())) {
     return []
-  } else if (game.canTitanTeleport(selectionStore.selectedStack)) {
+  } else if (game.canTitanTeleport(selectionStore.selectedStack) || preferencesStore.freeMovement) {
+    // Titan teleport and the free-movement debug preference both let a stack reach any hex
+    // with no directional path, so either grants all three attack edges.
     return [HexEdge.FIRST, HexEdge.SECOND, HexEdge.THIRD]
   } else {
     // For paths where this stack is the enemy...
