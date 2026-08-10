@@ -30,7 +30,7 @@ export interface Path {
   path: MasterboardHex[]
 }
 
-export interface MovePayload { stack: StackRef, hex: number | MasterboardHex, edge?: HexEdge }
+export interface MovePayload { stack: StackRef, hex: number, edge?: HexEdge }
 export interface MusterPayload { stack: StackRef, recruit: MusterChoice }
 
 // gameBattle/gamePersistence are mixed onto TitanGame.prototype by the Object.assign below,
@@ -241,11 +241,7 @@ export class TitanGame {
     assert(movingStack !== undefined, `No stack with id ${stack}`)
     assert(this.activePhase === MasterboardPhase.MOVE, "Innappropriate phase")
     movingStack.attackEdge = edge
-    if (hex instanceof MasterboardHex) {
-      movingStack.hex = hex.id
-    } else {
-      movingStack.hex = hex
-    }
+    movingStack.hex = hex
   }
 
   async setRecruit({ stack, recruit }: MusterPayload): Promise<void> {
