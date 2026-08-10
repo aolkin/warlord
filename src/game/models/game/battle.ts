@@ -1,7 +1,5 @@
 import { assert } from "@/utils/assert"
-import { Battle, BATTLE_PHASE_TYPES, BattleCreature, BattlePhaseType, BattleSide, RangestrikeTarget, nextPhase, performAttack, wound } from "../battle"
-import masterboard from "../masterboard"
-import { Stack, StackRef } from "../stack"
+import { Battle, BATTLE_PHASE_TYPES, BattleCreature, BattlePhaseType, RangestrikeTarget, nextPhase, performAttack, wound } from "../battle"
 import type { TitanGame } from "../game"
 
 export interface BattleMovePayload { creature: BattleCreature["id"], hex: number }
@@ -9,10 +7,6 @@ interface IStrikePayload { attacker: BattleCreature["id"], rolls: number[] }
 export interface AttackPayload extends IStrikePayload { target: BattleCreature["id"], optionalToHit?: number }
 export interface RangestrikePayload extends IStrikePayload {
   target: Omit<RangestrikeTarget, "creature"> & { creature: BattleCreature["id"] }
-}
-
-function toBattleSide(stack: Stack, score: number): BattleSide {
-  return { player: stack.owner, score, creatures: stack.creatures }
 }
 
 function requireActiveBattle(game: TitanGame): Battle {
@@ -32,7 +26,6 @@ function resolveStrikingCreatures(game: TitanGame, attackerId: BattleCreature["i
 }
 
 export interface GameBattle {
-  initiateBattle(attacking: StackRef): Promise<void>
   moveCreature(payload: BattleMovePayload): Promise<void>
   nextBattlePhase(): Promise<void>
   attackCreature(payload: AttackPayload): Promise<void>
@@ -42,22 +35,6 @@ export interface GameBattle {
 }
 
 export const gameBattle: GameBattle & ThisType<TitanGame> = {
-  async initiateBattle(attacking: StackRef): Promise<void> {
-    const attackingStack = this.stacks.find(stack => stack.id === attacking)
-    assert(attackingStack !== undefined, `No stack with id ${attacking}`)
-    const activePlayerId = this.getActivePlayerId()
-    const defending = this.getStacksForHex(attackingStack.hex)
-      .find(stack => stack.owner !== activePlayerId) as Stack
-    assert(defending !== undefined,
-      `No engagement present on hex ${attackingStack.hex}!`)
-    assert(attackingStack.attackEdge !== undefined, "Cannot attack without coming from somewhere")
-    const terrain = masterboard.getHex(attackingStack.hex).terrain
-    const attackingSide = toBattleSide(attackingStack, this.score[attackingStack.owner])
-    const defendingSide = toBattleSide(defending, this.score[defending.owner])
-    this.activeBattle = new Battle(terrain, attackingStack.attackEdge, attackingSide, defendingSide)
-    this.activeBattleHex = attackingStack.hex
-  },
-
   async moveCreature(payload: BattleMovePayload): Promise<void> {
     const battle = requireActiveBattle(this)
     const creature = battle.creatures.find(c => c.id === payload.creature)

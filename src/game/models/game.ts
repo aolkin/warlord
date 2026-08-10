@@ -1,6 +1,6 @@
 import { assign, range } from "lodash-es"
 import { assert } from "@/utils/assert"
-import { Battle } from "./battle"
+import { Battle, BattleSide } from "./battle"
 import { CREATURE_DATA, CREATURE_LIST, CreatureType } from "./creature"
 import { GameBattle, gameBattle } from "./game/battle"
 import masterboard, { HexEdge, MasterboardHex } from "./masterboard"
@@ -195,6 +195,22 @@ export class TitanGame {
 
   // Actions
 
+  async initiateBattle(attacking: StackRef): Promise<void> {
+    const attackingStack = this.stacks.find(stack => stack.id === attacking)
+    assert(attackingStack !== undefined, `No stack with id ${attacking}`)
+    const activePlayerId = this.getActivePlayerId()
+    const defending = this.getStacksForHex(attackingStack.hex)
+      .find(stack => stack.owner !== activePlayerId) as Stack
+    assert(defending !== undefined,
+      `No engagement present on hex ${attackingStack.hex}!`)
+    assert(attackingStack.attackEdge !== undefined, "Cannot attack without coming from somewhere")
+    const terrain = masterboard.getHex(attackingStack.hex).terrain
+    const attackingSide = toBattleSide(attackingStack, this.score[attackingStack.owner])
+    const defendingSide = toBattleSide(defending, this.score[defending.owner])
+    this.activeBattle = new Battle(terrain, attackingStack.attackEdge, attackingSide, defendingSide)
+    this.activeBattleHex = attackingStack.hex
+  }
+
   async nextPhase(): Promise<void> {
     switch (this.activePhase) {
       case MasterboardPhase.SPLIT:
@@ -297,6 +313,10 @@ export class TitanGame {
 }
 
 Object.assign(TitanGame.prototype, gameBattle)
+
+function toBattleSide(stack: Stack, score: number): BattleSide {
+  return { player: stack.owner, score, creatures: stack.creatures }
+}
 
 function startPlayerTurn(stack: Stack): void {
   stack.origin = stack.hex
