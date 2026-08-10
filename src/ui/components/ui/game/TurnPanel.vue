@@ -3,13 +3,13 @@
     border
     width="300"
     :prepend-icon="icon"
-    :title="`${gameStore.activePlayer.name}'s Turn`"
+    :title="`${game.getActivePlayer().name}'s Turn`"
   >
     <template #prepend>
       <v-icon size="x-large" />
     </template>
-    <v-card-text v-if="activePhase === MasterboardPhase.SPLIT">
-      <span v-if="mayProceed">
+    <v-card-text v-if="game.isSplitPhase()">
+      <span v-if="game.getMayProceed()">
         Split stacks if desired, or proceed to roll.
         <span v-if="sevenHighCount > 0">
           You have {{ sevenHighCount }} full stack{{ sevenHighCount > 1 ? 's' : '' }}!
@@ -19,32 +19,32 @@
         You must adjust your stack splits before rolling.
       </span>
     </v-card-text>
-    <v-card-text v-else-if="activePhase === MasterboardPhase.MOVE">
-      Moved {{ movedCount }} of {{ activeStacks.length }} stacks. {{ engagementsMessage }}
+    <v-card-text v-else-if="game.isMovePhase()">
+      Moved {{ movedCount }} of {{ gameStore.activeStacks.length }} stacks. {{ engagementsMessage }}
       <span v-if="movedCount < 1">
         You must move at least one stack!
       </span>
-      <span v-else-if="!mayProceed">
+      <span v-else-if="!game.getMayProceed()">
         You must move at least one stack from each split if possible.
       </span>
     </v-card-text>
-    <v-card-text v-else-if="activePhase === MasterboardPhase.MUSTER">
-      Mustered a recruit in {{ musteredCount }} of {{ activeStacks.length }} stacks.
+    <v-card-text v-else-if="game.isMusterPhase()">
+      Mustered a recruit in {{ musteredCount }} of {{ gameStore.activeStacks.length }} stacks.
     </v-card-text>
     <v-fade-transition leave-absolute>
-      <v-card-actions v-if="activePhase === MasterboardPhase.SPLIT">
+      <v-card-actions v-if="game.isSplitPhase()">
         <v-btn
           block
-          :disabled="!mayProceed"
+          :disabled="!game.getMayProceed()"
           variant="outlined"
           @click="proceedToRoll"
         >
           Finish Splits and Roll
         </v-btn>
       </v-card-actions>
-      <v-card-actions v-else-if="activePhase === MasterboardPhase.MOVE">
+      <v-card-actions v-else-if="game.isMovePhase()">
         <v-btn
-          v-if="gameStore.mulliganAvailable"
+          v-if="game.isMulliganAvailable()"
           block
           variant="outlined"
           title="On the first round only, you may opt to re-roll your die once."
@@ -55,18 +55,18 @@
         <v-btn
           v-else
           block
-          :variant="movedCount === activeStacks.length ? 'outlined' : 'tonal' "
-          :disabled="!mayProceed"
+          :variant="movedCount === gameStore.activeStacks.length ? 'outlined' : 'tonal' "
+          :disabled="!game.getMayProceed()"
           @click="nextPhase"
         >
-          {{ engagedStacks.length > 0 ? "Proceed to Battle" : "Proceed to Muster" }}
+          {{ game.getEngagedStacks().length > 0 ? "Proceed to Battle" : "Proceed to Muster" }}
         </v-btn>
       </v-card-actions>
-      <v-card-actions v-else-if="activePhase === MasterboardPhase.MUSTER">
+      <v-card-actions v-else-if="game.isMusterPhase()">
         <v-btn
           block
           variant="outlined"
-          :disabled="!mayProceed"
+          :disabled="!game.getMayProceed()"
           @click="nextPhase"
         >
           End Turn
@@ -90,18 +90,12 @@ const gameStore = useGameStore()
 const game = gameStore.game
 const selectionStore = useSelectionStore()
 
-const activePhase = computed(() => game.activePhase)
-const activeRoll = computed(() => game.activeRoll)
-const activeStacks = computed(() => gameStore.activeStacks)
-const mayProceed = computed(() => gameStore.mayProceed)
-const engagedStacks = computed(() => gameStore.engagedStacks)
-
 const icon = computed(() => {
-  switch (activePhase.value) {
+  switch (game.activePhase) {
     case MasterboardPhase.SPLIT:
       return "mdi-call-split"
     case MasterboardPhase.MOVE:
-      return `mdi-dice-${activeRoll.value ?? "multiple"}`
+      return `mdi-dice-${game.activeRoll ?? "multiple"}`
     case MasterboardPhase.BATTLE:
       return "mdi-sword-cross"
     case MasterboardPhase.MUSTER:
@@ -110,17 +104,18 @@ const icon = computed(() => {
       return "mdi-dice-multiple"
   }
 })
-const sevenHighCount = computed(() => sum(activeStacks.value.map(stack => stack.creatures.length === 7)))
-const movedCount = computed(() => sum(activeStacks.value.map(stack => stack.hasMoved())))
+const sevenHighCount = computed(() => sum(gameStore.activeStacks.map(stack => stack.creatures.length === 7)))
+const movedCount = computed(() => sum(gameStore.activeStacks.map(stack => stack.hasMoved())))
 const musteredCount = computed(() =>
-  sum(activeStacks.value.map(stack => stack.currentMuster !== undefined)))
+  sum(gameStore.activeStacks.map(stack => stack.currentMuster !== undefined)))
 const engagementsMessage = computed(() => {
-  if (engagedStacks.value.length < 1) {
+  const engagedStacks = game.getEngagedStacks()
+  if (engagedStacks.length < 1) {
     return ""
-  } else if (engagedStacks.value.length === 1) {
+  } else if (engagedStacks.length === 1) {
     return "1 pending battle."
   } else {
-    return `${engagedStacks.value.length} pending battles.`
+    return `${engagedStacks.length} pending battles.`
   }
 })
 
@@ -129,7 +124,7 @@ function nextPhase(): void {
 }
 
 function roll(): void {
-  if (activeRoll.value !== undefined) {
+  if (game.activeRoll !== undefined) {
     void game.setRoll(undefined)
   }
   diceRoller?.value?.roll().then(async(rolled: number[]) => await game.setRoll(rolled[0]))

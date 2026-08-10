@@ -12,7 +12,7 @@
     />
     <Creature
       v-if="interactive && canLeaveBoard"
-      :player-id="gameStore.battleActivePlayer"
+      :player-id="game.getBattleActivePlayer()"
       none-label="Put Back"
       class="ma-1 interactive"
       @click="emit('remove')"
@@ -36,7 +36,7 @@ const emit = defineEmits<{
   remove: []
 }>()
 
-const gameStore = useGameStore()
+const game = useGameStore().game
 </script>
 <style scoped lang="sass">
 .interactive

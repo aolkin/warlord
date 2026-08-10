@@ -1,6 +1,6 @@
 <template>
   <div
-    :style="{ height: gameStore.players.length * 60 + 40 }"
+    :style="{ height: game.players.length * 60 + 40 }"
     class="d-flex flex-column justify-space-between"
   >
     <div class="text-center round-label">
@@ -8,12 +8,12 @@
     </div>
     <div
       class="text-center round-counter"
-      v-text="gameStore.round"
+      v-text="game.getRound()"
     />
     <v-card
-      v-for="player in gameStore.players"
+      v-for="player in game.players"
       :key="player.id"
-      :class="{ 'active': gameStore.activePlayer === player, [`bg-player-${player.id}`]: true }"
+      :class="{ 'active': game.getActivePlayer() === player, [`bg-player-${player.id}`]: true }"
       class="player-card ml-2 mr-1 py-1 my-2"
       elevation="4"
     >
@@ -43,8 +43,7 @@
 <script setup lang="ts">
 import { useGameStore } from "~/stores/game"
 
-const gameStore = useGameStore()
-const game = gameStore.game
+const game = useGameStore().game
 </script>
 
 <style lang="sass" scoped>
