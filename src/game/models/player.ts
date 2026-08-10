@@ -7,12 +7,7 @@ export enum PlayerId {
   BROWN
 }
 
-export class Player {
+export interface Player {
   readonly id: PlayerId
   readonly name: string
-
-  constructor(id: PlayerId, name: string) {
-    this.id = id
-    this.name = name
-  }
 }
