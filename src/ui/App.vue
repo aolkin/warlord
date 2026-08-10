@@ -19,6 +19,7 @@
         />
         <v-btn
           :variant="battleVisible ? 'text' : 'plain'"
+          :disabled="!activeBattle"
           icon="mdi-hexagon-multiple-outline"
           @click="battleVisible = true"
         />
@@ -64,7 +65,6 @@
         v-show="battleVisible"
         :battle="activeBattle"
       />
-      <NoActiveBattle v-else-if="battleVisible" />
       <DiceRoller ref="diceRoller" />
     </v-main>
     <v-footer
@@ -83,7 +83,6 @@
 import { computed, defineAsyncComponent, provide, readonly, ref, watch } from "vue"
 import type { Battle } from "@/models/battle"
 import BattleBoard from "~/components/game/battle/BattleBoard"
-import NoActiveBattle from "~/components/game/battle/NoActiveBattle"
 import Masterboard from "~/components/game/masterboard/Masterboard"
 import PlayerStatus from "~/components/ui/game/PlayerStatus"
 import type DiceRollerComponent from "~/components/ui/generic/DiceRoller"
@@ -112,10 +111,14 @@ const activeBattle = computed(() => gameStore.game.activeBattle as Battle | unde
 
 // Only the empty->present transition should navigate to the battle board - subsequent
 // mutations within the same battle (strikes, wounds, etc.) also change activeBattle. Firing
-// immediately covers the case where a battle is already active on mount.
+// immediately covers the case where a battle is already active on mount. The reverse
+// transition forces the battle board back out of view, since the toggle button is disabled
+// without an active battle and so can no longer do that itself.
 watch(() => activeBattle.value !== undefined, (hasBattle, hadBattle) => {
   if (hasBattle && !hadBattle) {
     battleVisible.value = true
+  } else if (hadBattle && !hasBattle) {
+    battleVisible.value = false
   }
 }, { immediate: true })
 
