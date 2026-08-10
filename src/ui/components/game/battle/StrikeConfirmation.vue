@@ -65,7 +65,6 @@
 import { computed } from "vue"
 import { isEqual, range } from "lodash-es"
 import { Battle, BattleCreature, isRangestrike, Strike } from "@/models/battle"
-import { useGameStore } from "~/stores/game"
 
 const props = defineProps<{
   battle: Battle
@@ -80,9 +79,7 @@ const emit = defineEmits<{
   "update:optionalToHit": [value: number | undefined]
 }>()
 
-const game = useGameStore().game
-
-const engagements = computed<BattleCreature[]>(() => game.getBattleEngagements(props.attacker))
+const engagements = computed<BattleCreature[]>(() => props.battle.engagedWith(props.attacker))
 
 const selectedCreatureName = computed(() => props.attacker.name())
 const targetedCreatureName = computed(() => props.targetedCreature?.name() ?? "")

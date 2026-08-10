@@ -22,7 +22,7 @@ export const useGameStore = defineStore("game", () => {
   // read from more than one place. Everything cheaper is called straight off `game`.
   const activeStacks = computed(() => game.getActiveStacks())
   const mandatoryMoves = computed(() => game.getMandatoryMoves())
-  const battleCarryoverTargets = computed(() => game.getBattleCarryoverTargets())
+  const battleCarryoverTargets = computed(() => game.activeBattle?.carryoverTargets())
 
   return {
     game,

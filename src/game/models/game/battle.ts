@@ -32,10 +32,6 @@ function resolveStrikingCreatures(game: TitanGame, attackerId: BattleCreature["i
 }
 
 export interface GameBattle {
-  getBattleMoves(creature: BattleCreature): Set<number>
-  getBattleEngagements(creature: BattleCreature): BattleCreature[]
-  getBattleCarryoverTargets(): BattleCreature[] | undefined
-  getBattleRangestrikeTargets(creature: BattleCreature): RangestrikeTarget[]
   initiateBattle(attacking: StackRef): Promise<void>
   moveCreature(payload: BattleMovePayload): Promise<void>
   nextBattlePhase(): Promise<void>
@@ -46,22 +42,6 @@ export interface GameBattle {
 }
 
 export const gameBattle: GameBattle & ThisType<TitanGame> = {
-  getBattleMoves(creature: BattleCreature): Set<number> {
-    return this.activeBattle === undefined ? new Set<number>() : this.activeBattle.movementFor(creature)
-  },
-
-  getBattleEngagements(creature: BattleCreature): BattleCreature[] {
-    return this.activeBattle === undefined ? [] : this.activeBattle.engagedWith(creature)
-  },
-
-  getBattleCarryoverTargets(): BattleCreature[] | undefined {
-    return this.activeBattle?.carryoverTargets()
-  },
-
-  getBattleRangestrikeTargets(creature: BattleCreature): RangestrikeTarget[] {
-    return this.activeBattle === undefined ? [] : this.activeBattle.rangestrikeTargets(creature)
-  },
-
   async initiateBattle(attacking: StackRef): Promise<void> {
     const attackingStack = this.stacks.find(stack => stack.id === attacking)
     assert(attackingStack !== undefined, `No stack with id ${attacking}`)

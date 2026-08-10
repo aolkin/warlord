@@ -223,11 +223,11 @@ const focusedCreature = computed<BattleCreature | undefined>(() => focusedCreatu
   : selectedCreature.value)
 
 const movementHexes = computed<Set<number>>(() =>
-  selectedCreature.value === undefined ? new Set<number>() : game.getBattleMoves(selectedCreature.value))
+  selectedCreature.value === undefined ? new Set<number>() : activeBattle.value!.movementFor(selectedCreature.value))
 const engagements = computed<BattleCreature[]>(() =>
-  selectedCreature.value === undefined ? [] : game.getBattleEngagements(selectedCreature.value))
+  selectedCreature.value === undefined ? [] : activeBattle.value!.engagedWith(selectedCreature.value))
 const rangestrikes = computed<RangestrikeTarget[]>(() =>
-  selectedCreature.value === undefined ? [] : game.getBattleRangestrikeTargets(selectedCreature.value))
+  selectedCreature.value === undefined ? [] : activeBattle.value!.rangestrikeTargets(selectedCreature.value))
 
 function selectCreature(selection: BattleCreature): void {
   selectedCreature.value = selectedCreature.value === selection ? undefined : selection
@@ -327,8 +327,8 @@ function creatureEnabled(creature: BattleCreature): boolean {
   if (creature.player !== battleActivePlayer.value) {
     return false
   }
-  const engagementsCount = game.getBattleEngagements(creature).length
-  const rangestrikesCount = game.getBattleRangestrikeTargets(creature).length
+  const engagementsCount = activeBattle.value!.engagedWith(creature).length
+  const rangestrikesCount = activeBattle.value!.rangestrikeTargets(creature).length
   switch (battlePhaseType.value) {
     case BattlePhaseType.MOVE:
       return engagementsCount === 0
