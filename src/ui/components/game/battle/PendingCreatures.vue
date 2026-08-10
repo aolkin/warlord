@@ -6,16 +6,16 @@
       :type="creature.type"
       :player-id="creature.player"
       :class="{ interactive,
-                selected: creature === selectedCreature }"
+                selected: creature.id === selectedCreatureId }"
       class="ma-1 pending"
       @click="interactive && emit('select', creature)"
     />
     <Creature
-      v-if="showRemove && selectedCreature"
+      v-if="showRemove && selectedCreatureId !== undefined"
       :player-id="gameStore.battleActivePlayer"
       none-label="Put Back"
       class="ma-1 interactive"
-      @click="removeSelected(selectedCreature)"
+      @click="emit('remove')"
     />
   </div>
 </template>
@@ -28,23 +28,18 @@ import Creature from "../Creature.vue"
 const props = defineProps<{
   creatures: BattleCreature[]
   interactive: boolean
-  selectedCreature: BattleCreature | undefined
+  selectedCreatureId: number | undefined
+  canLeaveBoard: boolean
 }>()
 
 const emit = defineEmits<{
   select: [creature: BattleCreature]
+  remove: []
 }>()
 
 const gameStore = useGameStore()
-const game = gameStore.game
 
-const showRemove = computed(() => props.interactive &&
-  (props.selectedCreature?.initialHex ?? -1) >= 36 &&
-  (props.selectedCreature?.hex ?? -1) < 36)
-
-function removeSelected(creature: BattleCreature): void {
-  void game.moveCreature({ creature: creature.id, hex: creature.initialHex })
-}
+const showRemove = computed(() => props.interactive && props.canLeaveBoard)
 </script>
 <style scoped lang="sass">
 .interactive

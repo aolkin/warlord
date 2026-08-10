@@ -25,9 +25,11 @@
             <PendingCreatures
               :creatures="pendingOffense"
               :interactive="attackerMoveActive"
-              :selected-creature="props.selectedCreature"
+              :selected-creature-id="props.selectedCreatureId"
+              :can-leave-board="props.selectedCanLeaveBoard"
               class="px-2 pb-1"
               @select="emit('select', $event)"
+              @remove="emit('remove')"
             />
           </div>
           <div
@@ -38,9 +40,11 @@
             <PendingCreatures
               :creatures="pendingDefense"
               :interactive="defenderMoveActive"
-              :selected-creature="props.selectedCreature"
+              :selected-creature-id="props.selectedCreatureId"
+              :can-leave-board="props.selectedCanLeaveBoard"
               class="px-2 pb-1"
               @select="emit('select', $event)"
+              @remove="emit('remove')"
             />
           </div>
         </div>
@@ -84,12 +88,14 @@ import PendingCreatures from "./PendingCreatures.vue"
 
 const props = defineProps<{
   localPlayerIsDefender: boolean
-  selectedCreature: BattleCreature | undefined
+  selectedCreatureId: number | undefined
   selectedStartedOffBoard: boolean
+  selectedCanLeaveBoard: boolean
 }>()
 
 const emit = defineEmits<{
   select: [creature: BattleCreature]
+  remove: []
 }>()
 
 const game = useGameStore().game

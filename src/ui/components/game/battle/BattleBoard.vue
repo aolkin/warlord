@@ -104,12 +104,14 @@
 
       <CreaturePanel
         :local-player-is-defender="localPlayerIsDefender"
-        :selected-creature="selectedCreature"
+        :selected-creature-id="selectedCreatureId"
         :selected-started-off-board="selectedStartedOffBoard"
+        :selected-can-leave-board="selectedCanLeaveBoard"
         position="fixed"
         location="top right"
         class="ma-3"
         @select="selectCreature"
+        @remove="removeSelected"
       />
       <ActionPanel
         position="fixed"
@@ -304,8 +306,15 @@ const defender = computed((): PlayerId => activeBattle.value!.defender)
 const localPlayerIsDefender = computed((): boolean =>
   defender.value === gameStore.players[playerStore.localPlayer].id)
 
+const selectedCreatureId = computed((): number | undefined => selectedCreature.value?.id)
+
 const selectedStartedOffBoard = computed((): boolean =>
   (selectedCreature.value?.initialHex ?? -1) >= 36)
+
+// True once a creature that started off-board has been moved onto the board this turn,
+// making it eligible to be moved back off (PendingCreatures' "Put Back" action).
+const selectedCanLeaveBoard = computed((): boolean =>
+  selectedStartedOffBoard.value && (selectedCreature.value?.hex ?? -1) < 36)
 
 const activeCreatures = computed((): BattleCreature[] =>
   activeBattle.value!.creatures.filter((creature: BattleCreature) =>
@@ -354,6 +363,12 @@ const debugHexAdjacencies = computed((): number[] => BATTLE_BOARD_ADJACENCIES[de
 function moveSelected(hex: number): void {
   if (selectedCreature.value && movementHexes.value.has(hex)) {
     void game.moveCreature({ creature: selectedCreature.value.id, hex })
+  }
+}
+
+function removeSelected(): void {
+  if (selectedCreature.value) {
+    void game.moveCreature({ creature: selectedCreature.value.id, hex: selectedCreature.value.initialHex })
   }
 }
 
