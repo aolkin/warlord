@@ -105,7 +105,6 @@
       <CreaturePanel
         :local-player-is-defender="localPlayerIsDefender"
         :selected-creature-id="selectedCreatureId"
-        :selected-started-off-board="selectedStartedOffBoard"
         :selected-can-leave-board="selectedCanLeaveBoard"
         position="fixed"
         location="top right"

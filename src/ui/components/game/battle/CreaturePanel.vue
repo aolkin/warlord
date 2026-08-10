@@ -19,7 +19,7 @@
         >
           <div
             v-if="pendingOffense.length > 0 ||
-              (attackerMoveActive && props.selectedStartedOffBoard)"
+              (attackerMoveActive && props.selectedCanLeaveBoard)"
           >
             <v-card-title>{{ attacker.name }}'s Pending Creatures</v-card-title>
             <PendingCreatures
@@ -34,7 +34,7 @@
           </div>
           <div
             v-if="pendingDefense.length > 0 ||
-              (defenderMoveActive && props.selectedStartedOffBoard)"
+              (defenderMoveActive && props.selectedCanLeaveBoard)"
           >
             <v-card-title>{{ defender.name }}'s Pending Creatures</v-card-title>
             <PendingCreatures
@@ -89,7 +89,6 @@ import PendingCreatures from "./PendingCreatures.vue"
 const props = defineProps<{
   localPlayerIsDefender: boolean
   selectedCreatureId: number | undefined
-  selectedStartedOffBoard: boolean
   selectedCanLeaveBoard: boolean
 }>()
 
