@@ -1,16 +1,18 @@
 import { describe, expect, it } from "vitest"
 import { CREATURE_DATA, CreatureType } from "@/models/creature"
-import type { TitanGame } from "@/models/game"
-import { newGame } from "@/models/game.testUtils"
+import { TitanGame } from "@/models/game"
 import { HexEdge, Terrain } from "@/models/masterboard"
 import { PlayerId } from "@/models/player"
+import { Random } from "@/models/random"
 import { UNATTAINABLE_MOVEMENT_COST } from "./board"
 import { BattleCreature, performStrike } from "./combatant"
 import { Battle, BattleSide, nextPhase, phaseEnterStrike } from "./engine"
 import { BattlePhase } from "./strike"
 
+const noShuffleRandom: Random = { shuffle: collection => [...collection] }
+
 function createGameWithActiveBattle(battle: Battle): TitanGame {
-  const game = newGame()
+  const game = new TitanGame(2, noShuffleRandom)
   game.activeBattle = battle
   return game
 }

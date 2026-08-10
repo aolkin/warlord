@@ -2,7 +2,6 @@ import { createPinia, setActivePinia } from "pinia"
 import { beforeEach, describe, expect, it } from "vitest"
 import { Battle } from "@/models/battle"
 import { CreatureType } from "@/models/creature"
-import { newGame } from "@/models/game.testUtils"
 import { HexEdge } from "@/models/masterboard"
 import { PlayerId } from "@/models/player"
 import { Random } from "@/models/random"
@@ -12,6 +11,12 @@ import { MasterboardPhase, TitanGame } from "./game"
 // nextPhase deselects the selected stack via the Pinia selection store directly
 // (not through commit), so an active Pinia is needed for it to run at all.
 beforeEach(() => setActivePinia(createPinia()))
+
+const noShuffleRandom: Random = { shuffle: collection => [...collection] }
+
+function newGame(numPlayers = 2): TitanGame {
+  return new TitanGame(numPlayers, noShuffleRandom)
+}
 
 describe("TitanGame", () => {
   it("assigns player colors via the injected Random instead of a fixed order", () => {
