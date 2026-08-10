@@ -21,7 +21,6 @@ Written July 2026. The last feature commit landed January 2023 and the last depe
 | [03-framework-and-rendering.md](03-framework-and-rendering.md) | Vue vs. Svelte, SVG vs. canvas, rendering performance |
 | [04-state-management.md](04-state-management.md) | Vuex → Pinia, decoupling game logic from the store |
 | [05-multiplayer-architecture.md](05-multiplayer-architecture.md) | Preparing for server-mediated multiplayer |
-| [06-ui-chrome.md](06-ui-chrome.md) | Vuetify 4, fonts, icons |
 | [07-testing-and-code-quality.md](07-testing-and-code-quality.md) | Test infrastructure, type strictness, cleanup |
 | [08-bundle-size.md](08-bundle-size.md) | Production bundle size: dice-box chunking, lazy-loading, Vuetify/icon tree-shaking |
 
@@ -34,4 +33,4 @@ Written July 2026. The last feature commit landed January 2023 and the last depe
 5. **Multiplayer groundwork** (doc 05): engine extraction behind a local-server interface while touching the store anyway.
 6. **Rendering** (doc 03): measure once the store refactor has landed, then decide on Vapor/canvas.
 
-Doc 06 (UI chrome) is done — the Vuetify 4 upgrade and the fonts change it proposed both landed. Doc 08 (bundle size) is resolved except one open item: a Vite/Rolldown chunk-duplication bug in dice-box's `world.offscreen.js` build output, non-urgent since lazy-loading already keeps that chunk off the critical path.
+Doc 06 (UI chrome) is fully landed; the doc has been removed. Doc 08 (bundle size) is resolved except one open item: a Vite/Rolldown chunk-duplication bug in dice-box's `world.offscreen.js` build output, non-urgent since lazy-loading already keeps that chunk off the critical path.
