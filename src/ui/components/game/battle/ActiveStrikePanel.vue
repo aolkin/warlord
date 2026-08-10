@@ -34,7 +34,7 @@
         <span v-if="creature.getRemainingHp() < 1">The {{ creature.name() }} is dead.</span>
       </v-card-item>
       <v-card-text v-if="activeStrike">
-        <span v-if="activeStrike?.canCarryover && gameStore.battleCarryoverTargets">
+        <span v-if="activeStrike?.canCarryover && battle.carryoverTargets()">
           You may still carry over {{ hitsString(activeStrike.getCarryoverHits()) }}.
         </span>
         <span v-else-if="activeStrike?.canCarryover">
@@ -47,7 +47,7 @@
           No hits remain to carry over.
         </span>
       </v-card-text>
-      <v-card-actions v-if="gameStore.battleCarryoverTargets">
+      <v-card-actions v-if="battle.carryoverTargets()">
         <v-btn
           block
           variant="outlined"
@@ -63,14 +63,11 @@
 <script setup lang="ts">
 import { computed } from "vue"
 import { ActiveStrike, Battle, BattleCreature, Strike } from "@/models/battle"
-import { useGameStore } from "~/stores/game"
 import StrikePanelTitle from "./StrikePanelTitle.vue"
 
 const props = defineProps<{
   battle: Battle
 }>()
-
-const gameStore = useGameStore()
 
 const activeStrike = computed((): ActiveStrike | undefined => props.battle.activeStrike)
 const attacker = computed((): BattleCreature | undefined =>
