@@ -52,11 +52,11 @@
           v-if="activePhase === MasterboardPhase.SPLIT"
           class="split-guide"
         >
-          <v-card-text v-if="firstRound">
+          <v-card-text v-if="game.round === 0">
             You must split your starting creatures. Please select four creatures (including one lord) above
             to split into a separate stack.
             <div
-              v-if="props.focusedStack?.isValidSplit(firstRound)"
+              v-if="props.focusedStack?.isValidSplit(game.round === 0)"
               class="first-round-success"
             >
               You have selected a valid split and may roll the die
@@ -135,7 +135,6 @@ const selectionStore = useSelectionStore()
 
 const activePhase = computed(() => game.activePhase)
 const activePlayerId = computed(() => gameStore.activePlayerId)
-const firstRound = computed(() => gameStore.firstRound)
 
 const owned = computed((): boolean => activePlayerId.value === props.focusedStack?.owner)
 

@@ -155,7 +155,7 @@ const isMandatory = computed(() => {
   }
   switch (game.activePhase) {
     case MasterboardPhase.SPLIT:
-      return !props.stack.isValidSplit(gameStore.firstRound)
+      return !props.stack.isValidSplit(game.round === 0)
     case MasterboardPhase.MOVE:
       return gameStore.mandatoryMoves.includes(props.stack)
   }
