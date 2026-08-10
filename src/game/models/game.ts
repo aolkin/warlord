@@ -7,7 +7,7 @@ import { GamePersistence, gamePersistence } from "./game/persistence"
 import masterboard, { HexEdge, MasterboardHex } from "./masterboard"
 import { Player, PlayerId } from "./player"
 import { defaultRandom, Random } from "./random"
-import { finalizeSplit, MusterChoice, Stack } from "./stack"
+import { finalizeSplit, MusterChoice, Stack, StackRef } from "./stack"
 
 const INITIAL_HEXES: Record<number, number[]> = {
   2: [100, 400],
@@ -30,8 +30,8 @@ export interface Path {
   path: MasterboardHex[]
 }
 
-export interface MovePayload { stack: Stack, hex: number | MasterboardHex, edge?: HexEdge }
-export interface MusterPayload { stack: Stack, recruit: MusterChoice }
+export interface MovePayload { stack: StackRef, hex: number, edge?: HexEdge }
+export interface MusterPayload { stack: StackRef, recruit: MusterChoice }
 
 // gameBattle/gamePersistence are mixed onto TitanGame.prototype by the Object.assign below,
 // which the type checker cannot see; this interface declares what they contribute.
@@ -237,17 +237,17 @@ export class TitanGame {
   }
 
   async move({ stack, hex, edge }: MovePayload): Promise<void> {
+    const movingStack = this.stacks.find(s => s.id === stack)
+    assert(movingStack !== undefined, `No stack with id ${stack}`)
     assert(this.activePhase === MasterboardPhase.MOVE, "Innappropriate phase")
-    stack.attackEdge = edge
-    if (hex instanceof MasterboardHex) {
-      stack.hex = hex.id
-    } else {
-      stack.hex = hex
-    }
+    movingStack.attackEdge = edge
+    movingStack.hex = hex
   }
 
   async setRecruit({ stack, recruit }: MusterPayload): Promise<void> {
-    if (!stack.canMuster()) {
+    const recruitingStack = this.stacks.find(s => s.id === stack)
+    assert(recruitingStack !== undefined, `No stack with id ${stack}`)
+    if (!recruitingStack.canMuster()) {
       throw new Error("Stack is not eligible to muster!")
     }
     if (recruit !== undefined &&
@@ -255,7 +255,7 @@ export class TitanGame {
       throw new Error("No more of the requested creature remaining")
     }
     assert(this.activePhase === MasterboardPhase.MUSTER, "Innappropriate phase")
-    stack.currentMuster = recruit
+    recruitingStack.currentMuster = recruit
   }
 
   static hydrate(persisted?: string): TitanGame {

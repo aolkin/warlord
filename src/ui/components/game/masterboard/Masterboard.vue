@@ -25,7 +25,7 @@
               :path-index="index"
               :path-length="activeRoll!"
               :position-on-path="distance"
-              @click.stop="moveStack(distance, foe, hex)"
+              @click.stop="moveStack(distance, foe, hex.id)"
             />
           </g>
         </g>
@@ -127,11 +127,11 @@ const canFreeMove = computed((): boolean =>
   game.activePhase === MasterboardPhase.MOVE &&
   selectionStore.selectedStack !== undefined && preferencesStore.freeMovement)
 
-function moveStack(distance: number, foe: boolean, hex: MasterboardHex): void {
+function moveStack(distance: number, foe: boolean, hex: number): void {
   if (distance !== activeRoll.value - 1 || focusedStack.value?.hasMoved() || foe) {
     return
   }
-  void game.move({ stack: focusedStack.value!, hex })
+  void game.move({ stack: focusedStack.value!.id, hex })
   selectionStore.deselectStack()
 }
 </script>
