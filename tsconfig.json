@@ -2,8 +2,7 @@
   "compilerOptions": {
     "target": "esnext",
     "module": "esnext",
-    "moduleResolution": "node10",
-    "ignoreDeprecations": "6.0",
+    "moduleResolution": "bundler",
     "lib": ["esnext", "dom", "dom.iterable"],
     "strict": true,
     "jsx": "preserve",
