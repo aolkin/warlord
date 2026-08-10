@@ -129,6 +129,8 @@ const potentialEngagements = computed((): HexEdge[] => {
   } else if (game.getStacksForHex(props.stack.hex)
     .some((stack: Stack) => stack.owner === game.getActivePlayerId())) {
     return []
+  } else if (!game.isMovePhase()) {
+    return []
   } else if (game.canTitanTeleport(selectionStore.selectedStack) || preferencesStore.freeMovement) {
     if (masterboard.getHex(props.stack.hex).terrain === Terrain.TOWER) {
       // Battle's constructor normalizes all Tower attacks to this edge regardless of
