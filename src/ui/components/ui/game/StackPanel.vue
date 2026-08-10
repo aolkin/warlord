@@ -42,14 +42,14 @@
           :type="creature"
           :player-id="props.focusedStack.owner"
           :class="{ splitting: props.focusedStack.split[index],
-                    interactive: activePhase === MasterboardPhase.SPLIT && owned }"
+                    interactive: game.activePhase === MasterboardPhase.SPLIT && owned }"
           class="ma-1"
           @click="toggleSplit(index)"
         />
       </div>
-      <template v-if="activePlayerId === props.focusedStack.owner">
+      <template v-if="game.getActivePlayerId() === props.focusedStack.owner">
         <v-card-actions
-          v-if="activePhase === MasterboardPhase.SPLIT"
+          v-if="game.activePhase === MasterboardPhase.SPLIT"
           class="split-guide"
         >
           <v-card-text v-if="game.round === 0">
@@ -85,21 +85,21 @@
           </v-card-text>
         </v-card-actions>
         <template
-          v-else-if="activePhase === MasterboardPhase.MUSTER ||
-            (activePhase === MasterboardPhase.MOVE &&
+          v-else-if="game.activePhase === MasterboardPhase.MUSTER ||
+            (game.activePhase === MasterboardPhase.MOVE &&
               selectionStore.focusedHex !== undefined && props.focusedStack.hex !== selectionStore.focusedHex.id)"
         >
           <v-card-title>Mustering Options ({{ musteringTerrainName }})</v-card-title>
           <MusterChoices
-            v-if="activePhase === MasterboardPhase.MOVE || props.focusedStack.canMuster()"
+            v-if="game.activePhase === MasterboardPhase.MOVE || props.focusedStack.canMuster()"
             v-model="mustering"
             class="px-2 pb-1"
-            :can-decline="activePhase === MasterboardPhase.MUSTER"
+            :can-decline="game.activePhase === MasterboardPhase.MUSTER"
             :musterable="musterable"
             :player-id="props.focusedStack.owner"
           />
           <v-card-subtitle
-            v-if="activePhase === MasterboardPhase.MUSTER"
+            v-if="game.activePhase === MasterboardPhase.MUSTER"
             class="mb-3"
           >
             {{ musteringCaption }}
@@ -133,16 +133,13 @@ const gameStore = useGameStore()
 const game = gameStore.game
 const selectionStore = useSelectionStore()
 
-const activePhase = computed(() => game.activePhase)
-const activePlayerId = computed(() => game.getActivePlayerId())
-
-const owned = computed((): boolean => activePlayerId.value === props.focusedStack?.owner)
+const owned = computed((): boolean => game.getActivePlayerId() === props.focusedStack?.owner)
 
 const stackPlayer = computed((): Player | undefined => props.focusedStack === undefined
   ? undefined
   : game.getPlayerById(props.focusedStack.owner))
 
-const musteringTerrain = computed((): Terrain => activePhase.value === MasterboardPhase.MUSTER
+const musteringTerrain = computed((): Terrain => game.activePhase === MasterboardPhase.MUSTER
   ? masterboard.getHex(props.focusedStack?.hex as number).terrain
   : selectionStore.focusedHex?.terrain as Terrain)
 
@@ -156,7 +153,7 @@ const mustering = computed({
     return props.focusedStack?.currentMuster
   },
   set(value: MusterChoice) {
-    if (activePhase.value !== MasterboardPhase.MUSTER) {
+    if (game.activePhase !== MasterboardPhase.MUSTER) {
       return
     }
     void game.setRecruit({ stack: props.focusedStack!.id, recruit: value })
@@ -189,7 +186,7 @@ const musteringCaption = computed(() => {
 })
 
 function toggleSplit(index: number): void {
-  if (activePhase.value === MasterboardPhase.SPLIT &&
+  if (game.activePhase === MasterboardPhase.SPLIT &&
     (props.focusedStack?.creatures.length ?? 0) > 2) {
     const stack = props.focusedStack!
     togglePendingSplit(stack, index)
@@ -202,8 +199,8 @@ function cycleStacks(by: number): void {
   do {
     index += by
     candidateStack = gameStore.activeStacks[mod(index, gameStore.activeStacks.length)]
-  } while ((activePhase.value === MasterboardPhase.MOVE && candidateStack.hasMoved()) ||
-  (activePhase.value === MasterboardPhase.MUSTER && !candidateStack.canMuster()))
+  } while ((game.activePhase === MasterboardPhase.MOVE && candidateStack.hasMoved()) ||
+  (game.activePhase === MasterboardPhase.MUSTER && !candidateStack.canMuster()))
   selectionStore.selectStack(candidateStack)
 }
 </script>
