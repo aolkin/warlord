@@ -39,7 +39,7 @@ describe("TitanGame movement legality", () => {
 
   it("excludes a destination occupied by the mover's own stack, but flags one occupied by an enemy stack", () => {
     const ownStackGame = newGame()
-    ownStackGame.stacks.push(new Stack(ownStackGame.players[0].id, 3, 5))
+    ownStackGame.stacks.push(new Stack(ownStackGame.players[0].id, 3, 5, ownStackGame.round))
     ownStackGame.activePhase = MasterboardPhase.MOVE
     ownStackGame.activeRoll = 1
     const ownDestinations = ownStackGame.getPathsForHex(100)
@@ -47,7 +47,7 @@ describe("TitanGame movement legality", () => {
     expect(ownDestinations).toEqual([41, 101])
 
     const enemyStackGame = newGame()
-    enemyStackGame.stacks.push(new Stack(enemyStackGame.players[1].id, 3, 5))
+    enemyStackGame.stacks.push(new Stack(enemyStackGame.players[1].id, 3, 5, enemyStackGame.round))
     enemyStackGame.activePhase = MasterboardPhase.MOVE
     enemyStackGame.activeRoll = 1
     const toEnemyHex = enemyStackGame.getPathsForHex(100).find(p => p.path.at(-1)!.id === 3)
@@ -286,7 +286,7 @@ describe("TitanGame mustering (setRecruit)", () => {
 
   it("refuses to record a recruit outside the muster phase", async () => {
     const game = newGame()
-    const stack = new Stack(game.players[0].id, 100, 1, [CreatureType.CENTAUR, CreatureType.CENTAUR])
+    const stack = new Stack(game.players[0].id, 100, 1, game.round, [CreatureType.CENTAUR, CreatureType.CENTAUR])
     stack.hex = 101 // moved, so otherwise eligible to muster
     game.stacks.push(stack)
     game.activePhase = MasterboardPhase.MOVE
@@ -303,7 +303,7 @@ describe("TitanGame mustering (setRecruit)", () => {
     creatureType, expectSuccess
   }) => {
     const game = newGame()
-    const stack = new Stack(game.players[0].id, 100, 1, [CreatureType.CENTAUR, CreatureType.CENTAUR])
+    const stack = new Stack(game.players[0].id, 100, 1, game.round, [CreatureType.CENTAUR, CreatureType.CENTAUR])
     stack.hex = 101 // moved
     game.stacks.push(stack)
     game.creaturePool[creatureType] = 0
@@ -321,7 +321,7 @@ describe("TitanGame mustering (setRecruit)", () => {
 
   it("applies the pending muster to the stack and pool when the muster phase ends", async () => {
     const game = newGame()
-    const stack = new Stack(game.players[0].id, 100, 1, [CreatureType.CENTAUR, CreatureType.CENTAUR])
+    const stack = new Stack(game.players[0].id, 100, 1, game.round, [CreatureType.CENTAUR, CreatureType.CENTAUR])
     stack.hex = 101
     game.stacks.push(stack)
     const poolBefore = game.creaturePool[CreatureType.LION]

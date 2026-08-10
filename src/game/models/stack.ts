@@ -21,13 +21,14 @@ export class Stack {
   readonly split: boolean[]
   readonly recruits: Record<number, MusterChoice>
   readonly id: number
+  readonly createdRound: number
 
   origin: number
   hex: number
   attackEdge: HexEdge | undefined
   currentMuster: MusterChoice | undefined
 
-  constructor(owner: PlayerId, start: number, marker: number, initial?: CreatureType[]) {
+  constructor(owner: PlayerId, start: number, marker: number, createdRound: number, initial?: CreatureType[]) {
     this.owner = owner
     this.creatures = initial ?? [CreatureType.TITAN, CreatureType.ANGEL,
       CreatureType.CENTAUR, CreatureType.CENTAUR,
@@ -39,6 +40,7 @@ export class Stack {
     this.marker = marker
     this.recruits = {}
     this.id = stackIdCounter++
+    this.createdRound = createdRound
   }
 
   numSplitting(): number {
@@ -121,11 +123,11 @@ export function togglePendingSplit(stack: Stack, index: number): void {
   stack.split[index] = !stack.split[index]
 }
 
-export function finalizeSplit(stack: Stack, marker: number): Stack {
+export function finalizeSplit(stack: Stack, marker: number, round: number): Stack {
   assert(stack.isValidSplit(), "Invalid split")
   assert(marker >= 0, "Invalid marker")
   const creatures = stack.getCreaturesSplit(true)
   remove(stack.creatures, (creature, index) => stack.split[index])
   stack.split.fill(false)
-  return new Stack(stack.owner, stack.hex, marker, creatures)
+  return new Stack(stack.owner, stack.hex, marker, round, creatures)
 }

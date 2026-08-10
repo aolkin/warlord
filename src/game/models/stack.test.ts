@@ -6,7 +6,7 @@ import { PlayerId } from "./player"
 
 describe("Stack splitting", () => {
   it("rejects a first-round split unless exactly 4 creatures split off with exactly one lord", () => {
-    const stack = new Stack(PlayerId.RED, 5, 0)
+    const stack = new Stack(PlayerId.RED, 5, 0, 0)
     // Default 8: [TITAN, ANGEL, CENTAUR, CENTAUR, OGRE, OGRE, GARGOYLE, GARGOYLE]
     expect(stack.isValidSplit(true)).toBe(false) // nothing marked yet
 
@@ -24,7 +24,7 @@ describe("Stack splitting", () => {
   })
 
   it("allows splitting off zero, or two-or-more leaving at least two behind, in later rounds", () => {
-    const stack = new Stack(PlayerId.RED, 5, 0)
+    const stack = new Stack(PlayerId.RED, 5, 0, 0)
     expect(stack.isValidSplit()).toBe(true) // no pending split is always valid outside round 1
 
     stack.split[0] = true
@@ -45,14 +45,14 @@ describe("Stack splitting", () => {
   })
 
   it("finalizes a split into a new stack sharing the same hex but a new marker", () => {
-    const stack = new Stack(PlayerId.RED, 5, 0)
+    const stack = new Stack(PlayerId.RED, 5, 0, 0)
     stack.split[0] = true
     stack.split[2] = true
     stack.split[4] = true
     stack.split[6] = true
     const splitOff = stack.getCreaturesSplit(true)
 
-    const newStack = finalizeSplit(stack, 1)
+    const newStack = finalizeSplit(stack, 1, 0)
 
     expect(newStack.owner).toBe(PlayerId.RED)
     expect(newStack.hex).toBe(5)
@@ -66,9 +66,9 @@ describe("Stack splitting", () => {
   })
 
   it("refuses to finalize an invalid split", () => {
-    const stack = new Stack(PlayerId.RED, 5, 0)
+    const stack = new Stack(PlayerId.RED, 5, 0, 0)
     stack.split[0] = true // only 1 marked, never valid
-    expect(() => finalizeSplit(stack, 1)).toThrow()
+    expect(() => finalizeSplit(stack, 1, 0)).toThrow()
   })
 })
 
@@ -78,7 +78,7 @@ describe("Stack mustering eligibility", () => {
     { label: "at the 7-creature cap", moved: true, creatureCount: 7, expected: false },
     { label: "moved and under the cap", moved: true, creatureCount: 1, expected: true }
   ])("canMuster() is $expected when $label", ({ moved, creatureCount, expected }) => {
-    const stack = new Stack(PlayerId.RED, 5, 0, new Array(creatureCount).fill(CreatureType.CENTAUR))
+    const stack = new Stack(PlayerId.RED, 5, 0, 0, new Array(creatureCount).fill(CreatureType.CENTAUR))
     if (moved) stack.hex = 6
 
     expect(stack.canMuster()).toBe(expected)
@@ -94,7 +94,7 @@ describe("Stack musterable (recruit-tier constraints)", () => {
   ])("unlocks the Lion muster tier only once 2 Centaurs are present ($centaurCount Centaur(s))", ({
     centaurCount, lionBases
   }) => {
-    const stack = new Stack(PlayerId.RED, 5, 0, new Array(centaurCount).fill(CreatureType.CENTAUR))
+    const stack = new Stack(PlayerId.RED, 5, 0, 0, new Array(centaurCount).fill(CreatureType.CENTAUR))
     const possibilities = stack.musterable(Terrain.PLAINS)
 
     const [, centaurBases] = possibilities.find(([type]) => type === CreatureType.CENTAUR)!
@@ -107,13 +107,13 @@ describe("Stack musterable (recruit-tier constraints)", () => {
   it("still locks the Ranger tier behind Lions specifically, even once Centaurs unlock the Lion tier", () => {
     // Ranger requires 2 Lions specifically, not 2 Centaurs, so it stays locked even with
     // enough Centaurs to unlock Lion.
-    const stack = new Stack(PlayerId.RED, 5, 0, [CreatureType.CENTAUR, CreatureType.CENTAUR])
+    const stack = new Stack(PlayerId.RED, 5, 0, 0, [CreatureType.CENTAUR, CreatureType.CENTAUR])
     const [, rangerBases] = stack.musterable(Terrain.PLAINS).find(([type]) => type === CreatureType.RANGER)!
     expect(rangerBases).toEqual([])
   })
 
   it("always offers the tower's basic recruits regardless of stack contents", () => {
-    const stack = new Stack(PlayerId.RED, 100, 0, [CreatureType.CENTAUR])
+    const stack = new Stack(PlayerId.RED, 100, 0, 0, [CreatureType.CENTAUR])
     const possibilities = stack.musterable(Terrain.TOWER)
 
     for (const type of [CreatureType.CENTAUR, CreatureType.OGRE, CreatureType.GARGOYLE]) {
@@ -123,22 +123,22 @@ describe("Stack musterable (recruit-tier constraints)", () => {
   })
 
   it("only offers a Guardian once 3 of any one creature type are present", () => {
-    const shortOfThree = new Stack(PlayerId.RED, 100, 0, [CreatureType.CENTAUR, CreatureType.CENTAUR])
+    const shortOfThree = new Stack(PlayerId.RED, 100, 0, 0, [CreatureType.CENTAUR, CreatureType.CENTAUR])
     const [, noGuardian] = shortOfThree.musterable(Terrain.TOWER).find(([t]) => t === CreatureType.GUARDIAN)!
     expect(noGuardian).toEqual([])
 
-    const threeOfAKind = new Stack(PlayerId.RED, 100, 0,
+    const threeOfAKind = new Stack(PlayerId.RED, 100, 0, 0,
       [CreatureType.CENTAUR, CreatureType.CENTAUR, CreatureType.CENTAUR])
     const [, guardianBases] = threeOfAKind.musterable(Terrain.TOWER).find(([t]) => t === CreatureType.GUARDIAN)!
     expect(guardianBases).toEqual([[CreatureType.CENTAUR, 3]])
   })
 
   it("only offers a Warlock when a Titan is present", () => {
-    const noTitan = new Stack(PlayerId.RED, 100, 0, [CreatureType.CENTAUR])
+    const noTitan = new Stack(PlayerId.RED, 100, 0, 0, [CreatureType.CENTAUR])
     const [, noWarlock] = noTitan.musterable(Terrain.TOWER).find(([t]) => t === CreatureType.WARLOCK)!
     expect(noWarlock).toEqual([])
 
-    const withTitan = new Stack(PlayerId.RED, 100, 0, [CreatureType.TITAN])
+    const withTitan = new Stack(PlayerId.RED, 100, 0, 0, [CreatureType.TITAN])
     const [, warlockBases] = withTitan.musterable(Terrain.TOWER).find(([t]) => t === CreatureType.WARLOCK)!
     expect(warlockBases).toEqual([[CreatureType.TITAN, 1]])
   })
