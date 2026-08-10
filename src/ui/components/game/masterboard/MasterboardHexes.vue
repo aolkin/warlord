@@ -31,6 +31,11 @@ const selectionStore = useSelectionStore()
 const hexes = computed(() => masterboard.getHexIds())
 
 function move(hex: number): void {
+  // A foe-occupied hex triggers an engagement via the enemy stack's attack-edge picker,
+  // not this click handler.
+  if (game.getStacksForHex(hex).length > 0) {
+    return
+  }
   void game.move({ stack: selectionStore.requireSelectedStack().id, hex })
 }
 </script>
