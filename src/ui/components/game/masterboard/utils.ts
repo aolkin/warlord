@@ -1,5 +1,5 @@
 import MASTERBOARD, { BoardArea } from "@/models/masterboard"
-import { Transformation, Transformations, TransformationType } from "~/utils/svg"
+import { applyTransforms, Point, Transformation, Transformations, TransformationType } from "~/utils/svg"
 
 const TRIANGLE_HEIGHT_FACTOR = Math.sqrt(3) / 2
 export const TRIANGLE_SIDE = 100
@@ -44,6 +44,23 @@ export function hexTransform(hexId: number): Transformations {
       break
   }
   return new Transformations(rotation, new Transformation(TransformationType.TRANSLATE, [x, y]))
+}
+
+export function hexCenter(hexId: number): Point {
+  return applyTransforms(hexTransform(hexId), [0, 0])
+}
+
+// The rotation (degrees) that, applied in hexId's own local frame before hexTransform's
+// sector rotation is layered on top, places a child element on the side of hexId that faces
+// neighborId. hexTransform rotates each hex's whole local frame by hex.getSide() * -60 to
+// assemble the six board sectors from one shared template, so a child's rotation has to
+// cancel that sector rotation to land on the correct physical side once the two compose.
+export function localBearingToNeighbor(hexId: number, neighborId: number): number {
+  const [hexX, hexY] = hexCenter(hexId)
+  const [neighborX, neighborY] = hexCenter(neighborId)
+  const worldBearing = Math.atan2(neighborY - hexY, neighborX - hexX) * 180 / Math.PI
+  const sectorRotation = MASTERBOARD.getHex(hexId).getSide() * -60
+  return worldBearing - sectorRotation - 90
 }
 
 export function isHexInverted(hexId: number): boolean {

@@ -73,11 +73,21 @@ import { Transformation, Transformations, TransformationType } from "~/utils/svg
 import EngageIcon from "../../ui/game/EngageIcon.vue"
 import Creature from "../Creature.vue"
 import PlayerMarker from "../Marker.vue"
-import { hexTransform, isHexInverted } from "./utils"
+import { hexTransform, isHexInverted, localBearingToNeighbor } from "./utils"
 
-const getEngageTransformForEdge = (edge: HexEdge): Transformations => {
+// hexTransform rotates each hex's local frame by hex.getSide() * -60 to assemble the six
+// board sectors from one shared template (see utils.ts); a fixed rotation here would only
+// point at the right physical edge for hexes sharing one particular sector alignment. Look
+// up the edge's real neighbor and derive the rotation that lands on its actual side instead.
+// Some hexes don't model an edge in every HexEdge direction (e.g. Land hexes with no spur
+// connection), which only comes up for Titan Teleportation's "any of the three edges" offer
+// (10.4) rather than a real approach direction; fall back to the fixed angle there since
+// there's no real neighbor to aim at.
+const getEngageTransformForEdge = (hexId: number, edge: HexEdge): Transformations => {
+  const neighbor = masterboard.getHex(hexId).getEdges().find((e: MasterboardEdge) => e.hexEdge === edge)?.hex
+  const rotation = neighbor === undefined ? edge * 120 + 60 : localBearingToNeighbor(hexId, neighbor.id)
   const transforms = new Transformations()
-  transforms.push(new Transformation(TransformationType.ROTATE, [edge * 120 + 60]))
+  transforms.push(new Transformation(TransformationType.ROTATE, [rotation]))
   transforms.push(new Transformation(TransformationType.TRANSLATE,
     [0, edge === HexEdge.SECOND ? 50 : 60]))
   transforms.push(new Transformation(TransformationType.SCALE, [0.75]))
@@ -151,7 +161,7 @@ const potentialEngagements = computed((): HexEdge[] => {
 })
 
 const engageable = computed((): [HexEdge, Transformations][] =>
-  potentialEngagements.value.map(edge => [edge, getEngageTransformForEdge(edge)]))
+  potentialEngagements.value.map(edge => [edge, getEngageTransformForEdge(props.stack.hex, edge)]))
 
 const engaged = computed((): boolean => isActivePlayer.value && game.getStacksForHex(props.stack.hex)
   .some((stack: Stack) => stack.owner !== game.getActivePlayerId()))
