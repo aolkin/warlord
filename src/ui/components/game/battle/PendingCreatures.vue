@@ -36,14 +36,13 @@ const emit = defineEmits<{
 }>()
 
 const gameStore = useGameStore()
-const game = gameStore.game
 
 const showRemove = computed(() => props.interactive &&
   (props.selectedCreature?.initialHex ?? -1) >= 36 &&
   (props.selectedCreature?.hex ?? -1) < 36)
 
 function removeSelected(creature: BattleCreature): void {
-  void game.moveCreature({ creature, hex: creature.initialHex })
+  gameStore.dispatch({ type: "moveCreature", creature: creature.id, hex: creature.initialHex })
 }
 </script>
 <style scoped lang="sass">

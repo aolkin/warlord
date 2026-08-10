@@ -34,7 +34,7 @@
           block
           variant="outlined"
           :disabled="!mayProceed"
-          @click="game.nextBattlePhase()"
+          @click="gameStore.dispatch({ type: 'nextBattlePhase' })"
         >
           End {{ phaseTypeTitle }}
         </v-btn>

@@ -51,7 +51,7 @@
         <v-btn
           block
           variant="outlined"
-          @click="game.skipCarryover()"
+          @click="gameStore.dispatch({ type: 'skipCarryover' })"
         >
           Skip Carry Over
         </v-btn>
@@ -71,7 +71,6 @@ const props = defineProps<{
 }>()
 
 const gameStore = useGameStore()
-const game = gameStore.game
 
 const activeStrike = computed((): ActiveStrike | undefined => props.battle.activeStrike)
 const attacker = computed((): BattleCreature | undefined =>

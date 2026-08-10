@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest"
+import { dispatch } from "@/models/actions"
 import { CREATURE_DATA, CreatureType } from "@/models/creature"
 import type { TitanGame } from "@/models/game"
 import { newGame } from "@/models/game.testUtils"
@@ -32,36 +33,52 @@ function place(creature: BattleCreature, hex: number): void {
 }
 
 describe("Battle engagement", () => {
-  it("moves into contact, resolves a strike, and inflicts casualties", async () => {
+  it("moves into contact, resolves a strike, and inflicts casualties", () => {
     const { battle, offense, defense } = setupBattle(Terrain.PLAINS, [CreatureType.LION], [CreatureType.CENTAUR])
     const [lion] = offense
     const [centaur] = defense
 
+    const game = createGameWithActiveBattle(battle)
     // Defender moves first each round; hex 7 is within the Centaur's reach from its
     // entrance and adjacent to hex 8, which the Lion can reach on its own move.
     expect(battle.movementFor(centaur).has(7)).toBe(true)
-    centaur.hex = 7
+    expect(dispatch(game, { type: "moveCreature", creature: centaur.id, hex: 7 }))
+      .toEqual({ accepted: true })
     // Nothing is on the board to engage yet, so strike/strikeback for both sides
     // are auto-skipped straight through to the attacker's move.
-    nextPhase(battle)
+    expect(dispatch(game, { type: "nextBattlePhase" })).toEqual({ accepted: true })
     expect(battle.phase).toBe(BattlePhase.ATTACKER_MOVE)
 
     expect(battle.movementFor(lion).has(8)).toBe(true)
-    lion.hex = 8
-    nextPhase(battle)
+    expect(dispatch(game, { type: "moveCreature", creature: lion.id, hex: 8 }))
+      .toEqual({ accepted: true })
+    expect(dispatch(game, { type: "nextBattlePhase" })).toEqual({ accepted: true })
     expect(battle.phase).toBe(BattlePhase.ATTACKER_STRIKE)
     expect(battle.engagedWith(lion)).toEqual([centaur])
     expect(battle.getPendingStrikes()).toEqual([lion])
 
     const toHit = battle.toHitAdjusted(lion, centaur)
     expect(toHit).toBe(5) // 4 - (lion skill 3 - centaur skill 4), no terrain adjustment
-    const game = createGameWithActiveBattle(battle)
-    await game.attackCreature({ attacker: lion, target: centaur, rolls: [6, 6, 6, 6, 6] })
+    expect(dispatch(game, {
+      type: "attackCreature", attacker: lion.id, target: centaur.id, rolls: [6, 6, 6, 6, 6]
+    })).toEqual({ accepted: true })
 
     expect(lion.hasStruck).toBe(true)
     expect(centaur.wounds).toBe(3) // Centaur's full strength (3); capped, not overkill
     expect(centaur.getRemainingHp()).toBe(0)
     expect(centaur.hex).toBe(7) // corpses stay on the board until phaseExitStrikeback
+  })
+
+  it("rejects an action referencing an unknown creature id or another player's creature", () => {
+    const { battle, offense } = setupBattle(Terrain.PLAINS, [CreatureType.LION], [CreatureType.CENTAUR])
+    const [lion] = offense
+    const game = createGameWithActiveBattle(battle)
+
+    // The battle opens on the defender's move; the lion belongs to the attacker.
+    expect(dispatch(game, { type: "moveCreature", creature: 999999, hex: 7 }))
+      .toEqual({ accepted: false, reason: "Unexpected creature" })
+    expect(dispatch(game, { type: "moveCreature", creature: lion.id, hex: 7 }))
+      .toEqual({ accepted: false, reason: "Incorrect player" })
   })
 })
 
@@ -123,8 +140,13 @@ describe("Rangestrike targets", () => {
   it("cannot rangestrike while already engaged in melee", () => {
     // Hex 7 is adjacent to the Ranger's hex 8, so this is melee range, not rangestrike
     // range - rangestrike is unavailable regardless of what else is in range.
-    const { battle, attacker } = setupRanger(CreatureType.RANGER, 7)
+    const { battle, attacker, target } = setupRanger(CreatureType.RANGER, 7)
     expect(battle.rangestrikeTargets(attacker)).toEqual([])
+    // A rangestrike action only names its target by id, so its legality is recomputed
+    // from state on dispatch and an ineligible target rejects.
+    expect(dispatch(createGameWithActiveBattle(battle), {
+      type: "rangestrikeCreature", attacker: attacker.id, target: target.id, rolls: [6, 6]
+    })).toEqual({ accepted: false, reason: "Unexpected defender" })
   })
 
   it("gives a Dragon bonus dice when rangestriking out of its native volcano hazard", () => {
@@ -252,30 +274,49 @@ describe("Carryover", () => {
     return { battle, lion, centaur1, centaur2 }
   }
 
-  it("assigns overflow hits from an overkill strike to another engaged target", async () => {
+  it("assigns overflow hits from an overkill strike to another engaged target", () => {
     const { battle, lion, centaur1, centaur2 } = setupTripleEngagement()
 
     const game = createGameWithActiveBattle(battle)
-    await game.attackCreature({ attacker: lion, target: centaur1, rolls: [6, 6, 6, 6, 6] })
+    expect(dispatch(game, {
+      type: "attackCreature", attacker: lion.id, target: centaur1.id, rolls: [6, 6, 6, 6, 6]
+    })).toEqual({ accepted: true })
     expect(centaur1.getRemainingHp()).toBe(0)
     expect(battle.activeStrike?.canCarryover).toBe(true)
     // getCarryoverHits = 5 total hits - 3 assigned to centaur1
     expect(battle.activeStrike?.getCarryoverHits()).toBe(2)
     expect(battle.carryoverTargets()).toEqual([centaur2])
 
-    await game.assignCarryover(centaur2)
+    expect(dispatch(game, { type: "assignCarryover", target: centaur2.id })).toEqual({ accepted: true })
     expect(centaur2.wounds).toBe(2)
     expect(battle.activeStrike?.canCarryover).toBe(false) // no hits left to carry over
   })
 
-  it("stops carryover once skipCarryover is called", async () => {
+  it("rejects assigning carryover to a creature the strike cannot reach", () => {
+    const { battle, lion, centaur1, centaur2 } = setupTripleEngagement()
+
+    const game = createGameWithActiveBattle(battle)
+    expect(dispatch(game, {
+      type: "attackCreature", attacker: lion.id, target: centaur1.id, rolls: [6, 6, 6, 6, 6]
+    })).toEqual({ accepted: true })
+
+    expect(dispatch(game, { type: "assignCarryover", target: lion.id }))
+      .toEqual({ accepted: false, reason: "Unexpected target" })
+    expect(dispatch(game, { type: "assignCarryover", target: centaur2.id })).toEqual({ accepted: true })
+    expect(dispatch(game, { type: "assignCarryover", target: centaur2.id }))
+      .toEqual({ accepted: false, reason: "Cannot carryover" }) // no hits left to carry over
+  })
+
+  it("stops carryover once skipCarryover is called", () => {
     const { battle, lion, centaur1 } = setupTripleEngagement()
 
     const game = createGameWithActiveBattle(battle)
-    await game.attackCreature({ attacker: lion, target: centaur1, rolls: [6, 6, 6, 6, 6] })
+    expect(dispatch(game, {
+      type: "attackCreature", attacker: lion.id, target: centaur1.id, rolls: [6, 6, 6, 6, 6]
+    })).toEqual({ accepted: true })
     expect(battle.activeStrike?.canCarryover).toBe(true)
 
-    await game.skipCarryover()
+    expect(dispatch(game, { type: "skipCarryover" })).toEqual({ accepted: true })
 
     expect(battle.activeStrike?.canCarryover).toBe(false)
     expect(battle.carryoverTargets()).toBeUndefined()
@@ -470,7 +511,7 @@ describe("Engagement edge cases", () => {
     expect(battle.engagedWith(centaur)).toEqual([])
   })
 
-  it("excludes an engaged creature from carryover if the attacker cannot hit it at the toHit it just rolled", async () => {
+  it("excludes an engaged creature from carryover if the attacker cannot hit it at the toHit it just rolled", () => {
     // Terrain.TOWER's battle board has battle-hex 8 atop a wall edge from battle-hex 2,
     // which raises toHit by 1 for an attacker striking up through it.
     const { battle, offense, defense } = setupBattle(Terrain.TOWER,
@@ -483,12 +524,14 @@ describe("Engagement edge cases", () => {
     place(included, 3) // toHit 5, no hazard - matches the rolled toHit, so carryover-eligible
     place(excluded, 8) // toHit 6, raised by the wall - harder than the rolled toHit
 
-    await createGameWithActiveBattle(battle).attackCreature({ attacker: lion, target: primary, rolls: [6, 6, 6, 6, 6] })
+    expect(dispatch(createGameWithActiveBattle(battle), {
+      type: "attackCreature", attacker: lion.id, target: primary.id, rolls: [6, 6, 6, 6, 6]
+    })).toEqual({ accepted: true })
     expect(primary.getRemainingHp()).toBe(0) // overkilled, so it drops out of engagedWith too
     expect(battle.carryoverTargets()).toEqual([included])
   })
 
-  it("lets a strike choose a higher toHit than computed, but rejects a lower one", async () => {
+  it("lets a strike choose a higher toHit than computed, but rejects a lower one", () => {
     const { battle, offense, defense } = setupBattle(Terrain.PLAINS, [CreatureType.LION], [CreatureType.CENTAUR])
     battle.phase = BattlePhase.ATTACKER_STRIKE
     const [lion] = offense
@@ -499,19 +542,21 @@ describe("Engagement edge cases", () => {
     const computedToHit = battle.toHitAdjusted(lion, centaur)
     expect(computedToHit).toBe(5)
     const game = createGameWithActiveBattle(battle)
-    await expect(game.attackCreature({
-      attacker: lion, target: centaur, rolls: [6, 6, 6, 6, 6], optionalToHit: computedToHit - 1
-    })).rejects.toThrow("Cannot choose a lower to-hit")
+    expect(dispatch(game, {
+      type: "attackCreature", attacker: lion.id, target: centaur.id,
+      rolls: [6, 6, 6, 6, 6], optionalToHit: computedToHit - 1
+    })).toEqual({ accepted: false, reason: "Cannot choose a lower to-hit" })
 
-    await game.attackCreature({
-      attacker: lion, target: centaur, rolls: [6, 6, 6, 6, 6], optionalToHit: computedToHit + 1
-    })
+    expect(dispatch(game, {
+      type: "attackCreature", attacker: lion.id, target: centaur.id,
+      rolls: [6, 6, 6, 6, 6], optionalToHit: computedToHit + 1
+    })).toEqual({ accepted: true })
     expect(battle.activeStrike?.toHit).toBe(computedToHit + 1)
     // A roll of 6 still clears the raised toHit of 6, so all 5 dice hit (capped at HP 3).
     expect(centaur.wounds).toBe(3)
   })
 
-  it("resolves a rangestrike attack the same way as a melee strike, but never allows carryover", async () => {
+  it("resolves a rangestrike attack the same way as a melee strike, but never allows carryover", () => {
     const { battle, offense, defense } = setupBattle(Terrain.PLAINS, [CreatureType.RANGER], [CreatureType.CENTAUR])
     battle.phase = BattlePhase.ATTACKER_STRIKE
     const [ranger] = offense
@@ -524,7 +569,9 @@ describe("Engagement edge cases", () => {
     // Ranger has strength 4, so per rule 12.2 (dice = floor(power / 2)) a rangestrike rolls
     // exactly 2 dice.
     expect(battle.getRangestrike(ranger, targets[0]).dice).toBe(2)
-    await createGameWithActiveBattle(battle).rangestrikeCreature({ attacker: ranger, target: targets[0], rolls: [6, 6] })
+    expect(dispatch(createGameWithActiveBattle(battle), {
+      type: "rangestrikeCreature", attacker: ranger.id, target: centaur.id, rolls: [6, 6]
+    })).toEqual({ accepted: true })
 
     expect(ranger.hasStruck).toBe(true)
     expect(centaur.wounds).toBe(2)
@@ -595,6 +642,9 @@ describe("Battle phase transitions", () => {
     nextPhase(battle) // -> DEFENDER_STRIKE, Centaur is now pending and never strikes
     expect(battle.getPendingStrikes()).toEqual([centaur])
     expect(() => nextPhase(battle)).toThrow("All eligible creatures must strike")
+    // The dispatch layer rejects the same condition instead of throwing.
+    expect(dispatch(createGameWithActiveBattle(battle), { type: "nextBattlePhase" }))
+      .toEqual({ accepted: false, reason: "All eligible creatures must strike" })
   })
 
   it("resets hasStruck for creatures on both sides whenever a strike phase is entered", () => {

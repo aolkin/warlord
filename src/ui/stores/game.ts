@@ -1,5 +1,6 @@
 import { defineStore } from "pinia"
 import { computed, reactive, watch } from "vue"
+import { ActionResult, GameAction, dispatch } from "@/models/actions"
 import { TitanGame } from "@/models/game"
 
 const GAME_PERSISTENCE_KEY = "warlord-v1"
@@ -47,6 +48,15 @@ export const useGameStore = defineStore("game", () => {
     battleActivePlayer,
     battlePhaseType,
     battleCarryoverTargets,
+    dispatch: (action: GameAction): ActionResult => {
+      // Vue's UnwrapNestedRefs can't reconstruct Battle's private methods, so the reactive
+      // proxy's inferred type structurally mismatches TitanGame - cast it back.
+      const result = dispatch(game as TitanGame, action)
+      if (!result.accepted) {
+        console.error(`Rejected ${action.type} action: ${result.reason}`, action)
+      }
+      return result
+    },
     reset: (): void => { Object.assign(game, new TitanGame(2)) }
   }
 })
