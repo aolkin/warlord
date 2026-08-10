@@ -86,8 +86,8 @@ export const gameBattle: GameBattle & ThisType<TitanGame> = {
     if (this.activeBattle === undefined) { throw new Error("Must be in a battle!") }
     assert(this.getBattlePhaseType() !== BattlePhaseType.MOVE, "Cannot strike in movement phase")
     assert(attacker.player === this.getBattleActivePlayer(), "Incorrect player")
-    assert(this.activeBattle?.creatures.some(matches(attacker)) ?? false, "Unexpected attacker")
-    assert(this.activeBattle?.creatures.some(matches(target)) ?? false, "Unexpected defender")
+    assert(this.activeBattle.creatures.some(matches(attacker)), "Unexpected attacker")
+    assert(this.activeBattle.creatures.some(matches(target)), "Unexpected defender")
     const battle = this.activeBattle!
     let toHit = battle.toHitAdjusted(attacker, target)
     if (optionalToHit !== undefined) {
@@ -101,8 +101,8 @@ export const gameBattle: GameBattle & ThisType<TitanGame> = {
     if (this.activeBattle === undefined) { throw new Error("Must be in a battle!") }
     assert(this.getBattlePhaseType() !== BattlePhaseType.MOVE, "Cannot strike in movement phase")
     assert(attacker.player === this.getBattleActivePlayer(), "Incorrect player")
-    assert(this.activeBattle?.creatures.some(matches(attacker)) ?? false, "Unexpected attacker")
-    assert(this.activeBattle?.creatures.some(matches(target.creature)) ?? false, "Unexpected defender")
+    assert(this.activeBattle.creatures.some(matches(attacker)), "Unexpected attacker")
+    assert(this.activeBattle.creatures.some(matches(target.creature)), "Unexpected defender")
     const battle = this.activeBattle!
     const computedStrike = battle.getRangestrike(attacker, target)
     performAttack(battle, attacker, target.creature, rolls, computedStrike.toHit, true)
@@ -111,7 +111,7 @@ export const gameBattle: GameBattle & ThisType<TitanGame> = {
   async assignCarryover(target: BattleCreature): Promise<void> {
     if (this.activeBattle === undefined) { throw new Error("Must be in a battle!") }
     assert(this.getBattlePhaseType() !== BattlePhaseType.MOVE, "Cannot carryover in movement phase")
-    assert(this.activeBattle?.creatures.some(matches(target)) ?? false, "Unexpected target")
+    assert(this.activeBattle.creatures.some(matches(target)), "Unexpected target")
     const battle = this.activeBattle!
     // Using an optional chain prevents typescript from learning that battle.activeStrike is present
     assert(battle.activeStrike !== undefined &&
