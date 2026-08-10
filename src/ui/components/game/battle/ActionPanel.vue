@@ -34,7 +34,7 @@
           block
           variant="outlined"
           :disabled="!mayProceed"
-          @click="game.nextBattlePhase()"
+          @click="battle.nextBattlePhase()"
         >
           End {{ phaseTypeTitle }}
         </v-btn>

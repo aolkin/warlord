@@ -38,6 +38,13 @@ export interface BattleSide {
   creatures: CreatureType[]
 }
 
+export interface BattleMovePayload { creature: BattleCreature["id"], hex: number }
+interface IStrikePayload { attacker: BattleCreature["id"], rolls: number[] }
+export interface AttackPayload extends IStrikePayload { target: BattleCreature["id"], optionalToHit?: number }
+export interface RangestrikePayload extends IStrikePayload {
+  target: Omit<RangestrikeTarget, "creature"> & { creature: BattleCreature["id"] }
+}
+
 export class Battle {
   readonly attackerEdge: HexEdge
   readonly terrain: Terrain
@@ -468,6 +475,66 @@ export class Battle {
     } else {
       return this.getAdjustedStrike(attacker, target)
     }
+  }
+
+  // Actions
+
+  async moveCreature(payload: BattleMovePayload): Promise<void> {
+    const creature = this.creatures.find(c => c.id === payload.creature)
+    assert(creature !== undefined, "Unexpected creature")
+    assert(BATTLE_PHASE_TYPES[this.phase] === BattlePhaseType.MOVE, "Not in movement phase")
+    assert(creature.player === this.getActivePlayer(), "Incorrect player")
+    creature.hex = payload.hex
+  }
+
+  async nextBattlePhase(): Promise<void> {
+    nextPhase(this)
+  }
+
+  async attackCreature({ attacker, target, rolls, optionalToHit }: AttackPayload): Promise<void> {
+    const { attackerCreature, targetCreature } = this.resolveStrikingCreatures(attacker, target)
+    let toHit = this.toHitAdjusted(attackerCreature, targetCreature)
+    if (optionalToHit !== undefined) {
+      assert(optionalToHit >= toHit, "Cannot choose a lower to-hit")
+      toHit = optionalToHit
+    }
+    performAttack(this, attackerCreature, targetCreature, rolls, toHit, false)
+  }
+
+  async rangestrikeCreature({ attacker, target, rolls }: RangestrikePayload): Promise<void> {
+    const { attackerCreature, targetCreature } = this.resolveStrikingCreatures(attacker, target.creature)
+    const computedStrike = this.getRangestrike(attackerCreature, { ...target, creature: targetCreature })
+    performAttack(this, attackerCreature, targetCreature, rolls, computedStrike.toHit, true)
+  }
+
+  async assignCarryover(target: BattleCreature["id"]): Promise<void> {
+    const targetCreature = this.creatures.find(c => c.id === target)
+    assert(targetCreature !== undefined, "Unexpected target")
+    assert(BATTLE_PHASE_TYPES[this.phase] !== BattlePhaseType.MOVE, "Cannot carryover in movement phase")
+    // Using an optional chain prevents typescript from learning that activeStrike is present
+    assert(this.activeStrike !== undefined &&
+      this.activeStrike.canCarryover, "Cannot carryover")
+    const hits = Math.min(this.activeStrike.getCarryoverHits(), targetCreature.getRemainingHp())
+    this.activeStrike.targets.push(targetCreature.hex)
+    this.activeStrike.targetHits.push(hits)
+    wound(targetCreature, hits)
+  }
+
+  async skipCarryover(): Promise<void> {
+    if (this.activeStrike === undefined) { throw new Error("Must have an active strike!") }
+    assert(BATTLE_PHASE_TYPES[this.phase] !== BattlePhaseType.MOVE, "Cannot carryover in movement phase")
+    this.activeStrike.carryoverSkipped = true
+  }
+
+  private resolveStrikingCreatures(attackerId: BattleCreature["id"], targetId: BattleCreature["id"]):
+    { attackerCreature: BattleCreature, targetCreature: BattleCreature } {
+    const attackerCreature = this.creatures.find(c => c.id === attackerId)
+    assert(attackerCreature !== undefined, "Unexpected attacker")
+    const targetCreature = this.creatures.find(c => c.id === targetId)
+    assert(targetCreature !== undefined, "Unexpected defender")
+    assert(BATTLE_PHASE_TYPES[this.phase] !== BattlePhaseType.MOVE, "Cannot strike in movement phase")
+    assert(attackerCreature.player === this.getActivePlayer(), "Incorrect player")
+    return { attackerCreature, targetCreature }
   }
 
 }
