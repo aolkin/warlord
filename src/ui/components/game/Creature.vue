@@ -15,7 +15,7 @@
       y="0"
       class="background"
     />
-    <template v-if="type === undefined">
+    <template v-if="!isCreatureType(type)">
       <text
         x="50"
         :y="18 + (noneLabelWords.length - 1) * -16"
@@ -152,20 +152,22 @@ const STANDARD_CREATURE_COLORS: Record<CreatureType, TitanColor> = {
 }
 
 const props = withDefaults(defineProps<{
-  type?: CreatureType
+  type: CreatureType | string
   playerId?: PlayerId
   inSvg?: boolean
   transform?: string
   wounds?: number
-  noneLabel?: string
 }>(), {
-  type: undefined,
   playerId: undefined,
   inSvg: false,
   transform: "",
-  wounds: 0,
-  noneLabel: undefined
+  wounds: 0
 })
+
+// A plain string `type` (rather than a real CreatureType) signals the placeholder "none" state.
+function isCreatureType(type: CreatureType | string): type is CreatureType {
+  return typeof type === "number"
+}
 
 const gameStore = useGameStore()
 const preferencesStore = usePreferencesStore()
@@ -174,12 +176,13 @@ const theme = useTheme()
 const playerScore = computed(() => props.playerId !== undefined ? gameStore.game.score[props.playerId] : undefined)
 
 const creature = computed((): Creature | undefined =>
-  props.type !== undefined ? CREATURE_DATA[props.type] : undefined)
+  isCreatureType(props.type) ? CREATURE_DATA[props.type] : undefined)
 
 const creatureName = computed((): string => creature.value?.name.toUpperCase() ?? "")
 
-const imageUrl = computed(() => new URL(`../../assets/creatures/${CreatureType[props.type ?? 0]}.svg`,
-  import.meta.url).href)
+const imageUrl = computed(() => isCreatureType(props.type)
+  ? new URL(`../../assets/creatures/${CreatureType[props.type]}.svg`, import.meta.url).href
+  : "")
 
 const fullTransform = computed(() => props.inSvg ? props.transform + " translate(-50 -50)" : "")
 
@@ -188,6 +191,10 @@ const strength = computed(() => creature.value?.getStrength(playerScore.value ??
 const dead = computed((): boolean => props.wounds >= (strength.value ?? 1))
 
 const classes = computed(() => {
+  // The none state has no owning player to color-code, so it always gets the standard styling.
+  if (!isCreatureType(props.type)) {
+    return { none: true, standard: true }
+  }
   const classMap: Record<string, boolean> = {
     [creature.value?.name.toLowerCase() ?? "none"]: true,
     "uniform-text": [CreatureColorMode.PLAYER_UNIFORM_TEXT,
@@ -208,7 +215,7 @@ const titanStrength = computed(() => ({
 }))
 
 const filter = computed(() => {
-  let color = theme.current.value.colors[STANDARD_CREATURE_COLORS[props.type ?? 0]]
+  let color = theme.current.value.colors[STANDARD_CREATURE_COLORS[isCreatureType(props.type) ? props.type : CreatureType.ANGEL]]
   if (props.playerId !== undefined) {
     if (creature.value?.lord || [CreatureColorMode.PLAYER_UNIFORM_TEXT,
       CreatureColorMode.PLAYER].includes(preferencesStore.creatureColorMode)) {
@@ -218,7 +225,8 @@ const filter = computed(() => {
   return FilterCache.getForHex(color).filter
 })
 
-const noneLabelWords = computed((): string[] => props.noneLabel?.split(/\s/) ?? ["NONE"])
+const noneLabelWords = computed((): string[] =>
+  isCreatureType(props.type) ? [] : props.type.split(/\s/))
 </script>
 
 <style scoped lang="sass">

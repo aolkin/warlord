@@ -12,8 +12,7 @@
     />
     <Creature
       v-if="interactive && canLeaveBoard"
-      :player-id="game.activeBattle?.getActivePlayer()"
-      none-label="Put Back"
+      type="Put Back"
       class="ma-1 interactive"
       @click="emit('remove')"
     />
@@ -21,7 +20,6 @@
 </template>
 <script setup lang="ts">
 import { BattleCreature } from "@/models/battle"
-import { useGameStore } from "~/stores/game"
 import Creature from "../Creature.vue"
 
 defineProps<{
@@ -35,8 +33,6 @@ const emit = defineEmits<{
   select: [creature: BattleCreature]
   remove: []
 }>()
-
-const game = useGameStore().game
 </script>
 <style scoped lang="sass">
 .interactive
