@@ -16,9 +16,13 @@ function toBattleSide(stack: Stack, score: number): BattleSide {
   return { player: stack.owner, score, creatures: stack.creatures }
 }
 
-function resolveStrikingCreatures(game: TitanGame, attackerId: BattleCreature["id"], targetId: BattleCreature["id"]): { battle: Battle, attackerCreature: BattleCreature, targetCreature: BattleCreature } {
+function requireActiveBattle(game: TitanGame): Battle {
   if (game.activeBattle === undefined) { throw new Error("Must be in a battle!") }
-  const battle = game.activeBattle
+  return game.activeBattle
+}
+
+function resolveStrikingCreatures(game: TitanGame, attackerId: BattleCreature["id"], targetId: BattleCreature["id"]): { battle: Battle, attackerCreature: BattleCreature, targetCreature: BattleCreature } {
+  const battle = requireActiveBattle(game)
   const attackerCreature = battle.creatures.find(c => c.id === attackerId)
   assert(attackerCreature !== undefined, "Unexpected attacker")
   const targetCreature = battle.creatures.find(c => c.id === targetId)
@@ -115,8 +119,7 @@ export const gameBattle: GameBattle & ThisType<TitanGame> = {
   },
 
   async assignCarryover(target: BattleCreature["id"]): Promise<void> {
-    if (this.activeBattle === undefined) { throw new Error("Must be in a battle!") }
-    const battle = this.activeBattle
+    const battle = requireActiveBattle(this)
     const targetCreature = battle.creatures.find(c => c.id === target)
     assert(targetCreature !== undefined, "Unexpected target")
     assert(this.getBattlePhaseType() !== BattlePhaseType.MOVE, "Cannot carryover in movement phase")
@@ -130,9 +133,9 @@ export const gameBattle: GameBattle & ThisType<TitanGame> = {
   },
 
   async skipCarryover(): Promise<void> {
-    if (this.activeBattle === undefined) { throw new Error("Must be in a battle!") }
-    if (this.activeBattle.activeStrike === undefined) { throw new Error("Must have an active strike!") }
+    const battle = requireActiveBattle(this)
+    if (battle.activeStrike === undefined) { throw new Error("Must have an active strike!") }
     assert(this.getBattlePhaseType() !== BattlePhaseType.MOVE, "Cannot carryover in movement phase")
-    this.activeBattle.activeStrike.carryoverSkipped = true
+    battle.activeStrike.carryoverSkipped = true
   }
 }
