@@ -44,7 +44,7 @@
       </v-card-actions>
       <v-card-actions v-else-if="activePhase === MasterboardPhase.MOVE">
         <v-btn
-          v-if="game.getMulliganAvailable()"
+          v-if="game.isMulliganAvailable()"
           block
           variant="outlined"
           title="On the first round only, you may opt to re-roll your die once."

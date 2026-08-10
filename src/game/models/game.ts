@@ -163,7 +163,7 @@ export class TitanGame {
     }
   }
 
-  getMulliganAvailable(): boolean {
+  isMulliganAvailable(): boolean {
     return this.round === 0 && !this.mulliganTaken &&
       !this.getActiveStacks().some(stack => stack.hasMoved())
   }
@@ -223,7 +223,7 @@ export class TitanGame {
 
   async setRoll(payload?: number): Promise<void> {
     if (payload === undefined && this.activeRoll !== undefined) {
-      assert(this.getMulliganAvailable(), "Mulligan unavailable")
+      assert(this.isMulliganAvailable(), "Mulligan unavailable")
     }
     assert(this.activePhase === MasterboardPhase.MOVE, "Innappropriate phase")
     if (payload === undefined && this.activeRoll !== undefined) {
