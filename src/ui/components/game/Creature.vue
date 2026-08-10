@@ -183,13 +183,7 @@ const imageUrl = computed(() => new URL(`../../assets/creatures/${CreatureType[p
 
 const fullTransform = computed(() => props.inSvg ? props.transform + " translate(-50 -50)" : "")
 
-const strength = computed(() => {
-  if (props.type === CreatureType.TITAN) {
-    return Math.floor((player.value?.score ?? 0) / 100) + (creature.value?.strength ?? 0)
-  } else {
-    return creature.value?.strength
-  }
-})
+const strength = computed(() => creature.value?.getStrength(player.value?.score ?? 0))
 
 const dead = computed((): boolean => props.wounds >= (strength.value ?? 1))
 
