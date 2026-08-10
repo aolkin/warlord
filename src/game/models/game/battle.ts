@@ -16,14 +16,16 @@ function toBattleSide(stack: Stack, score: number): BattleSide {
   return { player: stack.owner, score, creatures: stack.creatures }
 }
 
-function resolveStrikingAttacker(game: TitanGame, attackerId: BattleCreature["id"]): { battle: Battle, attackerCreature: BattleCreature } {
+function resolveStrikingCreatures(game: TitanGame, attackerId: BattleCreature["id"], targetId: BattleCreature["id"]): { battle: Battle, attackerCreature: BattleCreature, targetCreature: BattleCreature } {
   if (game.activeBattle === undefined) { throw new Error("Must be in a battle!") }
   const battle = game.activeBattle
   const attackerCreature = battle.creatures.find(c => c.id === attackerId)
   assert(attackerCreature !== undefined, "Unexpected attacker")
+  const targetCreature = battle.creatures.find(c => c.id === targetId)
+  assert(targetCreature !== undefined, "Unexpected defender")
   assert(game.getBattlePhaseType() !== BattlePhaseType.MOVE, "Cannot strike in movement phase")
   assert(attackerCreature.player === game.getBattleActivePlayer(), "Incorrect player")
-  return { battle, attackerCreature }
+  return { battle, attackerCreature, targetCreature }
 }
 
 export interface GameBattle {
@@ -97,9 +99,7 @@ export const gameBattle: GameBattle & ThisType<TitanGame> = {
   },
 
   async attackCreature({ attacker, target, rolls, optionalToHit }: AttackPayload): Promise<void> {
-    const { battle, attackerCreature } = resolveStrikingAttacker(this, attacker)
-    const targetCreature = battle.creatures.find(c => c.id === target)
-    assert(targetCreature !== undefined, "Unexpected defender")
+    const { battle, attackerCreature, targetCreature } = resolveStrikingCreatures(this, attacker, target)
     let toHit = battle.toHitAdjusted(attackerCreature, targetCreature)
     if (optionalToHit !== undefined) {
       assert(optionalToHit >= toHit, "Cannot choose a lower to-hit")
@@ -109,9 +109,7 @@ export const gameBattle: GameBattle & ThisType<TitanGame> = {
   },
 
   async rangestrikeCreature({ attacker, target, rolls }: RangestrikePayload): Promise<void> {
-    const { battle, attackerCreature } = resolveStrikingAttacker(this, attacker)
-    const targetCreature = battle.creatures.find(c => c.id === target.creature)
-    assert(targetCreature !== undefined, "Unexpected defender")
+    const { battle, attackerCreature, targetCreature } = resolveStrikingCreatures(this, attacker, target.creature)
     const computedStrike = battle.getRangestrike(attackerCreature, { ...target, creature: targetCreature })
     performAttack(battle, attackerCreature, targetCreature, rolls, computedStrike.toHit, true)
   },
