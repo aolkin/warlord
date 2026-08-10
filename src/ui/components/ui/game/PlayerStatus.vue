@@ -34,7 +34,7 @@
       </v-tooltip>
       <div
         class="text-center"
-        v-text="player.score"
+        v-text="game.score[player.id]"
       />
     </v-card>
   </div>

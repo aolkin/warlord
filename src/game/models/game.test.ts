@@ -261,6 +261,18 @@ describe("TitanGame roll setting (setRoll)", () => {
   })
 })
 
+describe("TitanGame persistence", () => {
+  it("round-trips a non-zero score through hydrate", () => {
+    const game = newGame()
+    game.score[game.players[0].id] = 250
+
+    const rehydrated = TitanGame.hydrate(JSON.stringify(game))
+
+    expect(rehydrated.score[game.players[0].id]).toBe(250)
+    expect(rehydrated.score[game.players[1].id]).toBe(0)
+  })
+})
+
 describe("TitanGame mustering (setRecruit)", () => {
   it("refuses to record a recruit for a stack that isn't eligible to muster", async () => {
     const game = newGame()

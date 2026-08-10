@@ -52,8 +52,8 @@ export const gameBattle: GameBattle & ThisType<TitanGame> = {
       `No engagement present on hex ${attackingStack.hex}!`)
     assert(attackingStack.attackEdge !== undefined, "Cannot attack without coming from somewhere")
     const terrain = masterboard.getHex(attackingStack.hex).terrain
-    const attackingSide = toBattleSide(attackingStack, this.getPlayerById(attackingStack.owner).score)
-    const defendingSide = toBattleSide(defending, this.getPlayerById(defending.owner).score)
+    const attackingSide = toBattleSide(attackingStack, this.score[attackingStack.owner])
+    const defendingSide = toBattleSide(defending, this.score[defending.owner])
     this.activeBattle = new Battle(terrain, attackingStack.attackEdge, attackingSide, defendingSide)
     this.activeBattleHex = attackingStack.hex
   },
