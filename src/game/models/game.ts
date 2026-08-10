@@ -168,6 +168,18 @@ export class TitanGame {
       !this.getActiveStacks().some(stack => stack.hasMoved())
   }
 
+  isSplitPhase(): boolean {
+    return this.activePhase === MasterboardPhase.SPLIT
+  }
+
+  isMovePhase(): boolean {
+    return this.activePhase === MasterboardPhase.MOVE
+  }
+
+  isMusterPhase(): boolean {
+    return this.activePhase === MasterboardPhase.MUSTER
+  }
+
   getEngagedStacks(): Stack[] {
     const activePlayerId = this.getActivePlayerId()
     return this.getActiveStacks()

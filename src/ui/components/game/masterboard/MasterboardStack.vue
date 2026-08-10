@@ -201,7 +201,7 @@ function select(): void {
   if (!isActivePlayer.value) {
     return
   }
-  if (game.activePhase === MasterboardPhase.MOVE && props.stack.hasMoved()) {
+  if (game.isMovePhase() && props.stack.hasMoved()) {
     if (!game.getStacksForHex(props.stack.origin).some((stack: Stack) => stack.hasMoved())) {
       void game.move({ stack: props.stack.id, hex: props.stack.origin })
     }

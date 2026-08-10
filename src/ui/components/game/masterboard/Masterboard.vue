@@ -58,7 +58,7 @@
 <script setup lang="ts">
 import { computed, shallowReactive } from "vue"
 import { range, sortBy } from "lodash-es"
-import { MasterboardPhase, Path } from "@/models/game"
+import { Path } from "@/models/game"
 import masterboard, { MasterboardHex } from "@/models/masterboard"
 import { Stack } from "@/models/stack"
 import { useGameStore } from "~/stores/game"
@@ -124,7 +124,7 @@ const interleavedPaths = computed((): [boolean, MasterboardHex][][] =>
       [row.foe !== undefined, row.path[colIndex]])).slice(1))
 
 const canFreeMove = computed((): boolean =>
-  game.activePhase === MasterboardPhase.MOVE &&
+  game.isMovePhase() &&
   selectionStore.selectedStack !== undefined && preferencesStore.freeMovement)
 
 function moveStack(distance: number, foe: boolean, hex: number): void {

@@ -8,7 +8,7 @@
     <template #prepend>
       <v-icon size="x-large" />
     </template>
-    <v-card-text v-if="game.activePhase === MasterboardPhase.SPLIT">
+    <v-card-text v-if="game.isSplitPhase()">
       <span v-if="game.getMayProceed()">
         Split stacks if desired, or proceed to roll.
         <span v-if="sevenHighCount > 0">
@@ -19,7 +19,7 @@
         You must adjust your stack splits before rolling.
       </span>
     </v-card-text>
-    <v-card-text v-else-if="game.activePhase === MasterboardPhase.MOVE">
+    <v-card-text v-else-if="game.isMovePhase()">
       Moved {{ movedCount }} of {{ gameStore.activeStacks.length }} stacks. {{ engagementsMessage }}
       <span v-if="movedCount < 1">
         You must move at least one stack!
@@ -28,11 +28,11 @@
         You must move at least one stack from each split if possible.
       </span>
     </v-card-text>
-    <v-card-text v-else-if="game.activePhase === MasterboardPhase.MUSTER">
+    <v-card-text v-else-if="game.isMusterPhase()">
       Mustered a recruit in {{ musteredCount }} of {{ gameStore.activeStacks.length }} stacks.
     </v-card-text>
     <v-fade-transition leave-absolute>
-      <v-card-actions v-if="game.activePhase === MasterboardPhase.SPLIT">
+      <v-card-actions v-if="game.isSplitPhase()">
         <v-btn
           block
           :disabled="!game.getMayProceed()"
@@ -42,7 +42,7 @@
           Finish Splits and Roll
         </v-btn>
       </v-card-actions>
-      <v-card-actions v-else-if="game.activePhase === MasterboardPhase.MOVE">
+      <v-card-actions v-else-if="game.isMovePhase()">
         <v-btn
           v-if="game.isMulliganAvailable()"
           block
@@ -62,7 +62,7 @@
           {{ game.getEngagedStacks().length > 0 ? "Proceed to Battle" : "Proceed to Muster" }}
         </v-btn>
       </v-card-actions>
-      <v-card-actions v-else-if="game.activePhase === MasterboardPhase.MUSTER">
+      <v-card-actions v-else-if="game.isMusterPhase()">
         <v-btn
           block
           variant="outlined"
