@@ -76,7 +76,7 @@
           @mouseleave="leaveCreature(creature)"
         />
         <EngageIcon
-          v-for="(creature) in (activeBattle?.carryoverTargets() ?? engagements)"
+          v-for="(creature) in (carryoverTargets ?? engagements)"
           :key="creature.hex"
           interactive
           transparent-hover
@@ -228,6 +228,7 @@ const engagements = computed<BattleCreature[]>(() =>
   selectedCreature.value === undefined ? [] : activeBattle.value!.engagedWith(selectedCreature.value))
 const rangestrikes = computed<RangestrikeTarget[]>(() =>
   selectedCreature.value === undefined ? [] : activeBattle.value!.rangestrikeTargets(selectedCreature.value))
+const carryoverTargets = computed((): BattleCreature[] | undefined => activeBattle.value?.carryoverTargets())
 
 function selectCreature(selection: BattleCreature): void {
   selectedCreature.value = selectedCreature.value === selection ? undefined : selection
@@ -338,7 +339,7 @@ function creatureEnabled(creature: BattleCreature): boolean {
       }
 
     case BattlePhaseType.STRIKEBACK:
-      return activeBattle.value?.carryoverTargets() === undefined && !creature.hasStruck && engagementsCount > 0
+      return carryoverTargets.value === undefined && !creature.hasStruck && engagementsCount > 0
     default:
       return false
   }
@@ -382,9 +383,8 @@ function chooseCreature(creature: BattleCreature): void {
 }
 
 function targetCreature(creature: BattleCreature | RangestrikeTarget): void {
-  const carryoverTargets = activeBattle.value?.carryoverTargets()
-  if (!("creature" in creature) && activeStrike.value?.canCarryover && carryoverTargets) {
-    if (carryoverTargets.includes(creature)) {
+  if (!("creature" in creature) && activeStrike.value?.canCarryover && carryoverTargets.value) {
+    if (carryoverTargets.value.includes(creature)) {
       void activeBattle.value!.assignCarryover(creature.id)
     }
   } else {
