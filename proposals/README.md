@@ -5,8 +5,8 @@ Written July 2026. The last feature commit landed January 2023 and the last depe
 ## Current state, briefly
 
 - Vue 3.2.45 (transitive only — `vue` is not even a direct dependency), Options API components
-- Vuex 4 wired to plain TypeScript model classes via runtime reflection over method-name prefixes
-- Vuetify 3.1, Vite 2.9, TypeScript pinned `<4.5.0`, ESLint 7 with `.eslintrc`, yarn classic
+- Pinia for state management, wrapping plain TypeScript model classes
+- Vuetify 4.1, Vite 8.1, TypeScript 6.0, ESLint 10 with flat config, pnpm
 - Vestigial Nuxt 3 RC and Vue CLI dependencies that are not part of the actual build
 - CI builds on EOL Node 18 with outdated actions and deploys to GitHub Pages; no lint, typecheck, or test steps
 - No tests of any kind
@@ -31,8 +31,7 @@ Written July 2026. The last feature commit landed January 2023 and the last depe
 2. **Toolchain** (doc 01): everything else is easier on current Vite/TS/ESLint, and none of it changes app behavior.
 3. **Mechanical model split + tests around game logic** (doc 07): the models are pure TypeScript and testable today; do this before refactoring them.
 4. **State management** (doc 04): the Vuex-reflection layer is the biggest structural obstacle to both performance work and multiplayer.
-5. **UI chrome** (doc 06): Vuetify 4 upgrade. Feasible in parallel with step 6 — it touches chrome components and the Vuetify plugin while multiplayer groundwork lives in models/store, so the file overlap is small.
-6. **Multiplayer groundwork** (doc 05): engine extraction behind a local-server interface while touching the store anyway.
-7. **Rendering** (doc 03): measure once the store refactor has landed, then decide on Vapor/canvas.
+5. **Multiplayer groundwork** (doc 05): engine extraction behind a local-server interface while touching the store anyway.
+6. **Rendering** (doc 03): measure once the store refactor has landed, then decide on Vapor/canvas.
 
-Doc 08 (bundle size) doesn't depend on anything above and can land whenever, including alongside or before step 1 — including the Vuetify/icon tree-shaking, which is worth doing ahead of step 5 rather than folded into it, since it doesn't need the v4 upgrade to land first.
+Doc 06 (UI chrome) is done — the Vuetify 4 upgrade and the fonts change it proposed both landed. Doc 08 (bundle size) is resolved except one open item: a Vite/Rolldown chunk-duplication bug in dice-box's `world.offscreen.js` build output, non-urgent since lazy-loading already keeps that chunk off the critical path.

@@ -1,32 +1,20 @@
 # UI Chrome
 
-The chrome is Vuetify 3.1: app bar, panels, dialogs, menus. The owner has accepted that modernization may change its look somewhat; the game UI itself (boards, creatures, markers) is custom SVG and unaffected by anything here.
+The chrome is Vuetify 4.1: app bar, panels, dialogs, menus. The game UI itself (boards, creatures, markers) is custom SVG and unaffected by anything here.
 
-## Vuetify 3.1 → 4.x (recommended)
+## Vuetify 4 (done)
 
-Vuetify 4 (current: 4.1.x, released late 2025) adopts Material Design 3, CSS cascade layers, a `system` default theme that follows OS light/dark preference, and a simplified elevation scale. The upgrade guide ships revert snippets for each behavioral default it changes. Coming from 3.1 also picks up ~30 minors of 3.x fixes on the way.
+Upgraded from 3.1 to 4.1 (PR #139). Vuetify 4 shrank the elevation scale from 0-24 to 0-5 and changed `v-btn`'s default text-transform from uppercase to none: `StackPanel.vue`'s selected-stack elevation was clamped to the new max, and a global `VBtn` default (`class: "text-uppercase"` in `src/ui/plugins/vuetify.ts`) keeps button text uppercase as before. Vuetify 4 also dropped the old universal `* { margin: 0 }` reset; `StackPanel.vue`'s two `<p>` tags got an explicit `margin: 0` to preserve prior spacing. `vite-plugin-vuetify` (component tree-shaking, doc 08) needed no change — its 2.1.3 release already supports Vuetify 4.
 
-- **Pros:** stays on the current component API (no rewrite, unlike a library switch); MD3 refresh is exactly the sanctioned "chrome looks a bit different"; cascade layers make the custom SVG styling less likely to fight framework CSS.
-- **Cons:** grid/breakpoint changes need a visual pass over dialogs and side panels; MD3 look is a real change (roundier, tonal) — if unwanted, theme tokens can pull it back toward the old look.
-- **Alternatives:**
-  - **Stay on Vuetify 3.x latest** — smallest change, defers MD3; 3.x is now maintenance-track, so this only postpones.
-  - **Replace with headless components + Tailwind (Reka UI / shadcn-vue style)** — full control and lighter bundles, but a chrome rewrite for ~10 views with no functional gain; only worth bundling into a hypothetical Svelte rewrite (doc 03), which brings its own equivalents.
+## Icons: `@mdi/font` → per-icon SVG imports (rejected)
 
-## Icons: `@mdi/font` → per-icon SVG imports
+Proposed and closed twice (PR #98, plus a follow-up commit on the same branch). `@mdi/font` stays.
 
-The full MDI webfont ships every icon (~1000s) for the handful used. Vuetify supports `@mdi/js` SVG icons natively.
+## Fonts: `webfontloader` removed (done)
 
-- **Pros:** hundreds of KB off the payload; no font FOUT.
-- **Cons:** icons referenced by string name need converting to imports; trivial but fiddly.
+Replaced with `preconnect`/`stylesheet` `<link>` tags in `index.html` (PR #135). The `webfontloader` dependency and `src/ui/plugins/webfontloader.js` are gone.
 
-## Fonts: drop `webfontloader`
+## Small chrome opportunities
 
-`webfontloader` (JS runtime font loading, last meaningfully updated years ago) loads Roboto from Google Fonts. Modern practice is a `<link>` with `font-display: swap`, or better, self-hosted subset woff2 (e.g. via Fontsource) — which also removes the Google Fonts request entirely.
-
-- **Pros:** one less dependency and render-blocking script; self-hosting removes a third-party request (and its availability/privacy footprint).
-- **Cons:** none of substance.
-
-## Small chrome opportunities while in there
-
-- The `system` theme default in Vuetify 4 gives dark mode nearly free; the SVG boards would need a review pass for hard-coded colors.
-- PWA manifest + service worker (vite-plugin-pwa) would make the game installable/offline — a natural fit for a client-side game with localStorage saves. Con: service-worker cache invalidation is a classic footgun; keep the strategy minimal (precache app shell only). Revisit once multiplayer exists since offline semantics change.
+- Vuetify 4's `system` default theme (follows OS light/dark preference) — the app still pins `defaultTheme: "dark"`; adopting `system` needs a review pass over hard-coded SVG colors.
+- PWA manifest + service worker (`vite-plugin-pwa`) — not started. Revisit once multiplayer exists, since offline semantics change.
