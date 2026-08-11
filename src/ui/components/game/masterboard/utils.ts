@@ -1,4 +1,4 @@
-import MASTERBOARD, { BoardArea, HexEdge, MasterboardHex } from "@/models/masterboard"
+import MASTERBOARD, { BoardArea, HexEdge } from "@/models/masterboard"
 import { Transformation, Transformations, TransformationType } from "~/utils/svg"
 
 const TRIANGLE_HEIGHT_FACTOR = Math.sqrt(3) / 2
@@ -22,28 +22,28 @@ export function hexTransform(hexId: number): Transformations {
     throw new RangeError("Invalid hex")
   }
   const rotation = new Transformation(TransformationType.ROTATE, [hex.getSide() * -60])
-  const [x, y] = hexLocalOffset(hex)
-  return new Transformations(rotation, new Transformation(TransformationType.TRANSLATE, [x, y]))
-}
-
-// hex's (x, y) position within its own sector's shared template, before hexTransform's
-// hex.getSide() * -60 rotation places that sector onto the assembled board. Every one of the
-// six sectors reuses this same per-position layout, just rotated into place.
-function hexLocalOffset(hex: MasterboardHex): [number, number] {
+  let x = 0
+  let y = TRIANGLE_HEIGHT / 2
   switch (hex.getArea()) {
     case BoardArea.MIDDLE:
       if (hex.getSideIndex() < 2 || hex.getSideIndex() > 4) {
         const distFromCenter = hex.getSideIndex() - 3
-        return [TRIANGLE_SIDE / 2 * (distFromCenter - (distFromCenter > 0 ? 1 : -1)), TRIANGLE_HEIGHT * 2.5]
+        x = TRIANGLE_SIDE / 2 * (distFromCenter - (distFromCenter > 0 ? 1 : -1))
+        y = TRIANGLE_HEIGHT * 2.5
+      } else {
+        x = (hex.getSideIndex() - 3) * TRIANGLE_SIDE / 2
+        y = TRIANGLE_HEIGHT * 1.5
       }
-      return [(hex.getSideIndex() - 3) * TRIANGLE_SIDE / 2, TRIANGLE_HEIGHT * 1.5]
+      break
     case BoardArea.LOWER:
-      return [TRIANGLE_SIDE / 2 * (hex.getSideIndex() - 3), TRIANGLE_HEIGHT * 3.5]
+      x = TRIANGLE_SIDE / 2 * (hex.getSideIndex() - 3)
+      y = TRIANGLE_HEIGHT * 3.5
+      break
     case BoardArea.TOWER:
-      return [0, TRIANGLE_HEIGHT * 2.5]
-    default:
-      return [0, TRIANGLE_HEIGHT / 2]
+      y = TRIANGLE_HEIGHT * 2.5
+      break
   }
+  return new Transformations(rotation, new Transformation(TransformationType.TRANSLATE, [x, y]))
 }
 
 export function isHexInverted(hexId: number): boolean {
