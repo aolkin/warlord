@@ -199,8 +199,7 @@ function cycleStacks(by: number): void {
   do {
     index += by
     candidateStack = gameStore.activeStacks[mod(index, gameStore.activeStacks.length)]
-  } while ((game.isMovePhase() && Moveable.hasMoved(candidateStack)) ||
-  (game.isMusterPhase() && !Stack.canMuster(candidateStack)))
+  } while ((game.isMovePhase() || game.isMusterPhase()) && !game.isStackActive(candidateStack))
   selectionStore.selectStack(candidateStack)
 }
 </script>
