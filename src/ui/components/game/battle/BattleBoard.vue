@@ -1,162 +1,150 @@
 <template>
   <div
     class="battleboard-root"
-    :class="activeBattle === undefined ? 'inactive' : Terrain[terrain].toLowerCase()"
+    :class="Terrain[terrain].toLowerCase()"
   >
-    <svg
-      v-if="activeBattle === undefined"
-      class="no-active-battle"
-      viewBox="-100 -50 200 100"
+    <v-card
+      position="absolute"
+      location="top left"
+      class="ma-3 ml-14"
     >
-      <text
-        x="0"
-        y="0"
-      >No Active Battle!</text>
-    </svg>
-    <template v-else>
-      <v-card
-        position="absolute"
-        location="top left"
-        class="ma-3 ml-14"
+      <v-card-title>Battle Land: {{ Terrain[terrain] }}</v-card-title>
+      <v-card-title>
+        Round: {{ battle.round + 1 }} - {{ BATTLE_PHASE_TITLES[battle.phase] }}
+      </v-card-title>
+      <v-card-subtitle v-if="preferencesStore.debugUi && focusedBattleHex !== undefined">
+        Hex: {{ focusedBattleHex }} ({{ Hazard[board.getHazard(focusedBattleHex)] }})
+        <span v-if="board.getElevation(focusedBattleHex) > 0">+{{ board.getElevation(focusedBattleHex) }}</span>
+      </v-card-subtitle>
+    </v-card>
+    <svg
+      class="board"
+      viewBox="-450 -450 800 800"
+      @click="deselectCreature"
+    >
+      <BattleBoardHex
+        v-for="hex in BATTLE_BOARD_HEXES"
+        :key="hex"
+        :elevation="board.getElevation(hex)"
+        :hazard="board.getHazard(hex)"
+        :edge-hazards="edgeHazardsByHex[hex]"
+        :interactive="battlePhaseType === BattlePhaseType.MOVE && movementHexes.has(hex)"
+        :transform="hexTransformStr(hex)"
+        :class="{ [`hex-${hex}`]: true, 'available-move': movementHexes.has(hex) }"
+        @click="moveSelected(hex)"
+        @mouseenter="enterBattleHex(hex)"
+        @mouseleave="leaveBattleHex(hex)"
+      />
+      <g
+        v-if="preferencesStore.debugUi"
+        class="debug-ui"
       >
-        <v-card-title>Battle Land: {{ Terrain[terrain] }}</v-card-title>
-        <v-card-title>
-          Round: {{ activeBattle.round + 1 }} - {{ BATTLE_PHASE_TITLES[activeBattle.phase] }}
-        </v-card-title>
-        <v-card-subtitle v-if="preferencesStore.debugUi && focusedBattleHex !== undefined">
-          Hex: {{ focusedBattleHex }} ({{ Hazard[board.getHazard(focusedBattleHex)] }})
-          <span v-if="board.getElevation(focusedBattleHex) > 0">+{{ board.getElevation(focusedBattleHex) }}</span>
-        </v-card-subtitle>
-      </v-card>
-      <svg
-        class="board"
-        viewBox="-450 -450 800 800"
-        @click="deselectCreature"
-      >
-        <BattleBoardHex
+        <text
           v-for="hex in BATTLE_BOARD_HEXES"
           :key="hex"
-          :elevation="board.getElevation(hex)"
-          :hazard="board.getHazard(hex)"
-          :edge-hazards="edgeHazardsByHex[hex]"
-          :interactive="battlePhaseType === BattlePhaseType.MOVE && movementHexes.has(hex)"
-          :transform="hexTransformStr(hex)"
-          :class="{ [`hex-${hex}`]: true, 'available-move': movementHexes.has(hex) }"
-          @click="moveSelected(hex)"
-          @mouseenter="enterBattleHex(hex)"
-          @mouseleave="leaveBattleHex(hex)"
+          class="debug-hex-id"
+          :class="{'debug-adjacent': debugHexAdjacencies.includes(hex), 'debug-selected': debugHex === hex}"
+          :transform="`${hexTransformStr(hex)}`"
+          @click.stop="debugHex = hex"
+          v-text="hex"
         />
-        <g
-          v-if="preferencesStore.debugUi"
-          class="debug-ui"
-        >
-          <text
-            v-for="hex in BATTLE_BOARD_HEXES"
-            :key="hex"
-            class="debug-hex-id"
-            :class="{'debug-adjacent': debugHexAdjacencies.includes(hex), 'debug-selected': debugHex === hex}"
-            :transform="`${hexTransformStr(hex)}`"
-            @click.stop="debugHex = hex"
-            v-text="hex"
-          />
-        </g>
-        <Creature
-          v-for="(creature) in activeCreatures"
-          :key="creature.hex"
-          :type="creature.type"
-          :player-id="creature.player"
-          :wounds="creature.wounds"
-          class="battle-creature"
-          :class="creatureClasses(creature)"
-          :transform="`${hexTransformStr(creature.hex)} scale(0.9)
-           rotate(${120 * (activeBattle.attackerEdge - 1) + (creature.player === defender ? 180 : 0)})`"
-          in-svg
-          @click.stop="chooseCreature(creature)"
-          @mouseenter="enterCreature(creature)"
-          @mouseleave="leaveCreature(creature)"
-        />
-        <EngageIcon
-          v-for="(creature) in (carryoverTargets ?? engagements)"
-          :key="creature.hex"
-          interactive
-          transparent-hover
-          :transform="`${hexTransformStr(creature.hex)} scale(0.9)
-           rotate(${120 * (activeBattle.attackerEdge - 1) + (creature.player === defender ? 0 : 180)})`"
-          @click.stop="targetCreature(creature)"
-          @mouseenter="enterCreature(creature)"
-          @mouseleave="leaveCreature(creature)"
-        />
-        <RangestrikeIcon
-          v-for="(rangestrikeTarget) in rangestrikes"
-          :key="rangestrikeTarget.creature.hex"
-          interactive
-          transparent-hover
-          :long-distance="rangestrikeTarget.longDistance"
-          :adjustment="rangestrikeTarget.adjustment"
-          :transform="`${hexTransformStr(rangestrikeTarget.creature.hex)} scale(0.9)
-           rotate(${120 * (activeBattle.attackerEdge - 1) +
-          (rangestrikeTarget.creature.player === defender ? 0 : 180)})`"
-          @click.stop="targetCreature(rangestrikeTarget)"
-          @mouseenter="enterCreature(rangestrikeTarget.creature)"
-          @mouseleave="leaveCreature(rangestrikeTarget.creature)"
-        />
-      </svg>
+      </g>
+      <Creature
+        v-for="(creature) in activeCreatures"
+        :key="creature.hex"
+        :type="creature.type"
+        :player-id="creature.player"
+        :wounds="creature.wounds"
+        class="battle-creature"
+        :class="creatureClasses(creature)"
+        :transform="`${hexTransformStr(creature.hex)} scale(0.9)
+         rotate(${120 * (battle.attackerEdge - 1) + (creature.player === defender ? 180 : 0)})`"
+        in-svg
+        @click.stop="chooseCreature(creature)"
+        @mouseenter="enterCreature(creature)"
+        @mouseleave="leaveCreature(creature)"
+      />
+      <EngageIcon
+        v-for="(creature) in (carryoverTargets ?? engagements)"
+        :key="creature.hex"
+        interactive
+        transparent-hover
+        :transform="`${hexTransformStr(creature.hex)} scale(0.9)
+         rotate(${120 * (battle.attackerEdge - 1) + (creature.player === defender ? 0 : 180)})`"
+        @click.stop="targetCreature(creature)"
+        @mouseenter="enterCreature(creature)"
+        @mouseleave="leaveCreature(creature)"
+      />
+      <RangestrikeIcon
+        v-for="(rangestrikeTarget) in rangestrikes"
+        :key="rangestrikeTarget.creature.hex"
+        interactive
+        transparent-hover
+        :long-distance="rangestrikeTarget.longDistance"
+        :adjustment="rangestrikeTarget.adjustment"
+        :transform="`${hexTransformStr(rangestrikeTarget.creature.hex)} scale(0.9)
+         rotate(${120 * (battle.attackerEdge - 1) +
+        (rangestrikeTarget.creature.player === defender ? 0 : 180)})`"
+        @click.stop="targetCreature(rangestrikeTarget)"
+        @mouseenter="enterCreature(rangestrikeTarget.creature)"
+        @mouseleave="leaveCreature(rangestrikeTarget.creature)"
+      />
+    </svg>
 
-      <CreaturePanel
-        :local-player-is-defender="localPlayerIsDefender"
-        :selected-creature-id="selectedCreatureId"
-        :selected-can-leave-board="selectedCanLeaveBoard"
-        position="fixed"
-        location="top right"
-        class="ma-3"
-        @select="selectCreature"
-        @remove="removeSelected"
-      />
-      <ActionPanel
-        position="fixed"
-        location="bottom right"
-        class="ma-3 mb-10"
-        :battle="activeBattle"
-      />
-      <v-sheet
-        position="fixed"
-        location="bottom left"
-        class="ma-3 ml-14 mb-10"
+    <CreaturePanel
+      :local-player-is-defender="localPlayerIsDefender"
+      :selected-creature-id="selectedCreatureId"
+      :selected-can-leave-board="selectedCanLeaveBoard"
+      position="fixed"
+      location="top right"
+      class="ma-3"
+      @select="selectCreature"
+      @remove="removeSelected"
+    />
+    <ActionPanel
+      position="fixed"
+      location="bottom right"
+      class="ma-3 mb-10"
+      :battle="battle"
+    />
+    <v-sheet
+      position="fixed"
+      location="bottom left"
+      class="ma-3 ml-14 mb-10"
+      rounded
+    >
+      <FocusedStrikePanel
+        v-if="selectedCreature && focusedCreature"
         rounded
-      >
-        <FocusedStrikePanel
-          v-if="selectedCreature && focusedCreature"
-          rounded
-          :attacker="selectedCreature"
-          :focused-creature="focusedCreature"
-        />
-        <ActiveStrikePanel
-          rounded
-          :battle="activeBattle"
-        />
-      </v-sheet>
+        :attacker="selectedCreature"
+        :focused-creature="focusedCreature"
+      />
+      <ActiveStrikePanel
+        rounded
+        :battle="battle"
+      />
+    </v-sheet>
 
-      <template v-if="selectedCreature && target">
-        <StrikeConfirmation
-          v-if="!isRangestrike(target)"
-          v-model="attackCreatureDialog"
-          v-model:optional-to-hit="optionalToHit"
-          :battle="activeBattle"
-          :attacker="selectedCreature"
-          :targeted-creature="target"
-          @attack="attackTargetedCreature(selectedCreature, target)"
-          @cancel="resetAttack"
-        />
-        <RangestrikeConfirmation
-          v-else
-          v-model="attackCreatureDialog"
-          :battle="activeBattle"
-          :attacker="selectedCreature"
-          :target="target"
-          @attack="attackTargetedCreature(selectedCreature, target)"
-          @cancel="resetAttack"
-        />
-      </template>
+    <template v-if="selectedCreature && target">
+      <StrikeConfirmation
+        v-if="!isRangestrike(target)"
+        v-model="attackCreatureDialog"
+        v-model:optional-to-hit="optionalToHit"
+        :battle="battle"
+        :attacker="selectedCreature"
+        :targeted-creature="target"
+        @attack="attackTargetedCreature(selectedCreature, target)"
+        @cancel="resetAttack"
+      />
+      <RangestrikeConfirmation
+        v-else
+        v-model="attackCreatureDialog"
+        :battle="battle"
+        :attacker="selectedCreature"
+        :target="target"
+        @attack="attackTargetedCreature(selectedCreature, target)"
+        @cancel="resetAttack"
+      />
     </template>
   </div>
 </template>
@@ -199,6 +187,10 @@ import RangestrikeConfirmation from "./RangestrikeConfirmation.vue"
 import StrikeConfirmation from "./StrikeConfirmation.vue"
 import { hexTransformStr } from "./utils"
 
+const props = defineProps<{
+  battle: Battle
+}>()
+
 const diceRoller = inject<Readonly<Ref<InstanceType<typeof DiceRoller> | null>>>("diceRoller")
 
 const gameStore = useGameStore()
@@ -223,12 +215,12 @@ const focusedCreature = computed<BattleCreature | undefined>(() => focusedCreatu
   : selectedCreature.value)
 
 const movementHexes = computed<Set<number>>(() =>
-  selectedCreature.value === undefined ? new Set<number>() : activeBattle.value!.movementFor(selectedCreature.value))
+  selectedCreature.value === undefined ? new Set<number>() : props.battle.movementFor(selectedCreature.value))
 const engagements = computed<BattleCreature[]>(() =>
-  selectedCreature.value === undefined ? [] : activeBattle.value!.engagedWith(selectedCreature.value))
+  selectedCreature.value === undefined ? [] : props.battle.engagedWith(selectedCreature.value))
 const rangestrikes = computed<RangestrikeTarget[]>(() =>
-  selectedCreature.value === undefined ? [] : activeBattle.value!.rangestrikeTargets(selectedCreature.value))
-const carryoverTargets = computed((): BattleCreature[] | undefined => activeBattle.value?.carryoverTargets())
+  selectedCreature.value === undefined ? [] : props.battle.rangestrikeTargets(selectedCreature.value))
+const carryoverTargets = computed((): BattleCreature[] | undefined => props.battle.carryoverTargets())
 
 function selectCreature(selection: BattleCreature): void {
   selectedCreature.value = selectedCreature.value === selection ? undefined : selection
@@ -270,16 +262,11 @@ function leaveBattleHex(leaving: number): void {
   }
 }
 
-// game is deeply reactive, and Vue's UnwrapNestedRefs can't reconstruct Battle's
-// private methods, so the inferred type structurally mismatches the class - cast it back.
-const activeBattle = computed(() => game.activeBattle as Battle | undefined)
-const battlePhaseType = computed((): BattlePhaseType | undefined =>
-  activeBattle.value === undefined ? undefined : BATTLE_PHASE_TYPES[activeBattle.value.phase])
-const battleActivePlayer = computed((): PlayerId | undefined => activeBattle.value?.getActivePlayer())
+const battlePhaseType = computed((): BattlePhaseType => BATTLE_PHASE_TYPES[props.battle.phase])
+const battleActivePlayer = computed((): PlayerId => props.battle.getActivePlayer())
 
 // A creature only exists within the battle it was selected in.
-watch(activeBattle, deselectCreature)
-watch(battlePhaseType, deselectCreature)
+watch([() => props.battle, () => props.battle.phase], deselectCreature)
 
 const attackCreatureDialog = computed({
   get: (): boolean => target.value !== undefined,
@@ -290,7 +277,7 @@ const attackCreatureDialog = computed({
   }
 })
 
-const terrain = computed((): Terrain => activeBattle.value!.terrain)
+const terrain = computed((): Terrain => props.battle.terrain)
 const board = computed((): BattleBoard => BATTLE_BOARDS[terrain.value as Terrain])
 
 function edgesForHex(hex: number): Record<number, EdgeHazard> {
@@ -305,7 +292,7 @@ const edgeHazardsByHex = computed((): Record<number, Record<number, EdgeHazard>>
   Object.fromEntries(BATTLE_BOARD_HEXES.map((hex: number): [number, Record<number, EdgeHazard>] =>
     [hex, edgesForHex(hex)])))
 
-const defender = computed((): PlayerId => activeBattle.value!.defender)
+const defender = computed((): PlayerId => props.battle.defender)
 
 const localPlayerIsDefender = computed((): boolean =>
   defender.value === game.players[playerStore.localPlayer].id)
@@ -321,15 +308,15 @@ const selectedCanLeaveBoard = computed((): boolean =>
   selectedStartedOffBoard.value && (selectedCreature.value?.hex ?? -1) < 36)
 
 const activeCreatures = computed((): BattleCreature[] =>
-  activeBattle.value!.creatures.filter((creature: BattleCreature) =>
+  props.battle.creatures.filter((creature: BattleCreature) =>
     creature.hex > 0 && creature.hex < 36))
 
 function creatureEnabled(creature: BattleCreature): boolean {
   if (creature.player !== battleActivePlayer.value) {
     return false
   }
-  const engagementsCount = activeBattle.value!.engagedWith(creature).length
-  const rangestrikesCount = activeBattle.value!.rangestrikeTargets(creature).length
+  const engagementsCount = props.battle.engagedWith(creature).length
+  const rangestrikesCount = props.battle.rangestrikeTargets(creature).length
   switch (battlePhaseType.value) {
     case BattlePhaseType.MOVE:
       return engagementsCount === 0
@@ -355,24 +342,24 @@ function creatureClasses(creature: BattleCreature): object {
   }
 }
 
-const activeStrike = computed((): ActiveStrike | undefined => activeBattle.value!.activeStrike)
+const activeStrike = computed((): ActiveStrike | undefined => props.battle.activeStrike)
 
 const targetedStrike = computed((): Strike =>
   selectedCreature.value && target.value
-    ? activeBattle.value!.getTargetedStrike(selectedCreature.value, target.value)
+    ? props.battle.getTargetedStrike(selectedCreature.value, target.value)
     : { toHit: 0, dice: 0 })
 
 const debugHexAdjacencies = computed((): number[] => BATTLE_BOARD_ADJACENCIES[debugHex.value] ?? [])
 
 function moveSelected(hex: number): void {
   if (selectedCreature.value && movementHexes.value.has(hex)) {
-    void activeBattle.value!.moveCreature({ creature: selectedCreature.value.id, hex })
+    void props.battle.moveCreature({ creature: selectedCreature.value.id, hex })
   }
 }
 
 function removeSelected(): void {
   if (selectedCreature.value) {
-    void activeBattle.value!.moveCreature({ creature: selectedCreature.value.id, hex: selectedCreature.value.initialHex })
+    void props.battle.moveCreature({ creature: selectedCreature.value.id, hex: selectedCreature.value.initialHex })
   }
 }
 
@@ -385,7 +372,7 @@ function chooseCreature(creature: BattleCreature): void {
 function targetCreature(creature: BattleCreature | RangestrikeTarget): void {
   if (!("creature" in creature) && activeStrike.value?.canCarryover && carryoverTargets.value) {
     if (carryoverTargets.value.includes(creature)) {
-      void activeBattle.value!.assignCarryover(creature.id)
+      void props.battle.assignCarryover(creature.id)
     }
   } else {
     target.value = creature
@@ -402,18 +389,18 @@ async function attackTargetedCreature(
   }
   const rolls = await diceRoller.value.roll(targetedStrike.value.dice)
   await (isRangestrike(attackTarget)
-    ? activeBattle.value!.rangestrikeCreature({
+    ? props.battle.rangestrikeCreature({
       attacker: attacker.id,
       target: { ...attackTarget, creature: attackTarget.creature.id },
       rolls
     })
-    : activeBattle.value!.attackCreature({
+    : props.battle.attackCreature({
       attacker: attacker.id,
       target: attackTarget.id,
       optionalToHit: optionalToHit.value,
       rolls
     }))
-  console.log(activeBattle.value!.activeStrike)
+  console.log(props.battle.activeStrike)
   resetAttack()
   deselectCreature()
 }
@@ -427,16 +414,7 @@ function resetAttack(): void {
 <style scoped lang="sass">
 @import "~/styles/terrain-colors.sass"
 
-.no-active-battle
-  height: 100%
-
-  &>text
-    fill: currentColor
-    text-anchor: middle
-    dominant-baseline: central
-    font-family: "Fondamento", serif
-
-.battleboard-root, .board, .no-active-battle
+.battleboard-root, .board
   width: 100%
 
 .battleboard-root
