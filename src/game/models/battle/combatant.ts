@@ -1,4 +1,5 @@
 import { CREATURE_DATA, CreatureType } from "../creature"
+import { Moveable } from "../moveable"
 import { PlayerId } from "../player"
 
 let battleCreatureIdCounter = 0
@@ -10,7 +11,7 @@ export interface BattleCreatureProps {
   hex: number
 }
 
-export class BattleCreature {
+export class BattleCreature implements Moveable {
   readonly type: CreatureType
   readonly player: PlayerId
   readonly playerScore: number

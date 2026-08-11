@@ -3,9 +3,10 @@ import { assert } from "@/utils/assert"
 import { Battle, BattleSide } from "./battle"
 import { CREATURE_DATA, CREATURE_LIST, CreatureType } from "./creature"
 import masterboard, { HexEdge, MasterboardHex } from "./masterboard"
+import { Moveable } from "./moveable"
 import { Player, PlayerId } from "./player"
 import { defaultRandom, Random } from "./random"
-import { finalizeSplit, MusterChoice, Stack, StackRef } from "./stack"
+import { MusterChoice, Stack, StackRef } from "./stack"
 
 const INITIAL_HEXES: Record<number, number[]> = {
   2: [100, 400],
@@ -59,7 +60,7 @@ export class TitanGame {
     const colors = random.shuffle(range(0, 5))
     this.players = range(0, numPlayers).map(i => ({ id: colors[i], name: `Player ${i + 1}` }))
     this.stacks = this.players.map((player: Player, i: number) =>
-      new Stack(player?.id, INITIAL_HEXES[numPlayers][i], 0, this.round))
+      Stack.create({ owner: player?.id, hex: INITIAL_HEXES[numPlayers][i], marker: 0, createdRound: this.round }))
     this.score = Object.fromEntries(this.players.map(player => [player.id, 0])) as Record<PlayerId, number>
 
     this.creaturePool = Object.fromEntries(CREATURE_LIST
@@ -129,8 +130,8 @@ export class TitanGame {
   }
 
   getMandatoryMoves(): Stack[] {
-    return this.getActiveStacks().filter(stack => !stack.hasMoved() &&
-      this.getStacksForHex(stack.origin).length > 1 &&
+    return this.getActiveStacks().filter(stack => !Moveable.hasMoved(stack) &&
+      this.getStacksForHex(stack.initialHex).length > 1 &&
       this.getPathsForHex(stack.hex).length > 0)
   }
 
@@ -145,10 +146,10 @@ export class TitanGame {
   getMayProceed(): boolean {
     switch (this.activePhase) {
       case MasterboardPhase.SPLIT:
-        return this.getActiveStacks().every(stack => stack.isValidSplit(this.round === 0))
+        return this.getActiveStacks().every(stack => Stack.isValidSplit(stack, this.round === 0))
       case MasterboardPhase.MOVE:
         return this.getMandatoryMoves().length === 0 &&
-          this.getActiveStacks().some(stack => stack.hasMoved())
+          this.getActiveStacks().some(stack => Moveable.hasMoved(stack))
       case MasterboardPhase.BATTLE:
         return true
       case MasterboardPhase.MUSTER:
@@ -158,9 +159,25 @@ export class TitanGame {
     }
   }
 
+  isStackActive(stack: Stack): boolean {
+    if (stack.owner !== this.getActivePlayerId()) {
+      return false
+    }
+    switch (this.activePhase) {
+      case MasterboardPhase.SPLIT:
+        return stack.creatures.length >= 4
+      case MasterboardPhase.MOVE:
+        return !Moveable.hasMoved(stack)
+      case MasterboardPhase.MUSTER:
+        return Stack.canMuster(stack)
+      default:
+        return true
+    }
+  }
+
   isMulliganAvailable(): boolean {
     return this.round === 0 && !this.mulliganTaken &&
-      !this.getActiveStacks().some(stack => stack.hasMoved())
+      !this.getActiveStacks().some(stack => Moveable.hasMoved(stack))
   }
 
   isSplitPhase(): boolean {
@@ -209,9 +226,9 @@ export class TitanGame {
     switch (this.activePhase) {
       case MasterboardPhase.SPLIT:
         // TODO: check mayProceed before advancing — round-1 split rule (exactly 4 creatures with 1 lord) not yet enforced
-        this.getActiveStacks().filter(stack => stack.numSplitting() > 0).forEach(stack => {
+        this.getActiveStacks().filter(stack => Stack.getSplittingCreatures(stack).length > 0).forEach(stack => {
           // Each pushed stack claims a marker, so the next split needs a fresh read.
-          this.stacks.push(finalizeSplit(stack, this.getNextMarker()!, this.round))
+          this.stacks.push(Stack.finalizeSplit(stack, this.getNextMarker()!, this.round))
         })
         this.mulliganTaken = false
         break
@@ -271,7 +288,7 @@ export class TitanGame {
   async setRecruit({ stack, recruit }: MusterPayload): Promise<void> {
     const recruitingStack = this.stacks.find(s => s.id === stack)
     assert(recruitingStack !== undefined, `No stack with id ${stack}`)
-    if (!recruitingStack.canMuster()) {
+    if (!Stack.canMuster(recruitingStack)) {
       throw new Error("Stack is not eligible to muster!")
     }
     if (recruit !== undefined &&
@@ -285,8 +302,6 @@ export class TitanGame {
   mRehydrate(hydration: TitanGame): void {
     assign(this, {
       ...hydration,
-      stacks: hydration.stacks.map((stack: Stack) =>
-        assign(new Stack(stack.owner, stack.hex, stack.marker, stack.createdRound, stack.creatures), stack)),
       activeBattle: hydration.activeBattle !== undefined ? Battle.hydrate(hydration.activeBattle) : undefined
     })
   }
@@ -311,7 +326,7 @@ function toBattleSide(stack: Stack, score: number): BattleSide {
 }
 
 function startPlayerTurn(stack: Stack): void {
-  stack.origin = stack.hex
+  stack.initialHex = stack.hex
   stack.attackEdge = undefined
   stack.currentMuster = undefined
 }

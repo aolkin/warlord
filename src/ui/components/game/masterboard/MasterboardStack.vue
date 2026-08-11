@@ -65,6 +65,7 @@
 import { computed } from "vue"
 import { MasterboardPhase, Path } from "@/models/game"
 import masterboard, { HexEdge, MasterboardEdge, MasterboardHex, Terrain } from "@/models/masterboard"
+import { Moveable } from "@/models/moveable"
 import { Stack } from "@/models/stack"
 import { useGameStore } from "~/stores/game"
 import { usePreferencesStore } from "~/stores/ui/preferences"
@@ -165,24 +166,9 @@ const isMandatory = computed(() => {
   }
   switch (game.activePhase) {
     case MasterboardPhase.SPLIT:
-      return !props.stack.isValidSplit(game.round === 0)
+      return !Stack.isValidSplit(props.stack, game.round === 0)
     case MasterboardPhase.MOVE:
       return gameStore.mandatoryMoves.includes(props.stack)
-  }
-  return false
-})
-
-const isDisabled = computed(() => {
-  if (!isActivePlayer.value) {
-    return false
-  }
-  switch (game.activePhase) {
-    case MasterboardPhase.SPLIT:
-      return props.stack.creatures.length < 4
-    case MasterboardPhase.MOVE:
-      return props.stack.hasMoved()
-    case MasterboardPhase.MUSTER:
-      return !props.stack.canMuster()
   }
   return false
 })
@@ -191,7 +177,7 @@ const classes = computed(() => ({
   selected: selected.value,
   owned: isActivePlayer.value,
   mandatory: isMandatory.value,
-  disabled: isDisabled.value,
+  disabled: !game.isStackActive(props.stack),
   engageable: engageable.value.length > 0,
   engaged: engaged.value,
   [`player-${props.stack.owner}`]: true,
@@ -202,7 +188,8 @@ const classes = computed(() => ({
 
 const stackSize = computed((): string => {
   if (props.stack.split.some(i => i)) {
-    return `${props.stack.creatures.length - props.stack.numSplitting()} / ${props.stack.numSplitting()}`
+    const splitting = Stack.getSplittingCreatures(props.stack).length
+    return `${props.stack.creatures.length - splitting} / ${splitting}`
   }
   return `${props.stack.creatures.length}`
 })
@@ -211,15 +198,15 @@ function select(): void {
   if (!isActivePlayer.value) {
     return
   }
-  if (game.isMovePhase() && props.stack.hasMoved()) {
-    if (!game.getStacksForHex(props.stack.origin).some((stack: Stack) => stack.hasMoved())) {
-      void game.move({ stack: props.stack.id, hex: props.stack.origin })
+  if (game.isMovePhase() && Moveable.hasMoved(props.stack)) {
+    if (!game.getStacksForHex(props.stack.initialHex).some((stack: Stack) => Moveable.hasMoved(stack))) {
+      void game.move({ stack: props.stack.id, hex: props.stack.initialHex })
     }
   }
   if (selected.value) {
     selectionStore.deselectStack()
   } else {
-    if (!isDisabled.value) {
+    if (game.isStackActive(props.stack)) {
       selectionStore.selectStack(props.stack)
     }
   }

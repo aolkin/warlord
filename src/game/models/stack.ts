@@ -2,6 +2,7 @@ import { range, remove, sum } from "lodash-es"
 import { assert } from "@/utils/assert"
 import { CREATURE_DATA, CreatureType, MUSTER_DATA } from "./creature"
 import { HexEdge, Terrain } from "./masterboard"
+import { Moveable } from "./moveable"
 import { PlayerId } from "./player"
 
 let stackIdCounter = 0
@@ -14,7 +15,7 @@ export type MusterPossibility = [CreatureType, MusterBasis[]]
 // A recruit that has actually been chosen: the creature and the single basis used to muster it.
 export type MusterChoice = [CreatureType, MusterBasis]
 
-export class Stack {
+export interface Stack extends Moveable {
   readonly owner: PlayerId
   readonly creatures: CreatureType[]
   readonly marker: number
@@ -23,64 +24,68 @@ export class Stack {
   readonly id: number
   readonly createdRound: number
 
-  origin: number
-  hex: number
   attackEdge: HexEdge | undefined
   currentMuster: MusterChoice | undefined
+}
 
-  constructor(owner: PlayerId, start: number, marker: number, createdRound: number, initial?: CreatureType[]) {
-    this.owner = owner
-    this.creatures = initial ?? [CreatureType.TITAN, CreatureType.ANGEL,
-      CreatureType.CENTAUR, CreatureType.CENTAUR,
-      CreatureType.OGRE, CreatureType.OGRE,
-      CreatureType.GARGOYLE, CreatureType.GARGOYLE]
-    this.split = range(8).map(() => false)
-    this.hex = start
-    this.origin = start
-    this.marker = marker
-    this.recruits = {}
-    this.id = stackIdCounter++
-    this.createdRound = createdRound
+export type CreateStackOptions = Pick<Stack, "owner" | "marker" | "createdRound" | "hex"> &
+  Partial<Pick<Stack, "creatures">>
+
+// eslint-disable-next-line @typescript-eslint/no-namespace
+export namespace Stack {
+  export function create(options: CreateStackOptions): Stack {
+    return {
+      owner: options.owner,
+      creatures: options.creatures ?? [CreatureType.TITAN, CreatureType.ANGEL,
+        CreatureType.CENTAUR, CreatureType.CENTAUR,
+        CreatureType.OGRE, CreatureType.OGRE,
+        CreatureType.GARGOYLE, CreatureType.GARGOYLE],
+      split: range(8).map(() => false),
+      marker: options.marker,
+      recruits: {},
+      id: stackIdCounter++,
+      createdRound: options.createdRound,
+      initialHex: options.hex,
+      hex: options.hex,
+      attackEdge: undefined,
+      currentMuster: undefined
+    }
   }
 
-  numSplitting(): number {
-    return sum(this.split.map(i => i ? 1 : 0))
+  export function isFull(stack: Stack): boolean {
+    return stack.creatures.length >= 7
   }
 
-  hasMoved(): boolean {
-    return this.hex !== this.origin
+  export function canMuster(stack: Stack): boolean {
+    return Moveable.hasMoved(stack) && !isFull(stack)
   }
 
-  canMuster(): boolean {
-    return this.hasMoved() && this.creatures.length < 7
-  }
-
-  isValidSplit(firstRound?: boolean): boolean {
-    const numSplitting = this.numSplitting()
+  export function isValidSplit(stack: Stack, firstRound?: boolean): boolean {
+    const numSplitting = getSplittingCreatures(stack).length
     if (firstRound ?? false) {
       if (numSplitting !== 4) {
         return false
       }
-      const splitLords: number = sum(this.creatures.map((creature, index) =>
-        this.split[index] && CREATURE_DATA[creature].lord))
+      const splitLords: number = sum(stack.creatures.map((creature, index) =>
+        stack.split[index] && CREATURE_DATA[creature].lord))
       if (splitLords !== 1) {
         return false
       }
     }
-    const remaining = this.creatures.length - numSplitting
+    const remaining = stack.creatures.length - numSplitting
     return numSplitting === 0 || (numSplitting >= 2 && remaining >= 2)
   }
 
-  getCreaturesSplit(split: boolean): CreatureType[] {
-    return this.creatures.filter((_, index) => this.split[index] === split)
+  export function getSplittingCreatures(stack: Stack): CreatureType[] {
+    return stack.creatures.filter((_, index) => stack.split[index])
   }
 
-  getValue(): number {
-    return sum(this.creatures.map(creature => CREATURE_DATA[creature].getValue()))
+  export function getStayingCreatures(stack: Stack): CreatureType[] {
+    return stack.creatures.filter((_, index) => !stack.split[index])
   }
 
-  musterable(terrain: Terrain): MusterPossibility[] {
-    const creatureCounts = this.creatures.reduce((acc: Map<CreatureType, number>, creature: CreatureType) =>
+  export function musterable(stack: Stack, terrain: Terrain): MusterPossibility[] {
+    const creatureCounts = stack.creatures.reduce((acc: Map<CreatureType, number>, creature: CreatureType) =>
       acc.set(creature, (acc.get(creature) ?? 0) + 1), new Map())
     const terrainData = MUSTER_DATA[terrain]
     const possibilities: MusterPossibility[] = []
@@ -117,17 +122,17 @@ export class Stack {
     }
     return possibilities
   }
-}
 
-export function togglePendingSplit(stack: Stack, index: number): void {
-  stack.split[index] = !stack.split[index]
-}
+  export function togglePendingSplit(stack: Stack, index: number): void {
+    stack.split[index] = !stack.split[index]
+  }
 
-export function finalizeSplit(stack: Stack, marker: number, round: number): Stack {
-  assert(stack.isValidSplit(), "Invalid split")
-  assert(marker >= 0, "Invalid marker")
-  const creatures = stack.getCreaturesSplit(true)
-  remove(stack.creatures, (creature, index) => stack.split[index])
-  stack.split.fill(false)
-  return new Stack(stack.owner, stack.hex, marker, round, creatures)
+  export function finalizeSplit(stack: Stack, marker: number, round: number): Stack {
+    assert(isValidSplit(stack), "Invalid split")
+    assert(marker >= 0, "Invalid marker")
+    const creatures = getSplittingCreatures(stack)
+    remove(stack.creatures, (creature, index) => stack.split[index])
+    stack.split.fill(false)
+    return create({ owner: stack.owner, hex: stack.hex, marker, createdRound: round, creatures })
+  }
 }

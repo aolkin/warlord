@@ -56,7 +56,7 @@
             You must split your starting creatures. Please select four creatures (including one lord) above
             to split into a separate stack.
             <div
-              v-if="props.focusedStack?.isValidSplit(game.round === 0)"
+              v-if="Stack.isValidSplit(props.focusedStack, game.round === 0)"
               class="first-round-success"
             >
               You have selected a valid split and may roll the die
@@ -70,15 +70,15 @@
             You may select at least 2 and at most {{ props.focusedStack.creatures.length - 2 }} creatures
             to split into a new stack.
             <div
-              v-if="props.focusedStack.getCreaturesSplit(true).length > 0"
+              v-if="Stack.getSplittingCreatures(props.focusedStack).length > 0"
               class="text-left mt-5"
             >
               <p>
-                Remaining: {{ props.focusedStack.getCreaturesSplit(false)
+                Remaining: {{ Stack.getStayingCreatures(props.focusedStack)
                   .map((c: CreatureType) => CREATURE_DATA[c].name).join(", ") }}
               </p>
               <p>
-                Splitting: {{ props.focusedStack.getCreaturesSplit(true)
+                Splitting: {{ Stack.getSplittingCreatures(props.focusedStack)
                   .map((c: CreatureType) => CREATURE_DATA[c].name).join(", ") }}
               </p>
             </div>
@@ -91,7 +91,7 @@
         >
           <v-card-title>Mustering Options ({{ musteringTerrainName }})</v-card-title>
           <MusterChoices
-            v-if="game.isMovePhase() || props.focusedStack.canMuster()"
+            v-if="game.isMovePhase() || Stack.canMuster(props.focusedStack)"
             v-model="mustering"
             class="px-2 pb-1"
             :can-decline="game.isMusterPhase()"
@@ -115,8 +115,9 @@ import { computed } from "vue"
 import { capitalize } from "lodash-es"
 import { CREATURE_DATA, CreatureType } from "@/models/creature"
 import masterboard, { Terrain } from "@/models/masterboard"
+import { Moveable } from "@/models/moveable"
 import { Player } from "@/models/player"
-import { MusterChoice, MusterPossibility, Stack, togglePendingSplit } from "@/models/stack"
+import { MusterChoice, MusterPossibility, Stack } from "@/models/stack"
 import { useGameStore } from "~/stores/game"
 import { useSelectionStore } from "~/stores/ui/selection"
 import { mod } from "~/utils/math"
@@ -145,7 +146,7 @@ const musteringTerrain = computed((): Terrain => game.isMusterPhase()
 const musteringTerrainName = computed((): string => capitalize(Terrain[musteringTerrain.value]))
 
 const musterable = computed((): MusterPossibility[] =>
-  props.focusedStack?.musterable(musteringTerrain.value) as MusterPossibility[])
+  props.focusedStack !== undefined ? Stack.musterable(props.focusedStack, musteringTerrain.value) : [])
 
 const mustering = computed({
   get() {
@@ -161,14 +162,10 @@ const mustering = computed({
 
 const musteringCaption = computed(() => {
   const stack = props.focusedStack!
-  if (!stack.canMuster()) {
-    if (!stack.hasMoved()) {
-      return "You cannot muster in a stack that did not move this turn."
-    } else if (stack.creatures.length > 6) {
-      return "This stack is already full and cannot muster."
-    } else {
-      return "This stack cannot muster."
-    }
+  if (!Moveable.hasMoved(stack)) {
+    return "You cannot muster in a stack that did not move this turn."
+  } else if (Stack.isFull(stack)) {
+    return "This stack is already full and cannot muster."
   } else if (stack.currentMuster === undefined) {
     return "No recruit chosen."
   } else {
@@ -188,7 +185,7 @@ function toggleSplit(index: number): void {
   if (game.isSplitPhase() &&
     (props.focusedStack?.creatures.length ?? 0) > 2) {
     const stack = props.focusedStack!
-    togglePendingSplit(stack, index)
+    Stack.togglePendingSplit(stack, index)
   }
 }
 
@@ -198,8 +195,7 @@ function cycleStacks(by: number): void {
   do {
     index += by
     candidateStack = gameStore.activeStacks[mod(index, gameStore.activeStacks.length)]
-  } while ((game.isMovePhase() && candidateStack.hasMoved()) ||
-  (game.isMusterPhase() && !candidateStack.canMuster()))
+  } while (!game.isStackActive(candidateStack))
   selectionStore.selectStack(candidateStack)
 }
 </script>
