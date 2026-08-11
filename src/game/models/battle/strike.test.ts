@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest"
-import { ActiveStrike, combineStrikes } from "./strike"
+import { ActiveStrike, Strike } from "./strike"
 
-describe("combineStrikes", () => {
+describe("Strike.combine", () => {
   it("sums dice and toHit across two strike adjustments", () => {
-    expect(combineStrikes({ toHit: 3, dice: 2 }, { toHit: 0, dice: 2 })).toEqual({ toHit: 3, dice: 4 })
+    expect(Strike.combine({ toHit: 3, dice: 2 }, { toHit: 0, dice: 2 })).toEqual({ toHit: 3, dice: 4 })
   })
 
   it("clamps a combined toHit above 6 down to 6, since no die roll could ever hit a higher number", () => {
@@ -11,15 +11,15 @@ describe("combineStrikes", () => {
     // skill factors creatures actually have (2-4); a raw Strike-number of 6 (e.g. attacker
     // skill 2 vs defender skill 4) combined with the Bramble non-native striking-out penalty
     // (+1, Hazard Chart 27.) would need a 7 to hit, which a d6 can never roll.
-    expect(combineStrikes({ toHit: 6, dice: 0 }, { toHit: 1, dice: 0 })).toEqual({ toHit: 6, dice: 0 })
+    expect(Strike.combine({ toHit: 6, dice: 0 }, { toHit: 1, dice: 0 })).toEqual({ toHit: 6, dice: 0 })
   })
 
   it("skips clamping when clampVal is explicitly false", () => {
     // engine.ts's strikeAdjustment() passes false here to combine two hazard deltas before
     // either is added to the base toHit, so an intermediate delta outside [2, 6] must survive
     // uncapped rather than being clamped twice.
-    expect(combineStrikes({ toHit: -3, dice: 0 }, { toHit: 0, dice: 0 }, false)).toEqual({ toHit: -3, dice: 0 })
-    expect(combineStrikes({ toHit: -3, dice: 0 }, { toHit: 0, dice: 0 })).toEqual({ toHit: 2, dice: 0 })
+    expect(Strike.combine({ toHit: -3, dice: 0 }, { toHit: 0, dice: 0 }, false)).toEqual({ toHit: -3, dice: 0 })
+    expect(Strike.combine({ toHit: -3, dice: 0 }, { toHit: 0, dice: 0 })).toEqual({ toHit: 2, dice: 0 })
   })
 })
 
