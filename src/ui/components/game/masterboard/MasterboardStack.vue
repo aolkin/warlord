@@ -75,9 +75,12 @@ import Creature from "../Creature.vue"
 import PlayerMarker from "../Marker.vue"
 import { hexTransform, isHexInverted } from "./utils"
 
-const getEngageTransformForEdge = (edge: HexEdge): Transformations => {
+const getEngageTransformForEdge = (hexId: number, edge: HexEdge): Transformations => {
+  // Computed in hexId's own local frame, before hexTransform's sector rotation composes on
+  // top; the extra 180 undoes HexShape.vue's 180-degree rotation of inverted hexes.
+  const rotation = edge * 120 + 60 + (isHexInverted(hexId) ? 0 : 180)
   const transforms = new Transformations()
-  transforms.push(new Transformation(TransformationType.ROTATE, [edge * 120 + 60]))
+  transforms.push(new Transformation(TransformationType.ROTATE, [rotation]))
   transforms.push(new Transformation(TransformationType.TRANSLATE,
     [0, edge === HexEdge.SECOND ? 50 : 60]))
   transforms.push(new Transformation(TransformationType.SCALE, [0.75]))
@@ -151,7 +154,7 @@ const potentialEngagements = computed((): HexEdge[] => {
 })
 
 const engageable = computed((): [HexEdge, Transformations][] =>
-  potentialEngagements.value.map(edge => [edge, getEngageTransformForEdge(edge)]))
+  potentialEngagements.value.map(edge => [edge, getEngageTransformForEdge(props.stack.hex, edge)]))
 
 const engaged = computed((): boolean => isActivePlayer.value && game.getStacksForHex(props.stack.hex)
   .some((stack: Stack) => stack.owner !== game.getActivePlayerId()))
