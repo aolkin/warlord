@@ -23,7 +23,7 @@ export {
   Strike,
   isRangestrike
 } from "./battle/strike"
-export type { ActiveStrikeHit, IActiveStrike, RangestrikeTarget } from "./battle/strike"
+export type { RangestrikeTarget } from "./battle/strike"
 
 export { Battle, nextPhase, performAttack } from "./battle/engine"
 export type { BattleSide } from "./battle/engine"

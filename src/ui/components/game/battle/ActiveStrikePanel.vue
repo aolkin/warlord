@@ -36,11 +36,12 @@
         </span>
       </v-card-item>
       <v-card-text v-if="activeStrike">
-        <span v-if="activeStrike?.canCarryover && battle.carryoverTargets()">
-          You may still carry over {{ hitsString(activeStrike.getCarryoverHits()) }}.
+        <span v-if="activeStrike && ActiveStrike.canCarryover(activeStrike) && battle.carryoverTargets()">
+          You may still carry over {{ hitsString(ActiveStrike.getCarryoverHits(activeStrike)) }}.
         </span>
-        <span v-else-if="activeStrike?.canCarryover">
-          No eligible targets to carry over {{ hitsString(activeStrike.getCarryoverHits(), "excess") }} to.
+        <span v-else-if="activeStrike && ActiveStrike.canCarryover(activeStrike)">
+          No eligible targets to carry over
+          {{ hitsString(ActiveStrike.getCarryoverHits(activeStrike), "excess") }} to.
         </span>
         <span v-else-if="activeStrike?.carryoverSkipped">
           Carrying over excess hits was skipped.
@@ -75,7 +76,7 @@ const activeStrike = computed((): ActiveStrike | undefined => props.battle.activ
 const attacker = computed((): BattleCreature | undefined =>
   activeStrike.value && props.battle.creatureOnHex(activeStrike.value.attacker))
 const target = computed((): BattleCreature | undefined =>
-  activeStrike.value && props.battle.creatureOnHex(activeStrike.value.target))
+  activeStrike.value && props.battle.creatureOnHex(ActiveStrike.target(activeStrike.value)))
 const targets = computed((): [BattleCreature, number][] =>
   (activeStrike.value?.targets ?? []).map((hex, index) =>
     [props.battle.creatureOnHex(hex)!, activeStrike.value?.targetHits[index] ?? 0]))
