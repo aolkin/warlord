@@ -23,11 +23,8 @@ function normalizeDelta(deg: number): number {
   return wrapped
 }
 
-// HexShape.vue draws HEX_POINTS as-is for an upright hex, or rotated 180 around the local
-// origin for an inverted one - so the polygon's own centroid, not that origin, is each hex's
-// true visual center. The origin and centroid coincide only if HEX_POINTS happens to be
-// symmetric about (0, 0); computing the real centroid here (via the shoelace formula) rather
-// than assuming that keeps this independent of whether it actually is.
+// A hex's local origin and its true visual center can differ (see hexCenter below), so this computes
+// the actual centroid via the shoelace formula rather than assume they coincide.
 function polygonCentroid(points: Point[]): Point {
   let area = 0
   let cx = 0
@@ -51,12 +48,9 @@ const HEX_LOCAL_CENTROID = polygonCentroid(
   })
 )
 
-// A hex's true rendered center: its polygon centroid, inverted the same way HexShape.vue
-// inverts the polygon itself, then carried through hexTransform's sector placement - as
-// opposed to utils.ts's own hexTransform/hexLocalOffset, which only ever position the hex's
-// local-frame origin, not its visual center. Unlike an origin-to-origin bearing, centroid-to-
-// centroid bearings are unaffected by HexShape.vue's per-hex inversion and so agree between
-// geometrically identical adjacencies, which is what makes this a reliable independent check.
+// hexTransform/hexLocalOffset only position a hex's local-frame origin, not its visual center - this
+// deliberately computes the latter. Centroid-to-centroid bearings, unlike origin-to-origin ones, are
+// unaffected by HexShape.vue's per-hex inversion, which is why this check is independent.
 function hexCenter(hexId: number): Point {
   const inverted = isHexInverted(hexId)
   const [localX, localY] = inverted ? [-HEX_LOCAL_CENTROID[0], -HEX_LOCAL_CENTROID[1]] : HEX_LOCAL_CENTROID
