@@ -4,52 +4,50 @@ import { PlayerId } from "../player"
 
 let battleCreatureIdCounter = 0
 
-export interface BattleCreatureProps {
-  readonly type: CreatureType
-  readonly player: PlayerId
-  readonly playerScore: number
-  hex: number
-}
-
-export class BattleCreature implements Moveable {
+export interface BattleCreature extends Moveable {
   readonly type: CreatureType
   readonly player: PlayerId
   readonly playerScore: number
   readonly id: number
 
-  hex: number
   wounds: number
-  initialHex: number
   hasStruck: boolean
-
-  constructor(props: BattleCreatureProps) {
-    this.type = props.type
-    this.player = props.player
-    this.playerScore = props.playerScore
-    this.id = battleCreatureIdCounter++
-    this.hex = props.hex
-    this.wounds = 0
-    this.initialHex = props.hex
-    this.hasStruck = false
-  }
-
-  name(): string {
-    return CREATURE_DATA[this.type].name
-  }
-
-  getStrength(): number {
-    return CREATURE_DATA[this.type].getStrength(this.playerScore)
-  }
-
-  getRemainingHp(): number {
-    return this.getStrength() - this.wounds
-  }
 }
 
-export function wound(creature: BattleCreature, amount: number): void {
-  creature.wounds += amount
-}
+export type CreateBattleCreatureOptions = Pick<BattleCreature, "type" | "player" | "playerScore" | "hex">
 
-export function performStrike(creature: BattleCreature): void {
-  creature.hasStruck = true
+// eslint-disable-next-line @typescript-eslint/no-namespace
+export namespace BattleCreature {
+  export function create(options: CreateBattleCreatureOptions): BattleCreature {
+    return {
+      type: options.type,
+      player: options.player,
+      playerScore: options.playerScore,
+      id: battleCreatureIdCounter++,
+      hex: options.hex,
+      wounds: 0,
+      initialHex: options.hex,
+      hasStruck: false
+    }
+  }
+
+  export function name(creature: BattleCreature): string {
+    return CREATURE_DATA[creature.type].name
+  }
+
+  export function getStrength(creature: BattleCreature): number {
+    return CREATURE_DATA[creature.type].getStrength(creature.playerScore)
+  }
+
+  export function getRemainingHp(creature: BattleCreature): number {
+    return getStrength(creature) - creature.wounds
+  }
+
+  export function wound(creature: BattleCreature, amount: number): void {
+    creature.wounds += amount
+  }
+
+  export function performStrike(creature: BattleCreature): void {
+    creature.hasStruck = true
+  }
 }

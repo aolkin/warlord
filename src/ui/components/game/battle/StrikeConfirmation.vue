@@ -29,7 +29,7 @@
             :prepend-icon="`mdi-dice-${targetedStrike.toHit}`"
             :value="targetedStrike.toHit"
           >
-            {{ normalCarryovers.map(creature => creature.name()).join(", ") }}
+            {{ normalCarryovers.map(creature => BattleCreature.name(creature)).join(", ") }}
           </v-list-item>
           <v-list-item
             v-for="(creatures, toHit) in toHitAdjustments"
@@ -37,7 +37,7 @@
             :prepend-icon="`mdi-dice-${toHit}`"
             :value="Number(toHit)"
           >
-            {{ [...normalCarryovers, ...creatures].map(creature => creature.name()).join(", ") }}
+            {{ [...normalCarryovers, ...creatures].map(creature => BattleCreature.name(creature)).join(", ") }}
           </v-list-item>
         </v-list>
       </v-card-text>
@@ -81,8 +81,9 @@ const emit = defineEmits<{
 
 const engagements = computed<BattleCreature[]>(() => props.battle.engagedWith(props.attacker))
 
-const selectedCreatureName = computed(() => props.attacker.name())
-const targetedCreatureName = computed(() => props.targetedCreature?.name() ?? "")
+const selectedCreatureName = computed(() => BattleCreature.name(props.attacker))
+const targetedCreatureName = computed(() =>
+  props.targetedCreature ? BattleCreature.name(props.targetedCreature) : "")
 const targetedStrike = computed<Strike>(() =>
   props.battle.getTargetedStrike(props.attacker, props.targetedCreature))
 const targetedStrikeUnadjusted = computed<Strike>(() =>
@@ -91,7 +92,7 @@ const targetedStrikeUnadjusted = computed<Strike>(() =>
 const targetedStrikeWasAdjusted = computed(() =>
   !isEqual(targetedStrikeUnadjusted.value, targetedStrike.value))
 const carryoversImpossible = computed(() => engagements.value.length < 2 ||
-  targetedStrike.value.dice - props.targetedCreature.getRemainingHp() <= 0)
+  targetedStrike.value.dice - BattleCreature.getRemainingHp(props.targetedCreature) <= 0)
 const normalCarryovers = computed<BattleCreature[]>(() => carryoversImpossible.value
   ? []
   : engagements.value

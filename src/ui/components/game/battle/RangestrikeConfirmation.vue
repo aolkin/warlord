@@ -56,9 +56,9 @@ defineEmits<{
   attack: []
 }>()
 
-const selectedCreatureName = computed(() => props.attacker.name())
+const selectedCreatureName = computed(() => BattleCreature.name(props.attacker))
 const targetedCreature = computed<BattleCreature>(() => props.target.creature)
-const targetedCreatureName = computed(() => targetedCreature.value?.name() ?? "")
+const targetedCreatureName = computed(() => BattleCreature.name(targetedCreature.value))
 const targetedStrike = computed<Strike>(() =>
   props.battle.getTargetedStrike(props.attacker, props.target))
 const targetedStrikeUnadjusted = computed<Strike>(() => {

@@ -3,7 +3,7 @@ import { CREATURE_DATA, CreatureType } from "@/models/creature"
 import { HexEdge, Terrain } from "@/models/masterboard"
 import { PlayerId } from "@/models/player"
 import { UNATTAINABLE_MOVEMENT_COST } from "./board"
-import { BattleCreature, performStrike } from "./combatant"
+import { BattleCreature } from "./combatant"
 import { Battle, BattleSide, nextPhase, phaseEnterStrike } from "./engine"
 import { BattlePhase } from "./strike"
 
@@ -51,7 +51,7 @@ describe("Battle engagement", () => {
 
     expect(lion.hasStruck).toBe(true)
     expect(centaur.wounds).toBe(3) // Centaur's full strength (3); capped, not overkill
-    expect(centaur.getRemainingHp()).toBe(0)
+    expect(BattleCreature.getRemainingHp(centaur)).toBe(0)
     expect(centaur.hex).toBe(7) // corpses stay on the board until phaseExitStrikeback
   })
 })
@@ -247,7 +247,7 @@ describe("Carryover", () => {
     const { battle, lion, centaur1, centaur2 } = setupTripleEngagement()
 
     await battle.attackCreature({ attacker: lion.id, target: centaur1.id, rolls: [6, 6, 6, 6, 6] })
-    expect(centaur1.getRemainingHp()).toBe(0)
+    expect(BattleCreature.getRemainingHp(centaur1)).toBe(0)
     expect(battle.activeStrike?.canCarryover).toBe(true)
     // getCarryoverHits = 5 total hits - 3 assigned to centaur1
     expect(battle.activeStrike?.getCarryoverHits()).toBe(2)
@@ -473,7 +473,7 @@ describe("Engagement edge cases", () => {
     place(excluded, 8) // toHit 6, raised by the wall - harder than the rolled toHit
 
     await battle.attackCreature({ attacker: lion.id, target: primary.id, rolls: [6, 6, 6, 6, 6] })
-    expect(primary.getRemainingHp()).toBe(0) // overkilled, so it drops out of engagedWith too
+    expect(BattleCreature.getRemainingHp(primary)).toBe(0) // overkilled, so it drops out of engagedWith too
     expect(battle.carryoverTargets()).toEqual([included])
   })
 
@@ -543,22 +543,22 @@ describe("Battle phase transitions", () => {
 
     nextPhase(battle)
     expectPhase(BattlePhase.DEFENDER_STRIKE, 0)
-    performStrike(centaur) // stand in for an actual strike() call - only hasStruck matters here
+    BattleCreature.performStrike(centaur) // stand in for an actual strike() call - only hasStruck matters here
 
     nextPhase(battle)
     expectPhase(BattlePhase.ATTACKER_STRIKEBACK, 0)
-    performStrike(lion)
+    BattleCreature.performStrike(lion)
 
     nextPhase(battle)
     expectPhase(BattlePhase.ATTACKER_MOVE, 0)
 
     nextPhase(battle)
     expectPhase(BattlePhase.ATTACKER_STRIKE, 0)
-    performStrike(lion)
+    BattleCreature.performStrike(lion)
 
     nextPhase(battle)
     expectPhase(BattlePhase.DEFENDER_STRIKEBACK, 0)
-    performStrike(centaur)
+    BattleCreature.performStrike(centaur)
 
     nextPhase(battle)
     expectPhase(BattlePhase.DEFENDER_MOVE, 1)
