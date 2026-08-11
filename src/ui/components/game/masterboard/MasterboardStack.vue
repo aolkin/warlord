@@ -173,13 +173,11 @@ const isMandatory = computed(() => {
   return false
 })
 
-const isDisabled = computed(() => !game.isStackActive(props.stack))
-
 const classes = computed(() => ({
   selected: selected.value,
   owned: isActivePlayer.value,
   mandatory: isMandatory.value,
-  disabled: isDisabled.value,
+  disabled: !game.isStackActive(props.stack),
   engageable: engageable.value.length > 0,
   engaged: engaged.value,
   [`player-${props.stack.owner}`]: true,
@@ -208,7 +206,7 @@ function select(): void {
   if (selected.value) {
     selectionStore.deselectStack()
   } else {
-    if (!isDisabled.value) {
+    if (game.isStackActive(props.stack)) {
       selectionStore.selectStack(props.stack)
     }
   }
