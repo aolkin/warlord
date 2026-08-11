@@ -60,7 +60,7 @@ import { computed, shallowReactive } from "vue"
 import { range, sortBy } from "lodash-es"
 import { Path } from "@/models/game"
 import masterboard, { MasterboardHex } from "@/models/masterboard"
-import { Stack } from "@/models/stack"
+import { hasMoved, Stack } from "@/models/stack"
 import { useGameStore } from "~/stores/game"
 import { usePreferencesStore } from "~/stores/ui/preferences"
 import { useSelectionStore } from "~/stores/ui/selection"
@@ -128,7 +128,8 @@ const canFreeMove = computed((): boolean =>
   selectionStore.selectedStack !== undefined && preferencesStore.freeMovement)
 
 function moveStack(distance: number, foe: boolean, hex: number): void {
-  if (distance !== activeRoll.value - 1 || focusedStack.value?.hasMoved() || foe) {
+  if (distance !== activeRoll.value - 1 ||
+    (focusedStack.value !== undefined && hasMoved(focusedStack.value)) || foe) {
     return
   }
   void game.move({ stack: focusedStack.value!.id, hex })

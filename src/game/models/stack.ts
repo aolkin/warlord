@@ -14,7 +14,7 @@ export type MusterPossibility = [CreatureType, MusterBasis[]]
 // A recruit that has actually been chosen: the creature and the single basis used to muster it.
 export type MusterChoice = [CreatureType, MusterBasis]
 
-export class Stack {
+export interface Stack {
   readonly owner: PlayerId
   readonly creatures: CreatureType[]
   readonly marker: number
@@ -27,96 +27,97 @@ export class Stack {
   hex: number
   attackEdge: HexEdge | undefined
   currentMuster: MusterChoice | undefined
+}
 
-  constructor(owner: PlayerId, start: number, marker: number, createdRound: number, initial?: CreatureType[]) {
-    this.owner = owner
-    this.creatures = initial ?? [CreatureType.TITAN, CreatureType.ANGEL,
+export function createStack(owner: PlayerId, start: number, marker: number, createdRound: number,
+  initial?: CreatureType[]): Stack {
+  return {
+    owner,
+    creatures: initial ?? [CreatureType.TITAN, CreatureType.ANGEL,
       CreatureType.CENTAUR, CreatureType.CENTAUR,
       CreatureType.OGRE, CreatureType.OGRE,
-      CreatureType.GARGOYLE, CreatureType.GARGOYLE]
-    this.split = range(8).map(() => false)
-    this.hex = start
-    this.origin = start
-    this.marker = marker
-    this.recruits = {}
-    this.id = stackIdCounter++
-    this.createdRound = createdRound
+      CreatureType.GARGOYLE, CreatureType.GARGOYLE],
+    split: range(8).map(() => false),
+    marker,
+    recruits: {},
+    id: stackIdCounter++,
+    createdRound,
+    origin: start,
+    hex: start,
+    attackEdge: undefined,
+    currentMuster: undefined
   }
+}
 
-  numSplitting(): number {
-    return sum(this.split.map(i => i ? 1 : 0))
-  }
+export function numSplitting(stack: Stack): number {
+  return sum(stack.split.map(i => i ? 1 : 0))
+}
 
-  hasMoved(): boolean {
-    return this.hex !== this.origin
-  }
+export function hasMoved(stack: Stack): boolean {
+  return stack.hex !== stack.origin
+}
 
-  canMuster(): boolean {
-    return this.hasMoved() && this.creatures.length < 7
-  }
+export function canMuster(stack: Stack): boolean {
+  return hasMoved(stack) && stack.creatures.length < 7
+}
 
-  isValidSplit(firstRound?: boolean): boolean {
-    const numSplitting = this.numSplitting()
-    if (firstRound ?? false) {
-      if (numSplitting !== 4) {
-        return false
-      }
-      const splitLords: number = sum(this.creatures.map((creature, index) =>
-        this.split[index] && CREATURE_DATA[creature].lord))
-      if (splitLords !== 1) {
-        return false
-      }
+export function isValidSplit(stack: Stack, firstRound?: boolean): boolean {
+  const splitCount = numSplitting(stack)
+  if (firstRound ?? false) {
+    if (splitCount !== 4) {
+      return false
     }
-    const remaining = this.creatures.length - numSplitting
-    return numSplitting === 0 || (numSplitting >= 2 && remaining >= 2)
+    const splitLords: number = sum(stack.creatures.map((creature, index) =>
+      stack.split[index] && CREATURE_DATA[creature].lord))
+    if (splitLords !== 1) {
+      return false
+    }
   }
+  const remaining = stack.creatures.length - splitCount
+  return splitCount === 0 || (splitCount >= 2 && remaining >= 2)
+}
 
-  getCreaturesSplit(split: boolean): CreatureType[] {
-    return this.creatures.filter((_, index) => this.split[index] === split)
-  }
+export function getCreaturesSplit(stack: Stack, split: boolean): CreatureType[] {
+  return stack.creatures.filter((_, index) => stack.split[index] === split)
+}
 
-  getValue(): number {
-    return sum(this.creatures.map(creature => CREATURE_DATA[creature].getValue()))
-  }
-
-  musterable(terrain: Terrain): MusterPossibility[] {
-    const creatureCounts = this.creatures.reduce((acc: Map<CreatureType, number>, creature: CreatureType) =>
-      acc.set(creature, (acc.get(creature) ?? 0) + 1), new Map())
-    const terrainData = MUSTER_DATA[terrain]
-    const possibilities: MusterPossibility[] = []
-    if (terrain === Terrain.TOWER) {
-      possibilities.push(...terrainData.map(([, creature]) =>
-        [creature, [[creature, 0]]] as MusterPossibility))
+export function musterable(stack: Stack, terrain: Terrain): MusterPossibility[] {
+  const creatureCounts = stack.creatures.reduce((acc: Map<CreatureType, number>, creature: CreatureType) =>
+    acc.set(creature, (acc.get(creature) ?? 0) + 1), new Map())
+  const terrainData = MUSTER_DATA[terrain]
+  const possibilities: MusterPossibility[] = []
+  if (terrain === Terrain.TOWER) {
+    possibilities.push(...terrainData.map(([, creature]) =>
+      [creature, [[creature, 0]]] as MusterPossibility))
+    const creaturePossibilities: MusterBasis[] = []
+    creatureCounts.forEach((count, type) => {
+      if (count >= 3) {
+        creaturePossibilities.push([type, 3])
+      }
+    })
+    possibilities.push([CreatureType.GUARDIAN, creaturePossibilities])
+    possibilities.push([CreatureType.WARLOCK,
+      creatureCounts.get(CreatureType.TITAN) !== undefined ? [[CreatureType.TITAN, 1]] : []])
+  } else {
+    for (let i = 0; i < terrainData.length; ++i) {
+      const [req, type] = terrainData[i]
       const creaturePossibilities: MusterBasis[] = []
-      creatureCounts.forEach((count, type) => {
-        if (count >= 3) {
-          creaturePossibilities.push([type, 3])
+      if (req !== null) {
+        const previousCreature = terrainData[i - 1][1]
+        if ((creatureCounts.get(previousCreature) ?? 0) >= req) {
+          creaturePossibilities.push([previousCreature, req])
         }
-      })
-      possibilities.push([CreatureType.GUARDIAN, creaturePossibilities])
-      possibilities.push([CreatureType.WARLOCK,
-        creatureCounts.get(CreatureType.TITAN) !== undefined ? [[CreatureType.TITAN, 1]] : []])
-    } else {
-      for (let i = 0; i < terrainData.length; ++i) {
-        const [req, type] = terrainData[i]
-        const creaturePossibilities: MusterBasis[] = []
-        if (req !== null) {
-          const previousCreature = terrainData[i - 1][1]
-          if ((creatureCounts.get(previousCreature) ?? 0) >= req) {
-            creaturePossibilities.push([previousCreature, req])
-          }
-        }
-        for (let k = i; k < terrainData.length; ++k) {
-          const [, advancedType] = terrainData[k]
-          if (creatureCounts.get(advancedType) !== undefined) {
-            creaturePossibilities.push([advancedType, 1])
-          }
-        }
-        possibilities.push([type, creaturePossibilities])
       }
+      for (let k = i; k < terrainData.length; ++k) {
+        const [, advancedType] = terrainData[k]
+        if (creatureCounts.get(advancedType) !== undefined) {
+          creaturePossibilities.push([advancedType, 1])
+        }
+      }
+      possibilities.push([type, creaturePossibilities])
     }
-    return possibilities
   }
+  return possibilities
 }
 
 export function togglePendingSplit(stack: Stack, index: number): void {
@@ -124,10 +125,10 @@ export function togglePendingSplit(stack: Stack, index: number): void {
 }
 
 export function finalizeSplit(stack: Stack, marker: number, round: number): Stack {
-  assert(stack.isValidSplit(), "Invalid split")
+  assert(isValidSplit(stack), "Invalid split")
   assert(marker >= 0, "Invalid marker")
-  const creatures = stack.getCreaturesSplit(true)
+  const creatures = getCreaturesSplit(stack, true)
   remove(stack.creatures, (creature, index) => stack.split[index])
   stack.split.fill(false)
-  return new Stack(stack.owner, stack.hex, marker, round, creatures)
+  return createStack(stack.owner, stack.hex, marker, round, creatures)
 }

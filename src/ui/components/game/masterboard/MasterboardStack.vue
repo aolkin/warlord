@@ -65,7 +65,7 @@
 import { computed } from "vue"
 import { MasterboardPhase, Path } from "@/models/game"
 import masterboard, { HexEdge, MasterboardEdge, MasterboardHex, Terrain } from "@/models/masterboard"
-import { Stack } from "@/models/stack"
+import { canMuster, hasMoved, isValidSplit, numSplitting, Stack } from "@/models/stack"
 import { useGameStore } from "~/stores/game"
 import { usePreferencesStore } from "~/stores/ui/preferences"
 import { useSelectionStore } from "~/stores/ui/selection"
@@ -165,7 +165,7 @@ const isMandatory = computed(() => {
   }
   switch (game.activePhase) {
     case MasterboardPhase.SPLIT:
-      return !props.stack.isValidSplit(game.round === 0)
+      return !isValidSplit(props.stack, game.round === 0)
     case MasterboardPhase.MOVE:
       return gameStore.mandatoryMoves.includes(props.stack)
   }
@@ -180,9 +180,9 @@ const isDisabled = computed(() => {
     case MasterboardPhase.SPLIT:
       return props.stack.creatures.length < 4
     case MasterboardPhase.MOVE:
-      return props.stack.hasMoved()
+      return hasMoved(props.stack)
     case MasterboardPhase.MUSTER:
-      return !props.stack.canMuster()
+      return !canMuster(props.stack)
   }
   return false
 })
@@ -202,7 +202,7 @@ const classes = computed(() => ({
 
 const stackSize = computed((): string => {
   if (props.stack.split.some(i => i)) {
-    return `${props.stack.creatures.length - props.stack.numSplitting()} / ${props.stack.numSplitting()}`
+    return `${props.stack.creatures.length - numSplitting(props.stack)} / ${numSplitting(props.stack)}`
   }
   return `${props.stack.creatures.length}`
 })
@@ -211,8 +211,8 @@ function select(): void {
   if (!isActivePlayer.value) {
     return
   }
-  if (game.isMovePhase() && props.stack.hasMoved()) {
-    if (!game.getStacksForHex(props.stack.origin).some((stack: Stack) => stack.hasMoved())) {
+  if (game.isMovePhase() && hasMoved(props.stack)) {
+    if (!game.getStacksForHex(props.stack.origin).some((stack: Stack) => hasMoved(stack))) {
       void game.move({ stack: props.stack.id, hex: props.stack.origin })
     }
   }

@@ -81,6 +81,7 @@ import { computed, inject, Ref } from "vue"
 import { sum } from "lodash-es"
 import type DiceRoller from "~/components/ui/generic/DiceRoller"
 import { MasterboardPhase } from "@/models/game"
+import { hasMoved } from "@/models/stack"
 import { useGameStore } from "~/stores/game"
 import { useSelectionStore } from "~/stores/ui/selection"
 
@@ -105,7 +106,7 @@ const icon = computed(() => {
   }
 })
 const sevenHighCount = computed(() => sum(gameStore.activeStacks.map(stack => stack.creatures.length === 7)))
-const movedCount = computed(() => sum(gameStore.activeStacks.map(stack => stack.hasMoved())))
+const movedCount = computed(() => sum(gameStore.activeStacks.map(stack => hasMoved(stack))))
 const musteredCount = computed(() =>
   sum(gameStore.activeStacks.map(stack => stack.currentMuster !== undefined)))
 const engagementsMessage = computed(() => {
