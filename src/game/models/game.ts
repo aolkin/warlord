@@ -129,9 +129,8 @@ export class TitanGame {
     return paths
   }
 
-  // Only meaningful during Move phase; relies on isStackActive's Move-phase case for eligibility.
   getMandatoryMoves(): Stack[] {
-    return this.getActiveStacks().filter(stack => this.isStackActive(stack) &&
+    return this.getActiveStacks().filter(stack => !Moveable.hasMoved(stack) &&
       this.getStacksForHex(stack.initialHex).length > 1 &&
       this.getPathsForHex(stack.hex).length > 0)
   }
