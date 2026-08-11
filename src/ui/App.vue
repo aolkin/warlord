@@ -111,9 +111,8 @@ const activeBattle = computed(() => gameStore.game.activeBattle as Battle | unde
 
 // Only the empty->present transition should navigate to the battle board - subsequent
 // mutations within the same battle (strikes, wounds, etc.) also change activeBattle. Firing
-// immediately covers the case where a battle is already active on mount. The reverse
-// transition forces the battle board back out of view, since the toggle button is disabled
-// without an active battle and so can no longer do that itself.
+// immediately covers a battle already active on mount; the reverse transition clears
+// battleVisible since the toggle button is disabled without one and can't do it itself.
 watch(() => activeBattle.value !== undefined, (hasBattle, hadBattle) => {
   if (hasBattle && !hadBattle) {
     battleVisible.value = true
