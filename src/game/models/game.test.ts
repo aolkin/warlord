@@ -4,7 +4,7 @@ import { CreatureType } from "@/models/creature"
 import { HexEdge } from "@/models/masterboard"
 import { PlayerId } from "@/models/player"
 import { Random } from "@/models/random"
-import { createStack } from "@/models/stack"
+import { Stack } from "@/models/stack"
 import { MasterboardPhase, TitanGame } from "./game"
 
 const noShuffleRandom: Random = { shuffle: collection => [...collection] }
@@ -39,7 +39,9 @@ describe("TitanGame movement legality", () => {
 
   it("excludes a destination occupied by the mover's own stack, but flags one occupied by an enemy stack", () => {
     const ownStackGame = newGame()
-    ownStackGame.stacks.push(createStack(ownStackGame.players[0].id, 3, 5, ownStackGame.round))
+    ownStackGame.stacks.push(Stack.create({
+      owner: ownStackGame.players[0].id, hex: 3, marker: 5, createdRound: ownStackGame.round
+    }))
     ownStackGame.activePhase = MasterboardPhase.MOVE
     ownStackGame.activeRoll = 1
     const ownDestinations = ownStackGame.getPathsForHex(100)
@@ -47,7 +49,9 @@ describe("TitanGame movement legality", () => {
     expect(ownDestinations).toEqual([41, 101])
 
     const enemyStackGame = newGame()
-    enemyStackGame.stacks.push(createStack(enemyStackGame.players[1].id, 3, 5, enemyStackGame.round))
+    enemyStackGame.stacks.push(Stack.create({
+      owner: enemyStackGame.players[1].id, hex: 3, marker: 5, createdRound: enemyStackGame.round
+    }))
     enemyStackGame.activePhase = MasterboardPhase.MOVE
     enemyStackGame.activeRoll = 1
     const toEnemyHex = enemyStackGame.getPathsForHex(100).find(p => p.path.at(-1)!.id === 3)
@@ -142,10 +146,10 @@ describe("TitanGame turn and phase transitions", () => {
       CreatureType.OGRE, CreatureType.GARGOYLE])
     expect(original.creatures).toEqual([CreatureType.ANGEL, CreatureType.CENTAUR,
       CreatureType.OGRE, CreatureType.GARGOYLE])
-    // origin/attackEdge are only ever reset at the start of a turn (SPLIT reached via the
+    // initialHex/attackEdge are only ever reset at the start of a turn (SPLIT reached via the
     // MUSTER wraparound); a freshly split stack already has them at their construction
     // defaults, so this transition leaves them untouched.
-    expect(original.origin).toBe(original.hex)
+    expect(original.initialHex).toBe(original.hex)
     expect(original.attackEdge).toBeUndefined()
     expect(game.mulliganTaken).toBe(false)
   })
@@ -225,7 +229,7 @@ describe("TitanGame turn and phase transitions", () => {
     game.stacks[0].currentMuster = [CreatureType.CENTAUR, [CreatureType.CENTAUR, 0]]
     // Stale movement state left over from this player's earlier MOVE phase this round.
     game.stacks[0].attackEdge = HexEdge.FIRST
-    game.stacks[0].origin = 3
+    game.stacks[0].initialHex = 3
 
     await game.nextPhase()
     expect(game.activePhase).toBe(MasterboardPhase.SPLIT)
@@ -235,7 +239,7 @@ describe("TitanGame turn and phase transitions", () => {
     // and resets per-turn movement state left on their stacks.
     expect(game.stacks[0].currentMuster).toBeUndefined()
     expect(game.stacks[0].attackEdge).toBeUndefined()
-    expect(game.stacks[0].origin).toBe(game.stacks[0].hex)
+    expect(game.stacks[0].initialHex).toBe(game.stacks[0].hex)
   })
 })
 
@@ -286,7 +290,10 @@ describe("TitanGame mustering (setRecruit)", () => {
 
   it("refuses to record a recruit outside the muster phase", async () => {
     const game = newGame()
-    const stack = createStack(game.players[0].id, 100, 1, game.round, [CreatureType.CENTAUR, CreatureType.CENTAUR])
+    const stack = Stack.create({
+      owner: game.players[0].id, hex: 100, marker: 1, createdRound: game.round,
+      creatures: [CreatureType.CENTAUR, CreatureType.CENTAUR]
+    })
     stack.hex = 101 // moved, so otherwise eligible to muster
     game.stacks.push(stack)
     game.activePhase = MasterboardPhase.MOVE
@@ -303,7 +310,10 @@ describe("TitanGame mustering (setRecruit)", () => {
     creatureType, expectSuccess
   }) => {
     const game = newGame()
-    const stack = createStack(game.players[0].id, 100, 1, game.round, [CreatureType.CENTAUR, CreatureType.CENTAUR])
+    const stack = Stack.create({
+      owner: game.players[0].id, hex: 100, marker: 1, createdRound: game.round,
+      creatures: [CreatureType.CENTAUR, CreatureType.CENTAUR]
+    })
     stack.hex = 101 // moved
     game.stacks.push(stack)
     game.creaturePool[creatureType] = 0
@@ -321,7 +331,10 @@ describe("TitanGame mustering (setRecruit)", () => {
 
   it("applies the pending muster to the stack and pool when the muster phase ends", async () => {
     const game = newGame()
-    const stack = createStack(game.players[0].id, 100, 1, game.round, [CreatureType.CENTAUR, CreatureType.CENTAUR])
+    const stack = Stack.create({
+      owner: game.players[0].id, hex: 100, marker: 1, createdRound: game.round,
+      creatures: [CreatureType.CENTAUR, CreatureType.CENTAUR]
+    })
     stack.hex = 101
     game.stacks.push(stack)
     const poolBefore = game.creaturePool[CreatureType.LION]
