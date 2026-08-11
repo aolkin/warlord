@@ -16,12 +16,20 @@ export const HEX_POINTS = [
   [CLIP_TRIANGLE_SIDE / 2 - TRIANGLE_SIDE / 2, TRIANGLE_HEIGHT / 2 - CLIP_TRIANGLE_HEIGHT]
 ].map(([x, y]) => `${x},${y}`).join(" ")
 
-export type Point = [x: number, y: number]
+export function hexTransform(hexId: number): Transformations {
+  const hex = MASTERBOARD.hexes.get(hexId)
+  if (hex === undefined) {
+    throw new RangeError("Invalid hex")
+  }
+  const rotation = new Transformation(TransformationType.ROTATE, [hex.getSide() * -60])
+  const [x, y] = hexLocalOffset(hex)
+  return new Transformations(rotation, new Transformation(TransformationType.TRANSLATE, [x, y]))
+}
 
 // hex's (x, y) position within its own sector's shared template, before hexTransform's
 // hex.getSide() * -60 rotation places that sector onto the assembled board. Every one of the
 // six sectors reuses this same per-position layout, just rotated into place.
-function hexLocalOffset(hex: MasterboardHex): Point {
+function hexLocalOffset(hex: MasterboardHex): [number, number] {
   switch (hex.getArea()) {
     case BoardArea.MIDDLE:
       if (hex.getSideIndex() < 2 || hex.getSideIndex() > 4) {
@@ -36,16 +44,6 @@ function hexLocalOffset(hex: MasterboardHex): Point {
     default:
       return [0, TRIANGLE_HEIGHT / 2]
   }
-}
-
-export function hexTransform(hexId: number): Transformations {
-  const hex = MASTERBOARD.hexes.get(hexId)
-  if (hex === undefined) {
-    throw new RangeError("Invalid hex")
-  }
-  const rotation = new Transformation(TransformationType.ROTATE, [hex.getSide() * -60])
-  const [x, y] = hexLocalOffset(hex)
-  return new Transformations(rotation, new Transformation(TransformationType.TRANSLATE, [x, y]))
 }
 
 export function isHexInverted(hexId: number): boolean {
