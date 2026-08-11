@@ -162,14 +162,10 @@ const mustering = computed({
 
 const musteringCaption = computed(() => {
   const stack = props.focusedStack!
-  if (!Stack.canMuster(stack)) {
-    if (!Moveable.hasMoved(stack)) {
-      return "You cannot muster in a stack that did not move this turn."
-    } else if (Stack.isFull(stack)) {
-      return "This stack is already full and cannot muster."
-    } else {
-      return "This stack cannot muster."
-    }
+  if (!Moveable.hasMoved(stack)) {
+    return "You cannot muster in a stack that did not move this turn."
+  } else if (Stack.isFull(stack)) {
+    return "This stack is already full and cannot muster."
   } else if (stack.currentMuster === undefined) {
     return "No recruit chosen."
   } else {
@@ -199,7 +195,7 @@ function cycleStacks(by: number): void {
   do {
     index += by
     candidateStack = gameStore.activeStacks[mod(index, gameStore.activeStacks.length)]
-  } while ((game.isMovePhase() || game.isMusterPhase()) && !game.isStackActive(candidateStack))
+  } while (!game.isStackActive(candidateStack))
   selectionStore.selectStack(candidateStack)
 }
 </script>
