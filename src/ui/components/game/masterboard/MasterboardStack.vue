@@ -76,10 +76,8 @@ import PlayerMarker from "../Marker.vue"
 import { hexTransform, isHexInverted } from "./utils"
 
 const getEngageTransformForEdge = (hexId: number, edge: HexEdge): Transformations => {
-  // The rotation (degrees), in hexId's own local frame before hexTransform's sector rotation is
-  // layered on top, that places a child on the side of hexId that edge faces. edge * 120 spaces
-  // the three edges evenly 120 degrees apart; the extra 180 flips inverted hexes (rendered
-  // rotated 180 in HexShape.vue) back onto their correct side.
+  // Computed in hexId's own local frame, before hexTransform's sector rotation composes on
+  // top; the extra 180 undoes HexShape.vue's 180-degree rotation of inverted hexes.
   const rotation = edge * 120 + 60 + (isHexInverted(hexId) ? 0 : 180)
   const transforms = new Transformations()
   transforms.push(new Transformation(TransformationType.ROTATE, [rotation]))
