@@ -218,7 +218,9 @@ export class TitanGame {
     const terrain = masterboard.getHex(attackingStack.hex).terrain
     const attackingSide = toBattleSide(attackingStack, this.score[attackingStack.owner])
     const defendingSide = toBattleSide(defending, this.score[defending.owner])
-    this.activeBattle = new Battle(terrain, attackingStack.attackEdge, attackingSide, defendingSide)
+    this.activeBattle = Battle.create({
+      terrain, edge: attackingStack.attackEdge, attacking: attackingSide, defending: defendingSide
+    })
     this.activeBattleHex = attackingStack.hex
   }
 
@@ -300,10 +302,7 @@ export class TitanGame {
   }
 
   mRehydrate(hydration: TitanGame): void {
-    assign(this, {
-      ...hydration,
-      activeBattle: hydration.activeBattle !== undefined ? Battle.hydrate(hydration.activeBattle) : undefined
-    })
+    assign(this, hydration)
   }
 
   static hydrate(persisted?: string): TitanGame {

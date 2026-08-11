@@ -34,7 +34,7 @@
           block
           variant="outlined"
           :disabled="!mayProceed"
-          @click="battle.nextBattlePhase()"
+          @click="nextPhase(battle)"
         >
           End {{ phaseTypeTitle }}
         </v-btn>
@@ -48,7 +48,8 @@ import {
   BATTLE_PHASE_TYPES,
   Battle,
   BattleCreature,
-  BattlePhaseType
+  BattlePhaseType,
+  nextPhase
 } from "@/models/battle"
 import { PlayerId } from "@/models/player"
 import { useGameStore } from "~/stores/game"
@@ -61,7 +62,7 @@ const gameStore = useGameStore()
 const game = gameStore.game
 
 const battlePhaseType = computed(() => BATTLE_PHASE_TYPES[props.battle.phase])
-const battleActivePlayerId = computed((): PlayerId => props.battle.getActivePlayer())
+const battleActivePlayerId = computed((): PlayerId => Battle.getActivePlayer(props.battle))
 const battleActivePlayer = computed(() => game.getPlayerById(battleActivePlayerId.value))
 
 const phaseTypeTitle = computed((): string => {
@@ -93,14 +94,14 @@ const phaseIcon = computed((): string => {
 const pendingStrikes = computed((): BattleCreature[] => {
   if (battlePhaseType.value === BattlePhaseType.STRIKE ||
     battlePhaseType.value === BattlePhaseType.STRIKEBACK) {
-    return props.battle.getPendingStrikes()
+    return Battle.getPendingStrikes(props.battle)
   } else {
     return []
   }
 })
 
 const mayProceed = computed((): boolean =>
-  pendingStrikes.value.length === 0 && !props.battle.carryoverTargets())
+  pendingStrikes.value.length === 0 && !Battle.carryoverTargets(props.battle))
 
 const roundIcon = computed((): string => {
   const name = `mdi-numeric-${props.battle.round + 1}-box`

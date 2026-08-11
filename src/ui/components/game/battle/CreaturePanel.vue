@@ -80,7 +80,7 @@
 </template>
 <script setup lang="ts">
 import { computed, ref } from "vue"
-import { BattleCreature, BattlePhase } from "@/models/battle"
+import { Battle, BattleCreature, BattlePhase } from "@/models/battle"
 import { Player } from "@/models/player"
 import { useGameStore } from "~/stores/game"
 import Creature from "../Creature.vue"
@@ -115,13 +115,13 @@ const attacker = computed<Player>(() =>
 const defender = computed<Player>(() =>
   game.getPlayerById(activeBattle.value.defender))
 const pendingOffense = computed<BattleCreature[]>(() =>
-  activeBattle.value.getOffense().filter((creature: BattleCreature) => creature.hex >= 36))
+  Battle.getOffense(activeBattle.value).filter((creature: BattleCreature) => creature.hex >= 36))
 const pendingDefense = computed<BattleCreature[]>(() =>
-  activeBattle.value.getDefense().filter((creature: BattleCreature) => creature.hex >= 36))
+  Battle.getDefense(activeBattle.value).filter((creature: BattleCreature) => creature.hex >= 36))
 const deadOffense = computed<BattleCreature[]>(() =>
-  activeBattle.value.getOffense().filter((creature: BattleCreature) => creature.hex === 0))
+  Battle.getOffense(activeBattle.value).filter((creature: BattleCreature) => creature.hex === 0))
 const deadDefense = computed<BattleCreature[]>(() =>
-  activeBattle.value.getDefense().filter((creature: BattleCreature) => creature.hex === 0))
+  Battle.getDefense(activeBattle.value).filter((creature: BattleCreature) => creature.hex === 0))
 </script>
 <style scoped lang="sass">
 .interactive
