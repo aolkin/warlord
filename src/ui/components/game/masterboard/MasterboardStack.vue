@@ -126,10 +126,10 @@ const isActivePlayer = computed(() => game.getActivePlayerId() === props.stack.o
 const potentialEngagements = computed((): HexEdge[] => {
   if (selectionStore.selectedStack === undefined) {
     return []
+  } else if (!game.isMovePhase()) {
+    return []
   } else if (game.getStacksForHex(props.stack.hex)
     .some((stack: Stack) => stack.owner === game.getActivePlayerId())) {
-    return []
-  } else if (!game.isMovePhase()) {
     return []
   } else if (game.canTitanTeleport(selectionStore.selectedStack) || preferencesStore.freeMovement) {
     if (masterboard.getHex(props.stack.hex).terrain === Terrain.TOWER) {
