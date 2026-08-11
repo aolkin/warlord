@@ -28,7 +28,6 @@ import {
   BattlePhaseType,
   RangestrikeTarget,
   Strike,
-  combineStrikes,
   isRangestrike
 } from "./strike"
 
@@ -433,7 +432,7 @@ export class Battle {
     } else if (strikerHazard === Hazard.VOLCANO && strikerNative) {
       adjustment = { toHit: 0, dice: 2 }
     }
-    return combineStrikes(adjustment, edgeAdjustment, false)
+    return Strike.combine(adjustment, edgeAdjustment, false)
   }
 
   /** Attacker must roll at least this high to get a hit. */
@@ -443,7 +442,7 @@ export class Battle {
 
   /** Attacker must roll at least this high to get a hit. */
   toHitAdjusted(attacker: BattleCreature, defender: BattleCreature): number {
-    return combineStrikes(
+    return Strike.combine(
       { dice: 0, toHit: this.toHitRaw(attacker, defender) },
       this.strikeAdjustment(attacker, defender)
     ).toHit
@@ -457,13 +456,13 @@ export class Battle {
   }
 
   getAdjustedStrike(attacker: BattleCreature, defender: BattleCreature): Strike {
-    return combineStrikes(this.getRawStrike(attacker, defender),
+    return Strike.combine(this.getRawStrike(attacker, defender),
       this.strikeAdjustment(attacker, defender))
   }
 
   getRangestrike(attacker: BattleCreature, target: RangestrikeTarget): Strike {
     const rawStrike = this.getRawStrike(attacker, target.creature)
-    return combineStrikes({
+    return Strike.combine({
       toHit: target.longDistance ? rawStrike.toHit + 1 : rawStrike.toHit,
       dice: div(rawStrike.dice, 2)
     }, target.adjustment)
