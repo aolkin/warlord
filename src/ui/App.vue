@@ -19,6 +19,7 @@
         />
         <v-btn
           :variant="battleVisible ? 'text' : 'plain'"
+          :disabled="!activeBattle"
           icon="mdi-hexagon-multiple-outline"
           @click="battleVisible = true"
         />
@@ -58,10 +59,12 @@
       <SystemMenu />
     </v-navigation-drawer>
     <v-main>
-      <!-- Constructing the boards is very expensive, so we hide them with v-show instead of
-           destroying and recreating them with v-if -->
       <Masterboard v-show="!battleVisible" />
-      <BattleBoard v-show="battleVisible" />
+      <BattleBoard
+        v-if="activeBattle"
+        v-show="battleVisible"
+        :battle="activeBattle"
+      />
       <DiceRoller ref="diceRoller" />
     </v-main>
     <v-footer
@@ -77,7 +80,8 @@
 </template>
 
 <script setup lang="ts">
-import { defineAsyncComponent, onBeforeMount, provide, readonly, ref, watch } from "vue"
+import { computed, defineAsyncComponent, provide, readonly, ref, watch } from "vue"
+import type { Battle } from "@/models/battle"
 import BattleBoard from "~/components/game/battle/BattleBoard"
 import Masterboard from "~/components/game/masterboard/Masterboard"
 import PlayerStatus from "~/components/ui/game/PlayerStatus"
@@ -101,19 +105,21 @@ const prefsPaneVisible = ref(false)
 
 const battleVisible = ref(false)
 
-onBeforeMount(() => {
-  if (gameStore.game.activeBattle !== undefined) {
-    battleVisible.value = true
-  }
-})
+// game is deeply reactive, and Vue's UnwrapNestedRefs can't reconstruct Battle's
+// private methods, so the inferred type structurally mismatches the class - cast it back.
+const activeBattle = computed(() => gameStore.game.activeBattle as Battle | undefined)
 
 // Only the empty->present transition should navigate to the battle board - subsequent
-// mutations within the same battle (strikes, wounds, etc.) also change activeBattle.
-watch(() => gameStore.game.activeBattle !== undefined, (hasBattle, hadBattle) => {
+// mutations within the same battle (strikes, wounds, etc.) also change activeBattle. Firing
+// immediately covers a battle already active on mount; the reverse transition clears
+// battleVisible since the toggle button is disabled without one and can't do it itself.
+watch(() => activeBattle.value !== undefined, (hasBattle, hadBattle) => {
   if (hasBattle && !hadBattle) {
     battleVisible.value = true
+  } else if (hadBattle && !hasBattle) {
+    battleVisible.value = false
   }
-})
+}, { immediate: true })
 
 function toggleFancyGraphics(): void {
   preferencesStore.fancyGraphics = !preferencesStore.fancyGraphics
