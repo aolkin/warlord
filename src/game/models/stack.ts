@@ -61,9 +61,9 @@ export namespace Stack {
   }
 
   export function isValidSplit(stack: Stack, firstRound?: boolean): boolean {
-    const splitCount = getSplittingCreatures(stack).length
+    const numSplitting = getSplittingCreatures(stack).length
     if (firstRound ?? false) {
-      if (splitCount !== 4) {
+      if (numSplitting !== 4) {
         return false
       }
       const splitLords: number = sum(stack.creatures.map((creature, index) =>
@@ -72,8 +72,8 @@ export namespace Stack {
         return false
       }
     }
-    const remaining = stack.creatures.length - splitCount
-    return splitCount === 0 || (splitCount >= 2 && remaining >= 2)
+    const remaining = stack.creatures.length - numSplitting
+    return numSplitting === 0 || (numSplitting >= 2 && remaining >= 2)
   }
 
   export function getSplittingCreatures(stack: Stack): CreatureType[] {

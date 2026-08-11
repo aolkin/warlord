@@ -173,7 +173,7 @@ const isMandatory = computed(() => {
   return false
 })
 
-const isDisabled = computed(() => isActivePlayer.value && !game.isStackActive(props.stack))
+const isDisabled = computed(() => !game.isStackActive(props.stack))
 
 const classes = computed(() => ({
   selected: selected.value,

@@ -159,9 +159,10 @@ export class TitanGame {
     }
   }
 
-  // Whether stack is eligible to act in the current phase, for the player it belongs to.
-  // Ownership isn't checked here since callers already scope to a specific player's stacks.
   isStackActive(stack: Stack): boolean {
+    if (stack.owner !== this.getActivePlayerId()) {
+      return false
+    }
     switch (this.activePhase) {
       case MasterboardPhase.SPLIT:
         return stack.creatures.length >= 4
