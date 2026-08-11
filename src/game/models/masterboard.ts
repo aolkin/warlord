@@ -220,8 +220,8 @@ export class Masterboard {
       ))
 
       const upperHex = this.hexes.get((id + 1) * 1000)!
-      upperHex.addEdge(this.hexes.get((mod((id - 1), 6) + 1) * 1000)!, HexEdge.FIRST, MovementRule.ARROW)
-      upperHex.addEdge(this.hexes.get((mod((id + 1), 6) + 1) * 1000)!, HexEdge.THIRD, MovementRule.ARROW)
+      upperHex.addEdge(this.hexes.get((mod((id - 1), 6) + 1) * 1000)!, HexEdge.THIRD, MovementRule.ARROW)
+      upperHex.addEdge(this.hexes.get((mod((id + 1), 6) + 1) * 1000)!, HexEdge.FIRST, MovementRule.ARROW)
       upperHex.addEdge(this.hexes.get(id * 7 + 1)!, HexEdge.SECOND, MovementRule.SQUARE)
     }
 
