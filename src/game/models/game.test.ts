@@ -125,6 +125,45 @@ describe("TitanGame mayProceed for the split phase", () => {
   })
 })
 
+describe("TitanGame.isStackActive", () => {
+  it("gates SPLIT phase on having enough creatures to split", () => {
+    const game = newGame()
+    game.activePhase = MasterboardPhase.SPLIT
+    const stack = game.stacks[0]
+    expect(game.isStackActive(stack)).toBe(true) // 8 creatures by default
+
+    stack.creatures.splice(3)
+    expect(game.isStackActive(stack)).toBe(false) // down to 3, below the 4-creature minimum
+  })
+
+  it("gates MOVE phase on not having moved yet", () => {
+    const game = newGame()
+    game.activePhase = MasterboardPhase.MOVE
+    const stack = game.stacks[0]
+    expect(game.isStackActive(stack)).toBe(true)
+
+    stack.hex = stack.initialHex + 1
+    expect(game.isStackActive(stack)).toBe(false)
+  })
+
+  it("gates MUSTER phase on Stack.canMuster", () => {
+    const game = newGame()
+    game.activePhase = MasterboardPhase.MUSTER
+    const stack = game.stacks[0]
+    stack.creatures.splice(3) // below the 7-creature cap, so only "hasn't moved" blocks mustering
+    expect(game.isStackActive(stack)).toBe(false) // hasn't moved, so can't muster
+
+    stack.hex = stack.initialHex + 1
+    expect(game.isStackActive(stack)).toBe(true)
+  })
+
+  it("is always active outside SPLIT/MOVE/MUSTER", () => {
+    const game = newGame()
+    game.activePhase = MasterboardPhase.BATTLE
+    expect(game.isStackActive(game.stacks[0])).toBe(true)
+  })
+})
+
 describe("TitanGame turn and phase transitions", () => {
   it("advances from split to move, finalizing pending splits", async () => {
     const game = newGame()

@@ -3,6 +3,7 @@ import { assert } from "@/utils/assert"
 import { Battle, BattleSide } from "./battle"
 import { CREATURE_DATA, CREATURE_LIST, CreatureType } from "./creature"
 import masterboard, { HexEdge, MasterboardHex } from "./masterboard"
+import { Moveable } from "./moveable"
 import { Player, PlayerId } from "./player"
 import { defaultRandom, Random } from "./random"
 import { MusterChoice, Stack, StackRef } from "./stack"
@@ -129,7 +130,7 @@ export class TitanGame {
   }
 
   getMandatoryMoves(): Stack[] {
-    return this.getActiveStacks().filter(stack => !Stack.hasMoved(stack) &&
+    return this.getActiveStacks().filter(stack => !Moveable.hasMoved(stack) &&
       this.getStacksForHex(stack.initialHex).length > 1 &&
       this.getPathsForHex(stack.hex).length > 0)
   }
@@ -148,7 +149,7 @@ export class TitanGame {
         return this.getActiveStacks().every(stack => Stack.isValidSplit(stack, this.round === 0))
       case MasterboardPhase.MOVE:
         return this.getMandatoryMoves().length === 0 &&
-          this.getActiveStacks().some(stack => Stack.hasMoved(stack))
+          this.getActiveStacks().some(stack => Moveable.hasMoved(stack))
       case MasterboardPhase.BATTLE:
         return true
       case MasterboardPhase.MUSTER:
@@ -158,9 +159,24 @@ export class TitanGame {
     }
   }
 
+  // Whether stack is eligible to act in the current phase, for the player it belongs to.
+  // Ownership isn't checked here since callers already scope to a specific player's stacks.
+  isStackActive(stack: Stack): boolean {
+    switch (this.activePhase) {
+      case MasterboardPhase.SPLIT:
+        return stack.creatures.length >= 4
+      case MasterboardPhase.MOVE:
+        return !Moveable.hasMoved(stack)
+      case MasterboardPhase.MUSTER:
+        return Stack.canMuster(stack)
+      default:
+        return true
+    }
+  }
+
   isMulliganAvailable(): boolean {
     return this.round === 0 && !this.mulliganTaken &&
-      !this.getActiveStacks().some(stack => Stack.hasMoved(stack))
+      !this.getActiveStacks().some(stack => Moveable.hasMoved(stack))
   }
 
   isSplitPhase(): boolean {

@@ -56,7 +56,7 @@
             You must split your starting creatures. Please select four creatures (including one lord) above
             to split into a separate stack.
             <div
-              v-if="props.focusedStack !== undefined && Stack.isValidSplit(props.focusedStack, game.round === 0)"
+              v-if="Stack.isValidSplit(props.focusedStack, game.round === 0)"
               class="first-round-success"
             >
               You have selected a valid split and may roll the die
@@ -115,6 +115,7 @@ import { computed } from "vue"
 import { capitalize } from "lodash-es"
 import { CREATURE_DATA, CreatureType } from "@/models/creature"
 import masterboard, { Terrain } from "@/models/masterboard"
+import { Moveable } from "@/models/moveable"
 import { Player } from "@/models/player"
 import { MusterChoice, MusterPossibility, Stack } from "@/models/stack"
 import { useGameStore } from "~/stores/game"
@@ -162,9 +163,9 @@ const mustering = computed({
 const musteringCaption = computed(() => {
   const stack = props.focusedStack!
   if (!Stack.canMuster(stack)) {
-    if (!Stack.hasMoved(stack)) {
+    if (!Moveable.hasMoved(stack)) {
       return "You cannot muster in a stack that did not move this turn."
-    } else if (stack.creatures.length > 6) {
+    } else if (Stack.isFull(stack)) {
       return "This stack is already full and cannot muster."
     } else {
       return "This stack cannot muster."
@@ -198,7 +199,7 @@ function cycleStacks(by: number): void {
   do {
     index += by
     candidateStack = gameStore.activeStacks[mod(index, gameStore.activeStacks.length)]
-  } while ((game.isMovePhase() && Stack.hasMoved(candidateStack)) ||
+  } while ((game.isMovePhase() && Moveable.hasMoved(candidateStack)) ||
   (game.isMusterPhase() && !Stack.canMuster(candidateStack)))
   selectionStore.selectStack(candidateStack)
 }

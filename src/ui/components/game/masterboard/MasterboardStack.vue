@@ -65,6 +65,7 @@
 import { computed } from "vue"
 import { MasterboardPhase, Path } from "@/models/game"
 import masterboard, { HexEdge, MasterboardEdge, MasterboardHex, Terrain } from "@/models/masterboard"
+import { Moveable } from "@/models/moveable"
 import { Stack } from "@/models/stack"
 import { useGameStore } from "~/stores/game"
 import { usePreferencesStore } from "~/stores/ui/preferences"
@@ -172,20 +173,7 @@ const isMandatory = computed(() => {
   return false
 })
 
-const isDisabled = computed(() => {
-  if (!isActivePlayer.value) {
-    return false
-  }
-  switch (game.activePhase) {
-    case MasterboardPhase.SPLIT:
-      return props.stack.creatures.length < 4
-    case MasterboardPhase.MOVE:
-      return Stack.hasMoved(props.stack)
-    case MasterboardPhase.MUSTER:
-      return !Stack.canMuster(props.stack)
-  }
-  return false
-})
+const isDisabled = computed(() => isActivePlayer.value && !game.isStackActive(props.stack))
 
 const classes = computed(() => ({
   selected: selected.value,
@@ -212,8 +200,8 @@ function select(): void {
   if (!isActivePlayer.value) {
     return
   }
-  if (game.isMovePhase() && Stack.hasMoved(props.stack)) {
-    if (!game.getStacksForHex(props.stack.initialHex).some((stack: Stack) => Stack.hasMoved(stack))) {
+  if (game.isMovePhase() && Moveable.hasMoved(props.stack)) {
+    if (!game.getStacksForHex(props.stack.initialHex).some((stack: Stack) => Moveable.hasMoved(stack))) {
       void game.move({ stack: props.stack.id, hex: props.stack.initialHex })
     }
   }

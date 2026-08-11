@@ -2,6 +2,7 @@ import { range, remove, sum } from "lodash-es"
 import { assert } from "@/utils/assert"
 import { CREATURE_DATA, CreatureType, MUSTER_DATA } from "./creature"
 import { HexEdge, Terrain } from "./masterboard"
+import { Moveable } from "./moveable"
 import { PlayerId } from "./player"
 
 let stackIdCounter = 0
@@ -14,14 +15,7 @@ export type MusterPossibility = [CreatureType, MusterBasis[]]
 // A recruit that has actually been chosen: the creature and the single basis used to muster it.
 export type MusterChoice = [CreatureType, MusterBasis]
 
-// Shared by any entity that occupies a hex and remembers the hex it started at, so movement
-// can be detected the same way regardless of what kind of entity it is.
-export interface HasMovement {
-  hex: number
-  initialHex: number
-}
-
-export interface Stack {
+export interface Stack extends Moveable {
   readonly owner: PlayerId
   readonly creatures: CreatureType[]
   readonly marker: number
@@ -30,8 +24,6 @@ export interface Stack {
   readonly id: number
   readonly createdRound: number
 
-  initialHex: number
-  hex: number
   attackEdge: HexEdge | undefined
   currentMuster: MusterChoice | undefined
 }
@@ -60,12 +52,12 @@ export namespace Stack {
     }
   }
 
-  export function hasMoved<T extends HasMovement>(entity: T): boolean {
-    return entity.hex !== entity.initialHex
+  export function isFull(stack: Stack): boolean {
+    return stack.creatures.length >= 7
   }
 
   export function canMuster(stack: Stack): boolean {
-    return hasMoved(stack) && stack.creatures.length < 7
+    return Moveable.hasMoved(stack) && !isFull(stack)
   }
 
   export function isValidSplit(stack: Stack, firstRound?: boolean): boolean {
