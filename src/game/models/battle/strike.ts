@@ -16,13 +16,10 @@ export function isRangestrike(arg: BattleCreature | RangestrikeTarget): arg is R
   return "creature" in arg && "adjustment" in arg && "longDistance" in arg
 }
 
-// eslint-disable-next-line @typescript-eslint/no-namespace
-export namespace Strike {
-  export function combine(a: Strike, b: Strike, clampVal?: boolean): Strike {
-    return {
-      toHit: clampVal === false ? a.toHit + b.toHit : clamp(a.toHit + b.toHit, 2, 6),
-      dice: a.dice + b.dice
-    }
+export function combine(a: Strike, b: Strike, clampVal?: boolean): Strike {
+  return {
+    toHit: clampVal === false ? a.toHit + b.toHit : clamp(a.toHit + b.toHit, 2, 6),
+    dice: a.dice + b.dice
   }
 }
 
