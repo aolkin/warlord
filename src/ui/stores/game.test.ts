@@ -1,7 +1,7 @@
 import { createPinia, setActivePinia } from "pinia"
 import { afterEach, beforeEach, describe, expect, it } from "vitest"
 import { nextTick } from "vue"
-import { MasterboardPhase } from "@/models/game"
+import { MasterboardPhase, TitanGame } from "@/models/game"
 import { useGameStore } from "~/stores/game"
 
 describe("game store persistence watcher", () => {
@@ -40,7 +40,7 @@ describe("game store persistence watcher", () => {
     expect(writeCount).toBe(0)
 
     gameStore.game.activePhase = MasterboardPhase.MOVE // a second mutation, still before any await
-    await gameStore.game.setRoll(4)
+    await TitanGame.setRoll(gameStore.game, 4)
     await nextTick()
 
     expect(writeCount).toBe(1)

@@ -8,18 +8,18 @@
     </div>
     <div
       class="text-center round-counter"
-      v-text="game.getRound()"
+      v-text="game.round + 1"
     />
     <v-card
       v-for="player in game.players"
       :key="player.id"
-      :class="{ 'active': game.getActivePlayer() === player, [`bg-player-${player.id}`]: true }"
+      :class="{ 'active': TitanGame.getActivePlayer(game) === player, [`bg-player-${player.id}`]: true }"
       class="player-card ml-2 mr-1 py-1 my-2"
       elevation="4"
     >
       <div
         class="text-center"
-        v-text="game.getStacksForPlayer(player.id).length"
+        v-text="TitanGame.getStacksForPlayer(game, player.id).length"
       />
       <v-tooltip right>
         <template #activator="{ props }">
@@ -41,6 +41,7 @@
 </template>
 
 <script setup lang="ts">
+import { TitanGame } from "@/models/game"
 import { useGameStore } from "~/stores/game"
 
 const game = useGameStore().game

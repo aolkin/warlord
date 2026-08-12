@@ -204,11 +204,11 @@ async function loadSave(): Promise<void> {
   if (hydration === undefined) {
     throw new Error("Failed to load save data")
   }
-  game.mRehydrate(JSON.parse(hydration))
+  Object.assign(game, JSON.parse(hydration))
 }
 
 function loadJson(): void {
-  game.mRehydrate(JSON.parse(saveText.value))
+  Object.assign(game, JSON.parse(saveText.value))
 }
 </script>
 
