@@ -61,7 +61,7 @@ const gameStore = useGameStore()
 const game = gameStore.game
 
 const battlePhaseType = computed(() => BATTLE_PHASE_TYPES[props.battle.phase])
-const battleActivePlayerId = computed((): PlayerId => Battle.getActivePlayer(props.battle))
+const battleActivePlayerId = computed((): PlayerId => props.battle.activePlayer)
 const battleActivePlayer = computed(() => game.getPlayerById(battleActivePlayerId.value))
 
 const phaseTypeTitle = computed((): string => {

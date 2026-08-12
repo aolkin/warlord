@@ -40,6 +40,7 @@ export interface Battle {
 
   round: number
   phase: BattlePhase
+  activePlayer: PlayerId
   activeStrike?: ActiveStrike
 }
 
@@ -71,25 +72,13 @@ export namespace Battle {
       }))),
       round: 0,
       phase: BattlePhase.DEFENDER_MOVE,
+      activePlayer: defending.player,
       activeStrike: undefined
     }
   }
 
-  export function getActivePlayer(battle: Battle): PlayerId {
-    switch (battle.phase) {
-      case BattlePhase.DEFENDER_MOVE:
-      case BattlePhase.DEFENDER_STRIKE:
-      case BattlePhase.DEFENDER_STRIKEBACK:
-        return battle.defender
-      case BattlePhase.ATTACKER_STRIKEBACK:
-      case BattlePhase.ATTACKER_MOVE:
-      case BattlePhase.ATTACKER_STRIKE:
-        return battle.attacker
-    }
-  }
-
   export function getActiveCreatures(battle: Battle): BattleCreature[] {
-    return battle.creatures.filter(creature => creature.player === getActivePlayer(battle))
+    return battle.creatures.filter(creature => creature.player === battle.activePlayer)
   }
 
   export function getPendingStrikes(battle: Battle): BattleCreature[] {
@@ -464,7 +453,7 @@ export namespace Battle {
     const creature = battle.creatures.find(c => c.id === payload.creature)
     assert(creature !== undefined, "Unexpected creature")
     assert(BATTLE_PHASE_TYPES[battle.phase] === BattlePhaseType.MOVE, "Not in movement phase")
-    assert(creature.player === getActivePlayer(battle), "Incorrect player")
+    assert(creature.player === battle.activePlayer, "Incorrect player")
     creature.hex = payload.hex
   }
 
@@ -514,7 +503,7 @@ export namespace Battle {
     const targetCreature = battle.creatures.find(c => c.id === targetId)
     assert(targetCreature !== undefined, "Unexpected defender")
     assert(BATTLE_PHASE_TYPES[battle.phase] !== BattlePhaseType.MOVE, "Cannot strike in movement phase")
-    assert(attackerCreature.player === getActivePlayer(battle), "Incorrect player")
+    assert(attackerCreature.player === battle.activePlayer, "Incorrect player")
     return { attackerCreature, targetCreature }
   }
 
@@ -558,6 +547,18 @@ export namespace Battle {
       battle.phase = BattlePhase.DEFENDER_MOVE
     } else {
       battle.phase += 1
+    }
+    switch (battle.phase) {
+      case BattlePhase.DEFENDER_MOVE:
+      case BattlePhase.DEFENDER_STRIKE:
+      case BattlePhase.DEFENDER_STRIKEBACK:
+        battle.activePlayer = battle.defender
+        break
+      case BattlePhase.ATTACKER_STRIKEBACK:
+      case BattlePhase.ATTACKER_MOVE:
+      case BattlePhase.ATTACKER_STRIKE:
+        battle.activePlayer = battle.attacker
+        break
     }
     if (BATTLE_PHASE_TYPES[battle.phase] === BattlePhaseType.MOVE) {
       getActiveCreatures(battle).forEach(creature => {

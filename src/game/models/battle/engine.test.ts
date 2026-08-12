@@ -74,6 +74,7 @@ describe("Rangestrike targets", () => {
   } {
     const { battle, offense, defense } = setupBattle(Terrain.PLAINS, [attackerType], [CreatureType.CENTAUR])
     battle.phase = BattlePhase.ATTACKER_STRIKE
+    battle.activePlayer = battle.attacker
     const [attacker] = offense
     const [target] = defense
     place(attacker, 8)
@@ -132,6 +133,7 @@ describe("Rangestrike targets", () => {
     const defending: BattleSide = { player: PlayerId.BLUE, score: 0, creatures: [CreatureType.CENTAUR] }
     const battle = Battle.create({ terrain: Terrain.MOUNTAINS, edge: HexEdge.FIRST, attacking, defending })
     battle.phase = BattlePhase.ATTACKER_STRIKE
+    battle.activePlayer = battle.attacker
     const dragon = getOffense(battle)[0]
     const centaur = getDefense(battle)[0]
     dragon.hex = 15
@@ -153,6 +155,7 @@ describe("Rangestrike targets", () => {
     const defending: BattleSide = { player: PlayerId.BLUE, score: 0, creatures: [CreatureType.GARGOYLE] }
     const battle = Battle.create({ terrain: Terrain.BRUSH, edge: HexEdge.FIRST, attacking, defending })
     battle.phase = BattlePhase.ATTACKER_STRIKE
+    battle.activePlayer = battle.attacker
     const ranger = getOffense(battle)[0]
     const gargoyle = getDefense(battle)[0]
     ranger.hex = 8
@@ -172,6 +175,7 @@ describe("Rangestrike targets", () => {
     const defending: BattleSide = { player: PlayerId.BLUE, score: 0, creatures: [CreatureType.DRAGON] }
     const battle = Battle.create({ terrain: Terrain.MOUNTAINS, edge: HexEdge.FIRST, attacking, defending })
     battle.phase = BattlePhase.ATTACKER_STRIKE
+    battle.activePlayer = battle.attacker
     const ranger = getOffense(battle)[0]
     const dragon = getDefense(battle)[0]
     ranger.hex = 2
@@ -193,6 +197,7 @@ describe("Rangestrike targets", () => {
     const defending: BattleSide = { player: PlayerId.BLUE, score: 0, creatures: [CreatureType.CENTAUR] }
     const battle = Battle.create({ terrain: Terrain.JUNGLE, edge: HexEdge.FIRST, attacking, defending })
     battle.phase = BattlePhase.ATTACKER_STRIKE
+    battle.activePlayer = battle.attacker
     const ranger = getOffense(battle)[0]
     const centaur = getDefense(battle)[0]
     ranger.hex = 8
@@ -214,6 +219,7 @@ describe("Rangestrike targets", () => {
     const defending: BattleSide = { player: PlayerId.BLUE, score: 0, creatures: [CreatureType.CENTAUR] }
     const battle = Battle.create({ terrain: Terrain.TOWER, edge: HexEdge.FIRST, attacking, defending })
     battle.phase = BattlePhase.ATTACKER_STRIKE
+    battle.activePlayer = battle.attacker
     const ranger = getOffense(battle)[0]
     const centaur = getDefense(battle)[0]
     ranger.hex = 13
@@ -239,6 +245,7 @@ describe("Carryover", () => {
     const defending: BattleSide = { player: PlayerId.BLUE, score: 0, creatures: [CreatureType.CENTAUR, CreatureType.CENTAUR] }
     const battle = Battle.create({ terrain: Terrain.PLAINS, edge: HexEdge.FIRST, attacking, defending })
     battle.phase = BattlePhase.ATTACKER_STRIKE
+    battle.activePlayer = battle.attacker
     const lion = getOffense(battle)[0]
     const [centaur1, centaur2] = getDefense(battle)
     lion.hex = 8
@@ -372,7 +379,7 @@ describe("Movement legality (movementFor)", () => {
     // Ogre (skill 2) entering from battle-hex 37 (the attacker's entrance zone on
     // HexEdge.FIRST), on hazard-free Plains: every hex within 2 movement points.
     const { battle, offense } = setupBattle(Terrain.PLAINS, [CreatureType.OGRE], [CreatureType.CENTAUR])
-    battle.phase = BattlePhase.ATTACKER_MOVE
+    Battle.nextPhase(battle) // nobody engaged yet, so this auto-skips straight to ATTACKER_MOVE
     const [ogre] = offense
     expect(ogre.initialHex).toBe(37)
 
@@ -381,7 +388,7 @@ describe("Movement legality (movementFor)", () => {
 
   it("cannot land a stack on a hex already occupied by another creature (friend or foe)", () => {
     const { battle, offense, defense } = setupBattle(Terrain.PLAINS, [CreatureType.LION], [CreatureType.CENTAUR])
-    battle.phase = BattlePhase.ATTACKER_MOVE
+    Battle.nextPhase(battle) // nobody engaged yet, so this auto-skips straight to ATTACKER_MOVE
     const [lion] = offense
     const [centaur] = defense
     place(centaur, 4)
@@ -406,7 +413,7 @@ describe("Movement legality (movementFor)", () => {
     // movementFor in engine.ts), but this test isn't about that gap.
     const { battle, offense } = setupBattle(Terrain.PLAINS,
       [CreatureType.CENTAUR, CreatureType.GRIFFON, CreatureType.LION, CreatureType.LION], [CreatureType.CENTAUR])
-    battle.phase = BattlePhase.ATTACKER_MOVE
+    Battle.nextPhase(battle) // nobody engaged yet, so this auto-skips straight to ATTACKER_MOVE
     const [centaur, griffon, blocker1, blocker2] = offense
     place(centaur, 2)
     place(griffon, 2)
@@ -430,6 +437,7 @@ describe("Engagement edge cases", () => {
     // direction that doesn't.
     const { battle, offense, defense } = setupBattle(Terrain.DESERT, [CreatureType.CENTAUR], [CreatureType.LION])
     battle.phase = BattlePhase.ATTACKER_STRIKE
+    battle.activePlayer = battle.attacker
     const [centaur] = offense
     const [lion] = defense
     place(centaur, 15) // atop the cliff
@@ -445,6 +453,7 @@ describe("Engagement edge cases", () => {
   it("does not engage a creature atop a cliff with the creature below it", () => {
     const { battle, offense, defense } = setupBattle(Terrain.DESERT, [CreatureType.CENTAUR], [CreatureType.LION])
     battle.phase = BattlePhase.ATTACKER_STRIKE
+    battle.activePlayer = battle.attacker
     const [centaur] = offense
     const [lion] = defense
     place(centaur, 15) // atop the cliff
@@ -473,6 +482,7 @@ describe("Engagement edge cases", () => {
     const { battle, offense, defense } = setupBattle(Terrain.TOWER,
       [CreatureType.LION], [CreatureType.CENTAUR, CreatureType.CENTAUR, CreatureType.CENTAUR])
     battle.phase = BattlePhase.ATTACKER_STRIKE
+    battle.activePlayer = battle.attacker
     const [lion] = offense
     const [primary, included, excluded] = defense
     place(lion, 2)
@@ -488,6 +498,7 @@ describe("Engagement edge cases", () => {
   it("lets a strike choose a higher toHit than computed, but rejects a lower one", () => {
     const { battle, offense, defense } = setupBattle(Terrain.PLAINS, [CreatureType.LION], [CreatureType.CENTAUR])
     battle.phase = BattlePhase.ATTACKER_STRIKE
+    battle.activePlayer = battle.attacker
     const [lion] = offense
     const [centaur] = defense
     place(lion, 8)
@@ -510,6 +521,7 @@ describe("Engagement edge cases", () => {
   it("resolves a rangestrike attack the same way as a melee strike, but never allows carryover", () => {
     const { battle, offense, defense } = setupBattle(Terrain.PLAINS, [CreatureType.RANGER], [CreatureType.CENTAUR])
     battle.phase = BattlePhase.ATTACKER_STRIKE
+    battle.activePlayer = battle.attacker
     const [ranger] = offense
     const [centaur] = defense
     place(ranger, 8)
@@ -633,9 +645,11 @@ describe("Battle phase transitions", () => {
 
     expect(centaur.wounds).toBe(0)
     battle.phase = BattlePhase.DEFENDER_STRIKE
+    battle.activePlayer = battle.defender
     Battle.phaseEnterStrike(battle)
     expect(centaur.wounds).toBe(1)
     battle.phase = BattlePhase.ATTACKER_STRIKE
+    battle.activePlayer = battle.attacker
     Battle.phaseEnterStrike(battle)
     expect(centaur.wounds).toBe(2)
   })

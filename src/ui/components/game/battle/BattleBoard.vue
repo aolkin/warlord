@@ -267,7 +267,7 @@ function leaveBattleHex(leaving: number): void {
 }
 
 const battlePhaseType = computed((): BattlePhaseType => BATTLE_PHASE_TYPES[props.battle.phase])
-const battleActivePlayer = computed((): PlayerId => Battle.getActivePlayer(props.battle))
+const battleActivePlayer = computed((): PlayerId => props.battle.activePlayer)
 
 // A creature only exists within the battle it was selected in.
 watch([() => props.battle, () => props.battle.phase], deselectCreature)
