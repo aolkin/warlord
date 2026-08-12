@@ -200,7 +200,7 @@ function select(): void {
   }
   if (TitanGame.isMovePhase(game) && Moveable.hasMoved(props.stack)) {
     if (!TitanGame.getStacksForHex(game, props.stack.initialHex).some((stack: Stack) => Moveable.hasMoved(stack))) {
-      void TitanGame.move(game, { stack: props.stack.id, hex: props.stack.initialHex })
+      TitanGame.move(game, { stack: props.stack.id, hex: props.stack.initialHex })
     }
   }
   if (selected.value) {
@@ -213,7 +213,7 @@ function select(): void {
 }
 
 function attack(edge: HexEdge): void {
-  void TitanGame.move(game, { stack: selectionStore.requireSelectedStack().id, hex: props.stack.hex, edge })
+  TitanGame.move(game, { stack: selectionStore.requireSelectedStack().id, hex: props.stack.hex, edge })
   selectionStore.deselectStack()
 }
 

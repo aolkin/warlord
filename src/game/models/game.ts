@@ -213,7 +213,7 @@ export namespace TitanGame {
 
   // Actions
 
-  export async function initiateBattle(game: TitanGame, attacking: StackRef): Promise<void> {
+  export function initiateBattle(game: TitanGame, attacking: StackRef): void {
     const attackingStack = game.stacks.find(stack => stack.id === attacking)
     assert(attackingStack !== undefined, `No stack with id ${attacking}`)
     const activePlayerId = getActivePlayerId(game)
@@ -231,7 +231,7 @@ export namespace TitanGame {
     game.activeBattleHex = attackingStack.hex
   }
 
-  export async function nextPhase(game: TitanGame): Promise<void> {
+  export function nextPhase(game: TitanGame): void {
     switch (game.activePhase) {
       case MasterboardPhase.SPLIT:
         // TODO: check mayProceed before advancing — round-1 split rule (exactly 4 creatures with 1 lord) not yet enforced
@@ -252,7 +252,7 @@ export namespace TitanGame {
         if (engagedStacks.length === 0) {
           advancePhase(game)
         } else {
-          void initiateBattle(game, engagedStacks[0].id)
+          initiateBattle(game, engagedStacks[0].id)
         }
         break
       }
@@ -275,7 +275,7 @@ export namespace TitanGame {
     }
   }
 
-  export async function setRoll(game: TitanGame, payload?: number): Promise<void> {
+  export function setRoll(game: TitanGame, payload?: number): void {
     if (payload === undefined && game.activeRoll !== undefined) {
       assert(isMulliganAvailable(game), "Mulligan unavailable")
     }
@@ -286,7 +286,7 @@ export namespace TitanGame {
     game.activeRoll = payload
   }
 
-  export async function move(game: TitanGame, { stack, hex, edge }: MovePayload): Promise<void> {
+  export function move(game: TitanGame, { stack, hex, edge }: MovePayload): void {
     const movingStack = game.stacks.find(s => s.id === stack)
     assert(movingStack !== undefined, `No stack with id ${stack}`)
     assert(game.activePhase === MasterboardPhase.MOVE, "Innappropriate phase")
@@ -294,7 +294,7 @@ export namespace TitanGame {
     movingStack.hex = hex
   }
 
-  export async function setRecruit(game: TitanGame, { stack, recruit }: MusterPayload): Promise<void> {
+  export function setRecruit(game: TitanGame, { stack, recruit }: MusterPayload): void {
     const recruitingStack = game.stacks.find(s => s.id === stack)
     assert(recruitingStack !== undefined, `No stack with id ${stack}`)
     if (!Stack.canMuster(recruitingStack)) {

@@ -157,7 +157,7 @@ const mustering = computed({
     if (!TitanGame.isMusterPhase(game)) {
       return
     }
-    void TitanGame.setRecruit(game, { stack: props.focusedStack!.id, recruit: value })
+    TitanGame.setRecruit(game, { stack: props.focusedStack!.id, recruit: value })
   }
 })
 

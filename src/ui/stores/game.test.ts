@@ -40,7 +40,7 @@ describe("game store persistence watcher", () => {
     expect(writeCount).toBe(0)
 
     gameStore.game.activePhase = MasterboardPhase.MOVE // a second mutation, still before any await
-    await TitanGame.setRoll(gameStore.game, 4)
+    TitanGame.setRoll(gameStore.game, 4)
     await nextTick()
 
     expect(writeCount).toBe(1)

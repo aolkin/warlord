@@ -133,7 +133,7 @@ function moveStack(distance: number, foe: boolean, hex: number): void {
   if (distance !== activeRoll.value - 1 || stack === undefined || Moveable.hasMoved(stack) || foe) {
     return
   }
-  void TitanGame.move(game, { stack: stack.id, hex })
+  TitanGame.move(game, { stack: stack.id, hex })
   selectionStore.deselectStack()
 }
 </script>

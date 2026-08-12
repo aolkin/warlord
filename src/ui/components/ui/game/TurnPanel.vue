@@ -121,14 +121,14 @@ const engagementsMessage = computed(() => {
 })
 
 function nextPhase(): void {
-  void TitanGame.nextPhase(game)
+  TitanGame.nextPhase(game)
 }
 
 function roll(): void {
   if (game.activeRoll !== undefined) {
-    void TitanGame.setRoll(game, undefined)
+    TitanGame.setRoll(game, undefined)
   }
-  diceRoller?.value?.roll().then(async(rolled: number[]) => await TitanGame.setRoll(game, rolled[0]))
+  diceRoller?.value?.roll().then((rolled: number[]) => TitanGame.setRoll(game, rolled[0]))
 }
 
 function proceedToRoll(): void {

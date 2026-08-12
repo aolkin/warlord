@@ -37,6 +37,6 @@ function move(hex: number): void {
   if (TitanGame.getStacksForHex(game, hex).length > 0) {
     return
   }
-  void TitanGame.move(game, { stack: selectionStore.requireSelectedStack().id, hex })
+  TitanGame.move(game, { stack: selectionStore.requireSelectedStack().id, hex })
 }
 </script>
