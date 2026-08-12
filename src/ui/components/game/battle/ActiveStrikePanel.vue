@@ -6,6 +6,7 @@
     <StrikePanelTitle
       :attacker="attacker"
       :target="target"
+      :terrain="battle.terrain"
     />
     <v-card-text>
       Rolled {{ activeStrike.rolls.length }} {{ activeStrike.rolls.length === 1 ? "die" : "dice" }},

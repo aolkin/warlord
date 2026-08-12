@@ -8,6 +8,14 @@ import { Battle, BattleSide, nextPhase, phaseEnterStrike } from "./engine"
 import { BattlePhase } from "./phase"
 import { ActiveStrike } from "./strike"
 
+function getOffense(battle: Battle): BattleCreature[] {
+  return battle.creatures.filter(creature => creature.player === battle.attacker)
+}
+
+function getDefense(battle: Battle): BattleCreature[] {
+  return battle.creatures.filter(creature => creature.player === battle.defender)
+}
+
 function setupBattle(terrain: Terrain, attackerTypes: CreatureType[], defenderTypes: CreatureType[]): {
   battle: Battle
   offense: BattleCreature[]
@@ -16,7 +24,7 @@ function setupBattle(terrain: Terrain, attackerTypes: CreatureType[], defenderTy
   const attacking: BattleSide = { player: PlayerId.RED, score: 0, creatures: attackerTypes }
   const defending: BattleSide = { player: PlayerId.BLUE, score: 0, creatures: defenderTypes }
   const battle = Battle.create({ terrain, edge: HexEdge.FIRST, attacking, defending })
-  return { battle, offense: Battle.getOffense(battle), defense: Battle.getDefense(battle) }
+  return { battle, offense: getOffense(battle), defense: getDefense(battle) }
 }
 
 function place(creature: BattleCreature, hex: number): void {
@@ -124,8 +132,8 @@ describe("Rangestrike targets", () => {
     const defending: BattleSide = { player: PlayerId.BLUE, score: 0, creatures: [CreatureType.CENTAUR] }
     const battle = Battle.create({ terrain: Terrain.MOUNTAINS, edge: HexEdge.FIRST, attacking, defending })
     battle.phase = BattlePhase.ATTACKER_STRIKE
-    const dragon = Battle.getOffense(battle)[0]
-    const centaur = Battle.getDefense(battle)[0]
+    const dragon = getOffense(battle)[0]
+    const centaur = getDefense(battle)[0]
     dragon.hex = 15
     dragon.initialHex = 15
     centaur.hex = 4
@@ -145,8 +153,8 @@ describe("Rangestrike targets", () => {
     const defending: BattleSide = { player: PlayerId.BLUE, score: 0, creatures: [CreatureType.GARGOYLE] }
     const battle = Battle.create({ terrain: Terrain.BRUSH, edge: HexEdge.FIRST, attacking, defending })
     battle.phase = BattlePhase.ATTACKER_STRIKE
-    const ranger = Battle.getOffense(battle)[0]
-    const gargoyle = Battle.getDefense(battle)[0]
+    const ranger = getOffense(battle)[0]
+    const gargoyle = getDefense(battle)[0]
     ranger.hex = 8
     ranger.initialHex = 8
     gargoyle.hex = 16
@@ -164,8 +172,8 @@ describe("Rangestrike targets", () => {
     const defending: BattleSide = { player: PlayerId.BLUE, score: 0, creatures: [CreatureType.DRAGON] }
     const battle = Battle.create({ terrain: Terrain.MOUNTAINS, edge: HexEdge.FIRST, attacking, defending })
     battle.phase = BattlePhase.ATTACKER_STRIKE
-    const ranger = Battle.getOffense(battle)[0]
-    const dragon = Battle.getDefense(battle)[0]
+    const ranger = getOffense(battle)[0]
+    const dragon = getDefense(battle)[0]
     ranger.hex = 2
     ranger.initialHex = 2
     dragon.hex = 15
@@ -185,8 +193,8 @@ describe("Rangestrike targets", () => {
     const defending: BattleSide = { player: PlayerId.BLUE, score: 0, creatures: [CreatureType.CENTAUR] }
     const battle = Battle.create({ terrain: Terrain.JUNGLE, edge: HexEdge.FIRST, attacking, defending })
     battle.phase = BattlePhase.ATTACKER_STRIKE
-    const ranger = Battle.getOffense(battle)[0]
-    const centaur = Battle.getDefense(battle)[0]
+    const ranger = getOffense(battle)[0]
+    const centaur = getDefense(battle)[0]
     ranger.hex = 8
     ranger.initialHex = 8
     centaur.hex = 27
@@ -206,8 +214,8 @@ describe("Rangestrike targets", () => {
     const defending: BattleSide = { player: PlayerId.BLUE, score: 0, creatures: [CreatureType.CENTAUR] }
     const battle = Battle.create({ terrain: Terrain.TOWER, edge: HexEdge.FIRST, attacking, defending })
     battle.phase = BattlePhase.ATTACKER_STRIKE
-    const ranger = Battle.getOffense(battle)[0]
-    const centaur = Battle.getDefense(battle)[0]
+    const ranger = getOffense(battle)[0]
+    const centaur = getDefense(battle)[0]
     ranger.hex = 13
     ranger.initialHex = 13
     centaur.hex = 8
@@ -231,8 +239,8 @@ describe("Carryover", () => {
     const defending: BattleSide = { player: PlayerId.BLUE, score: 0, creatures: [CreatureType.CENTAUR, CreatureType.CENTAUR] }
     const battle = Battle.create({ terrain: Terrain.PLAINS, edge: HexEdge.FIRST, attacking, defending })
     battle.phase = BattlePhase.ATTACKER_STRIKE
-    const lion = Battle.getOffense(battle)[0]
-    const [centaur1, centaur2] = Battle.getDefense(battle)
+    const lion = getOffense(battle)[0]
+    const [centaur1, centaur2] = getDefense(battle)
     lion.hex = 8
     lion.initialHex = 8
     // Both 7 and 9 are adjacent to hex 8 (see BATTLE_BOARD_ADJACENCIES).
@@ -277,8 +285,8 @@ describe("Battle board movement cost", () => {
     const attacking: BattleSide = { player: PlayerId.RED, score: 0, creatures: [CreatureType.TROLL] }
     const defending: BattleSide = { player: PlayerId.BLUE, score: 0, creatures: [CreatureType.CENTAUR] }
     const battle = Battle.create({ terrain: Terrain.MARSH, edge: HexEdge.FIRST, attacking, defending })
-    const troll = Battle.getOffense(battle)[0]
-    const centaur = Battle.getDefense(battle)[0]
+    const troll = getOffense(battle)[0]
+    const centaur = getDefense(battle)[0]
 
     expect(Battle.creatureMovementCost(battle, 8, 2, troll)).toBe(1)
     expect(Battle.creatureMovementCost(battle, 8, 2, centaur)).toBe(UNATTAINABLE_MOVEMENT_COST)
@@ -291,7 +299,7 @@ describe("Battle board movement cost", () => {
     const attacking: BattleSide = { player: PlayerId.RED, score: 0, creatures: [CreatureType.GRIFFON] }
     const defending: BattleSide = { player: PlayerId.BLUE, score: 0, creatures: [CreatureType.CENTAUR] }
     const battle = Battle.create({ terrain: Terrain.MOUNTAINS, edge: HexEdge.FIRST, attacking, defending })
-    const griffon = Battle.getOffense(battle)[0]
+    const griffon = getOffense(battle)[0]
 
     expect(CREATURE_DATA[CreatureType.GRIFFON].canFly).toBe(true)
     expect(Battle.creatureMovementCost(battle, 15, 9, griffon)).toBe(UNATTAINABLE_MOVEMENT_COST)
@@ -304,8 +312,8 @@ describe("Battle board movement cost", () => {
     const attacking: BattleSide = { player: PlayerId.RED, score: 0, creatures: [CreatureType.GRIFFON] }
     const defending: BattleSide = { player: PlayerId.BLUE, score: 0, creatures: [CreatureType.CENTAUR] }
     const battle = Battle.create({ terrain: Terrain.WOODS, edge: HexEdge.FIRST, attacking, defending })
-    const griffon = Battle.getOffense(battle)[0]
-    const centaur = Battle.getDefense(battle)[0]
+    const griffon = getOffense(battle)[0]
+    const centaur = getDefense(battle)[0]
 
     expect(Battle.creatureMovementCost(battle, 3, 2, griffon)).toBe(1)
     expect(Battle.creatureCanLand(battle, 3, griffon)).toBe(false)
@@ -318,8 +326,8 @@ describe("Battle board movement cost", () => {
     const attacking: BattleSide = { player: PlayerId.RED, score: 0, creatures: [CreatureType.OGRE] }
     const defending: BattleSide = { player: PlayerId.BLUE, score: 0, creatures: [CreatureType.CENTAUR] }
     const battle = Battle.create({ terrain: Terrain.HILLS, edge: HexEdge.FIRST, attacking, defending })
-    const ogre = Battle.getOffense(battle)[0]
-    const centaur = Battle.getDefense(battle)[0]
+    const ogre = getOffense(battle)[0]
+    const centaur = getDefense(battle)[0]
 
     expect(Battle.creatureMovementCost(battle, 2, 3, ogre)).toBe(1) // uphill, native: no penalty
     expect(Battle.creatureMovementCost(battle, 2, 3, centaur)).toBe(2) // uphill, non-native: +1
@@ -333,7 +341,7 @@ describe("Battle board movement cost", () => {
     const attacking: BattleSide = { player: PlayerId.RED, score: 0, creatures: [CreatureType.CENTAUR] }
     const defending: BattleSide = { player: PlayerId.BLUE, score: 0, creatures: [CreatureType.OGRE] }
     const battle = Battle.create({ terrain: Terrain.TOWER, edge: HexEdge.FIRST, attacking, defending })
-    const centaur = Battle.getOffense(battle)[0]
+    const centaur = getOffense(battle)[0]
 
     expect(Battle.creatureMovementCost(battle, 8, 2, centaur)).toBe(2) // upward, across the wall
     expect(Battle.creatureMovementCost(battle, 2, 8, centaur)).toBe(1) // downward: no penalty
@@ -344,7 +352,7 @@ describe("Battle board movement cost", () => {
     const attacking: BattleSide = { player: PlayerId.RED, score: 0, creatures: [CreatureType.CENTAUR] }
     const defending: BattleSide = { player: PlayerId.BLUE, score: 0, creatures: [CreatureType.OGRE] }
     const battle = Battle.create({ terrain: Terrain.DESERT, edge: HexEdge.FIRST, attacking, defending })
-    const centaur = Battle.getOffense(battle)[0]
+    const centaur = getOffense(battle)[0]
 
     expect(Battle.creatureMovementCost(battle, 15, 20, centaur)).toBe(UNATTAINABLE_MOVEMENT_COST)
     expect(Battle.creatureMovementCost(battle, 20, 15, centaur)).toBe(UNATTAINABLE_MOVEMENT_COST)
@@ -434,7 +442,7 @@ describe("Engagement edge cases", () => {
   // engagedWith). Per the Hazard Chart and rule 13.5, a cliff blocks engagement symmetrically -
   // neither creature should be engaged with the other. This documents the correct behavior and
   // is expected to fail (via it.fails) until that asymmetry is fixed.
-  it.fails("does not engage a creature atop a cliff with the creature below it", () => {
+  it("does not engage a creature atop a cliff with the creature below it", () => {
     const { battle, offense, defense } = setupBattle(Terrain.DESERT, [CreatureType.CENTAUR], [CreatureType.LION])
     battle.phase = BattlePhase.ATTACKER_STRIKE
     const [centaur] = offense
@@ -529,8 +537,8 @@ describe("Battle phase transitions", () => {
     const attacking: BattleSide = { player: PlayerId.RED, score: 0, creatures: [CreatureType.LION] }
     const defending: BattleSide = { player: PlayerId.BLUE, score: 0, creatures: [CreatureType.CENTAUR] }
     const battle = Battle.create({ terrain: Terrain.PLAINS, edge: HexEdge.FIRST, attacking, defending })
-    const lion = Battle.getOffense(battle)[0]
-    const centaur = Battle.getDefense(battle)[0]
+    const lion = getOffense(battle)[0]
+    const centaur = getDefense(battle)[0]
     centaur.hex = 7
     centaur.initialHex = 7
     lion.hex = 8

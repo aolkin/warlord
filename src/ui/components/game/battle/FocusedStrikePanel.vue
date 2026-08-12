@@ -7,6 +7,7 @@
       <StrikePanelTitle
         :attacker="props.attacker"
         :target="(target ?? rangedTarget)!"
+        :terrain="activeBattle.terrain"
       />
       <v-card-text>
         {{ strike.dice }} {{ strike.dice === 1 ? "die" : "dice" }}, needing {{ strike.toHit }}s or better to hit.

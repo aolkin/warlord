@@ -6,7 +6,6 @@ import { PlayerId } from "../player"
 import {
   BATTLE_BOARD_ADJACENCIES,
   BATTLE_BOARDS,
-  BattleBoard,
   EdgeHazard,
   Hazard,
   UNATTAINABLE_MOVEMENT_COST,
@@ -76,10 +75,6 @@ export namespace Battle {
     }
   }
 
-  export function getBoard(battle: Battle): BattleBoard {
-    return BATTLE_BOARDS[battle.terrain]
-  }
-
   export function getActivePlayer(battle: Battle): PlayerId {
     switch (battle.phase) {
       case BattlePhase.DEFENDER_MOVE:
@@ -93,16 +88,8 @@ export namespace Battle {
     }
   }
 
-  export function getOffense(battle: Battle): BattleCreature[] {
-    return battle.creatures.filter(creature => creature.player === battle.attacker)
-  }
-
-  export function getDefense(battle: Battle): BattleCreature[] {
-    return battle.creatures.filter(creature => creature.player === battle.defender)
-  }
-
   export function getActiveCreatures(battle: Battle): BattleCreature[] {
-    return getActivePlayer(battle) === battle.attacker ? getOffense(battle) : getDefense(battle)
+    return battle.creatures.filter(creature => creature.player === getActivePlayer(battle))
   }
 
   export function getPendingStrikes(battle: Battle): BattleCreature[] {
@@ -118,12 +105,13 @@ export namespace Battle {
 
   export function creatureMovementCost(battle: Battle, hex: number, origin: number,
     creature: BattleCreature): number {
+    const board = BATTLE_BOARDS[battle.terrain]
     const canFly = CREATURE_DATA[creature.type].canFly
     if (canFly || hex === creature.hex || creatureOnHex(battle, hex) === undefined) {
       let cost = 1
       if (!canFly) {
-        const upEdgeHazard = getBoard(battle).getEdgeHazard(origin, hex)
-        const downEdgeHazard = getBoard(battle).getEdgeHazard(hex, origin)
+        const upEdgeHazard = board.getEdgeHazard(origin, hex)
+        const downEdgeHazard = board.getEdgeHazard(hex, origin)
         if (upEdgeHazard === EdgeHazard.CLIFF || downEdgeHazard === EdgeHazard.CLIFF) {
           return UNATTAINABLE_MOVEMENT_COST
         } else if (upEdgeHazard === EdgeHazard.WALL || (
@@ -132,7 +120,7 @@ export namespace Battle {
         }
       }
 
-      const hazard = getBoard(battle).getHazard(hex)
+      const hazard = board.getHazard(hex)
       const native = isCreatureNative(creature.type, hazard)
       switch (hazard) {
         case Hazard.NONE:
@@ -155,7 +143,7 @@ export namespace Battle {
 
   /** This function assumes the creature can enter - for efficiency, it will not check all rules */
   export function creatureCanLand(battle: Battle, hex: number, creature: BattleCreature): boolean {
-    const hazard = getBoard(battle).getHazard(hex)
+    const hazard = BATTLE_BOARDS[battle.terrain].getHazard(hex)
     return !(
       hazard === Hazard.TREE ||
       (hazard === Hazard.BOG && !isCreatureNative(creature.type, hazard)) ||
@@ -194,15 +182,14 @@ export namespace Battle {
   }
 
   export function engagedWith(battle: Battle, whom: BattleCreature, includeDead = false): BattleCreature[] {
+    const board = BATTLE_BOARDS[battle.terrain]
     const hex = BATTLE_PHASE_TYPES[battle.phase] === BattlePhaseType.MOVE ? whom.initialHex : whom.hex
     const adjacencies = BATTLE_BOARD_ADJACENCIES[hex]
     return battle.creatures.filter(creature => creature.player !== whom.player &&
       (includeDead || creature.wounds < creature.strength) &&
       adjacencies.includes(creature.hex) &&
-      // TODO: only checks the cliff hazard in the fixed direction (whom -> creature), so it misses
-      // cliffs where `creature` (not `whom`) is the upper hex - creatureMovementCost above shows the
-      // correct pattern of querying both directions and ORing the result.
-      getBoard(battle).getEdgeHazard(whom.hex, creature.hex) !== EdgeHazard.CLIFF)
+      board.getEdgeHazard(whom.hex, creature.hex) !== EdgeHazard.CLIFF &&
+      board.getEdgeHazard(creature.hex, whom.hex) !== EdgeHazard.CLIFF)
   }
 
   export function carryoverTargets(battle: Battle): BattleCreature[] | undefined {
@@ -277,8 +264,141 @@ export namespace Battle {
     return results
   }
 
+  function getRangestrikeAdjustmentForHazards(battle: Battle, creature: BattleCreature,
+    path: number[]): Strike | undefined {
+    const board = BATTLE_BOARDS[battle.terrain]
+    const targetHex = path.at(-1)
+    assert(targetHex !== undefined, "Path must have non-zero length")
+    const targetHazard = board.getHazard(targetHex)
+    const targetCreature = creatureOnHex(battle, targetHex)
+    assert(targetCreature !== undefined, "Path must end in a creature")
+
+    const crossedHazards: Record<EdgeHazard, number> = {
+      [EdgeHazard.NONE]: 0,
+      [EdgeHazard.CLIFF]: 0,
+      [EdgeHazard.DUNE]: 0,
+      [EdgeHazard.SLOPE]: 0,
+      [EdgeHazard.WALL]: 0
+    }
+    let atopAtLeastOneEdge = false // Used for walls and slopes, which do not appear on the same maps
+    let adjustment = 0
+
+    if (targetHazard === Hazard.VOLCANO && targetCreature.type === CreatureType.DRAGON) {
+      // Dragons in volcanos have the strike number needed to hit them increased by one
+      // Dragons in volcanos get bonus dice when rangestriking out (not covered here)
+      adjustment += 1
+    }
+
+    // Ensure path does not go through a creature or a tree
+    if (path.slice(0, -1).some(hex => creatureOnHex(battle, hex) !== undefined ||
+      board.getHazard(hex) === Hazard.TREE)) {
+      return undefined
+    }
+
+    const attackerIsBrambleNative = isCreatureNative(creature.type, Hazard.BRAMBLE)
+    if (targetHazard === Hazard.BRAMBLE && isCreatureNative(targetCreature.type, Hazard.BRAMBLE) &&
+      !attackerIsBrambleNative) {
+      // A native character defending in brambles is harder to hit when attacked by a non-native
+      adjustment += 1
+    }
+    if (!attackerIsBrambleNative) {
+      // A non-native rangestriker loses a skill factor for each intervening hex containing bramble
+      adjustment += path.slice(0, -1).filter(hex => board.getHazard(hex) === Hazard.BRAMBLE).length
+    }
+
+    // Dunes, cliffs, slopes, and walls
+    for (let i = 0; i < path.length; ++i) {
+      const last = i === 0 ? creature.hex : path[i - 1]
+      const next = path[i]
+      const lastElevation = board.getElevation(last)
+      const nextElevation = board.getElevation(next)
+      let hazard = EdgeHazard.NONE
+      if (lastElevation > nextElevation) {
+        hazard = board.getEdgeHazard(next, last)
+      } else if (nextElevation > lastElevation) {
+        hazard = board.getEdgeHazard(last, next)
+      }
+      crossedHazards[hazard] += 1
+      if (hazard !== EdgeHazard.NONE) {
+        const rangestrikerOrTargetAtopHex = (i === 0 && lastElevation > nextElevation) ||
+          (i === path.length - 1 && lastElevation < nextElevation)
+        switch (hazard) {
+          case EdgeHazard.CLIFF:
+            // Rangestriker or target must be atop the cliff
+            // (and if that's the case, we pass the slope check)
+            atopAtLeastOneEdge = rangestrikerOrTargetAtopHex
+          case EdgeHazard.DUNE:
+            // Rangestriker or target must occupy dune hex for each crossed dune
+            if (!rangestrikerOrTargetAtopHex) {
+              return undefined
+            }
+            break
+          case EdgeHazard.SLOPE:
+            if (crossedHazards[EdgeHazard.SLOPE] === 3 &&
+              !(atopAtLeastOneEdge && rangestrikerOrTargetAtopHex)) {
+              // For the third slope, we must have had the attacker on top of the first slope and the
+              // target atop the final slope, otherwise we fail the slope check
+              return undefined
+            }
+            atopAtLeastOneEdge = atopAtLeastOneEdge || rangestrikerOrTargetAtopHex
+            break
+          case EdgeHazard.WALL:
+            if (lastElevation < nextElevation) {
+              // Lose a skill factor for crossing a wall upwards
+              adjustment += 1
+            }
+            atopAtLeastOneEdge = atopAtLeastOneEdge || rangestrikerOrTargetAtopHex
+            break
+        }
+      }
+    }
+    if (crossedHazards[EdgeHazard.WALL] > 0 || crossedHazards[EdgeHazard.SLOPE] > 0) {
+      if (!atopAtLeastOneEdge) {
+        return undefined
+      }
+      if (crossedHazards[EdgeHazard.WALL] === 2) {
+        // Target or attacker is in the center of the tower, this must be a long-distance
+        // rangestrike to ensure the other character isn't at the base of the tower
+        if (!((targetHex === 15 || creature.hex === 15) && path.length > 2)) {
+          return undefined
+        }
+      }
+    }
+
+    if (creature.type === CreatureType.DRAGON && board.getHazard(creature.hex) === Hazard.VOLCANO) {
+      return { toHit: adjustment, dice: 2 }
+    } else {
+      return { toHit: adjustment, dice: 0 }
+    }
+  }
+
+  function strikeAdjustmentEdge(battle: Battle, striker: BattleCreature, target: BattleCreature): Strike {
+    const board = BATTLE_BOARDS[battle.terrain]
+    const strikingUp = board.getElevation(striker.hex) <= board.getElevation(target.hex)
+    const edgeHazard = board.getEdgeHazard(strikingUp ? striker.hex : target.hex,
+      strikingUp ? target.hex : striker.hex)
+    if (edgeHazard === EdgeHazard.SLOPE) {
+      const strikerNative = isCreatureEdgeNative(striker.type, edgeHazard)
+      if (strikerNative && !strikingUp) {
+        return { toHit: 0, dice: 1 }
+      } else if (!strikerNative && strikingUp) {
+        return { toHit: 1, dice: 0 }
+      }
+    } else if (edgeHazard === EdgeHazard.DUNE) {
+      const strikerNative = isCreatureEdgeNative(striker.type, edgeHazard)
+      if (strikerNative && !strikingUp) {
+        return { toHit: 0, dice: 2 }
+      } else if (!strikerNative && strikingUp) {
+        return { toHit: 0, dice: -1 }
+      }
+    } else if (edgeHazard === EdgeHazard.WALL) {
+      return { toHit: strikingUp ? 1 : -1, dice: 0 }
+    }
+    return { toHit: 0, dice: 0 }
+  }
+
   export function strikeAdjustment(battle: Battle, striker: BattleCreature, target: BattleCreature): Strike {
-    const board = getBoard(battle)
+    const board = BATTLE_BOARDS[battle.terrain]
     const strikerHazard = board.getHazard(striker.hex)
     const strikerNative = isCreatureNative(striker.type, strikerHazard)
     const targetHazard = board.getHazard(target.hex)
@@ -388,139 +508,6 @@ export namespace Battle {
   }
 }
 
-function getRangestrikeAdjustmentForHazards(battle: Battle, creature: BattleCreature,
-  path: number[]): Strike | undefined {
-  const board = Battle.getBoard(battle)
-  const targetHex = path.at(-1)
-  assert(targetHex !== undefined, "Path must have non-zero length")
-  const targetHazard = board.getHazard(targetHex)
-  const targetCreature = Battle.creatureOnHex(battle, targetHex)
-  assert(targetCreature !== undefined, "Path must end in a creature")
-
-  const crossedHazards: Record<EdgeHazard, number> = {
-    [EdgeHazard.NONE]: 0,
-    [EdgeHazard.CLIFF]: 0,
-    [EdgeHazard.DUNE]: 0,
-    [EdgeHazard.SLOPE]: 0,
-    [EdgeHazard.WALL]: 0
-  }
-  let atopAtLeastOneEdge = false // Used for walls and slopes, which do not appear on the same maps
-  let adjustment = 0
-
-  if (targetHazard === Hazard.VOLCANO && targetCreature.type === CreatureType.DRAGON) {
-    // Dragons in volcanos have the strike number needed to hit them increased by one
-    // Dragons in volcanos get bonus dice when rangestriking out (not covered here)
-    adjustment += 1
-  }
-
-  // Ensure path does not go through a creature or a tree
-  if (path.slice(0, -1).some(hex => Battle.creatureOnHex(battle, hex) !== undefined ||
-    board.getHazard(hex) === Hazard.TREE)) {
-    return undefined
-  }
-
-  const attackerIsBrambleNative = isCreatureNative(creature.type, Hazard.BRAMBLE)
-  if (targetHazard === Hazard.BRAMBLE && isCreatureNative(targetCreature.type, Hazard.BRAMBLE) &&
-    !attackerIsBrambleNative) {
-    // A native character defending in brambles is harder to hit when attacked by a non-native
-    adjustment += 1
-  }
-  if (!attackerIsBrambleNative) {
-    // A non-native rangestriker loses a skill factor for each intervening hex containing bramble
-    adjustment += path.slice(0, -1).filter(hex => board.getHazard(hex) === Hazard.BRAMBLE).length
-  }
-
-  // Dunes, cliffs, slopes, and walls
-  for (let i = 0; i < path.length; ++i) {
-    const last = i === 0 ? creature.hex : path[i - 1]
-    const next = path[i]
-    const lastElevation = board.getElevation(last)
-    const nextElevation = board.getElevation(next)
-    let hazard = EdgeHazard.NONE
-    if (lastElevation > nextElevation) {
-      hazard = board.getEdgeHazard(next, last)
-    } else if (nextElevation > lastElevation) {
-      hazard = board.getEdgeHazard(last, next)
-    }
-    crossedHazards[hazard] += 1
-    if (hazard !== EdgeHazard.NONE) {
-      const rangestrikerOrTargetAtopHex = (i === 0 && lastElevation > nextElevation) ||
-        (i === path.length - 1 && lastElevation < nextElevation)
-      switch (hazard) {
-        case EdgeHazard.CLIFF:
-          // Rangestriker or target must be atop the cliff
-          // (and if that's the case, we pass the slope check)
-          atopAtLeastOneEdge = rangestrikerOrTargetAtopHex
-        case EdgeHazard.DUNE:
-          // Rangestriker or target must occupy dune hex for each crossed dune
-          if (!rangestrikerOrTargetAtopHex) {
-            return undefined
-          }
-          break
-        case EdgeHazard.SLOPE:
-          if (crossedHazards[EdgeHazard.SLOPE] === 3 &&
-            !(atopAtLeastOneEdge && rangestrikerOrTargetAtopHex)) {
-            // For the third slope, we must have had the attacker on top of the first slope and the
-            // target atop the final slope, otherwise we fail the slope check
-            return undefined
-          }
-          atopAtLeastOneEdge = atopAtLeastOneEdge || rangestrikerOrTargetAtopHex
-          break
-        case EdgeHazard.WALL:
-          if (lastElevation < nextElevation) {
-            // Lose a skill factor for crossing a wall upwards
-            adjustment += 1
-          }
-          atopAtLeastOneEdge = atopAtLeastOneEdge || rangestrikerOrTargetAtopHex
-          break
-      }
-    }
-  }
-  if (crossedHazards[EdgeHazard.WALL] > 0 || crossedHazards[EdgeHazard.SLOPE] > 0) {
-    if (!atopAtLeastOneEdge) {
-      return undefined
-    }
-    if (crossedHazards[EdgeHazard.WALL] === 2) {
-      // Target or attacker is in the center of the tower, this must be a long-distance
-      // rangestrike to ensure the other character isn't at the base of the tower
-      if (!((targetHex === 15 || creature.hex === 15) && path.length > 2)) {
-        return undefined
-      }
-    }
-  }
-
-  if (creature.type === CreatureType.DRAGON && board.getHazard(creature.hex) === Hazard.VOLCANO) {
-    return { toHit: adjustment, dice: 2 }
-  } else {
-    return { toHit: adjustment, dice: 0 }
-  }
-}
-
-function strikeAdjustmentEdge(battle: Battle, striker: BattleCreature, target: BattleCreature): Strike {
-  const board = Battle.getBoard(battle)
-  const strikingUp = board.getElevation(striker.hex) <= board.getElevation(target.hex)
-  const edgeHazard = board.getEdgeHazard(strikingUp ? striker.hex : target.hex,
-    strikingUp ? target.hex : striker.hex)
-  if (edgeHazard === EdgeHazard.SLOPE) {
-    const strikerNative = isCreatureEdgeNative(striker.type, edgeHazard)
-    if (strikerNative && !strikingUp) {
-      return { toHit: 0, dice: 1 }
-    } else if (!strikerNative && strikingUp) {
-      return { toHit: 1, dice: 0 }
-    }
-  } else if (edgeHazard === EdgeHazard.DUNE) {
-    const strikerNative = isCreatureEdgeNative(striker.type, edgeHazard)
-    if (strikerNative && !strikingUp) {
-      return { toHit: 0, dice: 2 }
-    } else if (!strikerNative && strikingUp) {
-      return { toHit: 0, dice: -1 }
-    }
-  } else if (edgeHazard === EdgeHazard.WALL) {
-    return { toHit: strikingUp ? 1 : -1, dice: 0 }
-  }
-  return { toHit: 0, dice: 0 }
-}
-
 function resolveStrikingCreatures(battle: Battle, attackerId: BattleCreature["id"],
   targetId: BattleCreature["id"]): { attackerCreature: BattleCreature, targetCreature: BattleCreature } {
   const attackerCreature = battle.creatures.find(c => c.id === attackerId)
@@ -597,7 +584,7 @@ export function phaseEnterStrike(battle: Battle): void {
   })
   if (battle.terrain === Terrain.TUNDRA) {
     battle.creatures
-      .filter(creature => Battle.getBoard(battle).getHazard(creature.hex) === Hazard.DRIFT)
+      .filter(creature => BATTLE_BOARDS[battle.terrain].getHazard(creature.hex) === Hazard.DRIFT)
       .forEach(creature => { creature.wounds += 1 })
   }
 }
