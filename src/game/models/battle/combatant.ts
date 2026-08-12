@@ -7,7 +7,6 @@ let battleCreatureIdCounter = 0
 export interface BattleCreature extends Moveable {
   readonly type: CreatureType
   readonly player: PlayerId
-  readonly playerScore: number
   readonly id: number
   readonly name: string
   readonly strength: number
@@ -16,7 +15,7 @@ export interface BattleCreature extends Moveable {
   hasStruck: boolean
 }
 
-export type CreateBattleCreatureOptions = Pick<BattleCreature, "type" | "player" | "playerScore" | "hex">
+export type CreateBattleCreatureOptions = Pick<BattleCreature, "type" | "player" | "hex"> & { playerScore: number }
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
 export namespace BattleCreature {
@@ -25,7 +24,6 @@ export namespace BattleCreature {
     return {
       type: options.type,
       player: options.player,
-      playerScore: options.playerScore,
       id: battleCreatureIdCounter++,
       name: data.name,
       strength: data.getStrength(options.playerScore),

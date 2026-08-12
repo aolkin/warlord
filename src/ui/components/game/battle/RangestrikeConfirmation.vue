@@ -1,9 +1,9 @@
 <template>
   <v-dialog max-width="600">
-    <v-card :title="`Rangestrike ${targetedCreatureName} with ${attacker.name}`">
+    <v-card :title="`Rangestrike ${target.creature.name} with ${attacker.name}`">
       <v-card-text>
-        Are you sure you want to rangestrike this {{ targetedCreatureName }}
-        ({{ targetedCreature.wounds }} hit{{ targetedCreature.wounds === 1 ? "" : "s" }} taken)
+        Are you sure you want to rangestrike this {{ target.creature.name }}
+        ({{ target.creature.wounds }} hit{{ target.creature.wounds === 1 ? "" : "s" }} taken)
         with your {{ attacker.name }}?
       </v-card-text>
       <v-card-text>
@@ -56,12 +56,10 @@ defineEmits<{
   attack: []
 }>()
 
-const targetedCreature = computed<BattleCreature>(() => props.target.creature)
-const targetedCreatureName = computed(() => targetedCreature.value.name)
 const targetedStrike = computed<Strike>(() =>
   props.battle.getTargetedStrike(props.attacker, props.target))
 const targetedStrikeUnadjusted = computed<Strike>(() => {
-  const rawStrike = props.battle.getRawStrike(props.attacker, targetedCreature.value)
+  const rawStrike = props.battle.getRawStrike(props.attacker, props.target.creature)
   return {
     toHit: props.target.longDistance ? rawStrike.toHit + 1 : rawStrike.toHit,
     dice: div(rawStrike.dice, 2)

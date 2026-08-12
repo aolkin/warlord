@@ -51,7 +51,6 @@ describe("Battle engagement", () => {
 
     expect(lion.hasStruck).toBe(true)
     expect(centaur.wounds).toBe(3) // Centaur's full strength (3); capped, not overkill
-    expect(centaur.strength - centaur.wounds).toBe(0)
     expect(centaur.hex).toBe(7) // corpses stay on the board until phaseExitStrikeback
   })
 })

@@ -93,7 +93,7 @@ const carryoversImpossible = computed(() => {
     return true
   }
   const remainingHp = props.targetedCreature.strength - props.targetedCreature.wounds
-  return targetedStrike.value.dice - remainingHp <= 0
+  return targetedStrike.value.dice <= remainingHp
 })
 const normalCarryovers = computed<BattleCreature[]>(() => carryoversImpossible.value
   ? []
