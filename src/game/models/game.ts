@@ -1,4 +1,4 @@
-import { assign, range } from "lodash-es"
+import { assign, range, remove } from "lodash-es"
 import { assert } from "@/utils/assert"
 import { Battle, BattleSide } from "./battle"
 import { CREATURE_DATA, CREATURE_LIST, CreatureType } from "./creature"
@@ -228,7 +228,13 @@ export class TitanGame {
         // TODO: check mayProceed before advancing — round-1 split rule (exactly 4 creatures with 1 lord) not yet enforced
         this.getActiveStacks().filter(stack => Stack.getSplittingCreatures(stack).length > 0).forEach(stack => {
           // Each pushed stack claims a marker, so the next split needs a fresh read.
-          this.stacks.push(Stack.finalizeSplit(stack, this.getNextMarker()!, this.round))
+          const marker = this.getNextMarker()!
+          assert(Stack.isValidSplit(stack), "Invalid split")
+          assert(marker >= 0, "Invalid marker")
+          const creatures = Stack.getSplittingCreatures(stack)
+          remove(stack.creatures, (creature, index) => stack.split[index])
+          stack.split.fill(false)
+          this.stacks.push(Stack.create({ owner: stack.owner, hex: stack.hex, marker, createdRound: this.round, creatures }))
         })
         this.mulliganTaken = false
         break

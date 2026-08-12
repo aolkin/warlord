@@ -164,7 +164,7 @@ const musteringCaption = computed(() => {
   const stack = props.focusedStack!
   if (!Moveable.hasMoved(stack)) {
     return "You cannot muster in a stack that did not move this turn."
-  } else if (Stack.isFull(stack)) {
+  } else if (stack.creatures.length >= 7) {
     return "This stack is already full and cannot muster."
   } else if (stack.currentMuster === undefined) {
     return "No recruit chosen."

@@ -109,6 +109,41 @@ describe("TitanGame mandatory moves (stack splitting during movement)", () => {
   })
 })
 
+describe("TitanGame split finalization", () => {
+  it("finalizes a split into a new stack sharing the same hex but a new marker", async () => {
+    const game = newGame()
+    const stack = game.stacks[0]
+    stack.split[0] = true
+    stack.split[2] = true
+    stack.split[4] = true
+    stack.split[6] = true
+    const splitOff = Stack.getSplittingCreatures(stack)
+    const originalHex = stack.hex
+    const originalMarker = stack.marker
+
+    await game.nextPhase()
+    const newStack = game.stacks.at(-1)!
+
+    expect(newStack.owner).toBe(stack.owner)
+    expect(newStack.hex).toBe(originalHex)
+    expect(newStack.initialHex).toBe(originalHex)
+    expect(newStack.marker).not.toBe(originalMarker)
+    expect(newStack.creatures).toEqual(splitOff)
+    expect(stack.creatures.length).toBe(4)
+    expect(stack.creatures).toEqual(Stack.getStayingCreatures(stack))
+    // The pending split markers are cleared after finalizing.
+    expect(Stack.getSplittingCreatures(stack).length).toBe(0)
+  })
+
+  it("refuses to finalize an invalid split", async () => {
+    const game = newGame()
+    const stack = game.stacks[0]
+    stack.split[0] = true // only 1 marked, never valid
+
+    await expect(game.nextPhase()).rejects.toThrow("Invalid split")
+  })
+})
+
 describe("TitanGame mayProceed for the split phase", () => {
   it("blocks proceeding out of the split phase in round 1 until every active stack has a valid split", () => {
     const game = newGame()

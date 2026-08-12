@@ -1,5 +1,4 @@
-import { range, remove, sum } from "lodash-es"
-import { assert } from "@/utils/assert"
+import { range, sum } from "lodash-es"
 import { CREATURE_DATA, CreatureType, MUSTER_DATA } from "./creature"
 import { HexEdge, Terrain } from "./masterboard"
 import { Moveable } from "./moveable"
@@ -52,12 +51,8 @@ export namespace Stack {
     }
   }
 
-  export function isFull(stack: Stack): boolean {
-    return stack.creatures.length >= 7
-  }
-
   export function canMuster(stack: Stack): boolean {
-    return Moveable.hasMoved(stack) && !isFull(stack)
+    return Moveable.hasMoved(stack) && stack.creatures.length < 7
   }
 
   export function isValidSplit(stack: Stack, firstRound?: boolean): boolean {
@@ -125,14 +120,5 @@ export namespace Stack {
 
   export function togglePendingSplit(stack: Stack, index: number): void {
     stack.split[index] = !stack.split[index]
-  }
-
-  export function finalizeSplit(stack: Stack, marker: number, round: number): Stack {
-    assert(isValidSplit(stack), "Invalid split")
-    assert(marker >= 0, "Invalid marker")
-    const creatures = getSplittingCreatures(stack)
-    remove(stack.creatures, (creature, index) => stack.split[index])
-    stack.split.fill(false)
-    return create({ owner: stack.owner, hex: stack.hex, marker, createdRound: round, creatures })
   }
 }

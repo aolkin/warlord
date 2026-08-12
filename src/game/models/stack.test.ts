@@ -44,32 +44,8 @@ describe("Stack splitting", () => {
     expect(Stack.isValidSplit(stack)).toBe(false)
   })
 
-  it("finalizes a split into a new stack sharing the same hex but a new marker", () => {
-    const stack = Stack.create({ owner: PlayerId.RED, hex: 5, marker: 0, createdRound: 0 })
-    stack.split[0] = true
-    stack.split[2] = true
-    stack.split[4] = true
-    stack.split[6] = true
-    const splitOff = Stack.getSplittingCreatures(stack)
-
-    const newStack = Stack.finalizeSplit(stack, 1, 0)
-
-    expect(newStack.owner).toBe(PlayerId.RED)
-    expect(newStack.hex).toBe(5)
-    expect(newStack.initialHex).toBe(5)
-    expect(newStack.marker).toBe(1)
-    expect(newStack.creatures).toEqual(splitOff)
-    expect(stack.creatures.length).toBe(4)
-    expect(stack.creatures).toEqual(Stack.getStayingCreatures(stack))
-    // The pending split markers are cleared after finalizing.
-    expect(Stack.getSplittingCreatures(stack).length).toBe(0)
-  })
-
-  it("refuses to finalize an invalid split", () => {
-    const stack = Stack.create({ owner: PlayerId.RED, hex: 5, marker: 0, createdRound: 0 })
-    stack.split[0] = true // only 1 marked, never valid
-    expect(() => Stack.finalizeSplit(stack, 1, 0)).toThrow()
-  })
+  // Finalizing a split (creating the new stack, clearing pending markers) is exercised
+  // end-to-end via game.nextPhase() in game.test.ts, since that's now its only call site.
 })
 
 describe("Stack mustering eligibility", () => {
