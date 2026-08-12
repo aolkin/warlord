@@ -25,7 +25,7 @@
       :key="creature.id"
     >
       {{ index === 0 ? "Dealt" : "Carried over" }} {{ hitsString(hits) }} to a
-      {{ creature.name }}{{ activeStrike.rangestrike ? " with a rangestrike" : "" }}.
+      {{ creature.name }}{{ ActiveStrike.isRangestrike(activeStrike) ? " with a rangestrike" : "" }}.
       <span v-if="creature.wounds >= creature.strength">
         The {{ creature.name }} is dead.
       </span>
@@ -38,10 +38,10 @@
         No eligible targets to carry over
         {{ hitsString(ActiveStrike.getCarryoverHits(activeStrike), "excess") }} to.
       </span>
-      <span v-else-if="activeStrike.carryoverSkipped">
+      <span v-else-if="!ActiveStrike.isRangestrike(activeStrike) && activeStrike.carryoverSkipped">
         Carrying over excess hits was skipped.
       </span>
-      <span v-else-if="!activeStrike.rangestrike">
+      <span v-else-if="!ActiveStrike.isRangestrike(activeStrike)">
         No hits remain to carry over.
       </span>
     </v-card-text>
@@ -68,10 +68,10 @@ const props = defineProps<{
 }>()
 
 const attacker = computed((): BattleCreature => props.battle.creatureOnHex(props.activeStrike.attacker)!)
-const target = computed((): BattleCreature => props.battle.creatureOnHex(props.activeStrike.targets[0])!)
+const target = computed((): BattleCreature => props.battle.creatureOnHex(props.activeStrike.target)!)
 const targets = computed((): [BattleCreature, number][] =>
-  props.activeStrike.targets.map((hex, index) =>
-    [props.battle.creatureOnHex(hex)!, props.activeStrike.targetHits[index] ?? 0]))
+  ActiveStrike.targets(props.activeStrike)
+    .map(([hex, hits]): [BattleCreature, number] => [props.battle.creatureOnHex(hex)!, hits]))
 function hitsString(hits: number, modifier?: string): string {
   const extra = modifier === undefined ? "" : modifier + " "
   return `${hits} ${extra}hit${hits === 1 ? "" : "s"}`

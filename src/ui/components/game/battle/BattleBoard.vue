@@ -342,7 +342,7 @@ function creatureClasses(creature: BattleCreature): object {
     interactive: creatureEnabled(creature),
     selected: creature === selectedCreature.value,
     attacker: activeStrike.value?.attacker === creature.hex,
-    target: activeStrike.value?.targets[0] === creature.hex
+    target: activeStrike.value?.target === creature.hex
   }
 }
 

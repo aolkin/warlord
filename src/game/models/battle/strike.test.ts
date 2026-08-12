@@ -24,29 +24,58 @@ describe("Strike.combine", () => {
 })
 
 describe("ActiveStrike", () => {
-  it("normalizes a single-target strike into the targets/targetHits array shape", () => {
+  it("creates a melee strike with the primary target and no carryover yet", () => {
     const strike = ActiveStrike.create({
-      attacker: 8, rolls: [6, 6, 6, 6, 6], toHit: 4, totalHits: 5, rangestrike: false,
+      attacker: 8, rolls: [6, 6, 6, 6, 6], toHit: 4, rangestrike: false,
       target: 7, hits: 3
     })
-    expect(strike.targets).toEqual([7])
+    expect(strike.target).toBe(7)
     expect(strike.targetHits).toEqual([3])
-    expect(strike.carryoverSkipped).toBe(false)
+    expect(ActiveStrike.isRangestrike(strike)).toBe(false)
+    expect(strike).toMatchObject({ carryoverTargets: [], carryoverHits: [], carryoverSkipped: false })
   })
 
-  it("sums hits across all assigned targets when computing leftover carryover hits", () => {
+  it("creates a rangestrike strike with no carryover-related fields", () => {
+    const strike = ActiveStrike.create({
+      attacker: 8, rolls: [6, 6], toHit: 4, rangestrike: true,
+      target: 7, hits: 2
+    })
+    expect(strike.target).toBe(7)
+    expect(strike.targetHits).toEqual([2])
+    expect(ActiveStrike.isRangestrike(strike)).toBe(true)
+  })
+
+  it("sums hits across the primary target and carryover targets when computing leftover carryover hits", () => {
     const strike: ActiveStrike = {
-      attacker: 8, targets: [7, 9], targetHits: [3, 1], rolls: [6, 6, 6, 6, 6],
-      toHit: 4, totalHits: 5, carryoverSkipped: false, rangestrike: false
+      attacker: 8, target: 7, targetHits: [3], carryoverTargets: [9], carryoverHits: [1],
+      rolls: [6, 6, 6, 6, 6], toHit: 4, carryoverSkipped: false
     }
     expect(ActiveStrike.getCarryoverHits(strike)).toBe(1) // 5 total hits - (3 + 1) already assigned
+  })
+
+  describe("targets", () => {
+    it("returns the primary target and each carryover target with its hits for a melee strike", () => {
+      const strike: ActiveStrike = {
+        attacker: 8, target: 7, targetHits: [3], carryoverTargets: [9, 11], carryoverHits: [1, 1],
+        rolls: [6, 6, 6, 6, 6], toHit: 4, carryoverSkipped: false
+      }
+      expect(ActiveStrike.targets(strike)).toEqual([[7, 3], [9, 1], [11, 1]])
+    })
+
+    it("returns only the primary target for a rangestrike, since it can never carry over", () => {
+      const strike = ActiveStrike.create({
+        attacker: 8, rolls: [6, 6], toHit: 4, rangestrike: true,
+        target: 7, hits: 2
+      })
+      expect(ActiveStrike.targets(strike)).toEqual([[7, 2]])
+    })
   })
 
   describe("getCarryoverHits eligibility", () => {
     // Rule 12.4: a strike that overkills its target may carry the extra hits to another
     // engaged target. A Rangestrike can never carry over, regardless of overkill (rulebook
     // section 13, Rangestriking).
-    const base = { attacker: 8, target: 7, rolls: [6, 6, 6, 6, 6], toHit: 4, totalHits: 5 }
+    const base = { attacker: 8, target: 7, rolls: [6, 6, 6, 6, 6], toHit: 4 }
 
     it("is positive once a strike overkills its target and carryover hasn't been declined", () => {
       expect(ActiveStrike.getCarryoverHits(ActiveStrike.create({ ...base, hits: 3, rangestrike: false }))).toBe(2)
@@ -59,6 +88,7 @@ describe("ActiveStrike", () => {
     it("is zero once carryover has been explicitly declined", () => {
       // Rule 12.4: "Carrying over points of damage is optional."
       const strike = ActiveStrike.create({ ...base, hits: 3, rangestrike: false })
+      if (ActiveStrike.isRangestrike(strike)) { throw new Error("expected a melee strike") }
       strike.carryoverSkipped = true
       expect(ActiveStrike.getCarryoverHits(strike)).toBe(0)
     })

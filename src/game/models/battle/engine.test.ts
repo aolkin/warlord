@@ -518,7 +518,7 @@ describe("Engagement edge cases", () => {
 
     expect(ranger.hasStruck).toBe(true)
     expect(centaur.wounds).toBe(2)
-    expect(battle.activeStrike?.rangestrike).toBe(true)
+    expect(battle.activeStrike && ActiveStrike.isRangestrike(battle.activeStrike)).toBe(true)
     // overkilled, but rangestrikes never carry over
     expect(battle.activeStrike && ActiveStrike.getCarryoverHits(battle.activeStrike) > 0).toBe(false)
   })

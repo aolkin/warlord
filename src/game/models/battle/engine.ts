@@ -494,18 +494,19 @@ export class Battle {
     assert(targetCreature !== undefined, "Unexpected target")
     assert(BATTLE_PHASE_TYPES[this.phase] !== BattlePhaseType.MOVE, "Cannot carryover in movement phase")
     // Using an optional chain prevents typescript from learning that activeStrike is present
-    assert(this.activeStrike !== undefined &&
+    assert(this.activeStrike !== undefined && !ActiveStrike.isRangestrike(this.activeStrike) &&
       ActiveStrike.getCarryoverHits(this.activeStrike) > 0, "Cannot carryover")
     const hits = Math.min(
       ActiveStrike.getCarryoverHits(this.activeStrike), targetCreature.strength - targetCreature.wounds)
-    this.activeStrike.targets.push(targetCreature.hex)
-    this.activeStrike.targetHits.push(hits)
+    this.activeStrike.carryoverTargets.push(targetCreature.hex)
+    this.activeStrike.carryoverHits.push(hits)
     targetCreature.wounds += hits
   }
 
   async skipCarryover(): Promise<void> {
     if (this.activeStrike === undefined) { throw new Error("Must have an active strike!") }
     assert(BATTLE_PHASE_TYPES[this.phase] !== BattlePhaseType.MOVE, "Cannot carryover in movement phase")
+    assert(!ActiveStrike.isRangestrike(this.activeStrike), "Cannot carryover on a rangestrike")
     this.activeStrike.carryoverSkipped = true
   }
 
@@ -533,7 +534,6 @@ export function performAttack(battle: Battle, attacker: BattleCreature, defender
   battle.activeStrike = ActiveStrike.create({
     attacker: attacker.hex,
     target: defender.hex,
-    totalHits,
     hits,
     toHit,
     rolls,
