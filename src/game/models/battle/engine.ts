@@ -494,11 +494,11 @@ export class Battle {
     assert(targetCreature !== undefined, "Unexpected target")
     assert(BATTLE_PHASE_TYPES[this.phase] !== BattlePhaseType.MOVE, "Cannot carryover in movement phase")
     // Using an optional chain prevents typescript from learning that activeStrike is present
-    assert(this.activeStrike !== undefined &&
+    assert(this.activeStrike !== undefined && !ActiveStrike.isRangestrike(this.activeStrike) &&
       ActiveStrike.getCarryoverHits(this.activeStrike) > 0, "Cannot carryover")
     const hits = Math.min(
       ActiveStrike.getCarryoverHits(this.activeStrike), targetCreature.strength - targetCreature.wounds)
-    this.activeStrike.targets.push(targetCreature.hex)
+    this.activeStrike.carryoverTargets.push(targetCreature.hex)
     this.activeStrike.targetHits.push(hits)
     targetCreature.wounds += hits
   }
@@ -506,6 +506,7 @@ export class Battle {
   async skipCarryover(): Promise<void> {
     if (this.activeStrike === undefined) { throw new Error("Must have an active strike!") }
     assert(BATTLE_PHASE_TYPES[this.phase] !== BattlePhaseType.MOVE, "Cannot carryover in movement phase")
+    assert(!ActiveStrike.isRangestrike(this.activeStrike), "Cannot carryover on a rangestrike")
     this.activeStrike.carryoverSkipped = true
   }
 
@@ -526,19 +527,16 @@ export class Battle {
 // getAdjustedStrike/getRangestrike), so a caller can pass the wrong number of dice unnoticed.
 export function performAttack(battle: Battle, attacker: BattleCreature, defender: BattleCreature,
   rolls: number[], toHit: number, rangestrike: boolean): void {
-  const totalHits = rolls.filter(roll => roll >= toHit).length
-  const hits = Math.min(totalHits, defender.strength - defender.wounds)
   attacker.hasStruck = true
-  defender.wounds += hits
   battle.activeStrike = ActiveStrike.create({
     attacker: attacker.hex,
     target: defender.hex,
-    totalHits,
-    hits,
+    defenderRemainingHp: defender.strength - defender.wounds,
     toHit,
     rolls,
     rangestrike
   })
+  defender.wounds += battle.activeStrike.targetHits[0]
 }
 
 export function nextPhase(battle: Battle): void {

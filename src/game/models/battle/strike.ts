@@ -26,42 +26,70 @@ export namespace Strike {
   }
 }
 
-export interface ActiveStrike {
+interface BaseActiveStrike {
   readonly attacker: number
-  targets: number[]
-  targetHits: number[]
+  readonly target: number
+  readonly targetHits: number[]
   readonly rolls: number[]
   readonly toHit: number
   readonly totalHits: number
-  carryoverSkipped: boolean
-  readonly rangestrike: boolean
 }
 
+export interface ActiveMeleeStrike extends BaseActiveStrike {
+  readonly carryoverTargets: number[]
+  carryoverSkipped: boolean
+}
+
+export interface ActiveRangestrike extends BaseActiveStrike {
+  // Declared as always-absent `never` rather than omitted, so `"carryoverTargets" in strike`
+  // narrows the ActiveStrike union in both directions.
+  readonly carryoverTargets?: never
+}
+
+export type ActiveStrike = ActiveMeleeStrike | ActiveRangestrike
+
 export type CreateActiveStrikeOptions =
-  Pick<ActiveStrike, "attacker" | "rolls" | "toHit" | "totalHits" | "rangestrike"> & {
-    target: number
-    hits: number
+  Pick<BaseActiveStrike, "attacker" | "rolls" | "toHit" | "target"> & {
+    defenderRemainingHp: number
+    rangestrike: boolean
   }
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
 export namespace ActiveStrike {
   export function create(options: CreateActiveStrikeOptions): ActiveStrike {
-    return {
+    const totalHits = options.rolls.filter(roll => roll >= options.toHit).length
+    const hits = Math.min(totalHits, options.defenderRemainingHp)
+    const base: BaseActiveStrike = {
       attacker: options.attacker,
-      targets: [options.target],
-      targetHits: [options.hits],
+      target: options.target,
+      targetHits: [hits],
       rolls: options.rolls,
       toHit: options.toHit,
-      totalHits: options.totalHits,
-      carryoverSkipped: false,
-      rangestrike: options.rangestrike
+      totalHits
+    }
+    if (options.rangestrike) {
+      return base
+    }
+    return {
+      ...base,
+      carryoverTargets: [],
+      carryoverSkipped: false
     }
   }
 
+  export function isRangestrike(strike: ActiveStrike): strike is ActiveRangestrike {
+    return !("carryoverTargets" in strike)
+  }
+
   export function getCarryoverHits(strike: ActiveStrike): number {
-    if (strike.rangestrike || strike.carryoverSkipped) {
+    if (isRangestrike(strike) || strike.carryoverSkipped) {
       return 0
     }
     return strike.totalHits - sum(strike.targetHits)
+  }
+
+  export function targets(strike: ActiveStrike): [hex: number, hits: number][] {
+    const targetHexes = isRangestrike(strike) ? [strike.target] : [strike.target, ...strike.carryoverTargets]
+    return targetHexes.map((hex, index): [hex: number, hits: number] => [hex, strike.targetHits[index]])
   }
 }
