@@ -32,7 +32,7 @@ describe("ActiveStrike", () => {
     expect(strike.target).toBe(7)
     expect(strike.targetHits).toEqual([3])
     expect(ActiveStrike.isRangestrike(strike)).toBe(false)
-    expect(strike).toMatchObject({ carryoverTargets: [], carryoverHits: [], carryoverSkipped: false })
+    expect(strike).toMatchObject({ carryoverTargets: [], carryoverSkipped: false })
   })
 
   it("creates a rangestrike strike with no carryover-related fields", () => {
@@ -47,7 +47,7 @@ describe("ActiveStrike", () => {
 
   it("sums hits across the primary target and carryover targets when computing leftover carryover hits", () => {
     const strike: ActiveStrike = {
-      attacker: 8, target: 7, targetHits: [3], carryoverTargets: [9], carryoverHits: [1],
+      attacker: 8, target: 7, targetHits: [3, 1], carryoverTargets: [9],
       rolls: [6, 6, 6, 6, 6], toHit: 4, totalHits: 5, carryoverSkipped: false
     }
     expect(ActiveStrike.getCarryoverHits(strike)).toBe(1) // 5 total hits - (3 + 1) already assigned
@@ -56,7 +56,7 @@ describe("ActiveStrike", () => {
   describe("targets", () => {
     it("returns the primary target and each carryover target with its hits for a melee strike", () => {
       const strike: ActiveStrike = {
-        attacker: 8, target: 7, targetHits: [3], carryoverTargets: [9, 11], carryoverHits: [1, 1],
+        attacker: 8, target: 7, targetHits: [3, 1, 1], carryoverTargets: [9, 11],
         rolls: [6, 6, 6, 6, 6], toHit: 4, totalHits: 5, carryoverSkipped: false
       }
       expect(ActiveStrike.targets(strike)).toEqual([[7, 3], [9, 1], [11, 1]])

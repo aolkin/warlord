@@ -499,7 +499,7 @@ export class Battle {
     const hits = Math.min(
       ActiveStrike.getCarryoverHits(this.activeStrike), targetCreature.strength - targetCreature.wounds)
     this.activeStrike.carryoverTargets.push(targetCreature.hex)
-    this.activeStrike.carryoverHits.push(hits)
+    this.activeStrike.targetHits.push(hits)
     targetCreature.wounds += hits
   }
 

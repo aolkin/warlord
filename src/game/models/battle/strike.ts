@@ -37,7 +37,6 @@ interface BaseActiveStrike {
 
 export interface ActiveMeleeStrike extends BaseActiveStrike {
   readonly carryoverTargets: number[]
-  readonly carryoverHits: number[]
   carryoverSkipped: boolean
 }
 
@@ -74,7 +73,6 @@ export namespace ActiveStrike {
     return {
       ...base,
       carryoverTargets: [],
-      carryoverHits: [],
       carryoverSkipped: false
     }
   }
@@ -87,18 +85,11 @@ export namespace ActiveStrike {
     if (isRangestrike(strike) || strike.carryoverSkipped) {
       return 0
     }
-    return strike.totalHits - sum(strike.targetHits) - sum(strike.carryoverHits)
+    return strike.totalHits - sum(strike.targetHits)
   }
 
   export function targets(strike: ActiveStrike): [hex: number, hits: number][] {
-    const primary: [hex: number, hits: number][] = [[strike.target, sum(strike.targetHits)]]
-    if (isRangestrike(strike)) {
-      return primary
-    }
-    return [
-      ...primary,
-      ...strike.carryoverTargets.map((hex, index): [hex: number, hits: number] =>
-        [hex, strike.carryoverHits[index]])
-    ]
+    const targetHexes = isRangestrike(strike) ? [strike.target] : [strike.target, ...strike.carryoverTargets]
+    return targetHexes.map((hex, index): [hex: number, hits: number] => [hex, strike.targetHits[index]])
   }
 }
