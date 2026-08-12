@@ -4,7 +4,7 @@ import { HexEdge, Terrain } from "@/models/masterboard"
 import { PlayerId } from "@/models/player"
 import { UNATTAINABLE_MOVEMENT_COST } from "./board"
 import { BattleCreature } from "./combatant"
-import { Battle, BattleSide, nextPhase, phaseEnterStrike } from "./engine"
+import { Battle, BattleSide } from "./engine"
 import { BattlePhase } from "./phase"
 import { ActiveStrike } from "./strike"
 
@@ -44,12 +44,12 @@ describe("Battle engagement", () => {
     centaur.hex = 7
     // Nothing is on the board to engage yet, so strike/strikeback for both sides
     // are auto-skipped straight through to the attacker's move.
-    nextPhase(battle)
+    Battle.nextPhase(battle)
     expect(battle.phase).toBe(BattlePhase.ATTACKER_MOVE)
 
     expect(Battle.movementFor(battle, lion).has(8)).toBe(true)
     lion.hex = 8
-    nextPhase(battle)
+    Battle.nextPhase(battle)
     expect(battle.phase).toBe(BattlePhase.ATTACKER_STRIKE)
     expect(Battle.engagedWith(battle, lion)).toEqual([centaur])
     expect(Battle.getPendingStrikes(battle)).toEqual([lion])
@@ -550,26 +550,26 @@ describe("Battle phase transitions", () => {
     }
     expectPhase(BattlePhase.DEFENDER_MOVE, 0)
 
-    nextPhase(battle)
+    Battle.nextPhase(battle)
     expectPhase(BattlePhase.DEFENDER_STRIKE, 0)
     centaur.hasStruck = true // stand in for an actual strike() call - only hasStruck matters here
 
-    nextPhase(battle)
+    Battle.nextPhase(battle)
     expectPhase(BattlePhase.ATTACKER_STRIKEBACK, 0)
     lion.hasStruck = true
 
-    nextPhase(battle)
+    Battle.nextPhase(battle)
     expectPhase(BattlePhase.ATTACKER_MOVE, 0)
 
-    nextPhase(battle)
+    Battle.nextPhase(battle)
     expectPhase(BattlePhase.ATTACKER_STRIKE, 0)
     lion.hasStruck = true
 
-    nextPhase(battle)
+    Battle.nextPhase(battle)
     expectPhase(BattlePhase.DEFENDER_STRIKEBACK, 0)
     centaur.hasStruck = true
 
-    nextPhase(battle)
+    Battle.nextPhase(battle)
     expectPhase(BattlePhase.DEFENDER_MOVE, 1)
   })
 
@@ -577,9 +577,9 @@ describe("Battle phase transitions", () => {
     const { battle } = setupBattle(Terrain.PLAINS, [CreatureType.LION], [CreatureType.CENTAUR])
 
     expect(battle.phase).toBe(BattlePhase.DEFENDER_MOVE)
-    nextPhase(battle) // no engagement -> DEFENDER_STRIKE, ATTACKER_STRIKEBACK both skipped
+    Battle.nextPhase(battle) // no engagement -> DEFENDER_STRIKE, ATTACKER_STRIKEBACK both skipped
     expect(battle.phase).toBe(BattlePhase.ATTACKER_MOVE)
-    nextPhase(battle) // -> ATTACKER_STRIKE, DEFENDER_STRIKEBACK both skipped, round increments
+    Battle.nextPhase(battle) // -> ATTACKER_STRIKE, DEFENDER_STRIKEBACK both skipped, round increments
     expect(battle.phase).toBe(BattlePhase.DEFENDER_MOVE)
     expect(battle.round).toBe(1)
   })
@@ -591,9 +591,9 @@ describe("Battle phase transitions", () => {
     place(centaur, 7)
     place(lion, 8)
 
-    nextPhase(battle) // -> DEFENDER_STRIKE, Centaur is now pending and never strikes
+    Battle.nextPhase(battle) // -> DEFENDER_STRIKE, Centaur is now pending and never strikes
     expect(Battle.getPendingStrikes(battle)).toEqual([centaur])
-    expect(() => nextPhase(battle)).toThrow("All eligible creatures must strike")
+    expect(() => Battle.nextPhase(battle)).toThrow("All eligible creatures must strike")
   })
 
   it("resets hasStruck for creatures on both sides whenever a strike phase is entered", () => {
@@ -603,7 +603,7 @@ describe("Battle phase transitions", () => {
     lion.hasStruck = true
     centaur.hasStruck = true
 
-    phaseEnterStrike(battle)
+    Battle.phaseEnterStrike(battle)
 
     expect(lion.hasStruck).toBe(false)
     expect(centaur.hasStruck).toBe(false)
@@ -616,7 +616,7 @@ describe("Battle phase transitions", () => {
     expect(unmoved.hex).toBe(36) // the defender's entrance zone for HexEdge.FIRST
     moved.hex = 7
 
-    nextPhase(battle)
+    Battle.nextPhase(battle)
 
     expect(unmoved.hex).toBe(0)
     expect(moved.hex).toBe(7)
@@ -633,10 +633,10 @@ describe("Battle phase transitions", () => {
 
     expect(centaur.wounds).toBe(0)
     battle.phase = BattlePhase.DEFENDER_STRIKE
-    phaseEnterStrike(battle)
+    Battle.phaseEnterStrike(battle)
     expect(centaur.wounds).toBe(1)
     battle.phase = BattlePhase.ATTACKER_STRIKE
-    phaseEnterStrike(battle)
+    Battle.phaseEnterStrike(battle)
     expect(centaur.wounds).toBe(2)
   })
 })

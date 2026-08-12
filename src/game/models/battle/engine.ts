@@ -506,85 +506,85 @@ export namespace Battle {
     assert(!ActiveStrike.isRangestrike(battle.activeStrike), "Cannot carryover on a rangestrike")
     battle.activeStrike.carryoverSkipped = true
   }
-}
 
-function resolveStrikingCreatures(battle: Battle, attackerId: BattleCreature["id"],
-  targetId: BattleCreature["id"]): { attackerCreature: BattleCreature, targetCreature: BattleCreature } {
-  const attackerCreature = battle.creatures.find(c => c.id === attackerId)
-  assert(attackerCreature !== undefined, "Unexpected attacker")
-  const targetCreature = battle.creatures.find(c => c.id === targetId)
-  assert(targetCreature !== undefined, "Unexpected defender")
-  assert(BATTLE_PHASE_TYPES[battle.phase] !== BattlePhaseType.MOVE, "Cannot strike in movement phase")
-  assert(attackerCreature.player === Battle.getActivePlayer(battle), "Incorrect player")
-  return { attackerCreature, targetCreature }
-}
+  function resolveStrikingCreatures(battle: Battle, attackerId: BattleCreature["id"],
+    targetId: BattleCreature["id"]): { attackerCreature: BattleCreature, targetCreature: BattleCreature } {
+    const attackerCreature = battle.creatures.find(c => c.id === attackerId)
+    assert(attackerCreature !== undefined, "Unexpected attacker")
+    const targetCreature = battle.creatures.find(c => c.id === targetId)
+    assert(targetCreature !== undefined, "Unexpected defender")
+    assert(BATTLE_PHASE_TYPES[battle.phase] !== BattlePhaseType.MOVE, "Cannot strike in movement phase")
+    assert(attackerCreature.player === getActivePlayer(battle), "Incorrect player")
+    return { attackerCreature, targetCreature }
+  }
 
-// TODO: rolls is never validated against the strike's expected dice count (see
-// getAdjustedStrike/getRangestrike), so a caller can pass the wrong number of dice unnoticed.
-export function performAttack(battle: Battle, attacker: BattleCreature, defender: BattleCreature,
-  rolls: number[], toHit: number, rangestrike: boolean): void {
-  attacker.hasStruck = true
-  battle.activeStrike = ActiveStrike.create({
-    attacker: attacker.hex,
-    target: defender.hex,
-    defenderRemainingHp: defender.strength - defender.wounds,
-    toHit,
-    rolls,
-    rangestrike
-  })
-  defender.wounds += battle.activeStrike.targetHits[0]
-}
-
-export function nextPhase(battle: Battle): void {
-  if (BATTLE_PHASE_TYPES[battle.phase] === BattlePhaseType.MOVE) {
-    Battle.getActiveCreatures(battle).forEach(creature => {
-      if (creature.hex >= 36) {
-        creature.hex = 0
-      }
+  // TODO: rolls is never validated against the strike's expected dice count (see
+  // getAdjustedStrike/getRangestrike), so a caller can pass the wrong number of dice unnoticed.
+  export function performAttack(battle: Battle, attacker: BattleCreature, defender: BattleCreature,
+    rolls: number[], toHit: number, rangestrike: boolean): void {
+    attacker.hasStruck = true
+    battle.activeStrike = ActiveStrike.create({
+      attacker: attacker.hex,
+      target: defender.hex,
+      defenderRemainingHp: defender.strength - defender.wounds,
+      toHit,
+      rolls,
+      rangestrike
     })
-  } else if (BATTLE_PHASE_TYPES[battle.phase] === BattlePhaseType.STRIKE ||
-    BATTLE_PHASE_TYPES[battle.phase] === BattlePhaseType.STRIKEBACK) {
-    assert(Battle.getPendingStrikes(battle).length === 0, "All eligible creatures must strike")
-    battle.activeStrike = undefined
-    if (BATTLE_PHASE_TYPES[battle.phase] === BattlePhaseType.STRIKEBACK) {
-      battle.creatures.forEach(creature => {
-        if (creature.wounds >= creature.strength) {
+    defender.wounds += battle.activeStrike.targetHits[0]
+  }
+
+  export function nextPhase(battle: Battle): void {
+    if (BATTLE_PHASE_TYPES[battle.phase] === BattlePhaseType.MOVE) {
+      getActiveCreatures(battle).forEach(creature => {
+        if (creature.hex >= 36) {
           creature.hex = 0
         }
       })
+    } else if (BATTLE_PHASE_TYPES[battle.phase] === BattlePhaseType.STRIKE ||
+      BATTLE_PHASE_TYPES[battle.phase] === BattlePhaseType.STRIKEBACK) {
+      assert(getPendingStrikes(battle).length === 0, "All eligible creatures must strike")
+      battle.activeStrike = undefined
+      if (BATTLE_PHASE_TYPES[battle.phase] === BattlePhaseType.STRIKEBACK) {
+        battle.creatures.forEach(creature => {
+          if (creature.wounds >= creature.strength) {
+            creature.hex = 0
+          }
+        })
+      }
+    }
+    if (battle.phase === BattlePhase.DEFENDER_STRIKEBACK) {
+      battle.round += 1
+      battle.phase = BattlePhase.DEFENDER_MOVE
+    } else {
+      battle.phase += 1
+    }
+    if (BATTLE_PHASE_TYPES[battle.phase] === BattlePhaseType.MOVE) {
+      getActiveCreatures(battle).forEach(creature => {
+        creature.initialHex = creature.hex
+      })
+    } else if (BATTLE_PHASE_TYPES[battle.phase] === BattlePhaseType.STRIKE) {
+      phaseEnterStrike(battle)
+    }
+
+    // Skip phase if possible
+    if (BATTLE_PHASE_TYPES[battle.phase] !== BattlePhaseType.MOVE) {
+      if (getPendingStrikes(battle).length === 0) {
+        console.log(`Skipping phase ${battle.phase} thanks to no pending strikes`)
+        nextPhase(battle)
+      }
     }
   }
-  if (battle.phase === BattlePhase.DEFENDER_STRIKEBACK) {
-    battle.round += 1
-    battle.phase = BattlePhase.DEFENDER_MOVE
-  } else {
-    battle.phase += 1
-  }
-  if (BATTLE_PHASE_TYPES[battle.phase] === BattlePhaseType.MOVE) {
-    Battle.getActiveCreatures(battle).forEach(creature => {
-      creature.initialHex = creature.hex
+
+  export function phaseEnterStrike(battle: Battle): void {
+    battle.activeStrike = undefined
+    battle.creatures.forEach(creature => {
+      creature.hasStruck = false
     })
-  } else if (BATTLE_PHASE_TYPES[battle.phase] === BattlePhaseType.STRIKE) {
-    phaseEnterStrike(battle)
-  }
-
-  // Skip phase if possible
-  if (BATTLE_PHASE_TYPES[battle.phase] !== BattlePhaseType.MOVE) {
-    if (Battle.getPendingStrikes(battle).length === 0) {
-      console.log(`Skipping phase ${battle.phase} thanks to no pending strikes`)
-      nextPhase(battle)
+    if (battle.terrain === Terrain.TUNDRA) {
+      battle.creatures
+        .filter(creature => BATTLE_BOARDS[battle.terrain].getHazard(creature.hex) === Hazard.DRIFT)
+        .forEach(creature => { creature.wounds += 1 })
     }
-  }
-}
-
-export function phaseEnterStrike(battle: Battle): void {
-  battle.activeStrike = undefined
-  battle.creatures.forEach(creature => {
-    creature.hasStruck = false
-  })
-  if (battle.terrain === Terrain.TUNDRA) {
-    battle.creatures
-      .filter(creature => BATTLE_BOARDS[battle.terrain].getHazard(creature.hex) === Hazard.DRIFT)
-      .forEach(creature => { creature.wounds += 1 })
   }
 }

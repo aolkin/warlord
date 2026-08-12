@@ -34,7 +34,7 @@
           block
           variant="outlined"
           :disabled="!mayProceed"
-          @click="nextPhase(battle)"
+          @click="Battle.nextPhase(battle)"
         >
           End {{ phaseTypeTitle }}
         </v-btn>
@@ -48,8 +48,7 @@ import {
   BATTLE_PHASE_TYPES,
   Battle,
   BattleCreature,
-  BattlePhaseType,
-  nextPhase
+  BattlePhaseType
 } from "@/models/battle"
 import { PlayerId } from "@/models/player"
 import { useGameStore } from "~/stores/game"
