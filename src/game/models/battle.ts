@@ -1,5 +1,5 @@
 // Battle logic is split across src/game/models/battle/ by concern (board, combatant,
-// strike resolution, and the Battle engine itself); this barrel re-exports the
+// phase, strike resolution, and the Battle engine itself); this barrel re-exports the
 // same public surface that used to live directly in this file.
 export {
   BATTLE_BOARD_ADJACENCIES,
@@ -15,14 +15,13 @@ export type { BattleBoardProps } from "./battle/board"
 export { BattleCreature } from "./battle/combatant"
 
 export {
-  ActiveStrike,
   BATTLE_PHASE_TITLES,
   BATTLE_PHASE_TYPES,
   BattlePhase,
-  BattlePhaseType,
-  Strike,
-  isRangestrike
-} from "./battle/strike"
+  BattlePhaseType
+} from "./battle/phase"
+
+export { ActiveStrike, Strike, isRangestrike } from "./battle/strike"
 export type { RangestrikeTarget } from "./battle/strike"
 
 export { Battle, nextPhase, performAttack } from "./battle/engine"
