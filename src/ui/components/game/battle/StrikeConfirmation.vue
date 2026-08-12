@@ -1,8 +1,8 @@
 <template>
   <v-dialog max-width="600">
-    <v-card :title="`Attack ${targetedCreatureName} with ${attacker.name}`">
+    <v-card :title="`Attack ${targetedCreature.name} with ${attacker.name}`">
       <v-card-text>
-        Are you sure you want to attack this {{ targetedCreatureName }}
+        Are you sure you want to attack this {{ targetedCreature.name }}
         ({{ targetedCreature?.wounds }} hits taken) with your {{ attacker.name }}?
       </v-card-text>
       <v-card-text>
@@ -15,7 +15,7 @@
         </span>
       </v-card-text>
       <v-card-text v-if="tougherCarryovers.length > 0">
-        If you kill the {{ targetedCreatureName }}, you may carry over the excess hits to other creatures
+        If you kill the {{ targetedCreature.name }}, you may carry over the excess hits to other creatures
         you are engaged with that have the same "to hit" requirement. You may also select a higher
         "to hit" requirement for the entire roll to potentially carry over to other creatures,
         as follows:
@@ -81,7 +81,6 @@ const emit = defineEmits<{
 
 const engagements = computed<BattleCreature[]>(() => props.battle.engagedWith(props.attacker))
 
-const targetedCreatureName = computed(() => props.targetedCreature?.name ?? "")
 const targetedStrike = computed<Strike>(() =>
   props.battle.getTargetedStrike(props.attacker, props.targetedCreature))
 const targetedStrikeUnadjusted = computed<Strike>(() =>
