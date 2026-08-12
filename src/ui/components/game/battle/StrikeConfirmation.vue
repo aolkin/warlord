@@ -29,7 +29,7 @@
             :prepend-icon="`mdi-dice-${targetedStrike.toHit}`"
             :value="targetedStrike.toHit"
           >
-            {{ normalCarryovers.map(creature => BattleCreature.name(creature)).join(", ") }}
+            {{ normalCarryovers.map(creature => creature.name).join(", ") }}
           </v-list-item>
           <v-list-item
             v-for="(creatures, toHit) in toHitAdjustments"
@@ -37,7 +37,7 @@
             :prepend-icon="`mdi-dice-${toHit}`"
             :value="Number(toHit)"
           >
-            {{ [...normalCarryovers, ...creatures].map(creature => BattleCreature.name(creature)).join(", ") }}
+            {{ [...normalCarryovers, ...creatures].map(creature => creature.name).join(", ") }}
           </v-list-item>
         </v-list>
       </v-card-text>
@@ -81,9 +81,9 @@ const emit = defineEmits<{
 
 const engagements = computed<BattleCreature[]>(() => props.battle.engagedWith(props.attacker))
 
-const selectedCreatureName = computed(() => BattleCreature.name(props.attacker))
+const selectedCreatureName = computed(() => props.attacker.name)
 const targetedCreatureName = computed(() =>
-  props.targetedCreature ? BattleCreature.name(props.targetedCreature) : "")
+  props.targetedCreature ? props.targetedCreature.name : "")
 const targetedStrike = computed<Strike>(() =>
   props.battle.getTargetedStrike(props.attacker, props.targetedCreature))
 const targetedStrikeUnadjusted = computed<Strike>(() =>

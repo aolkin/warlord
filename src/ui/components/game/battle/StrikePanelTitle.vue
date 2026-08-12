@@ -1,12 +1,12 @@
 <template>
   <v-card-title>
     <span :class="`text-player-${attacker.player}`">
-      {{ BattleCreature.name(attacker) }}
+      {{ attacker.name }}
       <span v-if="attackerHazard !== Hazard.NONE">({{ Hazard[attackerHazard].toLowerCase() }}) </span>
     </span>
     <span>vs </span>
     <span :class="`text-player-${target.player}`">
-      {{ BattleCreature.name(target) }}
+      {{ target.name }}
       <span v-if="targetHazard !== Hazard.NONE">({{ Hazard[targetHazard].toLowerCase() }})</span>
     </span>
   </v-card-title>

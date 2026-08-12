@@ -444,7 +444,7 @@ export class Battle {
   getRawStrike(attacker: BattleCreature, defender: BattleCreature): Strike {
     return {
       toHit: this.toHitRaw(attacker, defender),
-      dice: BattleCreature.getStrength(attacker)
+      dice: attacker.strength
     }
   }
 

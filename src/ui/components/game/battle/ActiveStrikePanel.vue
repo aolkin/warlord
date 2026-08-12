@@ -30,9 +30,9 @@
         :key="creature.id"
       >
         {{ index === 0 ? "Dealt" : "Carried over" }} {{ hitsString(hits) }} to a
-        {{ BattleCreature.name(creature) }}{{ activeStrike?.rangestrike ? " with a rangestrike" : "" }}.
+        {{ creature.name }}{{ activeStrike?.rangestrike ? " with a rangestrike" : "" }}.
         <span v-if="BattleCreature.getRemainingHp(creature) < 1">
-          The {{ BattleCreature.name(creature) }} is dead.
+          The {{ creature.name }} is dead.
         </span>
       </v-card-item>
       <v-card-text v-if="activeStrike">
