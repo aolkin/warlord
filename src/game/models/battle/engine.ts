@@ -71,10 +71,7 @@ export class Battle {
   }
 
   static hydrate(battle: Battle): Battle {
-    return Object.assign(Object.create(Battle.prototype) as Battle, {
-      ...battle,
-      activeStrike: battle.activeStrike === undefined ? undefined : new ActiveStrike(battle.activeStrike)
-    })
+    return Object.assign(Object.create(Battle.prototype) as Battle, battle)
   }
 
   getBoard(): BattleBoard {
@@ -206,7 +203,7 @@ export class Battle {
   }
 
   carryoverTargets(): BattleCreature[] | undefined {
-    if (this.activeStrike === undefined || !this.activeStrike.canCarryover) {
+    if (this.activeStrike === undefined || ActiveStrike.getCarryoverHits(this.activeStrike) <= 0) {
       return undefined
     }
     const attacker = this.creatureOnHex(this.activeStrike.attacker) as BattleCreature
@@ -505,9 +502,9 @@ export class Battle {
     assert(BATTLE_PHASE_TYPES[this.phase] !== BattlePhaseType.MOVE, "Cannot carryover in movement phase")
     // Using an optional chain prevents typescript from learning that activeStrike is present
     assert(this.activeStrike !== undefined &&
-      this.activeStrike.canCarryover, "Cannot carryover")
+      ActiveStrike.getCarryoverHits(this.activeStrike) > 0, "Cannot carryover")
     const hits = Math.min(
-      this.activeStrike.getCarryoverHits(), targetCreature.strength - targetCreature.wounds)
+      ActiveStrike.getCarryoverHits(this.activeStrike), targetCreature.strength - targetCreature.wounds)
     this.activeStrike.targets.push(targetCreature.hex)
     this.activeStrike.targetHits.push(hits)
     targetCreature.wounds += hits
@@ -540,7 +537,7 @@ export function performAttack(battle: Battle, attacker: BattleCreature, defender
   const hits = Math.min(totalHits, defender.strength - defender.wounds)
   attacker.hasStruck = true
   defender.wounds += hits
-  battle.activeStrike = new ActiveStrike({
+  battle.activeStrike = ActiveStrike.create({
     attacker: attacker.hex,
     target: defender.hex,
     totalHits,

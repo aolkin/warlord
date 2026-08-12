@@ -5,7 +5,7 @@ import { PlayerId } from "@/models/player"
 import { UNATTAINABLE_MOVEMENT_COST } from "./board"
 import { BattleCreature } from "./combatant"
 import { Battle, BattleSide, nextPhase, phaseEnterStrike } from "./engine"
-import { BattlePhase } from "./strike"
+import { ActiveStrike, BattlePhase } from "./strike"
 
 function setupBattle(terrain: Terrain, attackerTypes: CreatureType[], defenderTypes: CreatureType[]): {
   battle: Battle
@@ -247,25 +247,25 @@ describe("Carryover", () => {
 
     await battle.attackCreature({ attacker: lion.id, target: centaur1.id, rolls: [6, 6, 6, 6, 6] })
     expect(centaur1.strength - centaur1.wounds).toBe(0)
-    expect(battle.activeStrike?.canCarryover).toBe(true)
     // getCarryoverHits = 5 total hits - 3 assigned to centaur1
-    expect(battle.activeStrike?.getCarryoverHits()).toBe(2)
+    expect(battle.activeStrike && ActiveStrike.getCarryoverHits(battle.activeStrike)).toBe(2)
     expect(battle.carryoverTargets()).toEqual([centaur2])
 
     await battle.assignCarryover(centaur2.id)
     expect(centaur2.wounds).toBe(2)
-    expect(battle.activeStrike?.canCarryover).toBe(false) // no hits left to carry over
+    // no hits left to carry over
+    expect(battle.activeStrike && ActiveStrike.getCarryoverHits(battle.activeStrike) > 0).toBe(false)
   })
 
   it("stops carryover once skipCarryover is called", async () => {
     const { battle, lion, centaur1 } = setupTripleEngagement()
 
     await battle.attackCreature({ attacker: lion.id, target: centaur1.id, rolls: [6, 6, 6, 6, 6] })
-    expect(battle.activeStrike?.canCarryover).toBe(true)
+    expect(battle.activeStrike && ActiveStrike.getCarryoverHits(battle.activeStrike) > 0).toBe(true)
 
     await battle.skipCarryover()
 
-    expect(battle.activeStrike?.canCarryover).toBe(false)
+    expect(battle.activeStrike && ActiveStrike.getCarryoverHits(battle.activeStrike) > 0).toBe(false)
     expect(battle.carryoverTargets()).toBeUndefined()
   })
 })
@@ -518,7 +518,8 @@ describe("Engagement edge cases", () => {
     expect(ranger.hasStruck).toBe(true)
     expect(centaur.wounds).toBe(2)
     expect(battle.activeStrike?.rangestrike).toBe(true)
-    expect(battle.activeStrike?.canCarryover).toBe(false) // overkilled, but rangestrikes never carry over
+    // overkilled, but rangestrikes never carry over
+    expect(battle.activeStrike && ActiveStrike.getCarryoverHits(battle.activeStrike) > 0).toBe(false)
   })
 })
 

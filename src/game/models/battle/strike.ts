@@ -1,4 +1,4 @@
-import { clamp, omit, sum } from "lodash-es"
+import { clamp, sum } from "lodash-es"
 import { BattleCreature } from "./combatant"
 
 export interface Strike {
@@ -59,46 +59,42 @@ export const BATTLE_PHASE_TITLES: Record<BattlePhase, string> = {
   [BattlePhase.ATTACKER_STRIKEBACK]: "Attacker's Strikebacks"
 }
 
-export interface IActiveStrike {
-  attacker: number
+export interface ActiveStrike {
+  readonly attacker: number
   targets: number[]
   targetHits: number[]
-  rolls: number[]
-  toHit: number
-  totalHits: number
+  readonly rolls: number[]
+  readonly toHit: number
+  readonly totalHits: number
   carryoverSkipped: boolean
-  rangestrike: boolean
+  readonly rangestrike: boolean
 }
-export interface ActiveStrikeHit {
-  target: number
-  hits: number
-}
-type InitialActiveStrike = Omit<IActiveStrike, "targets" | "targetHits" | "carryoverSkipped"> & ActiveStrikeHit
 
-// Merged with the class below so its type picks up IActiveStrike's members,
-// which are assigned at runtime via Object.assign in the constructor.
-// eslint-disable-next-line @typescript-eslint/no-empty-object-type, @typescript-eslint/no-unsafe-declaration-merging
-export interface ActiveStrike extends IActiveStrike {}
-// eslint-disable-next-line @typescript-eslint/no-unsafe-declaration-merging
-export class ActiveStrike {
-  constructor(props: IActiveStrike | InitialActiveStrike) {
-    Object.assign(this, "targets" in props ? props : {
-      ...omit(props, "target", "hits"),
-      targets: [props.target],
-      targetHits: [props.hits],
-      carryoverSkipped: false
-    })
+export type CreateActiveStrikeOptions =
+  Pick<ActiveStrike, "attacker" | "rolls" | "toHit" | "totalHits" | "rangestrike"> & {
+    target: number
+    hits: number
   }
 
-  get target(): number {
-    return this.targets[0]
+// eslint-disable-next-line @typescript-eslint/no-namespace
+export namespace ActiveStrike {
+  export function create(options: CreateActiveStrikeOptions): ActiveStrike {
+    return {
+      attacker: options.attacker,
+      targets: [options.target],
+      targetHits: [options.hits],
+      rolls: options.rolls,
+      toHit: options.toHit,
+      totalHits: options.totalHits,
+      carryoverSkipped: false,
+      rangestrike: options.rangestrike
+    }
   }
 
-  getCarryoverHits(): number {
-    return this.totalHits - sum(this.targetHits)
-  }
-
-  get canCarryover(): boolean {
-    return !this.rangestrike && !this.carryoverSkipped && this.getCarryoverHits() > 0
+  export function getCarryoverHits(strike: ActiveStrike): number {
+    if (strike.rangestrike || strike.carryoverSkipped) {
+      return 0
+    }
+    return strike.totalHits - sum(strike.targetHits)
   }
 }

@@ -338,7 +338,7 @@ function creatureClasses(creature: BattleCreature): object {
     interactive: creatureEnabled(creature),
     selected: creature === selectedCreature.value,
     attacker: activeStrike.value?.attacker === creature.hex,
-    target: activeStrike.value?.target === creature.hex
+    target: activeStrike.value?.targets[0] === creature.hex
   }
 }
 
@@ -370,7 +370,8 @@ function chooseCreature(creature: BattleCreature): void {
 }
 
 function targetCreature(creature: BattleCreature | RangestrikeTarget): void {
-  if (!("creature" in creature) && activeStrike.value?.canCarryover && carryoverTargets.value) {
+  if (!("creature" in creature) && activeStrike.value !== undefined &&
+    ActiveStrike.getCarryoverHits(activeStrike.value) > 0 && carryoverTargets.value) {
     if (carryoverTargets.value.includes(creature)) {
       void props.battle.assignCarryover(creature.id)
     }
