@@ -4,52 +4,33 @@ import { PlayerId } from "../player"
 
 let battleCreatureIdCounter = 0
 
-export interface BattleCreatureProps {
+export interface BattleCreature extends Moveable {
   readonly type: CreatureType
   readonly player: PlayerId
-  readonly playerScore: number
-  hex: number
-}
-
-export class BattleCreature implements Moveable {
-  readonly type: CreatureType
-  readonly player: PlayerId
-  readonly playerScore: number
   readonly id: number
+  readonly name: string
+  readonly strength: number
 
-  hex: number
   wounds: number
-  initialHex: number
   hasStruck: boolean
-
-  constructor(props: BattleCreatureProps) {
-    this.type = props.type
-    this.player = props.player
-    this.playerScore = props.playerScore
-    this.id = battleCreatureIdCounter++
-    this.hex = props.hex
-    this.wounds = 0
-    this.initialHex = props.hex
-    this.hasStruck = false
-  }
-
-  name(): string {
-    return CREATURE_DATA[this.type].name
-  }
-
-  getStrength(): number {
-    return CREATURE_DATA[this.type].getStrength(this.playerScore)
-  }
-
-  getRemainingHp(): number {
-    return this.getStrength() - this.wounds
-  }
 }
 
-export function wound(creature: BattleCreature, amount: number): void {
-  creature.wounds += amount
-}
+export type CreateBattleCreatureOptions = Pick<BattleCreature, "type" | "player" | "hex"> & { playerScore: number }
 
-export function performStrike(creature: BattleCreature): void {
-  creature.hasStruck = true
+// eslint-disable-next-line @typescript-eslint/no-namespace
+export namespace BattleCreature {
+  export function create(options: CreateBattleCreatureOptions): BattleCreature {
+    const data = CREATURE_DATA[options.type]
+    return {
+      type: options.type,
+      player: options.player,
+      id: battleCreatureIdCounter++,
+      name: data.name,
+      strength: data.getStrength(options.playerScore),
+      hex: options.hex,
+      wounds: 0,
+      initialHex: options.hex,
+      hasStruck: false
+    }
+  }
 }

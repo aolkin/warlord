@@ -1,9 +1,9 @@
 <template>
   <v-dialog max-width="600">
-    <v-card :title="`Attack ${targetedCreatureName} with ${selectedCreatureName}`">
+    <v-card :title="`Attack ${targetedCreature.name} with ${attacker.name}`">
       <v-card-text>
-        Are you sure you want to attack this {{ targetedCreatureName }}
-        ({{ targetedCreature?.wounds }} hits taken) with your {{ selectedCreatureName }}?
+        Are you sure you want to attack this {{ targetedCreature.name }}
+        ({{ targetedCreature?.wounds }} hits taken) with your {{ attacker.name }}?
       </v-card-text>
       <v-card-text>
         You will roll {{ targetedStrike.dice }} {{ targetedStrike.dice > 1 ? "dice" : "die" }}
@@ -15,7 +15,7 @@
         </span>
       </v-card-text>
       <v-card-text v-if="tougherCarryovers.length > 0">
-        If you kill the {{ targetedCreatureName }}, you may carry over the excess hits to other creatures
+        If you kill the {{ targetedCreature.name }}, you may carry over the excess hits to other creatures
         you are engaged with that have the same "to hit" requirement. You may also select a higher
         "to hit" requirement for the entire roll to potentially carry over to other creatures,
         as follows:
@@ -29,7 +29,7 @@
             :prepend-icon="`mdi-dice-${targetedStrike.toHit}`"
             :value="targetedStrike.toHit"
           >
-            {{ normalCarryovers.map(creature => creature.name()).join(", ") }}
+            {{ normalCarryovers.map(creature => creature.name).join(", ") }}
           </v-list-item>
           <v-list-item
             v-for="(creatures, toHit) in toHitAdjustments"
@@ -37,7 +37,7 @@
             :prepend-icon="`mdi-dice-${toHit}`"
             :value="Number(toHit)"
           >
-            {{ [...normalCarryovers, ...creatures].map(creature => creature.name()).join(", ") }}
+            {{ [...normalCarryovers, ...creatures].map(creature => creature.name).join(", ") }}
           </v-list-item>
         </v-list>
       </v-card-text>
@@ -81,8 +81,6 @@ const emit = defineEmits<{
 
 const engagements = computed<BattleCreature[]>(() => props.battle.engagedWith(props.attacker))
 
-const selectedCreatureName = computed(() => props.attacker.name())
-const targetedCreatureName = computed(() => props.targetedCreature?.name() ?? "")
 const targetedStrike = computed<Strike>(() =>
   props.battle.getTargetedStrike(props.attacker, props.targetedCreature))
 const targetedStrikeUnadjusted = computed<Strike>(() =>
@@ -90,8 +88,13 @@ const targetedStrikeUnadjusted = computed<Strike>(() =>
     isRangestrike(props.targetedCreature) ? props.targetedCreature.creature : props.targetedCreature))
 const targetedStrikeWasAdjusted = computed(() =>
   !isEqual(targetedStrikeUnadjusted.value, targetedStrike.value))
-const carryoversImpossible = computed(() => engagements.value.length < 2 ||
-  targetedStrike.value.dice - props.targetedCreature.getRemainingHp() <= 0)
+const carryoversImpossible = computed(() => {
+  if (engagements.value.length < 2) {
+    return true
+  }
+  const remainingHp = props.targetedCreature.strength - props.targetedCreature.wounds
+  return targetedStrike.value.dice <= remainingHp
+})
 const normalCarryovers = computed<BattleCreature[]>(() => carryoversImpossible.value
   ? []
   : engagements.value

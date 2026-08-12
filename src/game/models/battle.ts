@@ -12,11 +12,7 @@ export {
 } from "./battle/board"
 export type { BattleBoardProps } from "./battle/board"
 
-export {
-  BattleCreature,
-  performStrike,
-  wound
-} from "./battle/combatant"
+export { BattleCreature } from "./battle/combatant"
 
 export {
   ActiveStrike,
