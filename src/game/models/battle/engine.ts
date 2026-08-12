@@ -1,5 +1,6 @@
 import { assert } from "@/utils/assert"
 import { div } from "@/utils/math"
+import { sum } from "lodash-es"
 import { CREATURE_DATA, CreatureType } from "../creature"
 import { HexEdge, Terrain } from "../masterboard"
 import { PlayerId } from "../player"
@@ -527,18 +528,16 @@ export class Battle {
 // getAdjustedStrike/getRangestrike), so a caller can pass the wrong number of dice unnoticed.
 export function performAttack(battle: Battle, attacker: BattleCreature, defender: BattleCreature,
   rolls: number[], toHit: number, rangestrike: boolean): void {
-  const totalHits = rolls.filter(roll => roll >= toHit).length
-  const hits = Math.min(totalHits, defender.strength - defender.wounds)
   attacker.hasStruck = true
-  defender.wounds += hits
   battle.activeStrike = ActiveStrike.create({
     attacker: attacker.hex,
     target: defender.hex,
-    hits,
+    defenderRemainingHp: defender.strength - defender.wounds,
     toHit,
     rolls,
     rangestrike
   })
+  defender.wounds += sum(battle.activeStrike.targetHits)
 }
 
 export function nextPhase(battle: Battle): void {
