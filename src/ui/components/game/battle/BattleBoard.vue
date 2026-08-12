@@ -119,10 +119,14 @@
         :attacker="selectedCreature"
         :focused-creature="focusedCreature"
       />
-      <ActiveStrikePanel
-        rounded
-        :battle="battle"
-      />
+      <v-expand-transition>
+        <ActiveStrikePanel
+          v-if="activeStrike"
+          rounded
+          :battle="battle"
+          :active-strike="activeStrike"
+        />
+      </v-expand-transition>
     </v-sheet>
 
     <template v-if="selectedCreature && target">
