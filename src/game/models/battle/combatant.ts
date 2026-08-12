@@ -36,10 +36,6 @@ export namespace BattleCreature {
     }
   }
 
-  export function getRemainingHp(creature: BattleCreature): number {
-    return creature.strength - creature.wounds
-  }
-
   export function wound(creature: BattleCreature, amount: number): void {
     creature.wounds += amount
   }

@@ -197,7 +197,7 @@ export class Battle {
     const hex = BATTLE_PHASE_TYPES[this.phase] === BattlePhaseType.MOVE ? whom.initialHex : whom.hex
     const adjacencies = BATTLE_BOARD_ADJACENCIES[hex]
     return this.creatures.filter(creature => creature.player !== whom.player &&
-      (includeDead || BattleCreature.getRemainingHp(creature) > 0) &&
+      (includeDead || creature.wounds < creature.strength) &&
       adjacencies.includes(creature.hex) &&
       // TODO: only checks the cliff hazard in the fixed direction (whom -> creature), so it misses
       // cliffs where `creature` (not `whom`) is the upper hex - creatureMovementCost above shows the
@@ -243,7 +243,7 @@ export class Battle {
         return targetCreature !== undefined && targetCreature.player !== creature.player &&
           // Warlocks can rangestrike lords!
           (creature.type === CreatureType.WARLOCK || !CREATURE_DATA[targetCreature.type].lord) &&
-          BattleCreature.getRemainingHp(targetCreature) > 0
+          targetCreature.wounds < targetCreature.strength
       }
       return false
     }) as number[][]
@@ -507,7 +507,7 @@ export class Battle {
     assert(this.activeStrike !== undefined &&
       this.activeStrike.canCarryover, "Cannot carryover")
     const hits = Math.min(
-      this.activeStrike.getCarryoverHits(), BattleCreature.getRemainingHp(targetCreature))
+      this.activeStrike.getCarryoverHits(), targetCreature.strength - targetCreature.wounds)
     this.activeStrike.targets.push(targetCreature.hex)
     this.activeStrike.targetHits.push(hits)
     BattleCreature.wound(targetCreature, hits)
@@ -537,7 +537,7 @@ export class Battle {
 export function performAttack(battle: Battle, attacker: BattleCreature, defender: BattleCreature,
   rolls: number[], toHit: number, rangestrike: boolean): void {
   const totalHits = rolls.filter(roll => roll >= toHit).length
-  const hits = Math.min(totalHits, BattleCreature.getRemainingHp(defender))
+  const hits = Math.min(totalHits, defender.strength - defender.wounds)
   BattleCreature.performStrike(attacker)
   BattleCreature.wound(defender, hits)
   battle.activeStrike = new ActiveStrike({
@@ -564,7 +564,7 @@ export function nextPhase(battle: Battle): void {
     battle.activeStrike = undefined
     if (BATTLE_PHASE_TYPES[battle.phase] === BattlePhaseType.STRIKEBACK) {
       battle.creatures.forEach(creature => {
-        if (BattleCreature.getRemainingHp(creature) <= 0) {
+        if (creature.wounds >= creature.strength) {
           creature.hex = 0
         }
       })

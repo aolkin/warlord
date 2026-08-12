@@ -1,9 +1,9 @@
 <template>
   <v-dialog max-width="600">
-    <v-card :title="`Attack ${targetedCreatureName} with ${selectedCreatureName}`">
+    <v-card :title="`Attack ${targetedCreatureName} with ${attacker.name}`">
       <v-card-text>
         Are you sure you want to attack this {{ targetedCreatureName }}
-        ({{ targetedCreature?.wounds }} hits taken) with your {{ selectedCreatureName }}?
+        ({{ targetedCreature?.wounds }} hits taken) with your {{ attacker.name }}?
       </v-card-text>
       <v-card-text>
         You will roll {{ targetedStrike.dice }} {{ targetedStrike.dice > 1 ? "dice" : "die" }}
@@ -81,9 +81,7 @@ const emit = defineEmits<{
 
 const engagements = computed<BattleCreature[]>(() => props.battle.engagedWith(props.attacker))
 
-const selectedCreatureName = computed(() => props.attacker.name)
-const targetedCreatureName = computed(() =>
-  props.targetedCreature ? props.targetedCreature.name : "")
+const targetedCreatureName = computed(() => props.targetedCreature?.name ?? "")
 const targetedStrike = computed<Strike>(() =>
   props.battle.getTargetedStrike(props.attacker, props.targetedCreature))
 const targetedStrikeUnadjusted = computed<Strike>(() =>
@@ -92,7 +90,7 @@ const targetedStrikeUnadjusted = computed<Strike>(() =>
 const targetedStrikeWasAdjusted = computed(() =>
   !isEqual(targetedStrikeUnadjusted.value, targetedStrike.value))
 const carryoversImpossible = computed(() => engagements.value.length < 2 ||
-  targetedStrike.value.dice - BattleCreature.getRemainingHp(props.targetedCreature) <= 0)
+  targetedStrike.value.dice - (props.targetedCreature.strength - props.targetedCreature.wounds) <= 0)
 const normalCarryovers = computed<BattleCreature[]>(() => carryoversImpossible.value
   ? []
   : engagements.value

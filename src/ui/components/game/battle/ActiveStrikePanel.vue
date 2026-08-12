@@ -31,7 +31,7 @@
       >
         {{ index === 0 ? "Dealt" : "Carried over" }} {{ hitsString(hits) }} to a
         {{ creature.name }}{{ activeStrike?.rangestrike ? " with a rangestrike" : "" }}.
-        <span v-if="BattleCreature.getRemainingHp(creature) < 1">
+        <span v-if="creature.wounds >= creature.strength">
           The {{ creature.name }} is dead.
         </span>
       </v-card-item>
