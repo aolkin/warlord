@@ -5,7 +5,8 @@ import { PlayerId } from "@/models/player"
 import { UNATTAINABLE_MOVEMENT_COST } from "./board"
 import { BattleCreature } from "./combatant"
 import { Battle, BattleSide, nextPhase, phaseEnterStrike } from "./engine"
-import { ActiveStrike, BattlePhase } from "./strike"
+import { BattlePhase } from "./phase"
+import { ActiveStrike } from "./strike"
 
 function setupBattle(terrain: Terrain, attackerTypes: CreatureType[], defenderTypes: CreatureType[]): {
   battle: Battle

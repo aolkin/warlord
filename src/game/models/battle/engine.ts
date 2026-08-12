@@ -16,15 +16,8 @@ import {
   relationToHex
 } from "./board"
 import { BattleCreature } from "./combatant"
-import {
-  ActiveStrike,
-  BATTLE_PHASE_TYPES,
-  BattlePhase,
-  BattlePhaseType,
-  RangestrikeTarget,
-  Strike,
-  isRangestrike
-} from "./strike"
+import { BATTLE_PHASE_TYPES, BattlePhase, BattlePhaseType } from "./phase"
+import { ActiveStrike, RangestrikeTarget, Strike, isRangestrike } from "./strike"
 
 export interface BattleSide {
   player: PlayerId
