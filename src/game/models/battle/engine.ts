@@ -460,7 +460,7 @@ export namespace Battle {
 
   // Actions
 
-  export async function moveCreature(battle: Battle, payload: BattleMovePayload): Promise<void> {
+  export function moveCreature(battle: Battle, payload: BattleMovePayload): void {
     const creature = battle.creatures.find(c => c.id === payload.creature)
     assert(creature !== undefined, "Unexpected creature")
     assert(BATTLE_PHASE_TYPES[battle.phase] === BattlePhaseType.MOVE, "Not in movement phase")
@@ -468,8 +468,8 @@ export namespace Battle {
     creature.hex = payload.hex
   }
 
-  export async function attackCreature(battle: Battle,
-    { attacker, target, rolls, optionalToHit }: AttackPayload): Promise<void> {
+  export function attackCreature(battle: Battle,
+    { attacker, target, rolls, optionalToHit }: AttackPayload): void {
     const { attackerCreature, targetCreature } = resolveStrikingCreatures(battle, attacker, target)
     let toHit = toHitAdjusted(battle, attackerCreature, targetCreature)
     if (optionalToHit !== undefined) {
@@ -479,14 +479,14 @@ export namespace Battle {
     performAttack(battle, attackerCreature, targetCreature, rolls, toHit, false)
   }
 
-  export async function rangestrikeCreature(battle: Battle,
-    { attacker, target, rolls }: RangestrikePayload): Promise<void> {
+  export function rangestrikeCreature(battle: Battle,
+    { attacker, target, rolls }: RangestrikePayload): void {
     const { attackerCreature, targetCreature } = resolveStrikingCreatures(battle, attacker, target.creature)
     const computedStrike = getRangestrike(attackerCreature, { ...target, creature: targetCreature })
     performAttack(battle, attackerCreature, targetCreature, rolls, computedStrike.toHit, true)
   }
 
-  export async function assignCarryover(battle: Battle, target: BattleCreature["id"]): Promise<void> {
+  export function assignCarryover(battle: Battle, target: BattleCreature["id"]): void {
     const targetCreature = battle.creatures.find(c => c.id === target)
     assert(targetCreature !== undefined, "Unexpected target")
     assert(BATTLE_PHASE_TYPES[battle.phase] !== BattlePhaseType.MOVE, "Cannot carryover in movement phase")
@@ -500,7 +500,7 @@ export namespace Battle {
     targetCreature.wounds += hits
   }
 
-  export async function skipCarryover(battle: Battle): Promise<void> {
+  export function skipCarryover(battle: Battle): void {
     if (battle.activeStrike === undefined) { throw new Error("Must have an active strike!") }
     assert(BATTLE_PHASE_TYPES[battle.phase] !== BattlePhaseType.MOVE, "Cannot carryover in movement phase")
     assert(!ActiveStrike.isRangestrike(battle.activeStrike), "Cannot carryover on a rangestrike")

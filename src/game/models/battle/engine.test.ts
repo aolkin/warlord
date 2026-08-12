@@ -33,7 +33,7 @@ function place(creature: BattleCreature, hex: number): void {
 }
 
 describe("Battle engagement", () => {
-  it("moves into contact, resolves a strike, and inflicts casualties", async () => {
+  it("moves into contact, resolves a strike, and inflicts casualties", () => {
     const { battle, offense, defense } = setupBattle(Terrain.PLAINS, [CreatureType.LION], [CreatureType.CENTAUR])
     const [lion] = offense
     const [centaur] = defense
@@ -56,7 +56,7 @@ describe("Battle engagement", () => {
 
     const toHit = Battle.toHitAdjusted(battle, lion, centaur)
     expect(toHit).toBe(5) // 4 - (lion skill 3 - centaur skill 4), no terrain adjustment
-    await Battle.attackCreature(battle, { attacker: lion.id, target: centaur.id, rolls: [6, 6, 6, 6, 6] })
+    Battle.attackCreature(battle, { attacker: lion.id, target: centaur.id, rolls: [6, 6, 6, 6, 6] })
 
     expect(lion.hasStruck).toBe(true)
     expect(centaur.wounds).toBe(3) // Centaur's full strength (3); capped, not overkill
@@ -251,28 +251,28 @@ describe("Carryover", () => {
     return { battle, lion, centaur1, centaur2 }
   }
 
-  it("assigns overflow hits from an overkill strike to another engaged target", async () => {
+  it("assigns overflow hits from an overkill strike to another engaged target", () => {
     const { battle, lion, centaur1, centaur2 } = setupTripleEngagement()
 
-    await Battle.attackCreature(battle, { attacker: lion.id, target: centaur1.id, rolls: [6, 6, 6, 6, 6] })
+    Battle.attackCreature(battle, { attacker: lion.id, target: centaur1.id, rolls: [6, 6, 6, 6, 6] })
     expect(centaur1.strength - centaur1.wounds).toBe(0)
     // getCarryoverHits = 5 total hits - 3 assigned to centaur1
     expect(battle.activeStrike && ActiveStrike.getCarryoverHits(battle.activeStrike)).toBe(2)
     expect(Battle.carryoverTargets(battle)).toEqual([centaur2])
 
-    await Battle.assignCarryover(battle, centaur2.id)
+    Battle.assignCarryover(battle, centaur2.id)
     expect(centaur2.wounds).toBe(2)
     // no hits left to carry over
     expect(battle.activeStrike && ActiveStrike.getCarryoverHits(battle.activeStrike) > 0).toBe(false)
   })
 
-  it("stops carryover once skipCarryover is called", async () => {
+  it("stops carryover once skipCarryover is called", () => {
     const { battle, lion, centaur1 } = setupTripleEngagement()
 
-    await Battle.attackCreature(battle, { attacker: lion.id, target: centaur1.id, rolls: [6, 6, 6, 6, 6] })
+    Battle.attackCreature(battle, { attacker: lion.id, target: centaur1.id, rolls: [6, 6, 6, 6, 6] })
     expect(battle.activeStrike && ActiveStrike.getCarryoverHits(battle.activeStrike) > 0).toBe(true)
 
-    await Battle.skipCarryover(battle)
+    Battle.skipCarryover(battle)
 
     expect(battle.activeStrike && ActiveStrike.getCarryoverHits(battle.activeStrike) > 0).toBe(false)
     expect(Battle.carryoverTargets(battle)).toBeUndefined()
@@ -467,7 +467,7 @@ describe("Engagement edge cases", () => {
     expect(Battle.engagedWith(battle, centaur)).toEqual([])
   })
 
-  it("excludes an engaged creature from carryover if the attacker cannot hit it at the toHit it just rolled", async () => {
+  it("excludes an engaged creature from carryover if the attacker cannot hit it at the toHit it just rolled", () => {
     // Terrain.TOWER's battle board has battle-hex 8 atop a wall edge from battle-hex 2,
     // which raises toHit by 1 for an attacker striking up through it.
     const { battle, offense, defense } = setupBattle(Terrain.TOWER,
@@ -480,12 +480,12 @@ describe("Engagement edge cases", () => {
     place(included, 3) // toHit 5, no hazard - matches the rolled toHit, so carryover-eligible
     place(excluded, 8) // toHit 6, raised by the wall - harder than the rolled toHit
 
-    await Battle.attackCreature(battle, { attacker: lion.id, target: primary.id, rolls: [6, 6, 6, 6, 6] })
+    Battle.attackCreature(battle, { attacker: lion.id, target: primary.id, rolls: [6, 6, 6, 6, 6] })
     expect(primary.strength - primary.wounds).toBe(0) // overkilled, so it drops out of engagedWith too
     expect(Battle.carryoverTargets(battle)).toEqual([included])
   })
 
-  it("lets a strike choose a higher toHit than computed, but rejects a lower one", async () => {
+  it("lets a strike choose a higher toHit than computed, but rejects a lower one", () => {
     const { battle, offense, defense } = setupBattle(Terrain.PLAINS, [CreatureType.LION], [CreatureType.CENTAUR])
     battle.phase = BattlePhase.ATTACKER_STRIKE
     const [lion] = offense
@@ -495,11 +495,11 @@ describe("Engagement edge cases", () => {
 
     const computedToHit = Battle.toHitAdjusted(battle, lion, centaur)
     expect(computedToHit).toBe(5)
-    await expect(Battle.attackCreature(battle, {
+    expect(() => Battle.attackCreature(battle, {
       attacker: lion.id, target: centaur.id, rolls: [6, 6, 6, 6, 6], optionalToHit: computedToHit - 1
-    })).rejects.toThrow("Cannot choose a lower to-hit")
+    })).toThrow("Cannot choose a lower to-hit")
 
-    await Battle.attackCreature(battle, {
+    Battle.attackCreature(battle, {
       attacker: lion.id, target: centaur.id, rolls: [6, 6, 6, 6, 6], optionalToHit: computedToHit + 1
     })
     expect(battle.activeStrike?.toHit).toBe(computedToHit + 1)
@@ -507,7 +507,7 @@ describe("Engagement edge cases", () => {
     expect(centaur.wounds).toBe(3)
   })
 
-  it("resolves a rangestrike attack the same way as a melee strike, but never allows carryover", async () => {
+  it("resolves a rangestrike attack the same way as a melee strike, but never allows carryover", () => {
     const { battle, offense, defense } = setupBattle(Terrain.PLAINS, [CreatureType.RANGER], [CreatureType.CENTAUR])
     battle.phase = BattlePhase.ATTACKER_STRIKE
     const [ranger] = offense
@@ -520,7 +520,7 @@ describe("Engagement edge cases", () => {
     // Ranger has strength 4, so per rule 12.2 (dice = floor(power / 2)) a rangestrike rolls
     // exactly 2 dice.
     expect(Battle.getRangestrike(ranger, targets[0]).dice).toBe(2)
-    await Battle.rangestrikeCreature(battle, {
+    Battle.rangestrikeCreature(battle, {
       attacker: ranger.id, target: { ...targets[0], creature: targets[0].creature.id }, rolls: [6, 6]
     })
 

@@ -357,13 +357,13 @@ const debugHexAdjacencies = computed((): number[] => BATTLE_BOARD_ADJACENCIES[de
 
 function moveSelected(hex: number): void {
   if (selectedCreature.value && movementHexes.value.has(hex)) {
-    void Battle.moveCreature(props.battle, { creature: selectedCreature.value.id, hex })
+    Battle.moveCreature(props.battle, { creature: selectedCreature.value.id, hex })
   }
 }
 
 function removeSelected(): void {
   if (selectedCreature.value) {
-    void Battle.moveCreature(props.battle,
+    Battle.moveCreature(props.battle,
       { creature: selectedCreature.value.id, hex: selectedCreature.value.initialHex })
   }
 }
@@ -378,7 +378,7 @@ function targetCreature(creature: BattleCreature | RangestrikeTarget): void {
   if (!("creature" in creature) && activeStrike.value !== undefined &&
     ActiveStrike.getCarryoverHits(activeStrike.value) > 0 && carryoverTargets.value) {
     if (carryoverTargets.value.includes(creature)) {
-      void Battle.assignCarryover(props.battle, creature.id)
+      Battle.assignCarryover(props.battle, creature.id)
     }
   } else {
     target.value = creature
@@ -394,18 +394,20 @@ async function attackTargetedCreature(
     throw new Error("diceRoller ref is not set")
   }
   const rolls = await diceRoller.value.roll(targetedStrike.value.dice)
-  await (isRangestrike(attackTarget)
-    ? Battle.rangestrikeCreature(props.battle, {
+  if (isRangestrike(attackTarget)) {
+    Battle.rangestrikeCreature(props.battle, {
       attacker: attacker.id,
       target: { ...attackTarget, creature: attackTarget.creature.id },
       rolls
     })
-    : Battle.attackCreature(props.battle, {
+  } else {
+    Battle.attackCreature(props.battle, {
       attacker: attacker.id,
       target: attackTarget.id,
       optionalToHit: optionalToHit.value,
       rolls
-    }))
+    })
+  }
   console.log(props.battle.activeStrike)
   resetAttack()
   deselectCreature()
