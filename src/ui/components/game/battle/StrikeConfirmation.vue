@@ -88,8 +88,13 @@ const targetedStrikeUnadjusted = computed<Strike>(() =>
     isRangestrike(props.targetedCreature) ? props.targetedCreature.creature : props.targetedCreature))
 const targetedStrikeWasAdjusted = computed(() =>
   !isEqual(targetedStrikeUnadjusted.value, targetedStrike.value))
-const carryoversImpossible = computed(() => engagements.value.length < 2 ||
-  targetedStrike.value.dice - (props.targetedCreature.strength - props.targetedCreature.wounds) <= 0)
+const carryoversImpossible = computed(() => {
+  if (engagements.value.length < 2) {
+    return true
+  }
+  const remainingHp = props.targetedCreature.strength - props.targetedCreature.wounds
+  return targetedStrike.value.dice - remainingHp <= 0
+})
 const normalCarryovers = computed<BattleCreature[]>(() => carryoversImpossible.value
   ? []
   : engagements.value

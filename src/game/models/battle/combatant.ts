@@ -35,12 +35,4 @@ export namespace BattleCreature {
       hasStruck: false
     }
   }
-
-  export function wound(creature: BattleCreature, amount: number): void {
-    creature.wounds += amount
-  }
-
-  export function performStrike(creature: BattleCreature): void {
-    creature.hasStruck = true
-  }
 }

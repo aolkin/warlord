@@ -543,22 +543,22 @@ describe("Battle phase transitions", () => {
 
     nextPhase(battle)
     expectPhase(BattlePhase.DEFENDER_STRIKE, 0)
-    BattleCreature.performStrike(centaur) // stand in for an actual strike() call - only hasStruck matters here
+    centaur.hasStruck = true // stand in for an actual strike() call - only hasStruck matters here
 
     nextPhase(battle)
     expectPhase(BattlePhase.ATTACKER_STRIKEBACK, 0)
-    BattleCreature.performStrike(lion)
+    lion.hasStruck = true
 
     nextPhase(battle)
     expectPhase(BattlePhase.ATTACKER_MOVE, 0)
 
     nextPhase(battle)
     expectPhase(BattlePhase.ATTACKER_STRIKE, 0)
-    BattleCreature.performStrike(lion)
+    lion.hasStruck = true
 
     nextPhase(battle)
     expectPhase(BattlePhase.DEFENDER_STRIKEBACK, 0)
-    BattleCreature.performStrike(centaur)
+    centaur.hasStruck = true
 
     nextPhase(battle)
     expectPhase(BattlePhase.DEFENDER_MOVE, 1)

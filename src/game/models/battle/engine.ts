@@ -510,7 +510,7 @@ export class Battle {
       this.activeStrike.getCarryoverHits(), targetCreature.strength - targetCreature.wounds)
     this.activeStrike.targets.push(targetCreature.hex)
     this.activeStrike.targetHits.push(hits)
-    BattleCreature.wound(targetCreature, hits)
+    targetCreature.wounds += hits
   }
 
   async skipCarryover(): Promise<void> {
@@ -538,8 +538,8 @@ export function performAttack(battle: Battle, attacker: BattleCreature, defender
   rolls: number[], toHit: number, rangestrike: boolean): void {
   const totalHits = rolls.filter(roll => roll >= toHit).length
   const hits = Math.min(totalHits, defender.strength - defender.wounds)
-  BattleCreature.performStrike(attacker)
-  BattleCreature.wound(defender, hits)
+  attacker.hasStruck = true
+  defender.wounds += hits
   battle.activeStrike = new ActiveStrike({
     attacker: attacker.hex,
     target: defender.hex,
@@ -601,6 +601,6 @@ export function phaseEnterStrike(battle: Battle): void {
   if (battle.terrain === Terrain.TUNDRA) {
     battle.creatures
       .filter(creature => battle.getBoard().getHazard(creature.hex) === Hazard.DRIFT)
-      .forEach(creature => BattleCreature.wound(creature, 1))
+      .forEach(creature => { creature.wounds += 1 })
   }
 }
