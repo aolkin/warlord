@@ -1,6 +1,5 @@
 import { assert } from "@/utils/assert"
 import { div } from "@/utils/math"
-import { sum } from "lodash-es"
 import { CREATURE_DATA, CreatureType } from "../creature"
 import { HexEdge, Terrain } from "../masterboard"
 import { PlayerId } from "../player"
@@ -537,7 +536,7 @@ export function performAttack(battle: Battle, attacker: BattleCreature, defender
     rolls,
     rangestrike
   })
-  defender.wounds += sum(battle.activeStrike.targetHits)
+  defender.wounds += battle.activeStrike.targetHits[0]
 }
 
 export function nextPhase(battle: Battle): void {
