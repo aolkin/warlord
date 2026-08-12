@@ -43,28 +43,28 @@ describe("ActiveStrike", () => {
     expect(ActiveStrike.getCarryoverHits(strike)).toBe(1) // 5 total hits - (3 + 1) already assigned
   })
 
-  describe("canCarryover", () => {
+  describe("getCarryoverHits eligibility", () => {
     // Rule 12.4: a strike that overkills its target may carry the extra hits to another
     // engaged target. Rule 13.0: a Rangestrike may never carry over, regardless of overkill.
     const base = { attacker: 8, target: 7, rolls: [6, 6, 6, 6, 6], toHit: 4, totalHits: 5 }
 
-    it("is true once a strike overkills its target and carryover hasn't been declined", () => {
-      expect(ActiveStrike.canCarryover(ActiveStrike.create({ ...base, hits: 3, rangestrike: false }))).toBe(true)
+    it("is positive once a strike overkills its target and carryover hasn't been declined", () => {
+      expect(ActiveStrike.getCarryoverHits(ActiveStrike.create({ ...base, hits: 3, rangestrike: false }))).toBe(2)
     })
 
-    it("is false for a rangestrike even with leftover hits", () => {
-      expect(ActiveStrike.canCarryover(ActiveStrike.create({ ...base, hits: 3, rangestrike: true }))).toBe(false)
+    it("is zero for a rangestrike even with leftover hits", () => {
+      expect(ActiveStrike.getCarryoverHits(ActiveStrike.create({ ...base, hits: 3, rangestrike: true }))).toBe(0)
     })
 
-    it("is false once carryover has been explicitly declined", () => {
+    it("is zero once carryover has been explicitly declined", () => {
       // Rule 12.4: "Carrying over points of damage is optional."
       const strike = ActiveStrike.create({ ...base, hits: 3, rangestrike: false })
       strike.carryoverSkipped = true
-      expect(ActiveStrike.canCarryover(strike)).toBe(false)
+      expect(ActiveStrike.getCarryoverHits(strike)).toBe(0)
     })
 
-    it("is false when the strike didn't overkill its target, leaving nothing to carry", () => {
-      expect(ActiveStrike.canCarryover(ActiveStrike.create({ ...base, hits: 5, rangestrike: false }))).toBe(false)
+    it("is zero when the strike didn't overkill its target, leaving nothing to carry", () => {
+      expect(ActiveStrike.getCarryoverHits(ActiveStrike.create({ ...base, hits: 5, rangestrike: false }))).toBe(0)
     })
   })
 })

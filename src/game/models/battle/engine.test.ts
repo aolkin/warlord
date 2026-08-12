@@ -247,25 +247,25 @@ describe("Carryover", () => {
 
     await battle.attackCreature({ attacker: lion.id, target: centaur1.id, rolls: [6, 6, 6, 6, 6] })
     expect(centaur1.strength - centaur1.wounds).toBe(0)
-    expect(battle.activeStrike && ActiveStrike.canCarryover(battle.activeStrike)).toBe(true)
     // getCarryoverHits = 5 total hits - 3 assigned to centaur1
     expect(battle.activeStrike && ActiveStrike.getCarryoverHits(battle.activeStrike)).toBe(2)
     expect(battle.carryoverTargets()).toEqual([centaur2])
 
     await battle.assignCarryover(centaur2.id)
     expect(centaur2.wounds).toBe(2)
-    expect(battle.activeStrike && ActiveStrike.canCarryover(battle.activeStrike)).toBe(false) // no hits left to carry over
+    // no hits left to carry over
+    expect(battle.activeStrike && ActiveStrike.getCarryoverHits(battle.activeStrike) > 0).toBe(false)
   })
 
   it("stops carryover once skipCarryover is called", async () => {
     const { battle, lion, centaur1 } = setupTripleEngagement()
 
     await battle.attackCreature({ attacker: lion.id, target: centaur1.id, rolls: [6, 6, 6, 6, 6] })
-    expect(battle.activeStrike && ActiveStrike.canCarryover(battle.activeStrike)).toBe(true)
+    expect(battle.activeStrike && ActiveStrike.getCarryoverHits(battle.activeStrike) > 0).toBe(true)
 
     await battle.skipCarryover()
 
-    expect(battle.activeStrike && ActiveStrike.canCarryover(battle.activeStrike)).toBe(false)
+    expect(battle.activeStrike && ActiveStrike.getCarryoverHits(battle.activeStrike) > 0).toBe(false)
     expect(battle.carryoverTargets()).toBeUndefined()
   })
 })
@@ -519,7 +519,7 @@ describe("Engagement edge cases", () => {
     expect(centaur.wounds).toBe(2)
     expect(battle.activeStrike?.rangestrike).toBe(true)
     // overkilled, but rangestrikes never carry over
-    expect(battle.activeStrike && ActiveStrike.canCarryover(battle.activeStrike)).toBe(false)
+    expect(battle.activeStrike && ActiveStrike.getCarryoverHits(battle.activeStrike) > 0).toBe(false)
   })
 })
 

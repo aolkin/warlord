@@ -36,10 +36,10 @@
         </span>
       </v-card-item>
       <v-card-text v-if="activeStrike">
-        <span v-if="activeStrike && ActiveStrike.canCarryover(activeStrike) && battle.carryoverTargets()">
+        <span v-if="activeStrike && ActiveStrike.getCarryoverHits(activeStrike) > 0 && battle.carryoverTargets()">
           You may still carry over {{ hitsString(ActiveStrike.getCarryoverHits(activeStrike)) }}.
         </span>
-        <span v-else-if="activeStrike && ActiveStrike.canCarryover(activeStrike)">
+        <span v-else-if="activeStrike && ActiveStrike.getCarryoverHits(activeStrike) > 0">
           No eligible targets to carry over
           {{ hitsString(ActiveStrike.getCarryoverHits(activeStrike), "excess") }} to.
         </span>

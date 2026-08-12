@@ -96,10 +96,11 @@ export namespace ActiveStrike {
   }
 
   export function getCarryoverHits(strike: ActiveStrike): number {
+    // Rule 13.0: a Rangestrike may never carry over, regardless of overkill. Rule 12.4: carrying
+    // over is optional, so declining it also leaves nothing to carry.
+    if (strike.rangestrike || strike.carryoverSkipped) {
+      return 0
+    }
     return strike.totalHits - sum(strike.targetHits)
-  }
-
-  export function canCarryover(strike: ActiveStrike): boolean {
-    return !strike.rangestrike && !strike.carryoverSkipped && getCarryoverHits(strike) > 0
   }
 }

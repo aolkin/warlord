@@ -203,7 +203,7 @@ export class Battle {
   }
 
   carryoverTargets(): BattleCreature[] | undefined {
-    if (this.activeStrike === undefined || !ActiveStrike.canCarryover(this.activeStrike)) {
+    if (this.activeStrike === undefined || ActiveStrike.getCarryoverHits(this.activeStrike) <= 0) {
       return undefined
     }
     const attacker = this.creatureOnHex(this.activeStrike.attacker) as BattleCreature
@@ -502,7 +502,7 @@ export class Battle {
     assert(BATTLE_PHASE_TYPES[this.phase] !== BattlePhaseType.MOVE, "Cannot carryover in movement phase")
     // Using an optional chain prevents typescript from learning that activeStrike is present
     assert(this.activeStrike !== undefined &&
-      ActiveStrike.canCarryover(this.activeStrike), "Cannot carryover")
+      ActiveStrike.getCarryoverHits(this.activeStrike) > 0, "Cannot carryover")
     const hits = Math.min(
       ActiveStrike.getCarryoverHits(this.activeStrike), targetCreature.strength - targetCreature.wounds)
     this.activeStrike.targets.push(targetCreature.hex)

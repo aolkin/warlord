@@ -371,7 +371,7 @@ function chooseCreature(creature: BattleCreature): void {
 
 function targetCreature(creature: BattleCreature | RangestrikeTarget): void {
   if (!("creature" in creature) && activeStrike.value !== undefined &&
-    ActiveStrike.canCarryover(activeStrike.value) && carryoverTargets.value) {
+    ActiveStrike.getCarryoverHits(activeStrike.value) > 0 && carryoverTargets.value) {
     if (carryoverTargets.value.includes(creature)) {
       void props.battle.assignCarryover(creature.id)
     }
