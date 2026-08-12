@@ -45,7 +45,8 @@ describe("ActiveStrike", () => {
 
   describe("getCarryoverHits eligibility", () => {
     // Rule 12.4: a strike that overkills its target may carry the extra hits to another
-    // engaged target. Rule 13.0: a Rangestrike may never carry over, regardless of overkill.
+    // engaged target. A Rangestrike can never carry over, regardless of overkill (rulebook
+    // section 13, Rangestriking).
     const base = { attacker: 8, target: 7, rolls: [6, 6, 6, 6, 6], toHit: 4, totalHits: 5 }
 
     it("is positive once a strike overkills its target and carryover hasn't been declined", () => {

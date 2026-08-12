@@ -96,8 +96,9 @@ export namespace ActiveStrike {
   }
 
   export function getCarryoverHits(strike: ActiveStrike): number {
-    // Rule 13.0: a Rangestrike may never carry over, regardless of overkill. Rule 12.4: carrying
-    // over is optional, so declining it also leaves nothing to carry.
+    // A Rangestrike can never carry over hits to another target, regardless of overkill (rulebook
+    // section 13, Rangestriking). Carrying over is optional per rule 12.4, so declining it also
+    // leaves nothing to carry.
     if (strike.rangestrike || strike.carryoverSkipped) {
       return 0
     }
