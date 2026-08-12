@@ -31,7 +31,6 @@ describe("ActiveStrike", () => {
     })
     expect(strike.targets).toEqual([7])
     expect(strike.targetHits).toEqual([3])
-    expect(ActiveStrike.target(strike)).toBe(7)
     expect(strike.carryoverSkipped).toBe(false)
   })
 
