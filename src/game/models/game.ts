@@ -308,11 +308,17 @@ export namespace TitanGame {
     recruitingStack.currentMuster = recruit
   }
 
+  // The store's `game` is a reactive() proxy that other code holds references into, so
+  // loading a save must mutate it in place rather than replace it with a new object.
+  export function rehydrate(game: TitanGame, data: TitanGame): void {
+    Object.assign(game, data)
+  }
+
   export function hydrate(persisted?: string): TitanGame {
     const game = create(2)
     try {
       if (persisted !== undefined) {
-        Object.assign(game, JSON.parse(persisted))
+        rehydrate(game, JSON.parse(persisted))
       }
     } catch (e) {
       console.error("Error during hydration", e)

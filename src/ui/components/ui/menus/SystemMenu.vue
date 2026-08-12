@@ -142,6 +142,7 @@
 import { computed, inject, Ref, ref } from "vue"
 import DiceRoller from "~/components/ui/generic/DiceRoller"
 import { Creature, CREATURE_LIST } from "@/models/creature"
+import { TitanGame } from "@/models/game"
 import { compressAndEncode, decodeAndDecompress } from "@/utils/base64"
 import { useGameStore } from "~/stores/game"
 import { usePlayerStore } from "~/stores/ui/player"
@@ -204,11 +205,11 @@ async function loadSave(): Promise<void> {
   if (hydration === undefined) {
     throw new Error("Failed to load save data")
   }
-  Object.assign(game, JSON.parse(hydration))
+  TitanGame.rehydrate(game, JSON.parse(hydration))
 }
 
 function loadJson(): void {
-  Object.assign(game, JSON.parse(saveText.value))
+  TitanGame.rehydrate(game, JSON.parse(saveText.value))
 }
 </script>
 
