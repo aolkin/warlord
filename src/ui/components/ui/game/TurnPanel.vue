@@ -3,7 +3,7 @@
     border
     width="300"
     :prepend-icon="icon"
-    :title="`${TitanGame.getActivePlayer(game).name}'s Turn`"
+    :title="`${game.players[game.activePlayerIndex].name}'s Turn`"
   >
     <template #prepend>
       <v-icon size="x-large" />

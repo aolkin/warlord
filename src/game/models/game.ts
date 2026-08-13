@@ -140,10 +140,6 @@ export namespace TitanGame {
       getPathsForHex(game, stack.hex).length > 0)
   }
 
-  export function getActivePlayer(game: TitanGame): Player {
-    return game.players[game.activePlayerIndex]
-  }
-
   export function getMayProceed(game: TitanGame): boolean {
     switch (game.activePhase) {
       case MasterboardPhase.SPLIT:
