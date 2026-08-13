@@ -13,7 +13,7 @@
     <v-card
       v-for="player in game.players"
       :key="player.id"
-      :class="{ 'active': TitanGame.getActivePlayer(game) === player, [`bg-player-${player.id}`]: true }"
+      :class="{ 'active': game.activePlayerId === player.id, [`bg-player-${player.id}`]: true }"
       class="player-card ml-2 mr-1 py-1 my-2"
       elevation="4"
     >
