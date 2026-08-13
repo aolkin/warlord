@@ -92,7 +92,7 @@ export namespace TitanGame {
   }
 
   export function getActiveStacks(game: TitanGame): Stack[] {
-    return getStacksForPlayer(game, getActivePlayerId(game))
+    return getStacksForPlayer(game, game.activePlayerId)
   }
 
   export function getNextMarker(game: TitanGame): number | undefined {
@@ -108,7 +108,7 @@ export namespace TitanGame {
     if (game.activeRoll === undefined) {
       return []
     }
-    const activePlayerId = getActivePlayerId(game)
+    const activePlayerId = game.activePlayerId
     const initialHex = masterboard.getHex(hexNum)
     const paths: Path[] = []
     // [Array of hexes to get where we are, first hex with enemies, current hex]
@@ -148,10 +148,6 @@ export namespace TitanGame {
     return game.players[game.activePlayerIndex]
   }
 
-  export function getActivePlayerId(game: TitanGame): PlayerId {
-    return game.activePlayerId
-  }
-
   export function getMayProceed(game: TitanGame): boolean {
     switch (game.activePhase) {
       case MasterboardPhase.SPLIT:
@@ -169,7 +165,7 @@ export namespace TitanGame {
   }
 
   export function isStackActive(game: TitanGame, stack: Stack): boolean {
-    if (stack.owner !== getActivePlayerId(game)) {
+    if (stack.owner !== game.activePlayerId) {
       return false
     }
     switch (game.activePhase) {
@@ -202,14 +198,14 @@ export namespace TitanGame {
   }
 
   export function getEngagedStacks(game: TitanGame): Stack[] {
-    const activePlayerId = getActivePlayerId(game)
+    const activePlayerId = game.activePlayerId
     return getActiveStacks(game)
       .filter(stack => getStacksForHex(game, stack.hex)
         .some(occupant => occupant.owner !== activePlayerId))
   }
 
   export function canTitanTeleport(game: TitanGame, stack: Stack): boolean {
-    return game.activeRoll === 6 && game.score[getActivePlayerId(game)] >= 400 &&
+    return game.activeRoll === 6 && game.score[game.activePlayerId] >= 400 &&
       stack.creatures.includes(CreatureType.TITAN)
   }
 
@@ -218,7 +214,7 @@ export namespace TitanGame {
   export function initiateBattle(game: TitanGame, attacking: StackRef): void {
     const attackingStack = game.stacks.find(stack => stack.id === attacking)
     assert(attackingStack !== undefined, `No stack with id ${attacking}`)
-    const activePlayerId = getActivePlayerId(game)
+    const activePlayerId = game.activePlayerId
     const defending = getStacksForHex(game, attackingStack.hex)
       .find(stack => stack.owner !== activePlayerId) as Stack
     assert(defending !== undefined,

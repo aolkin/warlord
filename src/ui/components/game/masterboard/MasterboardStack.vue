@@ -125,7 +125,7 @@ const transform = computed((): string => {
   return result.toString()
 })
 
-const isActivePlayer = computed(() => TitanGame.getActivePlayerId(game) === props.stack.owner)
+const isActivePlayer = computed(() => game.activePlayerId === props.stack.owner)
 
 const potentialEngagements = computed((): HexEdge[] => {
   if (selectionStore.selectedStack === undefined) {
@@ -133,7 +133,7 @@ const potentialEngagements = computed((): HexEdge[] => {
   } else if (!TitanGame.isMovePhase(game)) {
     return []
   } else if (TitanGame.getStacksForHex(game, props.stack.hex)
-    .some((stack: Stack) => stack.owner === TitanGame.getActivePlayerId(game))) {
+    .some((stack: Stack) => stack.owner === game.activePlayerId)) {
     return []
   } else if (TitanGame.canTitanTeleport(game, selectionStore.selectedStack) || preferencesStore.freeMovement) {
     if (masterboard.getHex(props.stack.hex).terrain === Terrain.TOWER) {
@@ -158,7 +158,7 @@ const engageable = computed((): [HexEdge, Transformations][] =>
   potentialEngagements.value.map(edge => [edge, getEngageTransformForEdge(props.stack.hex, edge)]))
 
 const engaged = computed((): boolean => isActivePlayer.value && TitanGame.getStacksForHex(game, props.stack.hex)
-  .some((stack: Stack) => stack.owner !== TitanGame.getActivePlayerId(game)))
+  .some((stack: Stack) => stack.owner !== game.activePlayerId))
 
 const isMandatory = computed(() => {
   if (!isActivePlayer.value) {

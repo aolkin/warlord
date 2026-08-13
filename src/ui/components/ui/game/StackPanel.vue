@@ -47,7 +47,7 @@
           @click="toggleSplit(index)"
         />
       </div>
-      <template v-if="TitanGame.getActivePlayerId(game) === props.focusedStack.owner">
+      <template v-if="game.activePlayerId === props.focusedStack.owner">
         <v-card-actions
           v-if="TitanGame.isSplitPhase(game)"
           class="split-guide"
@@ -134,7 +134,7 @@ const gameStore = useGameStore()
 const game = gameStore.game
 const selectionStore = useSelectionStore()
 
-const owned = computed((): boolean => TitanGame.getActivePlayerId(game) === props.focusedStack?.owner)
+const owned = computed((): boolean => game.activePlayerId === props.focusedStack?.owner)
 
 const stackPlayer = computed((): Player | undefined => props.focusedStack === undefined
   ? undefined
