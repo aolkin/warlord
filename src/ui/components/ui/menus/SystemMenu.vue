@@ -72,7 +72,7 @@
         <v-col>
           <v-btn
             block
-            @click="loadJson"
+            @click="loadJson(saveText)"
           >
             Load JSON
           </v-btn>
@@ -204,14 +204,13 @@ async function loadSave(): Promise<void> {
   if (hydration === undefined) {
     throw new Error("Failed to load save data")
   }
-  // `game` is a reactive() proxy that other code holds references into, so loading a
-  // save must mutate it in place rather than replace it with a new object.
-  Object.assign(game, JSON.parse(hydration))
+  loadJson(hydration)
 }
 
-function loadJson(): void {
-  // See the comment in loadSave: game must be mutated in place.
-  Object.assign(game, JSON.parse(saveText.value))
+function loadJson(json: string): void {
+  // `game` is a reactive() proxy that other code holds references into, so loading a
+  // save must mutate it in place rather than replace it with a new object.
+  Object.assign(game, JSON.parse(json))
 }
 </script>
 

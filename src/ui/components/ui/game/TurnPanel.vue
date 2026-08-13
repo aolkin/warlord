@@ -83,13 +83,11 @@ import type DiceRoller from "~/components/ui/generic/DiceRoller"
 import { MasterboardPhase, TitanGame } from "@/models/game"
 import { Moveable } from "@/models/moveable"
 import { useGameStore } from "~/stores/game"
-import { useSelectionStore } from "~/stores/ui/selection"
 
 const diceRoller = inject<Readonly<Ref<InstanceType<typeof DiceRoller> | null>>>("diceRoller")
 
 const gameStore = useGameStore()
 const game = gameStore.game
-const selectionStore = useSelectionStore()
 
 const icon = computed(() => {
   switch (game.activePhase) {
@@ -128,7 +126,6 @@ function roll(): void {
 }
 
 function proceedToRoll(): void {
-  selectionStore.deselectStack()
   TitanGame.nextPhase(game)
   roll()
 }
