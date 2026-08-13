@@ -1,0 +1,25 @@
+name: E2E
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled]
+
+jobs:
+  e2e:
+    if: contains(github.event.pull_request.labels.*.name, 'e2e')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup pnpm
+        uses: pnpm/setup@v2
+        with:
+          runtime: node@24
+          cache: true
+
+      - name: Install Playwright browsers
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Run E2E tests
+        run: pnpm test:e2e
