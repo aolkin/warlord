@@ -81,7 +81,6 @@
 
 <script setup lang="ts">
 import { computed, defineAsyncComponent, provide, readonly, ref, watch } from "vue"
-import type { Battle } from "@/models/battle"
 import BattleBoard from "~/components/game/battle/BattleBoard"
 import Masterboard from "~/components/game/masterboard/Masterboard"
 import PlayerStatus from "~/components/ui/game/PlayerStatus"
@@ -105,9 +104,7 @@ const prefsPaneVisible = ref(false)
 
 const battleVisible = ref(false)
 
-// game is deeply reactive, and Vue's UnwrapNestedRefs can't reconstruct Battle's
-// private methods, so the inferred type structurally mismatches the class - cast it back.
-const activeBattle = computed(() => gameStore.game.activeBattle as Battle | undefined)
+const activeBattle = computed(() => gameStore.game.activeBattle)
 
 // Only the empty->present transition should navigate to the battle board - subsequent
 // mutations within the same battle (strikes, wounds, etc.) also change activeBattle. Firing

@@ -219,12 +219,12 @@ const focusedCreature = computed<BattleCreature | undefined>(() => focusedCreatu
   : selectedCreature.value)
 
 const movementHexes = computed<Set<number>>(() =>
-  selectedCreature.value === undefined ? new Set<number>() : props.battle.movementFor(selectedCreature.value))
+  selectedCreature.value === undefined ? new Set<number>() : Battle.movementFor(props.battle, selectedCreature.value))
 const engagements = computed<BattleCreature[]>(() =>
-  selectedCreature.value === undefined ? [] : props.battle.engagedWith(selectedCreature.value))
+  selectedCreature.value === undefined ? [] : Battle.engagedWith(props.battle, selectedCreature.value))
 const rangestrikes = computed<RangestrikeTarget[]>(() =>
-  selectedCreature.value === undefined ? [] : props.battle.rangestrikeTargets(selectedCreature.value))
-const carryoverTargets = computed((): BattleCreature[] | undefined => props.battle.carryoverTargets())
+  selectedCreature.value === undefined ? [] : Battle.rangestrikeTargets(props.battle, selectedCreature.value))
+const carryoverTargets = computed((): BattleCreature[] | undefined => Battle.carryoverTargets(props.battle))
 
 function selectCreature(selection: BattleCreature): void {
   selectedCreature.value = selectedCreature.value === selection ? undefined : selection
@@ -267,7 +267,7 @@ function leaveBattleHex(leaving: number): void {
 }
 
 const battlePhaseType = computed((): BattlePhaseType => BATTLE_PHASE_TYPES[props.battle.phase])
-const battleActivePlayer = computed((): PlayerId => props.battle.getActivePlayer())
+const battleActivePlayer = computed((): PlayerId => props.battle.activePlayer)
 
 // A creature only exists within the battle it was selected in.
 watch([() => props.battle, () => props.battle.phase], deselectCreature)
@@ -319,8 +319,8 @@ function creatureEnabled(creature: BattleCreature): boolean {
   if (creature.player !== battleActivePlayer.value) {
     return false
   }
-  const engagementsCount = props.battle.engagedWith(creature).length
-  const rangestrikesCount = props.battle.rangestrikeTargets(creature).length
+  const engagementsCount = Battle.engagedWith(props.battle, creature).length
+  const rangestrikesCount = Battle.rangestrikeTargets(props.battle, creature).length
   switch (battlePhaseType.value) {
     case BattlePhaseType.MOVE:
       return engagementsCount === 0
@@ -350,20 +350,21 @@ const activeStrike = computed((): ActiveStrike | undefined => props.battle.activ
 
 const targetedStrike = computed((): Strike =>
   selectedCreature.value && target.value
-    ? props.battle.getTargetedStrike(selectedCreature.value, target.value)
+    ? Battle.getTargetedStrike(props.battle, selectedCreature.value, target.value)
     : { toHit: 0, dice: 0 })
 
 const debugHexAdjacencies = computed((): number[] => BATTLE_BOARD_ADJACENCIES[debugHex.value] ?? [])
 
 function moveSelected(hex: number): void {
   if (selectedCreature.value && movementHexes.value.has(hex)) {
-    void props.battle.moveCreature({ creature: selectedCreature.value.id, hex })
+    Battle.moveCreature(props.battle, { creature: selectedCreature.value.id, hex })
   }
 }
 
 function removeSelected(): void {
   if (selectedCreature.value) {
-    void props.battle.moveCreature({ creature: selectedCreature.value.id, hex: selectedCreature.value.initialHex })
+    Battle.moveCreature(props.battle,
+      { creature: selectedCreature.value.id, hex: selectedCreature.value.initialHex })
   }
 }
 
@@ -377,7 +378,7 @@ function targetCreature(creature: BattleCreature | RangestrikeTarget): void {
   if (!("creature" in creature) && activeStrike.value !== undefined &&
     ActiveStrike.getCarryoverHits(activeStrike.value) > 0 && carryoverTargets.value) {
     if (carryoverTargets.value.includes(creature)) {
-      void props.battle.assignCarryover(creature.id)
+      Battle.assignCarryover(props.battle, creature.id)
     }
   } else {
     target.value = creature
@@ -393,18 +394,20 @@ async function attackTargetedCreature(
     throw new Error("diceRoller ref is not set")
   }
   const rolls = await diceRoller.value.roll(targetedStrike.value.dice)
-  await (isRangestrike(attackTarget)
-    ? props.battle.rangestrikeCreature({
+  if (isRangestrike(attackTarget)) {
+    Battle.rangestrikeCreature(props.battle, {
       attacker: attacker.id,
       target: { ...attackTarget, creature: attackTarget.creature.id },
       rolls
     })
-    : props.battle.attackCreature({
+  } else {
+    Battle.attackCreature(props.battle, {
       attacker: attacker.id,
       target: attackTarget.id,
       optionalToHit: optionalToHit.value,
       rolls
-    }))
+    })
+  }
   console.log(props.battle.activeStrike)
   resetAttack()
   deselectCreature()

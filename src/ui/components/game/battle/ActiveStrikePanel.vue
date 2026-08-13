@@ -6,6 +6,7 @@
     <StrikePanelTitle
       :attacker="attacker"
       :target="target"
+      :terrain="battle.terrain"
     />
     <v-card-text>
       Rolled {{ activeStrike.rolls.length }} {{ activeStrike.rolls.length === 1 ? "die" : "dice" }},
@@ -31,7 +32,7 @@
       </span>
     </v-card-item>
     <v-card-text>
-      <span v-if="ActiveStrike.getCarryoverHits(activeStrike) > 0 && battle.carryoverTargets()">
+      <span v-if="ActiveStrike.getCarryoverHits(activeStrike) > 0 && Battle.carryoverTargets(battle)">
         You may still carry over {{ hitsString(ActiveStrike.getCarryoverHits(activeStrike)) }}.
       </span>
       <span v-else-if="ActiveStrike.getCarryoverHits(activeStrike) > 0">
@@ -45,11 +46,11 @@
         No hits remain to carry over.
       </span>
     </v-card-text>
-    <v-card-actions v-if="battle.carryoverTargets()">
+    <v-card-actions v-if="Battle.carryoverTargets(battle)">
       <v-btn
         block
         variant="outlined"
-        @click="battle.skipCarryover()"
+        @click="Battle.skipCarryover(battle)"
       >
         Skip Carry Over
       </v-btn>
@@ -67,11 +68,11 @@ const props = defineProps<{
   activeStrike: ActiveStrike
 }>()
 
-const attacker = computed((): BattleCreature => props.battle.creatureOnHex(props.activeStrike.attacker)!)
-const target = computed((): BattleCreature => props.battle.creatureOnHex(props.activeStrike.target)!)
+const attacker = computed((): BattleCreature => Battle.creatureOnHex(props.battle, props.activeStrike.attacker)!)
+const target = computed((): BattleCreature => Battle.creatureOnHex(props.battle, props.activeStrike.target)!)
 const targets = computed((): [BattleCreature, number][] =>
   ActiveStrike.targets(props.activeStrike)
-    .map(([hex, hits]): [BattleCreature, number] => [props.battle.creatureOnHex(hex)!, hits]))
+    .map(([hex, hits]): [BattleCreature, number] => [Battle.creatureOnHex(props.battle, hex)!, hits]))
 function hitsString(hits: number, modifier?: string): string {
   const extra = modifier === undefined ? "" : modifier + " "
   return `${hits} ${extra}hit${hits === 1 ? "" : "s"}`

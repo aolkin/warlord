@@ -7,6 +7,7 @@
       <StrikePanelTitle
         :attacker="props.attacker"
         :target="(target ?? rangedTarget)!"
+        :terrain="activeBattle.terrain"
       />
       <v-card-text>
         {{ strike.dice }} {{ strike.dice === 1 ? "die" : "dice" }}, needing {{ strike.toHit }}s or better to hit.
@@ -17,7 +18,7 @@
 
 <script setup lang="ts">
 import { computed } from "vue"
-import { BattleCreature, RangestrikeTarget, Strike } from "@/models/battle"
+import { Battle, BattleCreature, RangestrikeTarget, Strike } from "@/models/battle"
 import { useGameStore } from "~/stores/game"
 import StrikePanelTitle from "./StrikePanelTitle.vue"
 
@@ -30,8 +31,8 @@ const game = useGameStore().game
 
 const activeBattle = computed(() => game.activeBattle!)
 
-const engagements = computed<BattleCreature[]>(() => activeBattle.value.engagedWith(props.attacker))
-const rangestrikes = computed<RangestrikeTarget[]>(() => activeBattle.value.rangestrikeTargets(props.attacker))
+const engagements = computed<BattleCreature[]>(() => Battle.engagedWith(activeBattle.value, props.attacker))
+const rangestrikes = computed<RangestrikeTarget[]>(() => Battle.rangestrikeTargets(activeBattle.value, props.attacker))
 
 const target = computed<BattleCreature | undefined>(() =>
   engagements.value.includes(props.focusedCreature)
@@ -43,9 +44,9 @@ const rangedFocus = computed<RangestrikeTarget | undefined>(() =>
 const rangedTarget = computed<BattleCreature | undefined>(() => rangedFocus.value?.creature)
 const strike = computed<Strike | undefined>(() => {
   if (target.value) {
-    return activeBattle.value.getAdjustedStrike(props.attacker, target.value)
+    return Battle.getAdjustedStrike(activeBattle.value, props.attacker, target.value)
   } else if (rangedFocus.value) {
-    return activeBattle.value.getRangestrike(props.attacker, rangedFocus.value)
+    return Battle.getRangestrike(props.attacker, rangedFocus.value)
   }
   return undefined
 })

@@ -314,6 +314,19 @@ describe("TitanGame persistence", () => {
     expect(rehydrated.score[game.players[0].id]).toBe(250)
     expect(rehydrated.score[game.players[1].id]).toBe(0)
   })
+
+  it("round-trips an in-progress battle, preserving its creature ids", async () => {
+    const game = newGame()
+    const attacker = game.stacks[0]
+    attacker.hex = game.stacks[1].hex
+    attacker.attackEdge = HexEdge.FIRST
+    await game.initiateBattle(attacker.id)
+    const creatureIds = game.activeBattle!.creatures.map(creature => creature.id)
+
+    const rehydrated = TitanGame.hydrate(JSON.stringify(game))
+
+    expect(rehydrated.activeBattle!.creatures.map(creature => creature.id)).toEqual(creatureIds)
+  })
 })
 
 describe("TitanGame mustering (setRecruit)", () => {

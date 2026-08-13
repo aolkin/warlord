@@ -57,9 +57,9 @@ defineEmits<{
 }>()
 
 const targetedStrike = computed<Strike>(() =>
-  props.battle.getTargetedStrike(props.attacker, props.target))
+  Battle.getTargetedStrike(props.battle, props.attacker, props.target))
 const targetedStrikeUnadjusted = computed<Strike>(() => {
-  const rawStrike = props.battle.getRawStrike(props.attacker, props.target.creature)
+  const rawStrike = Battle.getRawStrike(props.attacker, props.target.creature)
   return {
     toHit: props.target.longDistance ? rawStrike.toHit + 1 : rawStrike.toHit,
     dice: div(rawStrike.dice, 2)

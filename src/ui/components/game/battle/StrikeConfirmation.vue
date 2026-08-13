@@ -79,12 +79,12 @@ const emit = defineEmits<{
   "update:optionalToHit": [value: number | undefined]
 }>()
 
-const engagements = computed<BattleCreature[]>(() => props.battle.engagedWith(props.attacker))
+const engagements = computed<BattleCreature[]>(() => Battle.engagedWith(props.battle, props.attacker))
 
 const targetedStrike = computed<Strike>(() =>
-  props.battle.getTargetedStrike(props.attacker, props.targetedCreature))
+  Battle.getTargetedStrike(props.battle, props.attacker, props.targetedCreature))
 const targetedStrikeUnadjusted = computed<Strike>(() =>
-  props.battle.getRawStrike(props.attacker,
+  Battle.getRawStrike(props.attacker,
     isRangestrike(props.targetedCreature) ? props.targetedCreature.creature : props.targetedCreature))
 const targetedStrikeWasAdjusted = computed(() =>
   !isEqual(targetedStrikeUnadjusted.value, targetedStrike.value))
@@ -99,16 +99,16 @@ const normalCarryovers = computed<BattleCreature[]>(() => carryoversImpossible.v
   ? []
   : engagements.value
     .filter((target: BattleCreature) =>
-      props.battle.toHitAdjusted(props.attacker, target) <= targetedStrike.value.toHit)
+      Battle.toHitAdjusted(props.battle, props.attacker, target) <= targetedStrike.value.toHit)
     .filter((target: BattleCreature) => props.targetedCreature !== target))
 const tougherCarryovers = computed<BattleCreature[]>(() => carryoversImpossible.value
   ? []
   : engagements.value
     .filter((target: BattleCreature) =>
-      props.battle.toHitAdjusted(props.attacker, target) > targetedStrike.value.toHit))
+      Battle.toHitAdjusted(props.battle, props.attacker, target) > targetedStrike.value.toHit))
 const toHitAdjustments = computed<Record<number, BattleCreature[]>>(() =>
   tougherCarryovers.value.reduce((adjustments: Record<number, BattleCreature[]>, creature) => {
-    const toHit = props.battle.toHitAdjusted(props.attacker, creature)
+    const toHit = Battle.toHitAdjusted(props.battle, props.attacker, creature)
     range(toHit, 7).forEach(numToUpdate =>
       adjustments[numToUpdate] = [...(adjustments[numToUpdate] ?? []), creature])
     return adjustments

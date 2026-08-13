@@ -114,14 +114,18 @@ const attacker = computed<Player>(() =>
   game.getPlayerById(activeBattle.value.attacker))
 const defender = computed<Player>(() =>
   game.getPlayerById(activeBattle.value.defender))
+const offense = computed<BattleCreature[]>(() =>
+  activeBattle.value.creatures.filter(creature => creature.player === activeBattle.value.attacker))
+const defense = computed<BattleCreature[]>(() =>
+  activeBattle.value.creatures.filter(creature => creature.player === activeBattle.value.defender))
 const pendingOffense = computed<BattleCreature[]>(() =>
-  activeBattle.value.getOffense().filter((creature: BattleCreature) => creature.hex >= 36))
+  offense.value.filter((creature: BattleCreature) => creature.hex >= 36))
 const pendingDefense = computed<BattleCreature[]>(() =>
-  activeBattle.value.getDefense().filter((creature: BattleCreature) => creature.hex >= 36))
+  defense.value.filter((creature: BattleCreature) => creature.hex >= 36))
 const deadOffense = computed<BattleCreature[]>(() =>
-  activeBattle.value.getOffense().filter((creature: BattleCreature) => creature.hex === 0))
+  offense.value.filter((creature: BattleCreature) => creature.hex === 0))
 const deadDefense = computed<BattleCreature[]>(() =>
-  activeBattle.value.getDefense().filter((creature: BattleCreature) => creature.hex === 0))
+  defense.value.filter((creature: BattleCreature) => creature.hex === 0))
 </script>
 <style scoped lang="sass">
 .interactive
