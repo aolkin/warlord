@@ -87,16 +87,12 @@ export namespace TitanGame {
     return player
   }
 
-  export function getStacksForPlayer(game: TitanGame, owner: PlayerId): Stack[] {
+  export function getStacksForPlayer(game: TitanGame, owner: PlayerId = game.activePlayerId): Stack[] {
     return game.stacks.filter(stack => stack.owner === owner)
   }
 
-  export function getActiveStacks(game: TitanGame): Stack[] {
-    return getStacksForPlayer(game, game.activePlayerId)
-  }
-
   export function getNextMarker(game: TitanGame): number | undefined {
-    const usedMarkers = getActiveStacks(game).map(stack => stack.marker)
+    const usedMarkers = getStacksForPlayer(game).map(stack => stack.marker)
     return range(0, 12).find(marker => !usedMarkers.includes(marker))
   }
 
@@ -139,7 +135,7 @@ export namespace TitanGame {
   }
 
   export function getMandatoryMoves(game: TitanGame): Stack[] {
-    return getActiveStacks(game).filter(stack => !Moveable.hasMoved(stack) &&
+    return getStacksForPlayer(game).filter(stack => !Moveable.hasMoved(stack) &&
       getStacksForHex(game, stack.initialHex).length > 1 &&
       getPathsForHex(game, stack.hex).length > 0)
   }
@@ -151,10 +147,10 @@ export namespace TitanGame {
   export function getMayProceed(game: TitanGame): boolean {
     switch (game.activePhase) {
       case MasterboardPhase.SPLIT:
-        return getActiveStacks(game).every(stack => Stack.isValidSplit(stack, game.round === 0))
+        return getStacksForPlayer(game).every(stack => Stack.isValidSplit(stack, game.round === 0))
       case MasterboardPhase.MOVE:
         return getMandatoryMoves(game).length === 0 &&
-          getActiveStacks(game).some(stack => Moveable.hasMoved(stack))
+          getStacksForPlayer(game).some(stack => Moveable.hasMoved(stack))
       case MasterboardPhase.BATTLE:
         return true
       case MasterboardPhase.MUSTER:
@@ -182,7 +178,7 @@ export namespace TitanGame {
 
   export function isMulliganAvailable(game: TitanGame): boolean {
     return game.round === 0 && !game.mulliganTaken &&
-      !getActiveStacks(game).some(stack => Moveable.hasMoved(stack))
+      !getStacksForPlayer(game).some(stack => Moveable.hasMoved(stack))
   }
 
   export function isSplitPhase(game: TitanGame): boolean {
@@ -199,7 +195,7 @@ export namespace TitanGame {
 
   export function getEngagedStacks(game: TitanGame): Stack[] {
     const activePlayerId = game.activePlayerId
-    return getActiveStacks(game)
+    return getStacksForPlayer(game)
       .filter(stack => getStacksForHex(game, stack.hex)
         .some(occupant => occupant.owner !== activePlayerId))
   }
@@ -233,7 +229,7 @@ export namespace TitanGame {
     switch (game.activePhase) {
       case MasterboardPhase.SPLIT:
         // TODO: check mayProceed before advancing — round-1 split rule (exactly 4 creatures with 1 lord) not yet enforced
-        getActiveStacks(game).filter(stack => Stack.getSplittingCreatures(stack).length > 0).forEach(stack => {
+        getStacksForPlayer(game).filter(stack => Stack.getSplittingCreatures(stack).length > 0).forEach(stack => {
           // Each pushed stack claims a marker, so the next split needs a fresh read.
           game.stacks.push(Stack.finalizeSplit(stack, getNextMarker(game)!, game.round))
         })
@@ -258,7 +254,7 @@ export namespace TitanGame {
         assert(game.activeBattle !== undefined, "Incomplete battle!")
         break
       case MasterboardPhase.MUSTER:
-        getActiveStacks(game)
+        getStacksForPlayer(game)
           .filter((stack): stack is Stack & { currentMuster: MusterChoice } => stack.currentMuster !== undefined)
           .forEach(stack => {
             const recruitedCreature = finalizeMuster(game.round, stack)
@@ -269,7 +265,7 @@ export namespace TitanGame {
     if (game.activePhase === MasterboardPhase.SPLIT) {
       // Every other case above leaves activePhase at MOVE, BATTLE, or MUSTER;
       // only wrapping past END back to SPLIT lands here.
-      getActiveStacks(game).forEach(startPlayerTurn)
+      getStacksForPlayer(game).forEach(startPlayerTurn)
     }
   }
 
