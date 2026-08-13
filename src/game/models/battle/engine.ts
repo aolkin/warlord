@@ -44,7 +44,8 @@ export interface Battle {
   activeStrike?: ActiveStrike
 }
 
-export type CreateBattleOptions = Pick<Battle, "terrain"> & {
+export interface CreateBattleOptions {
+  terrain: Terrain
   edge: HexEdge
   attacking: BattleSide
   defending: BattleSide
@@ -85,8 +86,6 @@ export namespace Battle {
     return getActiveCreatures(battle)
       .filter(creature => !creature.hasStruck && creature.hex > 0 && engagedWith(battle, creature).length > 0)
   }
-
-  /** End Phase Manipulation **/
 
   export function creatureOnHex(battle: Battle, hex: number): BattleCreature | undefined {
     return battle.creatures.find(creature => creature.hex === hex)
