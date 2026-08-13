@@ -1,11 +1,11 @@
-name: E2E
+name: frontend-e2e
 
 on:
   pull_request:
     types: [opened, synchronize, reopened, labeled]
 
 jobs:
-  e2e:
+  playwright-e2e:
     if: contains(github.event.pull_request.labels.*.name, 'e2e')
     runs-on: ubuntu-latest
     steps:
