@@ -142,7 +142,6 @@
 import { computed, inject, Ref, ref } from "vue"
 import DiceRoller from "~/components/ui/generic/DiceRoller"
 import { Creature, CREATURE_LIST } from "@/models/creature"
-import { TitanGame } from "@/models/game"
 import { compressAndEncode, decodeAndDecompress } from "@/utils/base64"
 import { useGameStore } from "~/stores/game"
 import { usePlayerStore } from "~/stores/ui/player"
@@ -205,11 +204,14 @@ async function loadSave(): Promise<void> {
   if (hydration === undefined) {
     throw new Error("Failed to load save data")
   }
-  TitanGame.rehydrate(game, JSON.parse(hydration))
+  // `game` is a reactive() proxy that other code holds references into, so loading a
+  // save must mutate it in place rather than replace it with a new object.
+  Object.assign(game, JSON.parse(hydration))
 }
 
 function loadJson(): void {
-  TitanGame.rehydrate(game, JSON.parse(saveText.value))
+  // See the comment in loadSave: game must be mutated in place.
+  Object.assign(game, JSON.parse(saveText.value))
 }
 </script>
 

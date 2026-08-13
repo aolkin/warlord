@@ -41,7 +41,8 @@ export interface TitanGame {
   round: number // 0-indexed
   mulliganTaken: boolean
   activeRoll?: number
-  activePlayer: number
+  activePlayerIndex: number
+  activePlayerId: PlayerId
   activePhase: MasterboardPhase
   activeBattle?: Battle
   activeBattleHex?: number
@@ -71,7 +72,8 @@ export namespace TitanGame {
       score,
       round,
       mulliganTaken: false,
-      activePlayer: 0,
+      activePlayerIndex: 0,
+      activePlayerId: players[0].id,
       activeRoll: undefined,
       activePhase: MasterboardPhase.SPLIT,
       activeBattle: undefined,
@@ -143,11 +145,11 @@ export namespace TitanGame {
   }
 
   export function getActivePlayer(game: TitanGame): Player {
-    return game.players[game.activePlayer]
+    return game.players[game.activePlayerIndex]
   }
 
   export function getActivePlayerId(game: TitanGame): PlayerId {
-    return getActivePlayer(game).id
+    return game.activePlayerId
   }
 
   export function getMayProceed(game: TitanGame): boolean {
@@ -308,17 +310,11 @@ export namespace TitanGame {
     recruitingStack.currentMuster = recruit
   }
 
-  // The store's `game` is a reactive() proxy that other code holds references into, so
-  // loading a save must mutate it in place rather than replace it with a new object.
-  export function rehydrate(game: TitanGame, data: TitanGame): void {
-    Object.assign(game, data)
-  }
-
   export function hydrate(persisted?: string): TitanGame {
     const game = create(2)
     try {
       if (persisted !== undefined) {
-        rehydrate(game, JSON.parse(persisted))
+        Object.assign(game, JSON.parse(persisted))
       }
     } catch (e) {
       console.error("Error during hydration", e)
@@ -347,11 +343,12 @@ function finalizeMuster(round: number, stack: Stack & { currentMuster: MusterCho
 function advancePhase(game: TitanGame): void {
   game.activePhase += 1
   if (game.activePhase === MasterboardPhase.END) {
-    game.activePlayer += 1
-    if (game.activePlayer >= game.players.length) {
-      game.activePlayer = 0
+    game.activePlayerIndex += 1
+    if (game.activePlayerIndex >= game.players.length) {
+      game.activePlayerIndex = 0
       game.round++
     }
+    game.activePlayerId = game.players[game.activePlayerIndex].id
     game.activePhase = MasterboardPhase.SPLIT
   }
 }

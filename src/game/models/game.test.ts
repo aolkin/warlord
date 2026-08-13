@@ -261,7 +261,8 @@ describe("TitanGame turn and phase transitions", () => {
 
     TitanGame.nextPhase(game)
     expect(game.activePhase).toBe(MasterboardPhase.SPLIT)
-    expect(game.activePlayer).toBe(1)
+    expect(game.activePlayerIndex).toBe(1)
+    expect(game.activePlayerId).toBe(game.players[1].id)
     expect(game.round).toBe(0)
 
     game.activePhase = MasterboardPhase.MUSTER
@@ -272,7 +273,8 @@ describe("TitanGame turn and phase transitions", () => {
 
     TitanGame.nextPhase(game)
     expect(game.activePhase).toBe(MasterboardPhase.SPLIT)
-    expect(game.activePlayer).toBe(0)
+    expect(game.activePlayerIndex).toBe(0)
+    expect(game.activePlayerId).toBe(game.players[0].id)
     expect(game.round).toBe(1)
     // Wrapping to the new active player starts their turn: clears any stale pending muster
     // and resets per-turn movement state left on their stacks.

@@ -57,7 +57,7 @@
           block
           :variant="movedCount === gameStore.activeStacks.length ? 'outlined' : 'tonal' "
           :disabled="!TitanGame.getMayProceed(game)"
-          @click="nextPhase"
+          @click="TitanGame.nextPhase(game)"
         >
           {{ TitanGame.getEngagedStacks(game).length > 0 ? "Proceed to Battle" : "Proceed to Muster" }}
         </v-btn>
@@ -67,7 +67,7 @@
           block
           variant="outlined"
           :disabled="!TitanGame.getMayProceed(game)"
-          @click="nextPhase"
+          @click="TitanGame.nextPhase(game)"
         >
           End Turn
         </v-btn>
@@ -120,10 +120,6 @@ const engagementsMessage = computed(() => {
   }
 })
 
-function nextPhase(): void {
-  TitanGame.nextPhase(game)
-}
-
 function roll(): void {
   if (game.activeRoll !== undefined) {
     TitanGame.setRoll(game, undefined)
@@ -133,7 +129,7 @@ function roll(): void {
 
 function proceedToRoll(): void {
   selectionStore.deselectStack()
-  nextPhase()
+  TitanGame.nextPhase(game)
   roll()
 }
 </script>
