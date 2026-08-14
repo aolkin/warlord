@@ -307,6 +307,9 @@ export namespace TitanGame {
       console.error("Error during hydration", e)
       return create(2)
     }
+    // Advances the stack id counter past the highest id present in the restored save,
+    // so ids assigned to new stacks after hydration can't collide with restored ones.
+    Stack.reserveIdsThrough(Math.max(-1, ...game.stacks.map(stack => stack.id)))
     return game
   }
 }

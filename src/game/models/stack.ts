@@ -52,6 +52,12 @@ export namespace Stack {
     }
   }
 
+  // Called on hydration so ids assigned to newly-created stacks never collide with ids
+  // already present in a restored save.
+  export function reserveIdsThrough(maxUsedId: number): void {
+    stackIdCounter = Math.max(stackIdCounter, maxUsedId + 1)
+  }
+
   export function isFull(stack: Stack): boolean {
     return stack.creatures.length >= 7
   }
