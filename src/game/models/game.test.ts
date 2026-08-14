@@ -329,6 +329,19 @@ describe("TitanGame persistence", () => {
 
     expect(rehydrated.activeBattle!.creatures.map(creature => creature.id)).toEqual(creatureIds)
   })
+
+  it("advances the stack id counter past restored ids, so new stacks don't collide", () => {
+    const game = newGame()
+    const highId = 9999
+    game.stacks[0] = { ...game.stacks[0], id: highId }
+
+    const rehydrated = TitanGame.hydrate(JSON.stringify(game))
+    const newStack = Stack.create({
+      owner: rehydrated.players[0].id, hex: 100, marker: 5, createdRound: rehydrated.round
+    })
+
+    expect(newStack.id).toBeGreaterThan(highId)
+  })
 })
 
 describe("TitanGame mustering (setRecruit)", () => {
