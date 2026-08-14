@@ -24,6 +24,16 @@ test("splitting the starting legion advances to Move with the new stack on the b
 
   const finishButton = page.getByRole("button", { name: "Finish Splits and Roll" })
   await expect(finishButton).toBeEnabled()
+
+  const angel = panel.locator(".creature-root.angel")
+  await angel.click()
+  await expect(finishButton).toBeDisabled()
+  await expect(panel.locator(".first-round-success")).not.toBeVisible()
+
+  await angel.click()
+  await expect(finishButton).toBeEnabled()
+  await expect(panel.locator(".first-round-success")).toBeVisible()
+
   await forceNextRoll(page, 3)
   await finishButton.click()
 
