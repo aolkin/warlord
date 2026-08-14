@@ -19,6 +19,12 @@ export type CreateBattleCreatureOptions = Pick<BattleCreature, "type" | "player"
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
 export namespace BattleCreature {
+  // Called on hydration so ids assigned to newly-created creatures never collide with
+  // ids already present in a restored save.
+  export function reserveIdsThrough(maxUsedId: number): void {
+    battleCreatureIdCounter = Math.max(battleCreatureIdCounter, maxUsedId + 1)
+  }
+
   export function create(options: CreateBattleCreatureOptions): BattleCreature {
     const data = CREATURE_DATA[options.type]
     return {
