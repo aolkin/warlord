@@ -1,11 +1,7 @@
 import { expect, test } from "@playwright/test"
 import { forceNextRoll, seedGame } from "./fixtures"
 
-// Round 0, split phase: each player starts with a single 8-creature legion (including two
-// lords - the Titan and an Angel) that must split into two stacks of at least 2 before the
-// game will let them roll. The active player's legion always has exactly one of each other
-// creature type, so picking the Titan plus one Centaur, Ogre, and Gargoyle produces a valid
-// first-round split (four creatures, exactly one lord) per Stack.isValidSplit.
+// Titan + one Centaur/Ogre/Gargoyle satisfies Stack.isValidSplit for round 0 (4 creatures, one lord)
 test("splitting the starting legion advances to Move with the new stack on the board", async ({ page }) => {
   await seedGame(page, 2)
   await page.goto("/")

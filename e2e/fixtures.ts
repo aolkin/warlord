@@ -4,17 +4,12 @@ import { Random } from "@/models/random"
 
 const GAME_STORAGE_KEY = "warlord-v1"
 
-// TitanGame.create's default Random shuffles player colors and starting hexes via
-// Math.random; a seeded test wants that assignment stable across runs instead.
+// TitanGame.create defaults to Math.random-based shuffling
 const deterministicRandom: Random = {
   shuffle: collection => [...collection]
 }
 
-/**
- * Builds a TitanGame via TitanGame.create (optionally adjusted by `mutate`), then writes
- * it into localStorage before the app's own scripts run, so the next page.goto() boots
- * straight into that state instead of a fresh game. Call this before navigating.
- */
+// writes to localStorage via addInitScript, so call this before page.goto()
 export async function seedGame(
   page: Page,
   numPlayers: number,
@@ -29,11 +24,7 @@ export async function seedGame(
   return game
 }
 
-/**
- * Forces the next die roll(s) via DiceRoller.vue's window.DebugDice hook, bypassing the 3D
- * dice animation. DiceRoller resets this hook when it mounts, so this must run after
- * page.goto() rather than before.
- */
+// DiceRoller resets this hook on mount, so call after page.goto(), not before
 export async function forceNextRoll(page: Page, ...rolls: number[]): Promise<void> {
   await page.waitForFunction(() => "DebugDice" in window)
   await page.evaluate(rolls => {
