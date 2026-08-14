@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { Battle, BattleCreature } from "@/models/battle"
+import { Battle } from "@/models/battle"
 import { CreatureType } from "@/models/creature"
 import { HexEdge } from "@/models/masterboard"
 import { PlayerId } from "@/models/player"
@@ -341,23 +341,6 @@ describe("TitanGame persistence", () => {
     })
 
     expect(newStack.id).toBeGreaterThan(highId)
-  })
-
-  it("advances the battle creature id counter past restored ids, so new creatures don't collide", () => {
-    const game = newGame()
-    const attacker = game.stacks[0]
-    attacker.hex = game.stacks[1].hex
-    attacker.attackEdge = HexEdge.FIRST
-    TitanGame.initiateBattle(game, attacker.id)
-    const highId = 9999
-    game.activeBattle!.creatures[0] = { ...game.activeBattle!.creatures[0], id: highId }
-
-    const rehydrated = TitanGame.hydrate(JSON.stringify(game))
-    const newCreature = BattleCreature.create({
-      type: CreatureType.CENTAUR, player: rehydrated.players[0].id, playerScore: 0, hex: 1
-    })
-
-    expect(newCreature.id).toBeGreaterThan(highId)
   })
 })
 

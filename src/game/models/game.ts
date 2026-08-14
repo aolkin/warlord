@@ -1,6 +1,6 @@
 import { range } from "lodash-es"
 import { assert } from "@/utils/assert"
-import { Battle, BattleCreature, BattleSide } from "./battle"
+import { Battle, BattleSide } from "./battle"
 import { CREATURE_DATA, CREATURE_LIST, CreatureType } from "./creature"
 import masterboard, { HexEdge, MasterboardHex } from "./masterboard"
 import { Moveable } from "./moveable"
@@ -307,7 +307,9 @@ export namespace TitanGame {
       console.error("Error during hydration", e)
       return create(2)
     }
-    reserveIdsPastRestoredState(game)
+    // Advances the stack id counter past the highest id present in the restored save,
+    // so ids assigned to new stacks after hydration can't collide with restored ones.
+    Stack.reserveIdsThrough(Math.max(-1, ...game.stacks.map(stack => stack.id)))
     return game
   }
 }
@@ -320,14 +322,6 @@ function startPlayerTurn(stack: Stack): void {
   stack.initialHex = stack.hex
   stack.attackEdge = undefined
   stack.currentMuster = undefined
-}
-
-// Advances the Stack/BattleCreature id counters past the highest id present in a
-// restored save, so ids assigned after hydration can't collide with restored ones.
-function reserveIdsPastRestoredState(game: TitanGame): void {
-  Stack.reserveIdsThrough(Math.max(-1, ...game.stacks.map(stack => stack.id)))
-  BattleCreature.reserveIdsThrough(
-    Math.max(-1, ...(game.activeBattle?.creatures.map(creature => creature.id) ?? [])))
 }
 
 function finalizeMuster(round: number, stack: Stack & { currentMuster: MusterChoice }): CreatureType {
