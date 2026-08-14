@@ -13,6 +13,7 @@
 </template>
 <script setup lang="ts">
 import { computed } from "vue"
+import { TitanGame } from "@/models/game"
 import masterboard from "@/models/masterboard"
 import { useGameStore } from "~/stores/game"
 import { useSelectionStore } from "~/stores/ui/selection"
@@ -33,9 +34,9 @@ const hexes = computed(() => masterboard.getHexIds())
 function move(hex: number): void {
   // A foe-occupied hex triggers an engagement via the enemy stack's attack-edge picker,
   // not this click handler.
-  if (game.getStacksForHex(hex).length > 0) {
+  if (TitanGame.getStacksForHex(game, hex).length > 0) {
     return
   }
-  void game.move({ stack: selectionStore.requireSelectedStack().id, hex })
+  TitanGame.move(game, { stack: selectionStore.requireSelectedStack().id, hex })
 }
 </script>

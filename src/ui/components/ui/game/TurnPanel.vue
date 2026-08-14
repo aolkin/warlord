@@ -3,13 +3,13 @@
     border
     width="300"
     :prepend-icon="icon"
-    :title="`${game.getActivePlayer().name}'s Turn`"
+    :title="`${game.players[game.activePlayerIndex].name}'s Turn`"
   >
     <template #prepend>
       <v-icon size="x-large" />
     </template>
-    <v-card-text v-if="game.isSplitPhase()">
-      <span v-if="game.getMayProceed()">
+    <v-card-text v-if="TitanGame.isSplitPhase(game)">
+      <span v-if="TitanGame.getMayProceed(game)">
         Split stacks if desired, or proceed to roll.
         <span v-if="sevenHighCount > 0">
           You have {{ sevenHighCount }} full stack{{ sevenHighCount > 1 ? 's' : '' }}!
@@ -19,32 +19,32 @@
         You must adjust your stack splits before rolling.
       </span>
     </v-card-text>
-    <v-card-text v-else-if="game.isMovePhase()">
+    <v-card-text v-else-if="TitanGame.isMovePhase(game)">
       Moved {{ movedCount }} of {{ gameStore.activeStacks.length }} stacks. {{ engagementsMessage }}
       <span v-if="movedCount < 1">
         You must move at least one stack!
       </span>
-      <span v-else-if="!game.getMayProceed()">
+      <span v-else-if="!TitanGame.getMayProceed(game)">
         You must move at least one stack from each split if possible.
       </span>
     </v-card-text>
-    <v-card-text v-else-if="game.isMusterPhase()">
+    <v-card-text v-else-if="TitanGame.isMusterPhase(game)">
       Mustered a recruit in {{ musteredCount }} of {{ gameStore.activeStacks.length }} stacks.
     </v-card-text>
     <v-fade-transition leave-absolute>
-      <v-card-actions v-if="game.isSplitPhase()">
+      <v-card-actions v-if="TitanGame.isSplitPhase(game)">
         <v-btn
           block
-          :disabled="!game.getMayProceed()"
+          :disabled="!TitanGame.getMayProceed(game)"
           variant="outlined"
           @click="proceedToRoll"
         >
           Finish Splits and Roll
         </v-btn>
       </v-card-actions>
-      <v-card-actions v-else-if="game.isMovePhase()">
+      <v-card-actions v-else-if="TitanGame.isMovePhase(game)">
         <v-btn
-          v-if="game.isMulliganAvailable()"
+          v-if="TitanGame.isMulliganAvailable(game)"
           block
           variant="outlined"
           title="On the first round only, you may opt to re-roll your die once."
@@ -56,18 +56,18 @@
           v-else
           block
           :variant="movedCount === gameStore.activeStacks.length ? 'outlined' : 'tonal' "
-          :disabled="!game.getMayProceed()"
-          @click="nextPhase"
+          :disabled="!TitanGame.getMayProceed(game)"
+          @click="TitanGame.nextPhase(game)"
         >
-          {{ game.getEngagedStacks().length > 0 ? "Proceed to Battle" : "Proceed to Muster" }}
+          {{ TitanGame.getEngagedStacks(game).length > 0 ? "Proceed to Battle" : "Proceed to Muster" }}
         </v-btn>
       </v-card-actions>
-      <v-card-actions v-else-if="game.isMusterPhase()">
+      <v-card-actions v-else-if="TitanGame.isMusterPhase(game)">
         <v-btn
           block
           variant="outlined"
-          :disabled="!game.getMayProceed()"
-          @click="nextPhase"
+          :disabled="!TitanGame.getMayProceed(game)"
+          @click="TitanGame.nextPhase(game)"
         >
           End Turn
         </v-btn>
@@ -80,16 +80,14 @@
 import { computed, inject, Ref } from "vue"
 import { sum } from "lodash-es"
 import type DiceRoller from "~/components/ui/generic/DiceRoller"
-import { MasterboardPhase } from "@/models/game"
+import { MasterboardPhase, TitanGame } from "@/models/game"
 import { Moveable } from "@/models/moveable"
 import { useGameStore } from "~/stores/game"
-import { useSelectionStore } from "~/stores/ui/selection"
 
 const diceRoller = inject<Readonly<Ref<InstanceType<typeof DiceRoller> | null>>>("diceRoller")
 
 const gameStore = useGameStore()
 const game = gameStore.game
-const selectionStore = useSelectionStore()
 
 const icon = computed(() => {
   switch (game.activePhase) {
@@ -110,7 +108,7 @@ const movedCount = computed(() => sum(gameStore.activeStacks.map(stack => Moveab
 const musteredCount = computed(() =>
   sum(gameStore.activeStacks.map(stack => stack.currentMuster !== undefined)))
 const engagementsMessage = computed(() => {
-  const engagedStacks = game.getEngagedStacks()
+  const engagedStacks = TitanGame.getEngagedStacks(game)
   if (engagedStacks.length < 1) {
     return ""
   } else if (engagedStacks.length === 1) {
@@ -120,20 +118,15 @@ const engagementsMessage = computed(() => {
   }
 })
 
-function nextPhase(): void {
-  void game.nextPhase()
-}
-
 function roll(): void {
   if (game.activeRoll !== undefined) {
-    void game.setRoll(undefined)
+    TitanGame.setRoll(game, undefined)
   }
-  diceRoller?.value?.roll().then(async(rolled: number[]) => await game.setRoll(rolled[0]))
+  diceRoller?.value?.roll().then((rolled: number[]) => TitanGame.setRoll(game, rolled[0]))
 }
 
 function proceedToRoll(): void {
-  selectionStore.deselectStack()
-  nextPhase()
+  TitanGame.nextPhase(game)
   roll()
 }
 </script>

@@ -50,6 +50,7 @@ import {
   BattleCreature,
   BattlePhaseType
 } from "@/models/battle"
+import { TitanGame } from "@/models/game"
 import { PlayerId } from "@/models/player"
 import { useGameStore } from "~/stores/game"
 
@@ -62,7 +63,7 @@ const game = gameStore.game
 
 const battlePhaseType = computed(() => BATTLE_PHASE_TYPES[props.battle.phase])
 const battleActivePlayerId = computed((): PlayerId => props.battle.activePlayer)
-const battleActivePlayer = computed(() => game.getPlayerById(battleActivePlayerId.value))
+const battleActivePlayer = computed(() => TitanGame.getPlayerById(game, battleActivePlayerId.value))
 
 const phaseTypeTitle = computed((): string => {
   switch (battlePhaseType.value) {

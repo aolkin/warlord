@@ -58,7 +58,7 @@
 <script setup lang="ts">
 import { computed, shallowReactive } from "vue"
 import { range, sortBy } from "lodash-es"
-import { Path } from "@/models/game"
+import { Path, TitanGame } from "@/models/game"
 import masterboard, { MasterboardHex } from "@/models/masterboard"
 import { Moveable } from "@/models/moveable"
 import { Stack } from "@/models/stack"
@@ -87,7 +87,7 @@ const paths = computed<Path[]>(() => {
     game.activeRoll === undefined) {
     return []
   }
-  return game.getPathsForHex(selectionStore.selectedStack.hex)
+  return TitanGame.getPathsForHex(game, selectionStore.selectedStack.hex)
 })
 
 // Stack instances here always come from the game store's own reactive state, so they're
@@ -125,7 +125,7 @@ const interleavedPaths = computed((): [boolean, MasterboardHex][][] =>
       [row.foe !== undefined, row.path[colIndex]])).slice(1))
 
 const canFreeMove = computed((): boolean =>
-  game.isMovePhase() &&
+  TitanGame.isMovePhase(game) &&
   selectionStore.selectedStack !== undefined && preferencesStore.freeMovement)
 
 function moveStack(distance: number, foe: boolean, hex: number): void {
@@ -133,7 +133,7 @@ function moveStack(distance: number, foe: boolean, hex: number): void {
   if (distance !== activeRoll.value - 1 || stack === undefined || Moveable.hasMoved(stack) || foe) {
     return
   }
-  void game.move({ stack: stack.id, hex })
+  TitanGame.move(game, { stack: stack.id, hex })
   selectionStore.deselectStack()
 }
 </script>

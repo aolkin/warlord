@@ -20,13 +20,13 @@ export const useGameStore = defineStore("game", () => {
 
   // Caching earns its bookkeeping only for rules that scan or search the state graph and are
   // read from more than one place. Everything cheaper is called straight off `game`.
-  const activeStacks = computed(() => game.getActiveStacks())
-  const mandatoryMoves = computed(() => game.getMandatoryMoves())
+  const activeStacks = computed(() => TitanGame.getStacksForPlayer(game))
+  const mandatoryMoves = computed(() => TitanGame.getMandatoryMoves(game))
 
   return {
     game,
     activeStacks,
     mandatoryMoves,
-    reset: (): void => { Object.assign(game, new TitanGame(2)) }
+    reset: (): void => { Object.assign(game, TitanGame.create(2)) }
   }
 })

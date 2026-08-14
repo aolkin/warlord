@@ -63,7 +63,7 @@
 
 <script setup lang="ts">
 import { computed } from "vue"
-import { MasterboardPhase, Path } from "@/models/game"
+import { MasterboardPhase, Path, TitanGame } from "@/models/game"
 import masterboard, { HexEdge, MasterboardEdge, MasterboardHex, Terrain } from "@/models/masterboard"
 import { Moveable } from "@/models/moveable"
 import { Stack } from "@/models/stack"
@@ -105,7 +105,7 @@ const preferencesStore = usePreferencesStore()
 
 const selected = computed(() => props.stack === selectionStore.selectedStack)
 
-const stacksOnHex = computed((): Stack[] => game.getStacksForHex(props.stack.hex))
+const stacksOnHex = computed((): Stack[] => TitanGame.getStacksForHex(game, props.stack.hex))
 
 const stacksOnHexIndex = computed((): number => stacksOnHex.value.indexOf(props.stack))
 
@@ -125,17 +125,17 @@ const transform = computed((): string => {
   return result.toString()
 })
 
-const isActivePlayer = computed(() => game.getActivePlayerId() === props.stack.owner)
+const isActivePlayer = computed(() => game.activePlayerId === props.stack.owner)
 
 const potentialEngagements = computed((): HexEdge[] => {
   if (selectionStore.selectedStack === undefined) {
     return []
-  } else if (!game.isMovePhase()) {
+  } else if (!TitanGame.isMovePhase(game)) {
     return []
-  } else if (game.getStacksForHex(props.stack.hex)
-    .some((stack: Stack) => stack.owner === game.getActivePlayerId())) {
+  } else if (TitanGame.getStacksForHex(game, props.stack.hex)
+    .some((stack: Stack) => stack.owner === game.activePlayerId)) {
     return []
-  } else if (game.canTitanTeleport(selectionStore.selectedStack) || preferencesStore.freeMovement) {
+  } else if (TitanGame.canTitanTeleport(game, selectionStore.selectedStack) || preferencesStore.freeMovement) {
     if (masterboard.getHex(props.stack.hex).terrain === Terrain.TOWER) {
       // Battle.create normalizes all Tower attacks to this edge regardless of
       // arrival direction.
@@ -157,8 +157,8 @@ const potentialEngagements = computed((): HexEdge[] => {
 const engageable = computed((): [HexEdge, Transformations][] =>
   potentialEngagements.value.map(edge => [edge, getEngageTransformForEdge(props.stack.hex, edge)]))
 
-const engaged = computed((): boolean => isActivePlayer.value && game.getStacksForHex(props.stack.hex)
-  .some((stack: Stack) => stack.owner !== game.getActivePlayerId()))
+const engaged = computed((): boolean => isActivePlayer.value && TitanGame.getStacksForHex(game, props.stack.hex)
+  .some((stack: Stack) => stack.owner !== game.activePlayerId))
 
 const isMandatory = computed(() => {
   if (!isActivePlayer.value) {
@@ -177,7 +177,7 @@ const classes = computed(() => ({
   selected: selected.value,
   owned: isActivePlayer.value,
   mandatory: isMandatory.value,
-  disabled: !game.isStackActive(props.stack),
+  disabled: !TitanGame.isStackActive(game, props.stack),
   engageable: engageable.value.length > 0,
   engaged: engaged.value,
   [`player-${props.stack.owner}`]: true,
@@ -198,22 +198,22 @@ function select(): void {
   if (!isActivePlayer.value) {
     return
   }
-  if (game.isMovePhase() && Moveable.hasMoved(props.stack)) {
-    if (!game.getStacksForHex(props.stack.initialHex).some((stack: Stack) => Moveable.hasMoved(stack))) {
-      void game.move({ stack: props.stack.id, hex: props.stack.initialHex })
+  if (TitanGame.isMovePhase(game) && Moveable.hasMoved(props.stack)) {
+    if (!TitanGame.getStacksForHex(game, props.stack.initialHex).some((stack: Stack) => Moveable.hasMoved(stack))) {
+      TitanGame.move(game, { stack: props.stack.id, hex: props.stack.initialHex })
     }
   }
   if (selected.value) {
     selectionStore.deselectStack()
   } else {
-    if (game.isStackActive(props.stack)) {
+    if (TitanGame.isStackActive(game, props.stack)) {
       selectionStore.selectStack(props.stack)
     }
   }
 }
 
 function attack(edge: HexEdge): void {
-  void game.move({ stack: selectionStore.requireSelectedStack().id, hex: props.stack.hex, edge })
+  TitanGame.move(game, { stack: selectionStore.requireSelectedStack().id, hex: props.stack.hex, edge })
   selectionStore.deselectStack()
 }
 

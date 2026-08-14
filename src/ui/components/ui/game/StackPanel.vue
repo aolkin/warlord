@@ -42,14 +42,14 @@
           :type="creature"
           :player-id="props.focusedStack.owner"
           :class="{ splitting: props.focusedStack.split[index],
-                    interactive: game.isSplitPhase() && owned }"
+                    interactive: TitanGame.isSplitPhase(game) && owned }"
           class="ma-1"
           @click="toggleSplit(index)"
         />
       </div>
-      <template v-if="game.getActivePlayerId() === props.focusedStack.owner">
+      <template v-if="game.activePlayerId === props.focusedStack.owner">
         <v-card-actions
-          v-if="game.isSplitPhase()"
+          v-if="TitanGame.isSplitPhase(game)"
           class="split-guide"
         >
           <v-card-text v-if="game.round === 0">
@@ -85,21 +85,21 @@
           </v-card-text>
         </v-card-actions>
         <template
-          v-else-if="game.isMusterPhase() ||
-            (game.isMovePhase() &&
+          v-else-if="TitanGame.isMusterPhase(game) ||
+            (TitanGame.isMovePhase(game) &&
               selectionStore.focusedHex !== undefined && props.focusedStack.hex !== selectionStore.focusedHex.id)"
         >
           <v-card-title>Mustering Options ({{ musteringTerrainName }})</v-card-title>
           <MusterChoices
-            v-if="game.isMovePhase() || Stack.canMuster(props.focusedStack)"
+            v-if="TitanGame.isMovePhase(game) || Stack.canMuster(props.focusedStack)"
             v-model="mustering"
             class="px-2 pb-1"
-            :can-decline="game.isMusterPhase()"
+            :can-decline="TitanGame.isMusterPhase(game)"
             :musterable="musterable"
             :player-id="props.focusedStack.owner"
           />
           <v-card-subtitle
-            v-if="game.isMusterPhase()"
+            v-if="TitanGame.isMusterPhase(game)"
             class="mb-3"
           >
             {{ musteringCaption }}
@@ -114,6 +114,7 @@
 import { computed } from "vue"
 import { capitalize } from "lodash-es"
 import { CREATURE_DATA, CreatureType } from "@/models/creature"
+import { TitanGame } from "@/models/game"
 import masterboard, { Terrain } from "@/models/masterboard"
 import { Moveable } from "@/models/moveable"
 import { Player } from "@/models/player"
@@ -133,13 +134,13 @@ const gameStore = useGameStore()
 const game = gameStore.game
 const selectionStore = useSelectionStore()
 
-const owned = computed((): boolean => game.getActivePlayerId() === props.focusedStack?.owner)
+const owned = computed((): boolean => game.activePlayerId === props.focusedStack?.owner)
 
 const stackPlayer = computed((): Player | undefined => props.focusedStack === undefined
   ? undefined
-  : game.getPlayerById(props.focusedStack.owner))
+  : TitanGame.getPlayerById(game, props.focusedStack.owner))
 
-const musteringTerrain = computed((): Terrain => game.isMusterPhase()
+const musteringTerrain = computed((): Terrain => TitanGame.isMusterPhase(game)
   ? masterboard.getHex(props.focusedStack?.hex as number).terrain
   : selectionStore.focusedHex?.terrain as Terrain)
 
@@ -153,10 +154,10 @@ const mustering = computed({
     return props.focusedStack?.currentMuster
   },
   set(value: MusterChoice) {
-    if (!game.isMusterPhase()) {
+    if (!TitanGame.isMusterPhase(game)) {
       return
     }
-    void game.setRecruit({ stack: props.focusedStack!.id, recruit: value })
+    TitanGame.setRecruit(game, { stack: props.focusedStack!.id, recruit: value })
   }
 })
 
@@ -182,7 +183,7 @@ const musteringCaption = computed(() => {
 })
 
 function toggleSplit(index: number): void {
-  if (game.isSplitPhase() &&
+  if (TitanGame.isSplitPhase(game) &&
     (props.focusedStack?.creatures.length ?? 0) > 2) {
     const stack = props.focusedStack!
     Stack.togglePendingSplit(stack, index)
@@ -195,7 +196,7 @@ function cycleStacks(by: number): void {
   do {
     index += by
     candidateStack = gameStore.activeStacks[mod(index, gameStore.activeStacks.length)]
-  } while (!game.isStackActive(candidateStack))
+  } while (!TitanGame.isStackActive(game, candidateStack))
   selectionStore.selectStack(candidateStack)
 }
 </script>

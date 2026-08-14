@@ -81,6 +81,7 @@
 <script setup lang="ts">
 import { computed, ref } from "vue"
 import { BattleCreature, BattlePhase } from "@/models/battle"
+import { TitanGame } from "@/models/game"
 import { Player } from "@/models/player"
 import { useGameStore } from "~/stores/game"
 import Creature from "../Creature.vue"
@@ -111,9 +112,9 @@ const orderingClasses = computed(() =>
     "flex-column-reverse": props.localPlayerIsDefender
   }))
 const attacker = computed<Player>(() =>
-  game.getPlayerById(activeBattle.value.attacker))
+  TitanGame.getPlayerById(game, activeBattle.value.attacker))
 const defender = computed<Player>(() =>
-  game.getPlayerById(activeBattle.value.defender))
+  TitanGame.getPlayerById(game, activeBattle.value.defender))
 const offense = computed<BattleCreature[]>(() =>
   activeBattle.value.creatures.filter(creature => creature.player === activeBattle.value.attacker))
 const defense = computed<BattleCreature[]>(() =>
