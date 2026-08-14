@@ -104,7 +104,6 @@ export namespace TitanGame {
     if (game.activeRoll === undefined) {
       return []
     }
-    const activePlayerId = game.activePlayerId
     const initialHex = masterboard.getHex(hexNum)
     const paths: Path[] = []
     // [Array of hexes to get where we are, first hex with enemies, current hex]
@@ -116,13 +115,13 @@ export namespace TitanGame {
       let foe = entry[1]
       const occupants: Stack[] = getStacksForHex(game, hex.id)
       if (foe === undefined) {
-        const foes = occupants.filter((stack: Stack) => stack.owner !== activePlayerId)
+        const foes = occupants.filter((stack: Stack) => stack.owner !== game.activePlayerId)
         if (foes.length > 0) {
           foe = foes[0]
         }
       }
       if (path.length === game.activeRoll) {
-        if (!occupants.some((stack: Stack) => stack.owner === activePlayerId)) {
+        if (!occupants.some((stack: Stack) => stack.owner === game.activePlayerId)) {
           paths.push({ foe, path: [...path, hex] })
         }
       } else {
