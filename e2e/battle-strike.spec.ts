@@ -47,6 +47,52 @@ test("a melee Strike deals damage to an adjacent target and advances the phase o
 
   await page.getByRole("button", { name: "End Strikes" }).click()
   await expect(battleboard.getByText("Attacker's Strikebacks")).toBeVisible()
+
+  // The Ogre is now engaged and un-struck, so it must strike back before the round can advance.
+  // Ogre needs 6s to hit the Centaur (skill 2 vs skill 4) - force a miss so the Centaur survives
+  // to take its fatal blow in the Attacker's Strikes phase below.
+  await forceNextRoll(page, 1, 1, 1, 1, 1, 1)
+  await board.locator(".battle-creature.ogre").click()
+  await expect(board.locator(".engage-icon-root")).toBeVisible()
+  await board.locator(".engage-icon-root").click()
+  await expect(strikeDialog.getByText("Attack Centaur with Ogre")).toBeVisible()
+  await expect(strikeDialog).toContainText("roll 6 dice")
+  await expect(strikeDialog).toContainText("roll 6s or better")
+  await strikeDialog.getByRole("button", { name: "Attack" }).click()
+
+  await page.getByRole("button", { name: "End Strikebacks" }).click()
+  await expect(battleboard.getByText("Attacker's Move")).toBeVisible()
+  await page.getByRole("button", { name: "End Movement" }).click()
+  await expect(battleboard.getByText("Attacker's Strikes")).toBeVisible()
+
+  // Force a lethal hit on the Centaur (strength 3): three of the Ogre's six dice come up 6.
+  await forceNextRoll(page, 6, 6, 6, 1, 1, 1)
+  await board.locator(".battle-creature.ogre").click()
+  await expect(board.locator(".engage-icon-root")).toBeVisible()
+  await board.locator(".engage-icon-root").click()
+  await expect(strikeDialog.getByText("Attack Centaur with Ogre")).toBeVisible()
+  await strikeDialog.getByRole("button", { name: "Attack" }).click()
+
+  // Rule 12: a slain creature stays on the board, and is still forced to strike back, until
+  // strikebacks are done.
+  await expect(board.locator(".battle-creature.centaur")).toHaveCount(1)
+  await expect(board.locator(".battle-creature.centaur path.wounds")).toBeVisible()
+
+  await page.getByRole("button", { name: "End Strikes" }).click()
+  await expect(battleboard.getByText("Defender's Strikebacks")).toBeVisible()
+  await expect(board.locator(".battle-creature.centaur")).toHaveCount(1)
+
+  // The dead Centaur is still active-player-owned and engaged, so it must strike back too.
+  await forceNextRoll(page, 1, 1, 1)
+  await board.locator(".battle-creature.centaur").click()
+  await expect(board.locator(".engage-icon-root")).toBeVisible()
+  await board.locator(".engage-icon-root").click()
+  await expect(strikeDialog.getByText("Attack Ogre with Centaur")).toBeVisible()
+  await strikeDialog.getByRole("button", { name: "Attack" }).click()
+
+  // Only once the Centaur's own strikeback resolves does it get removed from the board.
+  await page.getByRole("button", { name: "End Strikebacks" }).click()
+  await expect(board.locator(".battle-creature.centaur")).toHaveCount(0)
 })
 
 test("a Rangestrike hits a non-adjacent target and advances the phase on a forced hit", async ({ page }) => {
@@ -69,8 +115,8 @@ test("a Rangestrike hits a non-adjacent target and advances the phase on a force
   })
   await page.goto("/")
   // Minotaur rangestrikes with 2 dice (half its strength) and needs 4s or better - forcing
-  // two 6s guarantees a hit regardless of the exact to-hit number.
-  await forceNextRoll(page, 6, 6)
+  // two rolls of exactly 4 exercises that boundary directly, rather than overshooting it.
+  await forceNextRoll(page, 4, 4)
 
   const battleboard = page.locator(".battleboard-root")
   await expect(battleboard).toBeVisible()
