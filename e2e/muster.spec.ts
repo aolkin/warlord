@@ -26,6 +26,10 @@ test("mustering a moved stack at a tower adds the recruit and lets the turn end"
   await expect(board).toBeVisible()
   await expect(board.locator("g.marker.player-0 .stack-size")).toHaveText("6")
 
+  // Mustering is optional, so the turn can already end before any recruit is chosen.
+  const endTurnButton = page.getByRole("button", { name: "End Turn" })
+  await expect(endTurnButton).toBeEnabled()
+
   await board.locator("g.marker.owned").click()
 
   const panel = page.locator(".root-card")
@@ -39,7 +43,6 @@ test("mustering a moved stack at a tower adds the recruit and lets the turn end"
   await expect(panel).toContainText("Mustering Centaur")
   await expect(board.locator("g.marker.owned .recruited-creature")).toBeVisible()
 
-  const endTurnButton = page.getByRole("button", { name: "End Turn" })
   await expect(endTurnButton).toBeEnabled()
   await endTurnButton.click()
 
@@ -66,6 +69,10 @@ test("mustering a recruit with more than one basis opens a choice dialog", async
   const board = page.locator("svg.board")
   await expect(board).toBeVisible()
 
+  // Mustering is optional, so the turn can already end before any recruit is chosen.
+  const endTurnButton = page.getByRole("button", { name: "End Turn" })
+  await expect(endTurnButton).toBeEnabled()
+
   await board.locator("g.marker.owned").click()
 
   const panel = page.locator(".root-card")
@@ -83,7 +90,6 @@ test("mustering a recruit with more than one basis opens a choice dialog", async
   await expect(dialog).not.toBeVisible()
   await expect(panel).toContainText("Mustering Minotaur with 2x Lion")
 
-  const endTurnButton = page.getByRole("button", { name: "End Turn" })
   await expect(endTurnButton).toBeEnabled()
   await endTurnButton.click()
 
