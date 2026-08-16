@@ -1,10 +1,5 @@
 <template>
-  <v-card
-    border
-    width="300"
-    :prepend-icon="icon"
-    :title="`${game.players[game.activePlayerIndex].name}'s Turn`"
-  >
+  <v-card border width="300" :prepend-icon="icon" :title="`${game.players[game.activePlayerIndex].name}'s Turn`">
     <template #prepend>
       <v-icon size="x-large" />
     </template>
@@ -12,18 +7,14 @@
       <span v-if="TitanGame.getMayProceed(game)">
         Split stacks if desired, or proceed to roll.
         <span v-if="sevenHighCount > 0">
-          You have {{ sevenHighCount }} full stack{{ sevenHighCount > 1 ? 's' : '' }}!
+          You have {{ sevenHighCount }} full stack{{ sevenHighCount > 1 ? "s" : "" }}!
         </span>
       </span>
-      <span v-else>
-        You must adjust your stack splits before rolling.
-      </span>
+      <span v-else> You must adjust your stack splits before rolling. </span>
     </v-card-text>
     <v-card-text v-else-if="TitanGame.isMovePhase(game)">
       Moved {{ movedCount }} of {{ gameStore.activeStacks.length }} stacks. {{ engagementsMessage }}
-      <span v-if="movedCount < 1">
-        You must move at least one stack!
-      </span>
+      <span v-if="movedCount < 1"> You must move at least one stack! </span>
       <span v-else-if="!TitanGame.getMayProceed(game)">
         You must move at least one stack from each split if possible.
       </span>
@@ -33,12 +24,7 @@
     </v-card-text>
     <v-fade-transition leave-absolute>
       <v-card-actions v-if="TitanGame.isSplitPhase(game)">
-        <v-btn
-          block
-          :disabled="!TitanGame.getMayProceed(game)"
-          variant="outlined"
-          @click="proceedToRoll"
-        >
+        <v-btn block :disabled="!TitanGame.getMayProceed(game)" variant="outlined" @click="proceedToRoll">
           Finish Splits and Roll
         </v-btn>
       </v-card-actions>
@@ -55,7 +41,7 @@
         <v-btn
           v-else
           block
-          :variant="movedCount === gameStore.activeStacks.length ? 'outlined' : 'tonal' "
+          :variant="movedCount === gameStore.activeStacks.length ? 'outlined' : 'tonal'"
           :disabled="!TitanGame.getMayProceed(game)"
           @click="TitanGame.nextPhase(game)"
         >
@@ -63,12 +49,7 @@
         </v-btn>
       </v-card-actions>
       <v-card-actions v-else-if="TitanGame.isMusterPhase(game)">
-        <v-btn
-          block
-          variant="outlined"
-          :disabled="!TitanGame.getMayProceed(game)"
-          @click="TitanGame.nextPhase(game)"
-        >
+        <v-btn block variant="outlined" :disabled="!TitanGame.getMayProceed(game)" @click="TitanGame.nextPhase(game)">
           End Turn
         </v-btn>
       </v-card-actions>
@@ -105,8 +86,7 @@ const icon = computed(() => {
 })
 const sevenHighCount = computed(() => sum(gameStore.activeStacks.map(stack => stack.creatures.length === 7)))
 const movedCount = computed(() => sum(gameStore.activeStacks.map(stack => Moveable.hasMoved(stack))))
-const musteredCount = computed(() =>
-  sum(gameStore.activeStacks.map(stack => stack.currentMuster !== undefined)))
+const musteredCount = computed(() => sum(gameStore.activeStacks.map(stack => stack.currentMuster !== undefined)))
 const engagementsMessage = computed(() => {
   const engagedStacks = TitanGame.getEngagedStacks(game)
   if (engagedStacks.length < 1) {
@@ -131,6 +111,4 @@ function proceedToRoll(): void {
 }
 </script>
 
-<style scoped lang="sass">
-
-</style>
+<style scoped lang="sass"></style>

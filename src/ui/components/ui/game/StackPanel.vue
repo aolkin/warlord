@@ -13,81 +13,69 @@
       border
       width="342"
     >
-      <v-card-actions
-        v-if="selectionStore.selectedStack === props.focusedStack"
-        class="justify-space-between"
-      >
-        <v-btn @click="cycleStacks(-1)">
-          Previous Stack
-        </v-btn>
-        <v-btn @click="cycleStacks(1)">
-          Next Stack
-        </v-btn>
+      <v-card-actions v-if="selectionStore.selectedStack === props.focusedStack" class="justify-space-between">
+        <v-btn @click="cycleStacks(-1)"> Previous Stack </v-btn>
+        <v-btn @click="cycleStacks(1)"> Next Stack </v-btn>
       </v-card-actions>
       <v-card-item :title="`${stackPlayer?.name} (${props.focusedStack.creatures.length} creatures)`">
         <template #prepend>
-          <PlayerMarker
-            :color="props.focusedStack.owner"
-            :marker="props.focusedStack.marker"
-            width="50"
-            height="50"
-          />
+          <PlayerMarker :color="props.focusedStack.owner" :marker="props.focusedStack.marker" width="50" height="50" />
         </template>
       </v-card-item>
 
       <div class="px-2 pb-1">
         <Creature
-          v-for="(creature, index) in (props.focusedStack.creatures as CreatureType[])"
+          v-for="(creature, index) in props.focusedStack.creatures as CreatureType[]"
           :key="index"
           :type="creature"
           :player-id="props.focusedStack.owner"
-          :class="{ splitting: props.focusedStack.split[index],
-                    interactive: TitanGame.isSplitPhase(game) && owned }"
+          :class="{ splitting: props.focusedStack.split[index], interactive: TitanGame.isSplitPhase(game) && owned }"
           class="ma-1"
           @click="toggleSplit(index)"
         />
       </div>
       <template v-if="game.activePlayerId === props.focusedStack.owner">
-        <v-card-actions
-          v-if="TitanGame.isSplitPhase(game)"
-          class="split-guide"
-        >
+        <v-card-actions v-if="TitanGame.isSplitPhase(game)" class="split-guide">
           <v-card-text v-if="game.round === 0">
-            You must split your starting creatures. Please select four creatures (including one lord) above
-            to split into a separate stack.
-            <div
-              v-if="Stack.isValidSplit(props.focusedStack, game.round === 0)"
-              class="first-round-success"
-            >
-              You have selected a valid split and may roll the die
-              to start your turn!
+            You must split your starting creatures. Please select four creatures (including one lord) above to split
+            into a separate stack.
+            <div v-if="Stack.isValidSplit(props.focusedStack, game.round === 0)" class="first-round-success">
+              You have selected a valid split and may roll the die to start your turn!
             </div>
           </v-card-text>
           <v-card-text v-else-if="props.focusedStack.creatures.length < 4">
             You do not have enough creatures to split this stack.
           </v-card-text>
           <v-card-text v-else>
-            You may select at least 2 and at most {{ props.focusedStack.creatures.length - 2 }} creatures
-            to split into a new stack.
-            <div
-              v-if="Stack.getSplittingCreatures(props.focusedStack).length > 0"
-              class="text-left mt-5"
-            >
+            You may select at least 2 and at most {{ props.focusedStack.creatures.length - 2 }} creatures to split into
+            a new stack.
+            <div v-if="Stack.getSplittingCreatures(props.focusedStack).length > 0" class="text-left mt-5">
               <p>
-                Remaining: {{ Stack.getStayingCreatures(props.focusedStack)
-                  .map((c: CreatureType) => CREATURE_DATA[c].name).join(", ") }}
+                Remaining:
+                {{
+                  Stack.getStayingCreatures(props.focusedStack)
+                    .map((c: CreatureType) => CREATURE_DATA[c].name)
+                    .join(", ")
+                }}
               </p>
               <p>
-                Splitting: {{ Stack.getSplittingCreatures(props.focusedStack)
-                  .map((c: CreatureType) => CREATURE_DATA[c].name).join(", ") }}
+                Splitting:
+                {{
+                  Stack.getSplittingCreatures(props.focusedStack)
+                    .map((c: CreatureType) => CREATURE_DATA[c].name)
+                    .join(", ")
+                }}
               </p>
             </div>
           </v-card-text>
         </v-card-actions>
         <template
-          v-else-if="TitanGame.isMusterPhase(game) ||
+          v-else-if="
+            TitanGame.isMusterPhase(game) ||
             (TitanGame.isMovePhase(game) &&
-              selectionStore.focusedHex !== undefined && props.focusedStack.hex !== selectionStore.focusedHex.id)"
+              selectionStore.focusedHex !== undefined &&
+              props.focusedStack.hex !== selectionStore.focusedHex.id)
+          "
         >
           <v-card-title>Mustering Options ({{ musteringTerrainName }})</v-card-title>
           <MusterChoices
@@ -98,10 +86,7 @@
             :musterable="musterable"
             :player-id="props.focusedStack.owner"
           />
-          <v-card-subtitle
-            v-if="TitanGame.isMusterPhase(game)"
-            class="mb-3"
-          >
+          <v-card-subtitle v-if="TitanGame.isMusterPhase(game)" class="mb-3">
             {{ musteringCaption }}
           </v-card-subtitle>
         </template>
@@ -136,18 +121,21 @@ const selectionStore = useSelectionStore()
 
 const owned = computed((): boolean => game.activePlayerId === props.focusedStack?.owner)
 
-const stackPlayer = computed((): Player | undefined => props.focusedStack === undefined
-  ? undefined
-  : TitanGame.getPlayerById(game, props.focusedStack.owner))
+const stackPlayer = computed((): Player | undefined =>
+  props.focusedStack === undefined ? undefined : TitanGame.getPlayerById(game, props.focusedStack.owner),
+)
 
-const musteringTerrain = computed((): Terrain => TitanGame.isMusterPhase(game)
-  ? masterboard.getHex(props.focusedStack?.hex as number).terrain
-  : selectionStore.focusedHex?.terrain as Terrain)
+const musteringTerrain = computed((): Terrain =>
+  TitanGame.isMusterPhase(game)
+    ? masterboard.getHex(props.focusedStack?.hex as number).terrain
+    : (selectionStore.focusedHex?.terrain as Terrain),
+)
 
 const musteringTerrainName = computed((): string => capitalize(Terrain[musteringTerrain.value]))
 
 const musterable = computed((): MusterPossibility[] =>
-  props.focusedStack !== undefined ? Stack.musterable(props.focusedStack, musteringTerrain.value) : [])
+  props.focusedStack !== undefined ? Stack.musterable(props.focusedStack, musteringTerrain.value) : [],
+)
 
 const mustering = computed({
   get() {
@@ -158,7 +146,7 @@ const mustering = computed({
       return
     }
     TitanGame.setRecruit(game, { stack: props.focusedStack!.id, recruit: value })
-  }
+  },
 })
 
 const musteringCaption = computed(() => {
@@ -183,8 +171,7 @@ const musteringCaption = computed(() => {
 })
 
 function toggleSplit(index: number): void {
-  if (TitanGame.isSplitPhase(game) &&
-    (props.focusedStack?.creatures.length ?? 0) > 2) {
+  if (TitanGame.isSplitPhase(game) && (props.focusedStack?.creatures.length ?? 0) > 2) {
     const stack = props.focusedStack!
     Stack.togglePendingSplit(stack, index)
   }

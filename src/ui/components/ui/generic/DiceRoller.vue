@@ -1,11 +1,6 @@
 <template>
-  <div
-    id="dicebox-container"
-    :class="{ rolling, quickDice: preferencesStore.quickDice }"
-  >
-    <div class="bg">
-&nbsp;
-    </div>
+  <div id="dicebox-container" :class="{ rolling, quickDice: preferencesStore.quickDice }">
+    <div class="bg">&nbsp;</div>
   </div>
 </template>
 
@@ -16,7 +11,7 @@ import { random, range } from "lodash-es"
 import { usePreferencesStore } from "~/stores/ui/preferences"
 
 const DebugDice: { nextRolls?: number[] } = {
-  nextRolls: undefined
+  nextRolls: undefined,
 }
 // @ts-expect-error window.DebugDice is a debug hook with no declared type
 window.DebugDice = DebugDice
@@ -42,7 +37,7 @@ onMounted(() => {
     throwForce: 6,
     spinForce: 2,
     startingHeight: 30,
-    offscreen: preferencesStore.offscreenDice
+    offscreen: preferencesStore.offscreenDice,
   })
   box.init().then(() => {
     ready.value = true
