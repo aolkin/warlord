@@ -1,11 +1,11 @@
-// Styles
-import "@mdi/font/css/materialdesignicons.css"
 import { map } from "lodash-es"
 
 // Vuetify
 import { createVuetify } from "vuetify"
 import "vuetify/styles"
+import { aliases } from "vuetify/iconsets/mdi-svg"
 import { PlayerId } from "@/models/player"
+import { mdi } from "./icons"
 
 const titanColors = {
   "titan-white": "#fcfcfc",
@@ -25,6 +25,16 @@ const playerColors = Object.fromEntries(map(titanColors,
 
 // https://vuetifyjs.com/en/introduction/why-vuetify/#feature-guides
 export default createVuetify({
+  icons: {
+    defaultSet: "mdi",
+    // Vuetify's own chrome (checkboxes, radios, chip close buttons, etc.) references icons
+    // through these aliases rather than literal "mdi-*" names; mdi-svg's aliases resolve
+    // them to SVG path data directly, bypassing the "mdi" set below entirely.
+    aliases,
+    sets: {
+      mdi
+    }
+  },
   defaults: {
     // Buttons render with uppercase text throughout the app.
     VBtn: {
