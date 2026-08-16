@@ -1,125 +1,93 @@
 # Mutation Classification: Server-Committed vs. Local
 
-Extends doc 05's slice 2 (actions as data through a single dispatch). Doc 05 established *that* every state change should flow through a serializable action; this doc asks which of those actions a server would have to commit and order, and which never need to leave the client that made them. Everything below is read off the code as it stands today, including the `GameAction` union on the open `feat/dispatch-entry-point` branch.
+Extends doc 05's slice 2 (actions as data through a single dispatch). Doc 05 established *that* every state change should flow through a serializable action; this doc asks which of those actions a server must commit and order. Everything below is read off the code as it stands, including the `GameAction` union on the open `feat/dispatch-entry-point` branch.
 
-## The binary doesn't survive contact with the code
+The answer is two buckets, and getting there means moving every staged decision out of the engine.
 
-The obvious framing is two buckets: server-committed records (an attack) versus local UI state (a pending split). Applied to the actual mutations, the second bucket comes out empty.
+## Committed
 
-Local UI state already lives entirely outside the engine. Selection (`selectedStack`, `focusedHexes`), preferences, and `localPlayer` are in `src/ui/stores/ui/`; the in-flight strike inputs (`selectedCreature`, `target`, `optionalToHit` before submission) are component-local refs in `BattleBoard.vue`. None of it touches `TitanGame`, none of it is persisted with the game, and no `GameAction` variant writes to it. That work is already done.
-
-Pending splits are not in that bucket. `Stack.togglePendingSplit` flips `stack.split[index]` on the persisted `Stack`, and `TitanGame.nextPhase`'s SPLIT case reads those same flags — through `Stack.finalizeSplit` — to decide which creatures leave and to allocate the new stack's marker. `getMayProceed` gates the phase-advance button on `Stack.isValidSplit`, reading the flags again. The split flags are the sole input to the split commit. A server that doesn't hold them cannot commit the split.
-
-So the useful axis is not local-versus-remote. It is **how long a decision stays reversible, and who may see it while it is**.
-
-## Three tiers
-
-### Tier 1 — committed events
-
-Irreversible on application, or they consume randomness, or they change what another player may do next. These are the log.
+A committed action consumes randomness, is irreversible once observed, or changes what another player may do next. These are the log, and every one of them broadcasts.
 
 | Action | Why it commits |
 |---|---|
-| `setRoll` | Consumes randomness; sets the movement allowance for the whole phase. Passing `undefined` while a roll exists is the mulligan, which sets `mulliganTaken`. |
+| `setRoll` | Consumes randomness; bounds every path the movement phase can stage. Passing `undefined` while a roll exists is the mulligan. |
 | `attackCreature` | Consumes randomness; `performAttack` adds wounds immediately and sets `hasStruck`. |
 | `rangestrikeCreature` | Same, minus the carryover branch. |
-| `commitCarryover` | Applies already-rolled excess hits to the listed targets in order, or forfeits them if the list is empty; the carryover decision commits as one action, not one per target. |
-| `nextPhase` (masterboard) | Finalizes every pending split and muster, decrements the creature pool, detects engagements, and hands the turn on. |
-| `Battle.nextPhase` | Finalizes battle movement (off-board creatures at hex 0), clears `activeStrike`, removes dead creatures after STRIKEBACK, and hands the initiative to the other side. **Not in the union today** — see the gaps below. |
-| `initiateBattle` | Reveals both stacks' contents to the opponent. |
+| `commitCarryover` | Applies already-rolled excess hits to the listed targets in order, or forfeits them if the list is empty. |
+| `nextPhase` | Applies the phase's staged decisions, then advances. Payload described below. |
+| `battleNextPhase` | Same for `Battle.nextPhase`: applies staged battle moves, resolves off-board creatures, clears `activeStrike`, removes the dead after STRIKEBACK, passes initiative. **Not in the union today.** |
+| `initiateBattle` | Reveals both stacks to the opponent. Has a variant but no caller — only `nextPhase`'s MOVE branch reaches it. Doc 05 already proposes demoting it to an internal precondition of that advance, and this classification agrees. |
 
-`initiateBattle` is a special case: no UI path reaches it, only `nextPhase`'s MOVE branch calls it. Doc 05 already argues it should become an internal precondition of the phase advance rather than a separately dispatchable action, and this classification agrees — it is a consequence of a committed event, not a decision a player makes.
+`assignCarryover(battle, target)` and `skipCarryover(battle)` today build one decision incrementally: call `assignCarryover` once per secondary target, in order, until the excess hits run out or the player calls `skipCarryover` to forfeit the rest. The player is choosing among creatures already visible as carryover-eligible (`Battle.carryoverTargets`), and nothing applies until the allocation settles, so the two collapse into one dispatch: `{ type: "commitCarryover", payload: BattleCreature["id"][] }`. The engine applies the listed targets in order with the same `min(remaining hits, target's remaining capacity)` allocation `assignCarryover` already uses; an empty array is what `skipCarryover` means. `Battle.assignCarryover` and `Battle.skipCarryover` fold into one `Battle.commitCarryover(battle, targets)`.
 
-`assignCarryover(battle, target)` and `skipCarryover(battle)` today are two ways of building up one decision incrementally: call `assignCarryover` once per secondary target, in order, until the strike's excess hits run out or the player calls `skipCarryover` to forfeit whatever is left. None of that needs a server round trip per target — the player is choosing among creatures already visible as carryover-eligible (`Battle.carryoverTargets`), and none of the choices apply until the whole allocation is settled. The two actions collapse into one, dispatched once: `{ type: "commitCarryover", payload: BattleCreature["id"][] }`. The engine applies the listed targets in the same order and with the same `min(remaining hits, target's remaining capacity)` allocation `assignCarryover` already uses; an empty array is what `skipCarryover` means today. `Battle.assignCarryover` and `Battle.skipCarryover` fold into one `Battle.commitCarryover(battle, targets: BattleCreature["id"][])` that loops the existing per-target allocation and forfeits any hits left over once the list is exhausted.
+## Client-only
 
-### Tier 2 — provisional decisions
+Everything a player can still change their mind about. None of it is an action, none of it reaches the server, none of it lives in `game`.
 
-Freely reversible by re-dispatching until a Tier 1 event consumes them, and hidden from the opponent while reversible. This is the category the "pending splits" example is reaching for, and it is larger than splits.
+| Staged decision | Where it lives today |
+|---|---|
+| Which creatures split off | `stack.split: boolean[]`, flipped by `Stack.togglePendingSplit` |
+| Muster choice in progress | `stack.currentMuster`, set by `TitanGame.setRecruit` |
+| Masterboard positions and attack edges | `stack.hex` / `stack.attackEdge`, set by `TitanGame.move` |
+| Battle positions | `creature.hex`, set by `Battle.moveCreature` |
 
-| Action | What it stages | What consumes it |
-|---|---|---|
-| `togglePendingSplit` | `stack.split[index]` | `nextPhase` SPLIT branch, via `finalizeSplit` |
-| `setRecruit` | `stack.currentMuster` | `nextPhase` MUSTER branch, via `finalizeMuster` (this is also where the pool decrements) |
-| `move` | `stack.hex`, `stack.attackEdge` | `nextPhase` MOVE branch, which reads engagements off the final positions |
-| `moveCreature` | `creature.hex` | `Battle.nextPhase`, which is when off-board creatures are resolved |
+The UI already treats all four as reversible, and does it by re-dispatching rather than through any undo mechanism — `MasterboardStack.select` calls `TitanGame.move` back to `stack.initialHex`, `BattleBoard.removeSelected` calls `Battle.moveCreature` back to `creature.initialHex`. Selection, focused hexes, preferences, `localPlayer`, and the pre-submission strike inputs are already outside `game` and outside the union; staging joins them.
 
-Reversibility here is not theoretical — the UI already exercises it, and does so by re-dispatching the same action rather than by any undo mechanism. `MasterboardStack.select` calls `TitanGame.move` back to `stack.initialHex`, and `BattleBoard.removeSelected` calls `Battle.moveCreature` back to `creature.initialHex`.
+Staging stores go in `src/ui/stores/ui/` beside `selection.ts`, which is the pattern: it holds phase-scoped client state and clears it with `watch(() => gameStore.game.activePhase, ...)`. Reload durability costs a watcher, not a second persistence path — `preferences.ts` already persists a reactive object to localStorage with the same deep `watch` the game store uses.
 
-Tier 2 is nonetheless **server-held, not client-local**, for two reasons. The commit reads it: `nextPhase` derives the split, muster, and engagement outcomes from state living inside `TitanGame`. And it survives reload today: everything in `game` is persisted, so a player who refreshes mid-split keeps their toggles. Making these purely client-side means either losing them on reload or building a second persistence path alongside the first.
+## The phase-advance payload
 
-What Tier 2 *does* change is visibility and durability. A Tier 2 action goes into the acting player's filtered view rather than the broadcast, and only its commit needs a durable log record — replaying `move`, `move`, `move` back to the same hex reconstructs nothing the final `nextPhase` doesn't already carry.
+`nextPhase(game)` takes no payload today and reads the staged decisions off `game`. It instead carries them, discriminated by the phase being left:
 
-### Tier 3 — local UI state
+```ts
+export interface SplitCommit {
+  stack: StackRef
+  creatures: number[] // indices into stack.creatures
+}
 
-Selection, focused hexes, preferences, `localPlayer`, and the pre-submission strike inputs. Already outside `game`, already outside the action union, nothing to do.
+export type PhaseCommit =
+  | { phase: MasterboardPhase.SPLIT, splits: SplitCommit[] }
+  | { phase: MasterboardPhase.MOVE, moves: MovePayload[] }
+  | { phase: MasterboardPhase.MUSTER, musters: MusterPayload[] }
+  | { phase: MasterboardPhase.BATTLE }
+```
 
-### Outside the tiers — state replacement
+`MovePayload` and `MusterPayload` are today's shapes unchanged, so `move` and `setRecruit` become list entries rather than actions. `battleNextPhase` carries `BattleMovePayload[]`, empty outside the MOVE phases. Tagging the payload with the phase also lets the server reject an advance staged against a phase it has already left.
 
-Three writes reach `game` without going through any action at all, and the classification has nothing to say about them because they are not gameplay:
+**The lists are ordered and the engine replays them in order**, because a later move's legality depends on the earlier ones: `getPathsForHex` rejects a hex another of the mover's own stacks occupies, and `creatureCanLand` rejects an occupied battle hex.
 
-- `gameStore.reset()` — `Object.assign(game, TitanGame.create(2))`
-- `SystemMenu.loadJson()` — `Object.assign(game, JSON.parse(json))`, the paste-a-save path
-- `SystemMenu.summon()` — pushes a creature straight onto `selectedStack.creatures`, a debug cheat
+**Validation moves from gating the button to checking the payload.** `getMayProceed` gates `TurnPanel`'s advance button today, reading the staged decisions straight off `game`; the same rules become the commit's preconditions — `Stack.isValidSplit` over each submitted index list (including the round-0 four-with-one-lord rule), each move lying on a path `getPathsForHex` returns, no mandatory move left unmade, `Stack.canMuster` and pool availability per muster. The client keeps running them to gate the button; the server runs them because a client may lie.
 
-Under a server these become an admin capability or they go away. Worth an explicit decision rather than discovering them during the extraction.
+**What leaves the engine.** `Stack.split` and `Stack.currentMuster` come off `Stack`; `Stack.togglePendingSplit` and `TitanGame.setRecruit` stop existing; `TitanGame.move` and `Battle.moveCreature` stop being actions and become the loop bodies of the two commits. `Stack.finalizeSplit` takes the index list instead of reading flags, and `finalizeMuster` takes the choice. `Moveable.initialHex` stays: it is the committed pre-move position, and `Stack.canMuster` reads `hasMoved` off it during the muster phase.
 
-## Two gaps in the union
+## Randomness is the other refactor
 
-Independent of the classification, comparing the union against the mutations the UI actually calls turns up two things.
+Three payloads carry numbers the client generated: `setRoll(game, payload?: number)` from `TurnPanel.roll()`'s 3D dice widget, and `AttackPayload.rolls` / `RangestrikePayload.rolls` from the same widget via `BattleBoard.attackTargetedCreature`. Under an authoritative server these are outputs. A player sends "strike this target, optionally at this raised to-hit"; the server rolls, and the record carries the rolls. So **`GameAction` is two related types**, a request a client may send and a record the log holds, differing on exactly these three payloads. Nothing else in the union has that split.
 
-`Battle.nextPhase(battle)` is bound to a click handler in `ActionPanel.vue` and has no variant in `GameAction`. It is a Tier 1 event by any reading — it ends a battle phase and passes initiative. The union's existing `nextPhase` variant covers only `TitanGame.nextPhase`.
-
-`initiateBattle` has a variant but no caller, per the previous section. Doc 05 already proposes demoting it.
-
-Everything else that mutates state under `src/game/models` is internal to another action: `Battle.performAttack` (called only by the two strike actions), `Battle.phaseEnterStrike` (only by `Battle.nextPhase`), `Stack.finalizeSplit` (only by `TitanGame.nextPhase`), and `Stack.reserveIdsThrough` (only by `hydrate`). None of them wants an action variant.
-
-## Randomness is the actual refactor
-
-The sharpest consequence of Tier 1. Three payloads carry numbers the client generated:
-
-- `setRoll(game, payload?: number)` — `TurnPanel.roll()` calls the 3D dice widget and passes `rolled[0]` in.
-- `AttackPayload.rolls` and `RangestrikePayload.rolls` — `BattleBoard.attackTargetedCreature` awaits the same widget and passes the array in.
-
-Under an authoritative server these are outputs, not inputs. What a player sends is "strike this target, optionally at this raised to-hit"; the server rolls, and the committed record carries the rolls. Doc 05 already states the endpoint — whoever is authoritative seeds the rolls and the log records them, and the dice animation can render whatever the log says. What this classification adds is the shape: **`GameAction` is not one type but two related ones**, a request a client may send and a record the log holds, differing on exactly these three payloads. Nothing else in the union has that split.
-
-The mulligan is worth folding into the same slice. `TurnPanel.roll()` sends `setRoll(undefined)` then `setRoll(n)` — two dispatches for one player intent, where the first one's meaning is inferred from `activeRoll !== undefined` rather than stated. Separating request from record is the natural moment to make it one action.
+Fold the mulligan into the same slice. `TurnPanel.roll()` sends `setRoll(undefined)` then `setRoll(n)` — two dispatches for one intent, where the first one's meaning is inferred from `activeRoll !== undefined` rather than stated.
 
 ## What this means for `dispatch`
 
-**The classification should not go in the action type.** Three shapes were considered:
+Nothing. Once staging is client-only every remaining variant is committed, so there is no per-action routing decision to encode — no `serverCommitted` field, no second union, no lookup table. The transport broadcasts everything `dispatch` accepts. #226's shape — single entry point, discriminated union, id-carrying payloads — is unaffected; what it needs is the battle phase-advance variant and a decision on demoting `initiateBattle`.
 
-A `serverCommitted: boolean` field on each variant restates what `type` already determines, so it can disagree with itself, and it is a field a network client could lie about. It also stops two clients from comparing actions by structural equality. Reject.
+## Interaction with the hidden-information audit
 
-Two separate unions with two dispatch functions is honest about the difference, but every call site and every transport then has to know which union it holds, and the exhaustiveness machinery doubles. The two tiers also want identical treatment on the way *in* — validate, resolve ids, apply — and differ only in what happens after. Reject.
+The hidden-information audit (doc 05 slice 4, drafted in #230) puts `Stack.creatures`, `Stack.split`, and `Stack.currentMuster` in the redaction surface. Two of those three stop reaching the server at all, leaving `Stack.creatures` as the only field to strip, and rule 4.3 (which creatures split off is never revealed to anyone) then holds by construction rather than by remembering to filter. It also removes the leak that audit flags in `MasterboardStack.stackSize`, which renders `"5 / 3"` off any stack's split flags.
 
-A lookup table beside the union:
+Movement is not a hidden-information win. That audit has `hex` public and, under rule 9.1, battle state fully public once a battle exists — so staging movement client-side delays information the rules make public rather than protecting anything secret. The case for it is the one above: a smaller server-held surface and a uniformly committed union.
 
-```ts
-const ACTION_TIER: Record<GameAction["type"], "committed" | "provisional"> = { ... }
-```
+## Outside the buckets — state replacement
 
-`GameAction` stays a plain serializable discriminated union with no redundant field, `Record<GameAction["type"], …>` makes the table exhaustive at compile time the same way the `satisfies never` default case does, and the transport layer reads it to decide broadcast-to-all versus return-to-author. `dispatch` itself is unaffected — it applies the mutation identically either way.
-
-**So #226's shape already accommodates this.** The single entry point, the discriminated union, and the id-carrying payloads are all still right. What #226 needs is the missing `Battle.nextPhase` variant, and a decision on demoting `initiateBattle`; the request/record split lands later and is additive.
+Three writes reach `game` through no action at all, and the classification has nothing to say about them because they are not gameplay: `gameStore.reset()`, `SystemMenu.loadJson()` (the paste-a-save path), and `SystemMenu.summon()` (a debug cheat that pushes a creature straight onto `selectedStack.creatures`). Under a server these become an admin capability or they go away. Worth deciding rather than discovering during the extraction.
 
 ## Sequencing
 
-1. **Close the union's gaps.** Add the battle phase-advance variant; demote `initiateBattle` to an internal precondition of the MOVE phase advance. This is the only change #226 itself needs, and it unblocks it.
-2. **Collapse carryover into one action.** Replace `assignCarryover`/`skipCarryover` with the single `commitCarryover` action described above. Independent of #226 — it can land whenever the UI is ready to accumulate the target list locally and dispatch it once.
-3. **Add the tier table.** Mechanical, no behavior change, and it is the artifact every later slice reads.
-4. **Split request from record for the three randomness-carrying payloads.** Keep a local implementation that fills rolls in from today's dice widget, so single-player behavior is unchanged. Independently valuable: it is what makes the action log replayable, which doc 04 wants for undo and post-game review. Fold in the mulligan.
-5. **Route both tiers through the `GameServer` interface** (doc 05 slice 3): provisional actions resolve to their author only, committed actions broadcast. This is where the tiers first *behave* differently; before it they are only a label.
-6. **Hidden-information audit** (doc 05 slice 4), seeded by the Tier 2 list. One leak is already visible: `MasterboardStack.stackSize` renders `"5 / 3"` for any stack with split flags set, for every stack on the board, not only the viewer's own.
+1. **Close the union's gaps.** Add the battle phase-advance variant; demote `initiateBattle`. The only change #226 itself needs, and it unblocks it.
+2. **Collapse carryover into `commitCarryover`.** Independent of #226 — it lands whenever the UI is ready to accumulate the target list locally.
+3. **Move split and muster staging to the client.** `nextPhase` grows its `PhaseCommit` payload for those two phases, the two actions leave the union, and the two fields leave `Stack`.
+4. **Move masterboard and battle movement to the client**, the same way. Larger than step 3 because the staged moves are an ordered list the commit has to replay, not an independent choice per stack.
+5. **Split request from record** for the three randomness-carrying payloads, keeping a local implementation that fills rolls from today's dice widget so single-player behavior is unchanged. This is what makes the log replayable, which doc 04 wants for undo and post-game review. Fold in the mulligan.
+6. **Route the union through the `GameServer` interface** (doc 05 slice 3).
 7. **Decide the fate of the three state-replacement writes.**
 
-Steps 1–4 stand on their own and need no server. Steps 5–7 depend on the extraction.
-
-## Split staging stays in Tier 2
-
-Whether Tier 2 should exist at all was open before review, and is now settled: it stays.
-
-The alternative was to abolish it — move the decision into the phase-advance payload, so `nextPhase` carries the full split and muster choices, `togglePendingSplit` and `setRecruit` vanish from the union, and the staging state lives in the UI stores next to selection instead of in `game`. That earns real things: one fewer thing for the server to hold, filter, and validate, and a genuinely two-bucket action union. It costs the UI owning staging state it currently gets for free from `game`, and a mid-split reload losing the toggles unless the client persists them separately.
-
-Masterboard splits, masterboard movement, mustering, and battle movement all stay in Tier 2, server-held and owner-visible until their respective phase-advance commits read them. Battle movement is the clearest case for keeping it there: a battle move stays reversible across a much longer window than a masterboard split, and its legality depends on where every other creature on the board currently stands — state the server already has to track regardless of which bucket the movement itself lands in.
-
-Strikes are not part of this question. A die roll can't be un-rolled once it's happened, so `attackCreature` and `rangestrikeCreature` stay Tier 1 regardless of how Tier 2 shakes out.
+Steps 1–5 stand on their own and need no server.
