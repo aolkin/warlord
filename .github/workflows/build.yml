@@ -35,6 +35,9 @@ jobs:
       - name: Format check (game models)
         run: pnpm format:models:check
 
+      - name: Format check (utils)
+        run: pnpm format:utils:check
+
       - name: Typecheck
         run: pnpm typecheck
 
