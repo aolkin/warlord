@@ -16,20 +16,23 @@ const titanColors = {
   "titan-black": "#1f1e20",
   "titan-brown": "#8a2920",
   "titan-orange": "#ff6a00",
-  "titan-purple": "#bd0cbd"
+  "titan-purple": "#bd0cbd",
 }
 
-const playerColors = Object.fromEntries(map(titanColors,
-  (color, name) => [`player-${PlayerId[name.split("-")[1].toUpperCase() as keyof typeof PlayerId]}`, color])
-  .filter(entry => entry[0] !== "player-undefined"))
+const playerColors = Object.fromEntries(
+  map(titanColors, (color, name) => [
+    `player-${PlayerId[name.split("-")[1].toUpperCase() as keyof typeof PlayerId]}`,
+    color,
+  ]).filter(entry => entry[0] !== "player-undefined"),
+)
 
 // https://vuetifyjs.com/en/introduction/why-vuetify/#feature-guides
 export default createVuetify({
   defaults: {
     // Buttons render with uppercase text throughout the app.
     VBtn: {
-      class: "text-uppercase"
-    }
+      class: "text-uppercase",
+    },
   },
   theme: {
     defaultTheme: "dark",
@@ -38,9 +41,9 @@ export default createVuetify({
         dark: true,
         colors: {
           ...titanColors,
-          ...playerColors
-        }
-      }
-    }
-  }
+          ...playerColors,
+        },
+      },
+    },
+  },
 })
