@@ -23,13 +23,14 @@ Irreversible on application, or they consume randomness, or they change what ano
 | `setRoll` | Consumes randomness; sets the movement allowance for the whole phase. Passing `undefined` while a roll exists is the mulligan, which sets `mulliganTaken`. |
 | `attackCreature` | Consumes randomness; `performAttack` adds wounds immediately and sets `hasStruck`. |
 | `rangestrikeCreature` | Same, minus the carryover branch. |
-| `assignCarryover` | Allocates already-rolled excess hits onto a second target; no path un-allocates them. |
-| `skipCarryover` | Sets `carryoverSkipped`, permanently forfeiting those hits. |
+| `commitCarryover` | Applies already-rolled excess hits to the listed targets in order, or forfeits them if the list is empty; the carryover decision commits as one action, not one per target. |
 | `nextPhase` (masterboard) | Finalizes every pending split and muster, decrements the creature pool, detects engagements, and hands the turn on. |
 | `Battle.nextPhase` | Finalizes battle movement (off-board creatures at hex 0), clears `activeStrike`, removes dead creatures after STRIKEBACK, and hands the initiative to the other side. **Not in the union today** — see the gaps below. |
 | `initiateBattle` | Reveals both stacks' contents to the opponent. |
 
 `initiateBattle` is a special case: no UI path reaches it, only `nextPhase`'s MOVE branch calls it. Doc 05 already argues it should become an internal precondition of the phase advance rather than a separately dispatchable action, and this classification agrees — it is a consequence of a committed event, not a decision a player makes.
+
+`assignCarryover(battle, target)` and `skipCarryover(battle)` today are two ways of building up one decision incrementally: call `assignCarryover` once per secondary target, in order, until the strike's excess hits run out or the player calls `skipCarryover` to forfeit whatever is left. None of that needs a server round trip per target — the player is choosing among creatures already visible as carryover-eligible (`Battle.carryoverTargets`), and none of the choices apply until the whole allocation is settled. The two actions collapse into one, dispatched once: `{ type: "commitCarryover", payload: BattleCreature["id"][] }`. The engine applies the listed targets in the same order and with the same `min(remaining hits, target's remaining capacity)` allocation `assignCarryover` already uses; an empty array is what `skipCarryover` means today. `Battle.assignCarryover` and `Battle.skipCarryover` fold into one `Battle.commitCarryover(battle, targets: BattleCreature["id"][])` that loops the existing per-target allocation and forfeits any hits left over once the list is exhausted.
 
 ### Tier 2 — provisional decisions
 
@@ -104,20 +105,21 @@ const ACTION_TIER: Record<GameAction["type"], "committed" | "provisional"> = { .
 ## Sequencing
 
 1. **Close the union's gaps.** Add the battle phase-advance variant; demote `initiateBattle` to an internal precondition of the MOVE phase advance. This is the only change #226 itself needs, and it unblocks it.
-2. **Add the tier table.** Mechanical, no behavior change, and it is the artifact every later slice reads.
-3. **Split request from record for the three randomness-carrying payloads.** Keep a local implementation that fills rolls in from today's dice widget, so single-player behavior is unchanged. Independently valuable: it is what makes the action log replayable, which doc 04 wants for undo and post-game review. Fold in the mulligan.
-4. **Route both tiers through the `GameServer` interface** (doc 05 slice 3): provisional actions resolve to their author only, committed actions broadcast. This is where the tiers first *behave* differently; before it they are only a label.
-5. **Hidden-information audit** (doc 05 slice 4), seeded by the Tier 2 list. One leak is already visible: `MasterboardStack.stackSize` renders `"5 / 3"` for any stack with split flags set, for every stack on the board, not only the viewer's own.
-6. **Decide the fate of the three state-replacement writes.**
+2. **Collapse carryover into one action.** Replace `assignCarryover`/`skipCarryover` with the single `commitCarryover` action described above. Independent of #226 — it can land whenever the UI is ready to accumulate the target list locally and dispatch it once.
+3. **Add the tier table.** Mechanical, no behavior change, and it is the artifact every later slice reads.
+4. **Split request from record for the three randomness-carrying payloads.** Keep a local implementation that fills rolls in from today's dice widget, so single-player behavior is unchanged. Independently valuable: it is what makes the action log replayable, which doc 04 wants for undo and post-game review. Fold in the mulligan.
+5. **Route both tiers through the `GameServer` interface** (doc 05 slice 3): provisional actions resolve to their author only, committed actions broadcast. This is where the tiers first *behave* differently; before it they are only a label.
+6. **Hidden-information audit** (doc 05 slice 4), seeded by the Tier 2 list. One leak is already visible: `MasterboardStack.stackSize` renders `"5 / 3"` for any stack with split flags set, for every stack on the board, not only the viewer's own.
+7. **Decide the fate of the three state-replacement writes.**
 
-Steps 1–3 stand on their own and need no server. Steps 4–6 depend on the extraction.
+Steps 1–4 stand on their own and need no server. Steps 5–7 depend on the extraction.
 
-## The open question
+## Split staging stays in Tier 2
 
-Tier 2 could instead be abolished, and this is the fork the classification exposes rather than settles.
+Whether Tier 2 should exist at all was open before review, and is now settled: it stays.
 
-Today the staged decision lives in `TitanGame` (`stack.split[]`, `stack.currentMuster`) and the commit reads it from there. The alternative is to move the decision into the phase-advance payload: `nextPhase` would carry the full split and muster choices, `togglePendingSplit` and `setRecruit` would vanish from the union entirely, and the staging state would live in the UI stores next to selection.
+The alternative was to abolish it — move the decision into the phase-advance payload, so `nextPhase` carries the full split and muster choices, `togglePendingSplit` and `setRecruit` vanish from the union, and the staging state lives in the UI stores next to selection instead of in `game`. That earns real things: one fewer thing for the server to hold, filter, and validate, and a genuinely two-bucket action union. It costs the UI owning staging state it currently gets for free from `game`, and a mid-split reload losing the toggles unless the client persists them separately.
 
-That is exactly the "pending splits are local UI state" model, and it earns real things — one fewer thing for the server to hold, filter, and validate, and a genuinely two-bucket action union. It costs two things: the UI has to own staging state it currently gets for free from `game`, and a mid-split reload loses the toggles unless the client persists them separately. Battle movement resists the same treatment more strongly, since a battle move is reversible across a much longer window and its legality depends on where every other creature currently stands.
+Masterboard splits, masterboard movement, mustering, and battle movement all stay in Tier 2, server-held and owner-visible until their respective phase-advance commits read them. Battle movement is the clearest case for keeping it there: a battle move stays reversible across a much longer window than a masterboard split, and its legality depends on where every other creature on the board currently stands — state the server already has to track regardless of which bucket the movement itself lands in.
 
-Deciding this before step 1 is not necessary — the union gaps and the tier table are right either way — but it should be settled before step 4.
+Strikes are not part of this question. A die roll can't be un-rolled once it's happened, so `attackCreature` and `rangestrikeCreature` stay Tier 1 regardless of how Tier 2 shakes out.
