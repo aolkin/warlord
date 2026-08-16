@@ -11,9 +11,9 @@ importers:
       '@3d-dice/dice-box':
         specifier: ^1.1.4
         version: 1.1.4(babylonjs-gltf2interface@5.57.1)
-      '@mdi/js':
-        specifier: ^7.4.47
-        version: 7.4.47
+      '@mdi/font':
+        specifier: ^6.9.96
+        version: 6.9.96
       lodash-es:
         specifier: ^4.18.1
         version: 4.18.1
@@ -598,8 +598,8 @@ packages:
   '@jridgewell/trace-mapping@0.3.9':
     resolution: {integrity: sha512-3Belt6tdc8bPgAtbcmdtNJlirVoTmEb5e2gC94PnkwEW9jI6CAHUeoG85tjWP5WquqfavoMtMwiG4P926ZKKuQ==}
 
-  '@mdi/js@7.4.47':
-    resolution: {integrity: sha512-KPnNOtm5i2pMabqZxpUz7iQf+mfrYZyKCZ8QNz85czgEt7cuHcGorWfdzUMWYA0SD+a6Hn4FmJ+YhzzzjkTZrQ==}
+  '@mdi/font@6.9.96':
+    resolution: {integrity: sha512-z3QVZStyHVwkDsFR7A7F2PIvZJPWgdSFw4BEEy2Gc9HUN5NfK9mGbjgaYClRcbMWiYEV45srmiYtczmBtCqR8w==}
 
   '@nodelib/fs.scandir@2.1.5':
     resolution: {integrity: sha512-vq24Bq3ym5HEQm2NKCr3yXDwjc7vTsEThRDnkp2DK9p1uqLR+DHurm/NOTo0KG7HYHU7eppKZj3MyqYuMBf62g==}
@@ -2251,7 +2251,7 @@ snapshots:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.5.5
 
-  '@mdi/js@7.4.47': {}
+  '@mdi/font@6.9.96': {}
 
   '@nodelib/fs.scandir@2.1.5':
     dependencies:
