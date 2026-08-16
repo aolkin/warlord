@@ -14,9 +14,13 @@ export const useGameStore = defineStore("game", () => {
   // reactive game proxy coalesces every synchronous mutation within one action into a single
   // write, and doesn't fire for this initial hydration since that happens before the
   // `reactive()` wrap above.
-  watch(game, () => {
-    localStorage[GAME_PERSISTENCE_KEY] = JSON.stringify(game)
-  }, { deep: true })
+  watch(
+    game,
+    () => {
+      localStorage[GAME_PERSISTENCE_KEY] = JSON.stringify(game)
+    },
+    { deep: true },
+  )
 
   // Caching earns its bookkeeping only for rules that scan or search the state graph and are
   // read from more than one place. Everything cheaper is called straight off `game`.
@@ -27,6 +31,8 @@ export const useGameStore = defineStore("game", () => {
     game,
     activeStacks,
     mandatoryMoves,
-    reset: (): void => { Object.assign(game, TitanGame.create(2)) }
+    reset: (): void => {
+      Object.assign(game, TitanGame.create(2))
+    },
   }
 })

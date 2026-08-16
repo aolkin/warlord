@@ -5,6 +5,6 @@ export const usePlayerStore = defineStore("player", () => {
   const localPlayer = ref(0)
 
   return {
-    localPlayer
+    localPlayer,
   }
 })

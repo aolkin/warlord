@@ -16,9 +16,9 @@ export const useSelectionStore = defineStore("selection", () => {
   const focusedHexes = shallowReactive<MasterboardHex[]>([])
 
   const selectedStack = computed<Stack | undefined>(() => stack.value)
-  const focusedHex = computed<MasterboardHex | undefined>(() => focusedHexes.length > 0
-    ? focusedHexes[focusedHexes.length - 1]
-    : undefined)
+  const focusedHex = computed<MasterboardHex | undefined>(() =>
+    focusedHexes.length > 0 ? focusedHexes[focusedHexes.length - 1] : undefined,
+  )
 
   function selectStack(selection: Stack): void {
     stack.value = selection
@@ -57,6 +57,6 @@ export const useSelectionStore = defineStore("selection", () => {
     deselectStack,
     requireSelectedStack,
     enterHex,
-    leaveHex
+    leaveHex,
   }
 })
