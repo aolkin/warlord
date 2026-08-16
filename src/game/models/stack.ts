@@ -36,10 +36,16 @@ export namespace Stack {
   export function create(options: CreateStackOptions): Stack {
     return {
       owner: options.owner,
-      creatures: options.creatures ?? [CreatureType.TITAN, CreatureType.ANGEL,
-        CreatureType.CENTAUR, CreatureType.CENTAUR,
-        CreatureType.OGRE, CreatureType.OGRE,
-        CreatureType.GARGOYLE, CreatureType.GARGOYLE],
+      creatures: options.creatures ?? [
+        CreatureType.TITAN,
+        CreatureType.ANGEL,
+        CreatureType.CENTAUR,
+        CreatureType.CENTAUR,
+        CreatureType.OGRE,
+        CreatureType.OGRE,
+        CreatureType.GARGOYLE,
+        CreatureType.GARGOYLE,
+      ],
       split: range(8).map(() => false),
       marker: options.marker,
       recruits: {},
@@ -48,7 +54,7 @@ export namespace Stack {
       initialHex: options.hex,
       hex: options.hex,
       attackEdge: undefined,
-      currentMuster: undefined
+      currentMuster: undefined,
     }
   }
 
@@ -72,8 +78,9 @@ export namespace Stack {
       if (numSplitting !== 4) {
         return false
       }
-      const splitLords: number = sum(stack.creatures.map((creature, index) =>
-        stack.split[index] && CREATURE_DATA[creature].lord))
+      const splitLords: number = sum(
+        stack.creatures.map((creature, index) => stack.split[index] && CREATURE_DATA[creature].lord),
+      )
       if (splitLords !== 1) {
         return false
       }
@@ -91,13 +98,14 @@ export namespace Stack {
   }
 
   export function musterable(stack: Stack, terrain: Terrain): MusterPossibility[] {
-    const creatureCounts = stack.creatures.reduce((acc: Map<CreatureType, number>, creature: CreatureType) =>
-      acc.set(creature, (acc.get(creature) ?? 0) + 1), new Map())
+    const creatureCounts = stack.creatures.reduce(
+      (acc: Map<CreatureType, number>, creature: CreatureType) => acc.set(creature, (acc.get(creature) ?? 0) + 1),
+      new Map(),
+    )
     const terrainData = MUSTER_DATA[terrain]
     const possibilities: MusterPossibility[] = []
     if (terrain === Terrain.TOWER) {
-      possibilities.push(...terrainData.map(([, creature]) =>
-        [creature, [[creature, 0]]] as MusterPossibility))
+      possibilities.push(...terrainData.map(([, creature]) => [creature, [[creature, 0]]] as MusterPossibility))
       const creaturePossibilities: MusterBasis[] = []
       creatureCounts.forEach((count, type) => {
         if (count >= 3) {
@@ -105,8 +113,10 @@ export namespace Stack {
         }
       })
       possibilities.push([CreatureType.GUARDIAN, creaturePossibilities])
-      possibilities.push([CreatureType.WARLOCK,
-        creatureCounts.get(CreatureType.TITAN) !== undefined ? [[CreatureType.TITAN, 1]] : []])
+      possibilities.push([
+        CreatureType.WARLOCK,
+        creatureCounts.get(CreatureType.TITAN) !== undefined ? [[CreatureType.TITAN, 1]] : [],
+      ])
     } else {
       for (let i = 0; i < terrainData.length; ++i) {
         const [req, type] = terrainData[i]

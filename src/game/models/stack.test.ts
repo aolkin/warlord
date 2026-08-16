@@ -76,11 +76,14 @@ describe("Stack mustering eligibility", () => {
   it.each([
     { label: "before moving", moved: false, creatureCount: 1, expected: false },
     { label: "at the 7-creature cap", moved: true, creatureCount: 7, expected: false },
-    { label: "moved and under the cap", moved: true, creatureCount: 1, expected: true }
+    { label: "moved and under the cap", moved: true, creatureCount: 1, expected: true },
   ])("canMuster() is $expected when $label", ({ moved, creatureCount, expected }) => {
     const stack = Stack.create({
-      owner: PlayerId.RED, hex: 5, marker: 0, createdRound: 0,
-      creatures: new Array(creatureCount).fill(CreatureType.CENTAUR)
+      owner: PlayerId.RED,
+      hex: 5,
+      marker: 0,
+      createdRound: 0,
+      creatures: new Array(creatureCount).fill(CreatureType.CENTAUR),
     })
     if (moved) stack.hex = 6
 
@@ -93,29 +96,36 @@ describe("Stack mustering eligibility", () => {
 describe("Stack musterable (recruit-tier constraints)", () => {
   it.each([
     { centaurCount: 1, lionBases: [] as MusterBasis[] }, // needs 2 Centaurs, only have 1
-    { centaurCount: 2, lionBases: [[CreatureType.CENTAUR, 2]] as MusterBasis[] }
-  ])("unlocks the Lion muster tier only once 2 Centaurs are present ($centaurCount Centaur(s))", ({
-    centaurCount, lionBases
-  }) => {
-    const stack = Stack.create({
-      owner: PlayerId.RED, hex: 5, marker: 0, createdRound: 0,
-      creatures: new Array(centaurCount).fill(CreatureType.CENTAUR)
-    })
-    const possibilities = Stack.musterable(stack, Terrain.PLAINS)
+    { centaurCount: 2, lionBases: [[CreatureType.CENTAUR, 2]] as MusterBasis[] },
+  ])(
+    "unlocks the Lion muster tier only once 2 Centaurs are present ($centaurCount Centaur(s))",
+    ({ centaurCount, lionBases }) => {
+      const stack = Stack.create({
+        owner: PlayerId.RED,
+        hex: 5,
+        marker: 0,
+        createdRound: 0,
+        creatures: new Array(centaurCount).fill(CreatureType.CENTAUR),
+      })
+      const possibilities = Stack.musterable(stack, Terrain.PLAINS)
 
-    const [, centaurBases] = possibilities.find(([type]) => type === CreatureType.CENTAUR)!
-    expect(centaurBases).toEqual([[CreatureType.CENTAUR, 1]])
+      const [, centaurBases] = possibilities.find(([type]) => type === CreatureType.CENTAUR)!
+      expect(centaurBases).toEqual([[CreatureType.CENTAUR, 1]])
 
-    const [, actualLionBases] = possibilities.find(([type]) => type === CreatureType.LION)!
-    expect(actualLionBases).toEqual(lionBases)
-  })
+      const [, actualLionBases] = possibilities.find(([type]) => type === CreatureType.LION)!
+      expect(actualLionBases).toEqual(lionBases)
+    },
+  )
 
   it("still locks the Ranger tier behind Lions specifically, even once Centaurs unlock the Lion tier", () => {
     // Ranger requires 2 Lions specifically, not 2 Centaurs, so it stays locked even with
     // enough Centaurs to unlock Lion.
     const stack = Stack.create({
-      owner: PlayerId.RED, hex: 5, marker: 0, createdRound: 0,
-      creatures: [CreatureType.CENTAUR, CreatureType.CENTAUR]
+      owner: PlayerId.RED,
+      hex: 5,
+      marker: 0,
+      createdRound: 0,
+      creatures: [CreatureType.CENTAUR, CreatureType.CENTAUR],
     })
     const [, rangerBases] = Stack.musterable(stack, Terrain.PLAINS).find(([type]) => type === CreatureType.RANGER)!
     expect(rangerBases).toEqual([])
@@ -123,7 +133,11 @@ describe("Stack musterable (recruit-tier constraints)", () => {
 
   it("always offers the tower's basic recruits regardless of stack contents", () => {
     const stack = Stack.create({
-      owner: PlayerId.RED, hex: 100, marker: 0, createdRound: 0, creatures: [CreatureType.CENTAUR]
+      owner: PlayerId.RED,
+      hex: 100,
+      marker: 0,
+      createdRound: 0,
+      creatures: [CreatureType.CENTAUR],
     })
     const possibilities = Stack.musterable(stack, Terrain.TOWER)
 
@@ -135,31 +149,43 @@ describe("Stack musterable (recruit-tier constraints)", () => {
 
   it("only offers a Guardian once 3 of any one creature type are present", () => {
     const shortOfThree = Stack.create({
-      owner: PlayerId.RED, hex: 100, marker: 0, createdRound: 0,
-      creatures: [CreatureType.CENTAUR, CreatureType.CENTAUR]
+      owner: PlayerId.RED,
+      hex: 100,
+      marker: 0,
+      createdRound: 0,
+      creatures: [CreatureType.CENTAUR, CreatureType.CENTAUR],
     })
-    const [, noGuardian] = Stack.musterable(shortOfThree, Terrain.TOWER)
-      .find(([t]) => t === CreatureType.GUARDIAN)!
+    const [, noGuardian] = Stack.musterable(shortOfThree, Terrain.TOWER).find(([t]) => t === CreatureType.GUARDIAN)!
     expect(noGuardian).toEqual([])
 
     const threeOfAKind = Stack.create({
-      owner: PlayerId.RED, hex: 100, marker: 0, createdRound: 0,
-      creatures: [CreatureType.CENTAUR, CreatureType.CENTAUR, CreatureType.CENTAUR]
+      owner: PlayerId.RED,
+      hex: 100,
+      marker: 0,
+      createdRound: 0,
+      creatures: [CreatureType.CENTAUR, CreatureType.CENTAUR, CreatureType.CENTAUR],
     })
-    const [, guardianBases] = Stack.musterable(threeOfAKind, Terrain.TOWER)
-      .find(([t]) => t === CreatureType.GUARDIAN)!
+    const [, guardianBases] = Stack.musterable(threeOfAKind, Terrain.TOWER).find(([t]) => t === CreatureType.GUARDIAN)!
     expect(guardianBases).toEqual([[CreatureType.CENTAUR, 3]])
   })
 
   it("only offers a Warlock when a Titan is present", () => {
     const noTitan = Stack.create({
-      owner: PlayerId.RED, hex: 100, marker: 0, createdRound: 0, creatures: [CreatureType.CENTAUR]
+      owner: PlayerId.RED,
+      hex: 100,
+      marker: 0,
+      createdRound: 0,
+      creatures: [CreatureType.CENTAUR],
     })
     const [, noWarlock] = Stack.musterable(noTitan, Terrain.TOWER).find(([t]) => t === CreatureType.WARLOCK)!
     expect(noWarlock).toEqual([])
 
     const withTitan = Stack.create({
-      owner: PlayerId.RED, hex: 100, marker: 0, createdRound: 0, creatures: [CreatureType.TITAN]
+      owner: PlayerId.RED,
+      hex: 100,
+      marker: 0,
+      createdRound: 0,
+      creatures: [CreatureType.TITAN],
     })
     const [, warlockBases] = Stack.musterable(withTitan, Terrain.TOWER).find(([t]) => t === CreatureType.WARLOCK)!
     expect(warlockBases).toEqual([[CreatureType.TITAN, 1]])

@@ -21,7 +21,7 @@ export namespace Strike {
   export function combine(a: Strike, b: Strike, clampVal?: boolean): Strike {
     return {
       toHit: clampVal === false ? a.toHit + b.toHit : clamp(a.toHit + b.toHit, 2, 6),
-      dice: a.dice + b.dice
+      dice: a.dice + b.dice,
     }
   }
 }
@@ -48,11 +48,10 @@ export interface ActiveRangestrike extends BaseActiveStrike {
 
 export type ActiveStrike = ActiveMeleeStrike | ActiveRangestrike
 
-export type CreateActiveStrikeOptions =
-  Pick<BaseActiveStrike, "attacker" | "rolls" | "toHit" | "target"> & {
-    defenderRemainingHp: number
-    rangestrike: boolean
-  }
+export type CreateActiveStrikeOptions = Pick<BaseActiveStrike, "attacker" | "rolls" | "toHit" | "target"> & {
+  defenderRemainingHp: number
+  rangestrike: boolean
+}
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
 export namespace ActiveStrike {
@@ -65,7 +64,7 @@ export namespace ActiveStrike {
       targetHits: [hits],
       rolls: options.rolls,
       toHit: options.toHit,
-      totalHits
+      totalHits,
     }
     if (options.rangestrike) {
       return base
@@ -73,7 +72,7 @@ export namespace ActiveStrike {
     return {
       ...base,
       carryoverTargets: [],
-      carryoverSkipped: false
+      carryoverSkipped: false,
     }
   }
 

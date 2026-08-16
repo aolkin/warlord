@@ -58,9 +58,9 @@ export interface MasterboardEdge {
 }
 
 export class MasterboardHex {
-  readonly id: number;
-  readonly terrain: Terrain;
-  private readonly edges: Partial<Record<HexEdge, MasterboardEdge>>;
+  readonly id: number
+  readonly terrain: Terrain
+  private readonly edges: Partial<Record<HexEdge, MasterboardEdge>>
 
   constructor(id: number, terrain: Terrain) {
     this.id = id
@@ -73,8 +73,10 @@ export class MasterboardHex {
   }
 
   addEdge(hex: MasterboardHex, hexEdge: HexEdge, rule: MovementRule): void {
-    assert(this.edges[hexEdge] === undefined || this.edges[hexEdge]?.rule === MovementRule.NONE,
-      "Cannot overwrite already configured edge")
+    assert(
+      this.edges[hexEdge] === undefined || this.edges[hexEdge]?.rule === MovementRule.NONE,
+      "Cannot overwrite already configured edge",
+    )
     this.edges[hexEdge] = { hex, rule, hexEdge }
     if (this.getArea() === BoardArea.MIDDLE || this.getArea() === BoardArea.LOWER) {
       // Generally speaking, the receiving edge is frequently the sending edge as well
@@ -145,7 +147,7 @@ export class MasterboardHex {
 }
 
 export class Masterboard {
-  hexes: Map<number, MasterboardHex>;
+  hexes: Map<number, MasterboardHex>
 
   constructor() {
     this.hexes = new Map()
@@ -155,9 +157,7 @@ export class Masterboard {
     for (let i = 100; i <= 600; i += 100) {
       this.hexes.set(i, new MasterboardHex(i, Terrain.TOWER))
     }
-    for (let i = 1000, terrain = Terrain.MOUNTAINS;
-      i <= 6000;
-      i += 1000, terrain = getTerrainPair(terrain)) {
+    for (let i = 1000, terrain = Terrain.MOUNTAINS; i <= 6000; i += 1000, terrain = getTerrainPair(terrain)) {
       this.hexes.set(i, new MasterboardHex(i, terrain))
     }
 
@@ -168,12 +168,10 @@ export class Masterboard {
       Terrain.HILLS,
       Terrain.JUNGLE,
       Terrain.PLAINS,
-      Terrain.DESERT
+      Terrain.DESERT,
     ]
     for (let i = 1; i <= 42; ++i) {
-      this.hexes.set(i, new MasterboardHex(i, maybeGetPair(
-        middleOrdering[(i - 1) % 7], div((i - 1), 7)
-      )))
+      this.hexes.set(i, new MasterboardHex(i, maybeGetPair(middleOrdering[(i - 1) % 7], div(i - 1, 7))))
     }
 
     const bottomOrdering = [
@@ -183,20 +181,14 @@ export class Masterboard {
       undefined,
       Terrain.PLAINS,
       Terrain.BRUSH,
-      undefined
+      undefined,
     ]
-    const bottomTriples = [
-      Terrain.JUNGLE,
-      Terrain.SWAMP,
-      Terrain.DESERT
-    ]
+    const bottomTriples = [Terrain.JUNGLE, Terrain.SWAMP, Terrain.DESERT]
     for (let i = 101; i <= 142; ++i) {
       const localIndex = (i - 101) % 7
-      let sector = div((i - 101), 7)
+      let sector = div(i - 101, 7)
       if (bottomOrdering[localIndex] !== undefined) {
-        this.hexes.set(i, new MasterboardHex(i, maybeGetPair(
-          bottomOrdering[localIndex]!, sector
-        )))
+        this.hexes.set(i, new MasterboardHex(i, maybeGetPair(bottomOrdering[localIndex]!, sector)))
       } else {
         if (localIndex === 6) {
           sector += 2
@@ -211,17 +203,15 @@ export class Masterboard {
     for (let id = 0; id <= 5; id += 1) {
       const tower = this.hexes.get((id + 1) * 100)!
       const towerEdges: Array<[HexEdge, number]> = [
-        [HexEdge.SECOND, 101 + (id * 7)],
-        [HexEdge.FIRST, 3 + (id * 7)],
-        [HexEdge.THIRD, (41 + (id * 7)) % 42]
+        [HexEdge.SECOND, 101 + id * 7],
+        [HexEdge.FIRST, 3 + id * 7],
+        [HexEdge.THIRD, (41 + id * 7) % 42],
       ]
-      towerEdges.forEach(([edge, i]) => tower.addEdge(
-        this.hexes.get(i)!, edge, MovementRule.ARROW
-      ))
+      towerEdges.forEach(([edge, i]) => tower.addEdge(this.hexes.get(i)!, edge, MovementRule.ARROW))
 
       const upperHex = this.hexes.get((id + 1) * 1000)!
-      upperHex.addEdge(this.hexes.get((mod((id - 1), 6) + 1) * 1000)!, HexEdge.THIRD, MovementRule.ARROW)
-      upperHex.addEdge(this.hexes.get((mod((id + 1), 6) + 1) * 1000)!, HexEdge.FIRST, MovementRule.ARROW)
+      upperHex.addEdge(this.hexes.get((mod(id - 1, 6) + 1) * 1000)!, HexEdge.THIRD, MovementRule.ARROW)
+      upperHex.addEdge(this.hexes.get((mod(id + 1, 6) + 1) * 1000)!, HexEdge.FIRST, MovementRule.ARROW)
       upperHex.addEdge(this.hexes.get(id * 7 + 1)!, HexEdge.SECOND, MovementRule.SQUARE)
     }
 
@@ -232,7 +222,7 @@ export class Masterboard {
       HexEdge.FIRST,
       HexEdge.FIRST,
       HexEdge.SECOND,
-      HexEdge.FIRST
+      HexEdge.FIRST,
     ]
     const bottomHexEdges = [
       HexEdge.FIRST,
@@ -241,26 +231,34 @@ export class Masterboard {
       HexEdge.THIRD,
       HexEdge.THIRD,
       HexEdge.FIRST,
-      HexEdge.THIRD
+      HexEdge.THIRD,
     ]
     for (let id = 1; id <= 42; ++id) {
       const localIndex = (id - 1) % 7
-      this.hexes.get(id)!.addEdge(this.hexes.get(id % 42 + 1)!, middleHexEdges[localIndex], MovementRule.ARROW)
-      this.hexes.get(id + 100)!.addEdge(this.hexes.get(mod(id - 2, 42) + 101)!, bottomHexEdges[localIndex], MovementRule.ARROW)
+      this.hexes.get(id)!.addEdge(this.hexes.get((id % 42) + 1)!, middleHexEdges[localIndex], MovementRule.ARROW)
+      this.hexes
+        .get(id + 100)!
+        .addEdge(this.hexes.get(mod(id - 2, 42) + 101)!, bottomHexEdges[localIndex], MovementRule.ARROW)
     }
 
     for (let sector = 1; sector <= 6; sector++) {
-      { // Middle area
+      {
+        // Middle area
         const baseId = (sector - 1) * 7 + 1
         this.hexes.get(baseId + 0)!.addEdge(this.hexes.get(sector * 1000)!, HexEdge.SECOND, MovementRule.CIRCLE)
-        this.hexes.get(baseId + 1)!.addEdge(this.hexes.get((baseId + 1) % 42 + 5)!, HexEdge.FIRST, MovementRule.CIRCLE)
+        this.hexes
+          .get(baseId + 1)!
+          .addEdge(this.hexes.get(((baseId + 1) % 42) + 5)!, HexEdge.FIRST, MovementRule.CIRCLE)
         this.hexes.get(baseId + 2)!.addEdge(this.hexes.get(sector * 100)!, HexEdge.FIRST, MovementRule.CIRCLE)
         this.hexes.get(baseId + 3)!.addEdge(this.hexes.get(baseId + 3 + 99)!, HexEdge.SECOND, MovementRule.SQUARE)
         this.hexes.get(baseId + 4)!.addEdge(this.hexes.get(baseId + 4 + 101)!, HexEdge.SECOND, MovementRule.SQUARE)
-        this.hexes.get(baseId + 5)!.addEdge(this.hexes.get(((sector % 6) + 1) * 100)!, HexEdge.THIRD, MovementRule.CIRCLE)
+        this.hexes
+          .get(baseId + 5)!
+          .addEdge(this.hexes.get(((sector % 6) + 1) * 100)!, HexEdge.THIRD, MovementRule.CIRCLE)
         this.hexes.get(baseId + 6)!.addEdge(this.hexes.get(baseId + 6 - 5)!, HexEdge.THIRD, MovementRule.CIRCLE)
       }
-      { // Bottom area
+      {
+        // Bottom area
         const baseId = (sector - 1) * 7 + 101
         this.hexes.get(baseId + 0)!.addEdge(this.hexes.get(sector * 100)!, HexEdge.SECOND, MovementRule.CIRCLE)
         this.hexes.get(baseId + 2)!.addEdge(this.hexes.get(baseId + 2 - 99)!, HexEdge.SECOND, MovementRule.CIRCLE)

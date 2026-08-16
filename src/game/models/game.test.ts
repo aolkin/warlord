@@ -16,7 +16,7 @@ function newGame(numPlayers = 2): TitanGame {
 describe("TitanGame", () => {
   it("assigns player colors via the injected Random instead of a fixed order", () => {
     const reverse: Random = {
-      shuffle: collection => [...collection].reverse()
+      shuffle: collection => [...collection].reverse(),
     }
 
     const game = TitanGame.create(2, reverse)
@@ -32,26 +32,39 @@ describe("TitanGame movement legality", () => {
     game.activeRoll = 1
 
     // Player 0 (BLUE) starts at tower hex 100, whose 3 exits are all plain arrows.
-    const destinations = TitanGame.getPathsForHex(game, 100).map(p => p.path.at(-1)!.id).sort((a, b) => a - b)
+    const destinations = TitanGame.getPathsForHex(game, 100)
+      .map(p => p.path.at(-1)!.id)
+      .sort((a, b) => a - b)
     expect(destinations).toEqual([3, 41, 101])
     expect(TitanGame.getPathsForHex(game, 100).every(p => p.foe === undefined)).toBe(true)
   })
 
   it("excludes a destination occupied by the mover's own stack, but flags one occupied by an enemy stack", () => {
     const ownStackGame = newGame()
-    ownStackGame.stacks.push(Stack.create({
-      owner: ownStackGame.players[0].id, hex: 3, marker: 5, createdRound: ownStackGame.round
-    }))
+    ownStackGame.stacks.push(
+      Stack.create({
+        owner: ownStackGame.players[0].id,
+        hex: 3,
+        marker: 5,
+        createdRound: ownStackGame.round,
+      }),
+    )
     ownStackGame.activePhase = MasterboardPhase.MOVE
     ownStackGame.activeRoll = 1
     const ownDestinations = TitanGame.getPathsForHex(ownStackGame, 100)
-      .map(p => p.path.at(-1)!.id).sort((a, b) => a - b)
+      .map(p => p.path.at(-1)!.id)
+      .sort((a, b) => a - b)
     expect(ownDestinations).toEqual([41, 101])
 
     const enemyStackGame = newGame()
-    enemyStackGame.stacks.push(Stack.create({
-      owner: enemyStackGame.players[1].id, hex: 3, marker: 5, createdRound: enemyStackGame.round
-    }))
+    enemyStackGame.stacks.push(
+      Stack.create({
+        owner: enemyStackGame.players[1].id,
+        hex: 3,
+        marker: 5,
+        createdRound: enemyStackGame.round,
+      }),
+    )
     enemyStackGame.activePhase = MasterboardPhase.MOVE
     enemyStackGame.activeRoll = 1
     const toEnemyHex = TitanGame.getPathsForHex(enemyStackGame, 100).find(p => p.path.at(-1)!.id === 3)
@@ -62,14 +75,16 @@ describe("TitanGame movement legality", () => {
     // Hex 4 has a square edge (to 103) alongside its arrow edge (to 5).
     { label: "square edge replaces the arrow exit", startHex: 4, expected: [103] },
     // Hex 1 has a circle edge (to 1000) alongside its arrow edge (to 2), and no square edge.
-    { label: "circle edge adds to the arrow exit", startHex: 1, expected: [2, 1000] }
+    { label: "circle edge adds to the arrow exit", startHex: 1, expected: [2, 1000] },
   ])("$label on the first step", ({ startHex, expected }) => {
     const game = newGame()
     game.stacks[0].hex = startHex
     game.activePhase = MasterboardPhase.MOVE
     game.activeRoll = 1
 
-    const destinations = TitanGame.getPathsForHex(game, startHex).map(p => p.path.at(-1)!.id).sort((a, b) => a - b)
+    const destinations = TitanGame.getPathsForHex(game, startHex)
+      .map(p => p.path.at(-1)!.id)
+      .sort((a, b) => a - b)
     expect(destinations).toEqual(expected)
   })
 
@@ -181,10 +196,18 @@ describe("TitanGame turn and phase transitions", () => {
     expect(game.stacks).toHaveLength(3)
     const sibling = game.stacks.find(s => s !== original && s.owner === original.owner)!
     expect(sibling.hex).toBe(original.hex)
-    expect(sibling.creatures).toEqual([CreatureType.TITAN, CreatureType.CENTAUR,
-      CreatureType.OGRE, CreatureType.GARGOYLE])
-    expect(original.creatures).toEqual([CreatureType.ANGEL, CreatureType.CENTAUR,
-      CreatureType.OGRE, CreatureType.GARGOYLE])
+    expect(sibling.creatures).toEqual([
+      CreatureType.TITAN,
+      CreatureType.CENTAUR,
+      CreatureType.OGRE,
+      CreatureType.GARGOYLE,
+    ])
+    expect(original.creatures).toEqual([
+      CreatureType.ANGEL,
+      CreatureType.CENTAUR,
+      CreatureType.OGRE,
+      CreatureType.GARGOYLE,
+    ])
     // initialHex/attackEdge are only ever reset at the start of a turn (SPLIT reached via the
     // MUSTER wraparound); a freshly split stack already has them at their construction
     // defaults, so this transition leaves them untouched.
@@ -337,7 +360,10 @@ describe("TitanGame persistence", () => {
 
     const rehydrated = TitanGame.hydrate(JSON.stringify(game))
     const newStack = Stack.create({
-      owner: rehydrated.players[0].id, hex: 100, marker: 5, createdRound: rehydrated.round
+      owner: rehydrated.players[0].id,
+      hex: 100,
+      marker: 5,
+      createdRound: rehydrated.round,
     })
 
     expect(newStack.id).toBeGreaterThan(highId)
@@ -350,36 +376,46 @@ describe("TitanGame mustering (setRecruit)", () => {
     const stack = game.stacks[0] // hasn't moved this turn
     game.activePhase = MasterboardPhase.MUSTER
 
-    expect(() => TitanGame.setRecruit(game, {
-      stack: stack.id, recruit: [CreatureType.CENTAUR, [CreatureType.CENTAUR, 0]]
-    })).toThrow("not eligible to muster")
+    expect(() =>
+      TitanGame.setRecruit(game, {
+        stack: stack.id,
+        recruit: [CreatureType.CENTAUR, [CreatureType.CENTAUR, 0]],
+      }),
+    ).toThrow("not eligible to muster")
   })
 
   it("refuses to record a recruit outside the muster phase", () => {
     const game = newGame()
     const stack = Stack.create({
-      owner: game.players[0].id, hex: 100, marker: 1, createdRound: game.round,
-      creatures: [CreatureType.CENTAUR, CreatureType.CENTAUR]
+      owner: game.players[0].id,
+      hex: 100,
+      marker: 1,
+      createdRound: game.round,
+      creatures: [CreatureType.CENTAUR, CreatureType.CENTAUR],
     })
     stack.hex = 101 // moved, so otherwise eligible to muster
     game.stacks.push(stack)
     game.activePhase = MasterboardPhase.MOVE
 
-    expect(() => TitanGame.setRecruit(game, {
-      stack: stack.id, recruit: [CreatureType.LION, [CreatureType.CENTAUR, 2]]
-    })).toThrow("Innappropriate phase")
+    expect(() =>
+      TitanGame.setRecruit(game, {
+        stack: stack.id,
+        recruit: [CreatureType.LION, [CreatureType.CENTAUR, 2]],
+      }),
+    ).toThrow("Innappropriate phase")
   })
 
   it.each([
     { label: "a non-lord", creatureType: CreatureType.LION, expectSuccess: false },
-    { label: "a lord", creatureType: CreatureType.TITAN, expectSuccess: true }
-  ])("recruiting $label when its pool is exhausted: succeeds only for the lord", ({
-    creatureType, expectSuccess
-  }) => {
+    { label: "a lord", creatureType: CreatureType.TITAN, expectSuccess: true },
+  ])("recruiting $label when its pool is exhausted: succeeds only for the lord", ({ creatureType, expectSuccess }) => {
     const game = newGame()
     const stack = Stack.create({
-      owner: game.players[0].id, hex: 100, marker: 1, createdRound: game.round,
-      creatures: [CreatureType.CENTAUR, CreatureType.CENTAUR]
+      owner: game.players[0].id,
+      hex: 100,
+      marker: 1,
+      createdRound: game.round,
+      creatures: [CreatureType.CENTAUR, CreatureType.CENTAUR],
     })
     stack.hex = 101 // moved
     game.stacks.push(stack)
@@ -391,16 +427,20 @@ describe("TitanGame mustering (setRecruit)", () => {
       TitanGame.setRecruit(game, { stack: stack.id, recruit })
       expect(stack.currentMuster).toEqual(recruit)
     } else {
-      expect(() => TitanGame.setRecruit(game, { stack: stack.id, recruit }))
-        .toThrow("No more of the requested creature remaining")
+      expect(() => TitanGame.setRecruit(game, { stack: stack.id, recruit })).toThrow(
+        "No more of the requested creature remaining",
+      )
     }
   })
 
   it("applies the pending muster to the stack and pool when the muster phase ends", () => {
     const game = newGame()
     const stack = Stack.create({
-      owner: game.players[0].id, hex: 100, marker: 1, createdRound: game.round,
-      creatures: [CreatureType.CENTAUR, CreatureType.CENTAUR]
+      owner: game.players[0].id,
+      hex: 100,
+      marker: 1,
+      createdRound: game.round,
+      creatures: [CreatureType.CENTAUR, CreatureType.CENTAUR],
     })
     stack.hex = 101
     game.stacks.push(stack)

@@ -6,7 +6,7 @@ import {
   EdgeHazard,
   Hazard,
   getAdjacentHexForRelation,
-  relationToHex
+  relationToHex,
 } from "./board"
 
 describe("BattleBoard accessors", () => {

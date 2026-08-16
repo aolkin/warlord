@@ -16,7 +16,11 @@ function getDefense(battle: Battle): BattleCreature[] {
   return battle.creatures.filter(creature => creature.player === battle.defender)
 }
 
-function setupBattle(terrain: Terrain, attackerTypes: CreatureType[], defenderTypes: CreatureType[]): {
+function setupBattle(
+  terrain: Terrain,
+  attackerTypes: CreatureType[],
+  defenderTypes: CreatureType[],
+): {
   battle: Battle
   offense: BattleCreature[]
   defense: BattleCreature[]
@@ -67,7 +71,10 @@ describe("Battle engagement", () => {
 describe("Rangestrike targets", () => {
   // Ranger (skill 4, strength 4) placed at battle-hex 8 on the plains board, with no
   // other creature adjacent so it is never itself engaged.
-  function setupRanger(attackerType: CreatureType, targetHex: number): {
+  function setupRanger(
+    attackerType: CreatureType,
+    targetHex: number,
+  ): {
     battle: Battle
     attacker: BattleCreature
     target: BattleCreature
@@ -85,40 +92,57 @@ describe("Rangestrike targets", () => {
   it.each([
     {
       label: "near-range, no adjustment",
-      creatureType: CreatureType.RANGER, targetHex: 20, length: 1, longDistance: false,
-      adjustment: { toHit: 0, dice: 0 }, rangestrike: { toHit: 4, dice: 2 }
+      creatureType: CreatureType.RANGER,
+      targetHex: 20,
+      length: 1,
+      longDistance: false,
+      adjustment: { toHit: 0, dice: 0 },
+      rangestrike: { toHit: 4, dice: 2 },
     },
     {
       label: "extended range (skill 4), long-distance to-hit penalty",
-      creatureType: CreatureType.RANGER, targetHex: 26, length: 1, longDistance: true,
-      adjustment: undefined, rangestrike: { toHit: 5, dice: 2 }
+      creatureType: CreatureType.RANGER,
+      targetHex: 26,
+      length: 1,
+      longDistance: true,
+      adjustment: undefined,
+      rangestrike: { toHit: 5, dice: 2 },
     },
     // Same targetHex 26 is reachable at long range by a skill-4 Ranger (above) but not by a
     // skill-3 Hydra, which only gets near-range paths.
     {
       label: "extended range unreachable by a skill-3 rangestriker (Hydra)",
-      creatureType: CreatureType.HYDRA, targetHex: 26, length: 0, longDistance: undefined,
-      adjustment: undefined, rangestrike: undefined
+      creatureType: CreatureType.HYDRA,
+      targetHex: 26,
+      length: 0,
+      longDistance: undefined,
+      adjustment: undefined,
+      rangestrike: undefined,
     },
     {
       label: "nothing within rangestrike distance",
-      creatureType: CreatureType.RANGER, targetHex: 32, length: 0, longDistance: undefined,
-      adjustment: undefined, rangestrike: undefined
-    }
-  ])("finds rangestrike targets by distance: $label", ({
-    creatureType, targetHex, length, longDistance, adjustment, rangestrike
-  }) => {
-    const { battle, attacker, target } = setupRanger(creatureType, targetHex)
+      creatureType: CreatureType.RANGER,
+      targetHex: 32,
+      length: 0,
+      longDistance: undefined,
+      adjustment: undefined,
+      rangestrike: undefined,
+    },
+  ])(
+    "finds rangestrike targets by distance: $label",
+    ({ creatureType, targetHex, length, longDistance, adjustment, rangestrike }) => {
+      const { battle, attacker, target } = setupRanger(creatureType, targetHex)
 
-    const targets = Battle.rangestrikeTargets(battle, attacker)
-    expect(targets).toHaveLength(length)
-    if (length > 0) {
-      expect(targets[0].creature).toBe(target)
-      expect(targets[0].longDistance).toBe(longDistance)
-      if (adjustment !== undefined) expect(targets[0].adjustment).toEqual(adjustment)
-      expect(Battle.getRangestrike(attacker, targets[0])).toEqual(rangestrike)
-    }
-  })
+      const targets = Battle.rangestrikeTargets(battle, attacker)
+      expect(targets).toHaveLength(length)
+      if (length > 0) {
+        expect(targets[0].creature).toBe(target)
+        expect(targets[0].longDistance).toBe(longDistance)
+        if (adjustment !== undefined) expect(targets[0].adjustment).toEqual(adjustment)
+        expect(Battle.getRangestrike(attacker, targets[0])).toEqual(rangestrike)
+      }
+    },
+  )
 
   it("cannot rangestrike while already engaged in melee", () => {
     // Hex 7 is adjacent to the Ranger's hex 8, so this is melee range, not rangestrike
@@ -242,7 +266,11 @@ describe("Carryover", () => {
     centaur2: BattleCreature
   } {
     const attacking: BattleSide = { player: PlayerId.RED, score: 0, creatures: [CreatureType.LION] }
-    const defending: BattleSide = { player: PlayerId.BLUE, score: 0, creatures: [CreatureType.CENTAUR, CreatureType.CENTAUR] }
+    const defending: BattleSide = {
+      player: PlayerId.BLUE,
+      score: 0,
+      creatures: [CreatureType.CENTAUR, CreatureType.CENTAUR],
+    }
     const battle = Battle.create({ terrain: Terrain.PLAINS, edge: HexEdge.FIRST, attacking, defending })
     battle.phase = BattlePhase.ATTACKER_STRIKE
     battle.activePlayer = battle.attacker
@@ -411,8 +439,11 @@ describe("Movement legality (movementFor)", () => {
     // than the enemy) so the movers aren't in contact with an enemy at phase start; movementFor
     // doesn't enforce rule 11.3 (in-contact creatures may not move - see the TODO on
     // movementFor in engine.ts), but this test isn't about that gap.
-    const { battle, offense } = setupBattle(Terrain.PLAINS,
-      [CreatureType.CENTAUR, CreatureType.GRIFFON, CreatureType.LION, CreatureType.LION], [CreatureType.CENTAUR])
+    const { battle, offense } = setupBattle(
+      Terrain.PLAINS,
+      [CreatureType.CENTAUR, CreatureType.GRIFFON, CreatureType.LION, CreatureType.LION],
+      [CreatureType.CENTAUR],
+    )
     Battle.nextPhase(battle) // nobody engaged yet, so this auto-skips straight to ATTACKER_MOVE
     const [centaur, griffon, blocker1, blocker2] = offense
     place(centaur, 2)
@@ -423,9 +454,7 @@ describe("Movement legality (movementFor)", () => {
     const centaurReach = Battle.movementFor(battle, centaur)
     const griffonReach = Battle.movementFor(battle, griffon)
     expect(centaurReach).toEqual(new Set([3, 4, 9, 10, 14, 15, 16, 17, 20, 21, 22]))
-    expect(griffonReach).toEqual(new Set([
-      3, 4, 9, 10, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 25, 26, 27, 28
-    ]))
+    expect(griffonReach).toEqual(new Set([3, 4, 9, 10, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 25, 26, 27, 28]))
   })
 })
 
@@ -479,8 +508,11 @@ describe("Engagement edge cases", () => {
   it("excludes an engaged creature from carryover if the attacker cannot hit it at the toHit it just rolled", () => {
     // Terrain.TOWER's battle board has battle-hex 8 atop a wall edge from battle-hex 2,
     // which raises toHit by 1 for an attacker striking up through it.
-    const { battle, offense, defense } = setupBattle(Terrain.TOWER,
-      [CreatureType.LION], [CreatureType.CENTAUR, CreatureType.CENTAUR, CreatureType.CENTAUR])
+    const { battle, offense, defense } = setupBattle(
+      Terrain.TOWER,
+      [CreatureType.LION],
+      [CreatureType.CENTAUR, CreatureType.CENTAUR, CreatureType.CENTAUR],
+    )
     battle.phase = BattlePhase.ATTACKER_STRIKE
     battle.activePlayer = battle.attacker
     const [lion] = offense
@@ -506,12 +538,20 @@ describe("Engagement edge cases", () => {
 
     const computedToHit = Battle.toHitAdjusted(battle, lion, centaur)
     expect(computedToHit).toBe(5)
-    expect(() => Battle.attackCreature(battle, {
-      attacker: lion.id, target: centaur.id, rolls: [6, 6, 6, 6, 6], optionalToHit: computedToHit - 1
-    })).toThrow("Cannot choose a lower to-hit")
+    expect(() =>
+      Battle.attackCreature(battle, {
+        attacker: lion.id,
+        target: centaur.id,
+        rolls: [6, 6, 6, 6, 6],
+        optionalToHit: computedToHit - 1,
+      }),
+    ).toThrow("Cannot choose a lower to-hit")
 
     Battle.attackCreature(battle, {
-      attacker: lion.id, target: centaur.id, rolls: [6, 6, 6, 6, 6], optionalToHit: computedToHit + 1
+      attacker: lion.id,
+      target: centaur.id,
+      rolls: [6, 6, 6, 6, 6],
+      optionalToHit: computedToHit + 1,
     })
     expect(battle.activeStrike?.toHit).toBe(computedToHit + 1)
     // A roll of 6 still clears the raised toHit of 6, so all 5 dice hit (capped at HP 3).
@@ -533,7 +573,9 @@ describe("Engagement edge cases", () => {
     // exactly 2 dice.
     expect(Battle.getRangestrike(ranger, targets[0]).dice).toBe(2)
     Battle.rangestrikeCreature(battle, {
-      attacker: ranger.id, target: { ...targets[0], creature: targets[0].creature.id }, rolls: [6, 6]
+      attacker: ranger.id,
+      target: { ...targets[0], creature: targets[0].creature.id },
+      rolls: [6, 6],
     })
 
     expect(ranger.hasStruck).toBe(true)
@@ -622,8 +664,11 @@ describe("Battle phase transitions", () => {
   })
 
   it("removes a creature still in its entrance zone when its move phase ends, but not one that has moved onto the board", () => {
-    const { battle, defense } = setupBattle(Terrain.PLAINS, [CreatureType.LION],
-      [CreatureType.CENTAUR, CreatureType.CENTAUR])
+    const { battle, defense } = setupBattle(
+      Terrain.PLAINS,
+      [CreatureType.LION],
+      [CreatureType.CENTAUR, CreatureType.CENTAUR],
+    )
     const [unmoved, moved] = defense
     expect(unmoved.hex).toBe(36) // the defender's entrance zone for HexEdge.FIRST
     moved.hex = 7

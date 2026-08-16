@@ -4,7 +4,7 @@ export enum PlayerId {
   RED,
   YELLOW,
   BLACK,
-  BROWN
+  BROWN,
 }
 
 export interface Player {

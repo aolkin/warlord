@@ -9,5 +9,5 @@ export interface Random {
 }
 
 export const defaultRandom: Random = {
-  shuffle: collection => shuffle(collection)
+  shuffle: collection => shuffle(collection),
 }

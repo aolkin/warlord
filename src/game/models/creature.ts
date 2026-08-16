@@ -31,17 +31,24 @@ export enum CreatureType {
 }
 
 export class Creature {
-  readonly type: CreatureType;
-  readonly initialQuantity: number;
-  readonly name: string;
-  readonly strength: number;
-  readonly skill: number;
-  readonly canFly: boolean;
+  readonly type: CreatureType
+  readonly initialQuantity: number
+  readonly name: string
+  readonly strength: number
+  readonly skill: number
+  readonly canFly: boolean
   readonly canRangestrike: boolean
   readonly lord: boolean
 
-  constructor(type: CreatureType, strength: number, skill: number, quantity?: number,
-    flying?: boolean, ranged?: boolean, lord?: boolean) {
+  constructor(
+    type: CreatureType,
+    strength: number,
+    skill: number,
+    quantity?: number,
+    flying?: boolean,
+    ranged?: boolean,
+    lord?: boolean,
+  ) {
     this.type = type
     this.initialQuantity = quantity ?? 0
     this.name = capitalize(CreatureType[type])
@@ -87,70 +94,70 @@ export const CREATURE_LIST = [
   new Creature(CreatureType.UNICORN, 6, 4, 12),
   new Creature(CreatureType.WARBEAR, 6, 3, 21),
   new Creature(CreatureType.WARLOCK, 5, 4, 6, false, true),
-  new Creature(CreatureType.WYVERN, 7, 3, 18, true)
+  new Creature(CreatureType.WYVERN, 7, 3, 18, true),
 ]
 
-export const CREATURE_DATA: Record<CreatureType, Creature> = Object.fromEntries(CREATURE_LIST.map(
-  item => [item.type, item]
-)) as Record<CreatureType, Creature>
+export const CREATURE_DATA: Record<CreatureType, Creature> = Object.fromEntries(
+  CREATURE_LIST.map(item => [item.type, item]),
+) as Record<CreatureType, Creature>
 
 export const MUSTER_DATA: Record<Terrain, Array<[number | null, CreatureType]>> = {
   [Terrain.BRUSH]: [
     [null, CreatureType.GARGOYLE],
     [2, CreatureType.CYCLOPS],
-    [2, CreatureType.GORGON]
+    [2, CreatureType.GORGON],
   ],
   [Terrain.JUNGLE]: [
     [null, CreatureType.GARGOYLE],
     [2, CreatureType.CYCLOPS],
     [3, CreatureType.BEHEMOTH],
-    [2, CreatureType.SERPENT]
+    [2, CreatureType.SERPENT],
   ],
   [Terrain.PLAINS]: [
     [null, CreatureType.CENTAUR],
     [2, CreatureType.LION],
-    [2, CreatureType.RANGER]
+    [2, CreatureType.RANGER],
   ],
   [Terrain.WOODS]: [
     [null, CreatureType.CENTAUR],
     [3, CreatureType.WARBEAR],
-    [2, CreatureType.UNICORN]
+    [2, CreatureType.UNICORN],
   ],
   [Terrain.DESERT]: [
     [null, CreatureType.LION],
     [3, CreatureType.GRIFFON],
-    [2, CreatureType.HYDRA]
+    [2, CreatureType.HYDRA],
   ],
   [Terrain.MOUNTAINS]: [
     [null, CreatureType.LION],
     [2, CreatureType.MINOTAUR],
     [2, CreatureType.DRAGON],
-    [2, CreatureType.COLOSSUS]
+    [2, CreatureType.COLOSSUS],
   ],
   [Terrain.MARSH]: [
     [null, CreatureType.OGRE],
     [2, CreatureType.TROLL],
-    [2, CreatureType.RANGER]
+    [2, CreatureType.RANGER],
   ],
   [Terrain.HILLS]: [
     [null, CreatureType.OGRE],
     [3, CreatureType.MINOTAUR],
-    [2, CreatureType.UNICORN]
+    [2, CreatureType.UNICORN],
   ],
   [Terrain.SWAMP]: [
     [null, CreatureType.TROLL],
     [3, CreatureType.WYVERN],
-    [2, CreatureType.HYDRA]
+    [2, CreatureType.HYDRA],
   ],
   [Terrain.TUNDRA]: [
     [null, CreatureType.TROLL],
     [2, CreatureType.WARBEAR],
     [2, CreatureType.GIANT],
-    [2, CreatureType.COLOSSUS]
+    [2, CreatureType.COLOSSUS],
   ],
   [Terrain.TOWER]: [
     [0, CreatureType.CENTAUR],
     [0, CreatureType.OGRE],
-    [0, CreatureType.GARGOYLE]
-  ]
+    [0, CreatureType.GARGOYLE],
+  ],
 }

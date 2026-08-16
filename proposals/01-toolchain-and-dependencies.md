@@ -44,6 +44,14 @@ ESLint 10 (Feb 2026) removed `.eslintrc` support entirely; flat `eslint.config.j
 - **Cons:** flat-config rewrite is manual; standard-style shareable configs largely died, so some rule choices need re-deciding.
 - **Alternatives:** oxlint (Rust, ~100× faster, no type-aware rules yet) as a fast first pass alongside ESLint; or Biome (lint + format in one) if you'd rather drop Prettier-style tooling entirely. Either can complement rather than replace ESLint.
 
+## Prettier
+
+**Decided: adopt, incrementally.** ESLint's flat config now includes `eslint-config-prettier`, which turns off the stylistic rules that would otherwise fight Prettier; no lint rule changed behavior beyond that. Formatting itself is enforced directory by directory rather than repo-wide in one pass, since every directory Prettier reformats needs a rebase-and-reformat pass on any PR with pending changes there. `src/game/models/` is done: reformatted and enforced in CI via `format:models:check`. Later PRs will extend enforcement to the rest of `src/`, one directory at a time.
+
+- **Pros:** removes formatting bikeshedding from review; each directory's reformat is a small, isolated, easy-to-review diff instead of one repo-wide churn commit.
+- **Cons:** until every directory is covered, some files are formatted and some aren't; each in-flight PR touching a newly-covered directory needs a rebase-and-reformat pass.
+- **Config:** `semi: false`, `printWidth: 120`, and `arrowParens: "avoid"` override Prettier's defaults to match the codebase's existing conventions (no semicolons, wide lines already common, single-arg arrows unparenthesized); everything else (double quotes, 2-space indent, trailing commas) already matched Prettier's default.
+
 ## Remove dead and vestigial dependencies
 
 None of these participate in the actual Vite build:

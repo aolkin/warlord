@@ -1,5 +1,6 @@
 import { defineConfigWithVueTs, vueTsConfigs } from "@vue/eslint-config-typescript"
 import pluginVue from "eslint-plugin-vue"
+import eslintConfigPrettier from "eslint-config-prettier"
 
 export default defineConfigWithVueTs(
   {
@@ -21,5 +22,6 @@ export default defineConfigWithVueTs(
       "vue/multi-word-component-names": "off",
       "@typescript-eslint/no-unused-vars": ["error", { argsIgnorePattern: "^_" }]
     }
-  }
+  },
+  eslintConfigPrettier
 )
