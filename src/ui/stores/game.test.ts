@@ -19,7 +19,7 @@ describe("game store persistence watcher", () => {
       set(target, prop, value) {
         writeCount++
         return Reflect.set(target, prop, value)
-      }
+      },
     })
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     ;(globalThis as any).localStorage = proxy
@@ -44,6 +44,6 @@ describe("game store persistence watcher", () => {
     await nextTick()
 
     expect(writeCount).toBe(1)
-    expect(store["warlord-v1"]).toContain("\"activeRoll\":4")
+    expect(store["warlord-v1"]).toContain('"activeRoll":4')
   })
 })

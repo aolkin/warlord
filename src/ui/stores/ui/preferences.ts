@@ -5,7 +5,7 @@ export enum CreatureColorMode {
   STANDARD,
   PLAYER,
   STANDARD_UNIFORM_TEXT,
-  PLAYER_UNIFORM_TEXT
+  PLAYER_UNIFORM_TEXT,
 }
 
 interface Preferences {
@@ -25,14 +25,14 @@ const DEFAULT_PREFERENCES: Preferences = {
   quickDice: false,
   freeMovement: false,
   offscreenDice: true,
-  creatureColorMode: CreatureColorMode.STANDARD
+  creatureColorMode: CreatureColorMode.STANDARD,
 }
 
 const loadPreferences = (): Preferences => {
   const stored = localStorage.getItem(STORAGE_KEY)
   return stored === null
     ? { ...DEFAULT_PREFERENCES }
-    : { ...DEFAULT_PREFERENCES, ...JSON.parse(stored) as Partial<Preferences> }
+    : { ...DEFAULT_PREFERENCES, ...(JSON.parse(stored) as Partial<Preferences>) }
 }
 
 const savePreferences = (preferences: Preferences): void => {
