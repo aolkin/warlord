@@ -75,20 +75,20 @@ function b64ToUint6(nChr: number): number {
 }
 
 export function base64DecToArr(sBase64: string, nBlocksSize?: number): Uint8Array {
-  const
-    sB64Enc = sBase64.replace(/[^A-Za-z0-9+/]/g, "")
+  const sB64Enc = sBase64.replace(/[^A-Za-z0-9+/]/g, "")
   const nInLen = sB64Enc.length
-  const nOutLen = (nBlocksSize !== undefined && nBlocksSize !== 0)
-    ? Math.ceil((nInLen * 3 + 1 >> 2) / nBlocksSize) * nBlocksSize
-    : nInLen * 3 + 1 >> 2
+  const nOutLen =
+    nBlocksSize !== undefined && nBlocksSize !== 0
+      ? Math.ceil(((nInLen * 3 + 1) >> 2) / nBlocksSize) * nBlocksSize
+      : (nInLen * 3 + 1) >> 2
   const taBytes = new Uint8Array(nOutLen)
 
   for (let nMod3, nMod4, nUint24 = 0, nOutIdx = 0, nInIdx = 0; nInIdx < nInLen; nInIdx++) {
     nMod4 = nInIdx & 3
-    nUint24 |= b64ToUint6(sB64Enc.charCodeAt(nInIdx)) << 6 * (3 - nMod4)
+    nUint24 |= b64ToUint6(sB64Enc.charCodeAt(nInIdx)) << (6 * (3 - nMod4))
     if (nMod4 === 3 || nInLen - nInIdx === 1) {
       for (nMod3 = 0; nMod3 < 3 && nOutIdx < nOutLen; nMod3++, nOutIdx++) {
-        taBytes[nOutIdx] = nUint24 >>> (16 >>> nMod3 & 24) & 255
+        taBytes[nOutIdx] = (nUint24 >>> ((16 >>> nMod3) & 24)) & 255
       }
       nUint24 = 0
     }
@@ -113,14 +113,22 @@ function uint6ToB64(nUint6: number): number {
 }
 
 export function base64EncArr(aBytes: Uint8Array): string {
-  let nMod3 = 2; let sB64Enc = ""
+  let nMod3 = 2
+  let sB64Enc = ""
 
   for (let nLen = aBytes.length, nUint24 = 0, nIdx = 0; nIdx < nLen; nIdx++) {
     nMod3 = nIdx % 3
-    if (nIdx > 0 && (nIdx * 4 / 3) % 76 === 0) { sB64Enc += "\r\n" }
-    nUint24 |= aBytes[nIdx] << (16 >>> nMod3 & 24)
+    if (nIdx > 0 && ((nIdx * 4) / 3) % 76 === 0) {
+      sB64Enc += "\r\n"
+    }
+    nUint24 |= aBytes[nIdx] << ((16 >>> nMod3) & 24)
     if (nMod3 === 2 || aBytes.length - nIdx === 1) {
-      sB64Enc += String.fromCodePoint(uint6ToB64(nUint24 >>> 18 & 63), uint6ToB64(nUint24 >>> 12 & 63), uint6ToB64(nUint24 >>> 6 & 63), uint6ToB64(nUint24 & 63))
+      sB64Enc += String.fromCodePoint(
+        uint6ToB64((nUint24 >>> 18) & 63),
+        uint6ToB64((nUint24 >>> 12) & 63),
+        uint6ToB64((nUint24 >>> 6) & 63),
+        uint6ToB64(nUint24 & 63),
+      )
       nUint24 = 0
     }
   }
@@ -136,17 +144,32 @@ function UTF8ArrToStr(aBytes: Uint8Array): string {
     nPart = aBytes[nIdx]
     sView += String.fromCodePoint(
       nPart > 251 && nPart < 254 && nIdx + 5 < nLen /* six bytes */
-        /* (nPart - 252 << 30) may be not so safe in ECMAScript! So...: */
-        ? (nPart - 252) * 1073741824 + (aBytes[++nIdx] - 128 << 24) + (aBytes[++nIdx] - 128 << 18) + (aBytes[++nIdx] - 128 << 12) + (aBytes[++nIdx] - 128 << 6) + aBytes[++nIdx] - 128
+        ? /* (nPart - 252 << 30) may be not so safe in ECMAScript! So...: */
+          (nPart - 252) * 1073741824 +
+            ((aBytes[++nIdx] - 128) << 24) +
+            ((aBytes[++nIdx] - 128) << 18) +
+            ((aBytes[++nIdx] - 128) << 12) +
+            ((aBytes[++nIdx] - 128) << 6) +
+            aBytes[++nIdx] -
+            128
         : nPart > 247 && nPart < 252 && nIdx + 4 < nLen /* five bytes */
-          ? (nPart - 248 << 24) + (aBytes[++nIdx] - 128 << 18) + (aBytes[++nIdx] - 128 << 12) + (aBytes[++nIdx] - 128 << 6) + aBytes[++nIdx] - 128
+          ? ((nPart - 248) << 24) +
+            ((aBytes[++nIdx] - 128) << 18) +
+            ((aBytes[++nIdx] - 128) << 12) +
+            ((aBytes[++nIdx] - 128) << 6) +
+            aBytes[++nIdx] -
+            128
           : nPart > 239 && nPart < 248 && nIdx + 3 < nLen /* four bytes */
-            ? (nPart - 240 << 18) + (aBytes[++nIdx] - 128 << 12) + (aBytes[++nIdx] - 128 << 6) + aBytes[++nIdx] - 128
+            ? ((nPart - 240) << 18) +
+              ((aBytes[++nIdx] - 128) << 12) +
+              ((aBytes[++nIdx] - 128) << 6) +
+              aBytes[++nIdx] -
+              128
             : nPart > 223 && nPart < 240 && nIdx + 2 < nLen /* three bytes */
-              ? (nPart - 224 << 12) + (aBytes[++nIdx] - 128 << 6) + aBytes[++nIdx] - 128
+              ? ((nPart - 224) << 12) + ((aBytes[++nIdx] - 128) << 6) + aBytes[++nIdx] - 128
               : nPart > 191 && nPart < 224 && nIdx + 1 < nLen /* two bytes */
-                ? (nPart - 192 << 6) + aBytes[++nIdx] - 128
-                : nPart /* nPart < 127 ? */ /* one byte */
+                ? ((nPart - 192) << 6) + aBytes[++nIdx] - 128
+                : nPart /* nPart < 127 ? */ /* one byte */,
     )
   }
 
@@ -185,30 +208,30 @@ function strToUTF8Arr(sDOMStr: string): Uint8Array {
     } else if (nChr < 0x10000) {
       /* three bytes */
       aBytes[nIdx++] = 224 + (nChr >>> 12)
-      aBytes[nIdx++] = 128 + (nChr >>> 6 & 63)
+      aBytes[nIdx++] = 128 + ((nChr >>> 6) & 63)
       aBytes[nIdx++] = 128 + (nChr & 63)
     } else if (nChr < 0x200000) {
       /* four bytes */
       aBytes[nIdx++] = 240 + (nChr >>> 18)
-      aBytes[nIdx++] = 128 + (nChr >>> 12 & 63)
-      aBytes[nIdx++] = 128 + (nChr >>> 6 & 63)
+      aBytes[nIdx++] = 128 + ((nChr >>> 12) & 63)
+      aBytes[nIdx++] = 128 + ((nChr >>> 6) & 63)
       aBytes[nIdx++] = 128 + (nChr & 63)
       nChrIdx++
     } else if (nChr < 0x4000000) {
       /* five bytes */
       aBytes[nIdx++] = 248 + (nChr >>> 24)
-      aBytes[nIdx++] = 128 + (nChr >>> 18 & 63)
-      aBytes[nIdx++] = 128 + (nChr >>> 12 & 63)
-      aBytes[nIdx++] = 128 + (nChr >>> 6 & 63)
+      aBytes[nIdx++] = 128 + ((nChr >>> 18) & 63)
+      aBytes[nIdx++] = 128 + ((nChr >>> 12) & 63)
+      aBytes[nIdx++] = 128 + ((nChr >>> 6) & 63)
       aBytes[nIdx++] = 128 + (nChr & 63)
       nChrIdx++
     } else /* if (nChr <= 0x7fffffff) */ {
       /* six bytes */
       aBytes[nIdx++] = 252 + (nChr >>> 30)
-      aBytes[nIdx++] = 128 + (nChr >>> 24 & 63)
-      aBytes[nIdx++] = 128 + (nChr >>> 18 & 63)
-      aBytes[nIdx++] = 128 + (nChr >>> 12 & 63)
-      aBytes[nIdx++] = 128 + (nChr >>> 6 & 63)
+      aBytes[nIdx++] = 128 + ((nChr >>> 24) & 63)
+      aBytes[nIdx++] = 128 + ((nChr >>> 18) & 63)
+      aBytes[nIdx++] = 128 + ((nChr >>> 12) & 63)
+      aBytes[nIdx++] = 128 + ((nChr >>> 6) & 63)
       aBytes[nIdx++] = 128 + (nChr & 63)
       nChrIdx++
     }
@@ -224,13 +247,13 @@ export async function compressAndEncode(stringified: string): Promise<string | u
         const array = strToUTF8Arr(stringified)
         controller.enqueue(array.buffer)
         controller.close()
-      }
+      },
     })
     const compressedStream = stringStream.pipeThrough(new CompressionStream("gzip"))
     const reader = compressedStream.getReader()
     const result = { value: new Uint8Array(0), done: false }
     let read
-    while (!(read = await reader.read() as { value: Uint8Array, done: boolean }).done) {
+    while (!(read = (await reader.read()) as { value: Uint8Array; done: boolean }).done) {
       const newValue = new Uint8Array(result.value.length + read.value.length)
       newValue.set(result.value)
       newValue.set(read.value, result.value.length)
@@ -250,13 +273,13 @@ export async function decodeAndDecompress(encoded: string): Promise<string | und
     start(controller) {
       controller.enqueue(binArray.buffer)
       controller.close()
-    }
+    },
   })
   const compressedStream = binStream.pipeThrough(new DecompressionStream("gzip"))
   const reader = compressedStream.getReader()
   const result = { value: "", done: false }
   let read
-  while (!(read = await reader.read() as { value: Uint8Array, done: boolean }).done) {
+  while (!(read = (await reader.read()) as { value: Uint8Array; done: boolean }).done) {
     result.done = read.done
     result.value += UTF8ArrToStr(read.value)
   }

@@ -5,7 +5,7 @@ export enum TransformationType {
 }
 
 export class Transformation {
-  readonly type: TransformationType;
+  readonly type: TransformationType
   readonly values: Array<string | number>
 
   constructor(type: TransformationType, values: Array<string | number>) {
