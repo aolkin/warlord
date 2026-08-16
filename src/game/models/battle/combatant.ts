@@ -30,7 +30,7 @@ export namespace BattleCreature {
       hex: options.hex,
       wounds: 0,
       initialHex: options.hex,
-      hasStruck: false
+      hasStruck: false,
     }
   }
 }

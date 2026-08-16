@@ -32,6 +32,9 @@ jobs:
       - name: Lint
         run: pnpm lint
 
+      - name: Format check (game models)
+        run: pnpm format:models:check
+
       - name: Typecheck
         run: pnpm typecheck
 

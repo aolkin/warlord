@@ -8,18 +8,13 @@ export {
   BattleBoard,
   EdgeHazard,
   Hazard,
-  relationToHex
+  relationToHex,
 } from "./battle/board"
 export type { BattleBoardProps } from "./battle/board"
 
 export { BattleCreature } from "./battle/combatant"
 
-export {
-  BATTLE_PHASE_TITLES,
-  BATTLE_PHASE_TYPES,
-  BattlePhase,
-  BattlePhaseType
-} from "./battle/phase"
+export { BATTLE_PHASE_TITLES, BATTLE_PHASE_TYPES, BattlePhase, BattlePhaseType } from "./battle/phase"
 
 export { ActiveStrike, Strike, isRangestrike } from "./battle/strike"
 export type { RangestrikeTarget } from "./battle/strike"
