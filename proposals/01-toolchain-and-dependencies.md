@@ -46,7 +46,7 @@ ESLint 10 (Feb 2026) removed `.eslintrc` support entirely; flat `eslint.config.j
 
 ## Prettier
 
-**Decided: adopt, incrementally.** ESLint's flat config now includes `eslint-config-prettier`, which turns off the stylistic rules that would otherwise fight Prettier; no lint rule changed behavior beyond that. Formatting itself is enforced directory by directory rather than repo-wide in one pass, since every directory Prettier reformats needs a rebase-and-reformat pass on any PR with pending changes there. `src/game/models/` and `src/utils/` are done: reformatted and enforced in CI via `format:models:check` and `format:utils:check`. Later PRs will extend enforcement to the rest of `src/`, one directory at a time.
+**Decided: adopt, incrementally, directory by directory.** ESLint's flat config now includes `eslint-config-prettier`, which turns off the stylistic rules that would otherwise fight Prettier; no lint rule changed behavior beyond that.
 
 - **Pros:** removes formatting bikeshedding from review; each directory's reformat is a small, isolated, easy-to-review diff instead of one repo-wide churn commit.
 - **Cons:** until every directory is covered, some files are formatted and some aren't; each in-flight PR touching a newly-covered directory needs a rebase-and-reformat pass.

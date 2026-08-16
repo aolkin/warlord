@@ -14,6 +14,7 @@
     "format:models:check": "prettier --check \"src/game/models/**/*.{ts,vue}\"",
     "format:utils": "prettier --write \"src/utils/**/*.{ts,vue}\"",
     "format:utils:check": "prettier --check \"src/utils/**/*.{ts,vue}\"",
+    "format:check": "prettier --check \"src/game/models/**/*.{ts,vue}\" \"src/utils/**/*.{ts,vue}\"",
     "typecheck": "vue-tsc --noEmit",
     "test": "vitest",
     "test:e2e": "playwright test",
