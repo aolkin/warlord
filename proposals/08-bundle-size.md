@@ -46,14 +46,22 @@ Separately, the component is still unconditionally present in the template (not 
 - **Cons:** adds a small facade indirection in `App.vue` between the provided value and the mounted instance.
 - **Decided:** do this regardless of the `offscreen`/chunk-dedup decisions above — it helps whichever `world.*` chunk ends up loaded.
 
-## Vuetify tree-shaking and icon font (do now, don't wait for doc 06)
+## Vuetify component tree-shaking (done)
 
-`src/plugins/vuetify.ts` does `import * as components from "vuetify/components"` (the whole library) and `import "vuetify/styles"` (336 KB of compiled CSS, unaffected by which components are actually used). `@mdi/font` ships all ~7,000 icon classes (391 KB of CSS) for the roughly 20 distinct icons actually used in `src/` (18 static names, plus two that get a die-face or round-number suffix appended at runtime). Together vuetify/mdi CSS alone is ~730 KB of the 830 KB `index-*.css`.
+`vite-plugin-vuetify` replaced the whole-library `import * as components from "vuetify/components"` with per-component tree-shaken imports ([PR #95](https://github.com/aolkin/warlord/pull/95)).
 
-[Doc 06](06-ui-chrome.md) already proposes both fixes — per-component tree-shaken imports and `@mdi/js` per-icon SVG imports — but frames them as part of the Vuetify 3 → 4 upgrade. Vuetify's own v4 upgrade guide describes the recommended tree-shakable import (`import { VBtn, VCard } from "vuetify/components"`) as consistent with prior versions, not a v4-specific change, and doesn't touch icon configuration at all. So there's nothing to redo when v4 lands later.
+## Icon font: `@mdi/font` → per-icon SVG imports (rejected a third time)
 
-- **Decided:** do the tree-shaking and icon-font swap now, independent of doc 06's version upgrade — it's the largest CSS win in the app and doesn't need to wait on a major-version bump that's motivated by a visual refresh, not bundle size.
+`@mdi/font` ships all ~7,000 icon classes (391 KB of CSS, plus a several-hundred-KB webfont file) for the roughly 20 distinct icons `src/ui` actually uses (18 static names, plus two built from a die-face or round-number suffix at runtime, e.g. `` `mdi-dice-${roll}` ``). Swapping to per-icon `@mdi/js` SVG imports, resolved through a custom Vuetify icon set keyed by those same `mdi-*` name strings, has now been proposed and rejected three times: twice before this doc existed (PR #98 and a follow-up commit on the same branch, recorded in the now-deleted doc 06), and again in [PR #227](https://github.com/aolkin/warlord/pull/227), rejected on the same grounds as before — hand-enumerating every icon name in a lookup table is annoying to maintain for the roughly 300 KB it saves. `@mdi/font` stays.
+
+PR #227 also looked into avoiding the enumeration itself rather than re-proposing the same SVG swap:
+
+- Vuetify's own documented tree-shaking path for MDI icons *is* the manual `@mdi/js` import + icon-set-alias pattern above — there's no separate automatic tooling behind it.
+- Webfont-subsetting plugins (e.g. `vite-font-extractor-plugin`) only detect glyphs already present in the CSS that ships; since `@mdi/font`'s CSS would be imported whole, "auto" mode keeps all ~7,000 icons. A real reduction needs a first pass — like PurgeCSS — that determines which `mdi-*` classes the app actually references, and that pass can't see the two suffix-built names without a hand-written safelist. Both the PurgeCSS Vite wrappers and the font-extractor plugin are single-maintainer, low-adoption packages.
+- Lazy-loading `@mdi/font`'s CSS off the critical path (as its own async chunk, instead of shrinking it) needs no enumeration at all, but ships the same total bytes and reintroduces the icon-glyph flash-of-unstyled-content that the SVG swap was valued for avoiding.
+
+- **Decided:** stays rejected. Don't propose an `@mdi/font` → `@mdi/js` swap again without a genuinely new way to derive the icon list automatically — hand-enumeration, whether centralized in one file or spread across call sites, and every automatic alternative looked at so far cost more than the ~300 KB they'd save.
 
 ## Sequencing
 
-Nothing in this doc depends on anything else in the `proposals/` folder. All three items — dice-box's chunking, lazy-loading `DiceRoller.vue`, and the Vuetify/icon tree-shaking — can land any time, including before doc 01's toolchain work; the last one no longer needs to wait for [doc 06](06-ui-chrome.md)'s Vuetify 4 upgrade.
+Nothing in this doc depends on anything else in the `proposals/` folder. Dice-box's chunking and lazy-loading `DiceRoller.vue` can land any time, including before doc 01's toolchain work. The icon-font item above is rejected, not pending.
