@@ -7,7 +7,11 @@
       <v-switch v-model="preferencesStore.quickDice" label="Quick Dice" inset />
     </v-list-item>
     <v-list-item>
-      <v-switch v-model="preferencesStore.freeMovement" label="Free Teleportation" inset />
+      <v-switch
+        v-model="preferencesStore.freeMovement"
+        label="Free Teleportation"
+        inset
+      />
     </v-list-item>
     <v-list-item>
       <v-switch
@@ -49,7 +53,13 @@
     </v-list-item>
     <v-divider />
     <v-list-item>
-      <v-slider v-model="uiPlayer" label="Local Player" min="1" :max="game.players.length" step="1" />
+      <v-slider
+        v-model="uiPlayer"
+        label="Local Player"
+        min="1"
+        :max="game.players.length"
+        step="1"
+      />
     </v-list-item>
     <v-divider />
     <v-list-item>
@@ -84,7 +94,8 @@ import { usePlayerStore } from "~/stores/ui/player"
 import { CreatureColorMode, usePreferencesStore } from "~/stores/ui/preferences"
 import { useSelectionStore } from "~/stores/ui/selection"
 
-const diceRoller = inject<Readonly<Ref<InstanceType<typeof DiceRoller> | null>>>("diceRoller")
+const diceRoller =
+  inject<Readonly<Ref<InstanceType<typeof DiceRoller> | null>>>("diceRoller")
 
 const gameStore = useGameStore()
 const game = gameStore.game

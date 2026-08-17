@@ -1,5 +1,13 @@
 {
   "semi": false,
   "printWidth": 120,
-  "arrowParens": "avoid"
+  "arrowParens": "avoid",
+  "overrides": [
+    {
+      "files": "*.vue",
+      "options": {
+        "printWidth": 90
+      }
+    }
+  ]
 }

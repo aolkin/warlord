@@ -13,13 +13,23 @@
       border
       width="342"
     >
-      <v-card-actions v-if="selectionStore.selectedStack === props.focusedStack" class="justify-space-between">
+      <v-card-actions
+        v-if="selectionStore.selectedStack === props.focusedStack"
+        class="justify-space-between"
+      >
         <v-btn @click="cycleStacks(-1)"> Previous Stack </v-btn>
         <v-btn @click="cycleStacks(1)"> Next Stack </v-btn>
       </v-card-actions>
-      <v-card-item :title="`${stackPlayer?.name} (${props.focusedStack.creatures.length} creatures)`">
+      <v-card-item
+        :title="`${stackPlayer?.name} (${props.focusedStack.creatures.length} creatures)`"
+      >
         <template #prepend>
-          <PlayerMarker :color="props.focusedStack.owner" :marker="props.focusedStack.marker" width="50" height="50" />
+          <PlayerMarker
+            :color="props.focusedStack.owner"
+            :marker="props.focusedStack.marker"
+            width="50"
+            height="50"
+          />
         </template>
       </v-card-item>
 
@@ -29,7 +39,10 @@
           :key="index"
           :type="creature"
           :player-id="props.focusedStack.owner"
-          :class="{ splitting: props.focusedStack.split[index], interactive: TitanGame.isSplitPhase(game) && owned }"
+          :class="{
+            splitting: props.focusedStack.split[index],
+            interactive: TitanGame.isSplitPhase(game) && owned,
+          }"
           class="ma-1"
           @click="toggleSplit(index)"
         />
@@ -37,9 +50,12 @@
       <template v-if="game.activePlayerId === props.focusedStack.owner">
         <v-card-actions v-if="TitanGame.isSplitPhase(game)" class="split-guide">
           <v-card-text v-if="game.round === 0">
-            You must split your starting creatures. Please select four creatures (including one lord) above to split
-            into a separate stack.
-            <div v-if="Stack.isValidSplit(props.focusedStack, game.round === 0)" class="first-round-success">
+            You must split your starting creatures. Please select four creatures
+            (including one lord) above to split into a separate stack.
+            <div
+              v-if="Stack.isValidSplit(props.focusedStack, game.round === 0)"
+              class="first-round-success"
+            >
               You have selected a valid split and may roll the die to start your turn!
             </div>
           </v-card-text>
@@ -47,9 +63,13 @@
             You do not have enough creatures to split this stack.
           </v-card-text>
           <v-card-text v-else>
-            You may select at least 2 and at most {{ props.focusedStack.creatures.length - 2 }} creatures to split into
-            a new stack.
-            <div v-if="Stack.getSplittingCreatures(props.focusedStack).length > 0" class="text-left mt-5">
+            You may select at least 2 and at most
+            {{ props.focusedStack.creatures.length - 2 }} creatures to split into a new
+            stack.
+            <div
+              v-if="Stack.getSplittingCreatures(props.focusedStack).length > 0"
+              class="text-left mt-5"
+            >
               <p>
                 Remaining:
                 {{
@@ -122,7 +142,9 @@ const selectionStore = useSelectionStore()
 const owned = computed((): boolean => game.activePlayerId === props.focusedStack?.owner)
 
 const stackPlayer = computed((): Player | undefined =>
-  props.focusedStack === undefined ? undefined : TitanGame.getPlayerById(game, props.focusedStack.owner),
+  props.focusedStack === undefined
+    ? undefined
+    : TitanGame.getPlayerById(game, props.focusedStack.owner),
 )
 
 const musteringTerrain = computed((): Terrain =>
@@ -131,10 +153,14 @@ const musteringTerrain = computed((): Terrain =>
     : (selectionStore.focusedHex?.terrain as Terrain),
 )
 
-const musteringTerrainName = computed((): string => capitalize(Terrain[musteringTerrain.value]))
+const musteringTerrainName = computed((): string =>
+  capitalize(Terrain[musteringTerrain.value]),
+)
 
 const musterable = computed((): MusterPossibility[] =>
-  props.focusedStack !== undefined ? Stack.musterable(props.focusedStack, musteringTerrain.value) : [],
+  props.focusedStack !== undefined
+    ? Stack.musterable(props.focusedStack, musteringTerrain.value)
+    : [],
 )
 
 const mustering = computed({
@@ -158,7 +184,8 @@ const musteringCaption = computed(() => {
   } else if (stack.currentMuster === undefined) {
     return "No recruit chosen."
   } else {
-    let caption = "Mustering " + CREATURE_DATA[stack.currentMuster[0] as CreatureType].name
+    let caption =
+      "Mustering " + CREATURE_DATA[stack.currentMuster[0] as CreatureType].name
     if (stack.currentMuster[1][1] > 0) {
       caption += " with "
       if (stack.currentMuster[1][1] > 1) {
