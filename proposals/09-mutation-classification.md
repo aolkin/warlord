@@ -12,8 +12,8 @@ Action names take a namespace prefix matching the model layer's own split: `Tita
 
 | Action | Why it commits |
 |---|---|
-| `masterboard/finalizeSplits` | Splits the submitted creatures off each stack onto a fresh marker. |
-| `masterboard/rollMove` | Consumes randomness; bounds every path the movement phase can stage. `TurnPanel`'s "Finish Splits and Roll" button sends it right after `masterboard/finalizeSplits`. |
+| `masterboard/finalizeSplits` | Splits the submitted creatures off each stack onto a fresh marker, then advances `activePhase` from SPLIT to MOVE — today's `nextPhase(game)` does both in its SPLIT branch. |
+| `masterboard/rollMove` | Consumes randomness; bounds every path the movement phase can stage. Today, `TurnPanel`'s "Finish Splits and Roll" button calls `nextPhase` (splits + phase advance) synchronously, then starts the dice-roller animation and calls `setRoll` once it resolves. In between, the game is in MOVE phase with `activeRoll` still `undefined`; `getPathsForHex` returns no paths in that state, so no stack has a legal move until `rollMove` commits. That gap is a UI animation delay today and stays a real (if brief) window once the two become separate committed actions — nothing merges them into one atomic commit. |
 | `masterboard/rerollMove` | The first-move mulligan (rule 7.6): one more roll, binding, offered once in round 0 before any stack has moved. `isMulliganAvailable` enforces exactly that today. |
 | `masterboard/finalizeMoves` | Applies the submitted moves, then either advances to MUSTER or opens the battle. |
 | `masterboard/finalizeMusters` | Applies the submitted recruits and decrements the creature pool. |
