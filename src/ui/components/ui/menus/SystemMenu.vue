@@ -1,10 +1,18 @@
 <template>
   <v-list density="compact">
     <v-list-item>
-      <v-switch v-model="preferencesStore.fancyGraphics" label="Fancy Graphics" inset />
+      <v-switch
+        v-model="preferencesStore.fancyGraphics"
+        label="Fancy Graphics"
+        inset
+      />
     </v-list-item>
     <v-list-item>
-      <v-switch v-model="preferencesStore.quickDice" label="Quick Dice" inset />
+      <v-switch
+        v-model="preferencesStore.quickDice"
+        label="Quick Dice"
+        inset
+      />
     </v-list-item>
     <v-list-item>
       <v-switch
@@ -24,10 +32,20 @@
     </v-list-item>
     <v-divider />
     <v-list-item>
-      <v-btn block @click="reset"> Reset Game </v-btn>
+      <v-btn
+        block
+        @click="reset"
+      >
+        Reset Game
+      </v-btn>
     </v-list-item>
     <v-list-item>
-      <v-btn block @click="persistToClipboard"> Persist </v-btn>
+      <v-btn
+        block
+        @click="persistToClipboard"
+      >
+        Persist
+      </v-btn>
     </v-list-item>
     <v-list-item>
       <v-textarea
@@ -44,10 +62,20 @@
     <v-list-item>
       <v-row>
         <v-col>
-          <v-btn block @click="loadSave"> Load from Save </v-btn>
+          <v-btn
+            block
+            @click="loadSave"
+          >
+            Load from Save
+          </v-btn>
         </v-col>
         <v-col>
-          <v-btn block @click="loadJson(saveText)"> Load JSON </v-btn>
+          <v-btn
+            block
+            @click="loadJson(saveText)"
+          >
+            Load JSON
+          </v-btn>
         </v-col>
       </v-row>
     </v-list-item>
@@ -63,21 +91,47 @@
     </v-list-item>
     <v-divider />
     <v-list-item>
-      <v-slider v-model="diceQuantity" label="Dice to Roll" min="1" :max="18" step="1" />
-      <v-btn block @click="roll"> Roll Dice </v-btn>
+      <v-slider
+        v-model="diceQuantity"
+        label="Dice to Roll"
+        min="1"
+        :max="18"
+        step="1"
+      />
+      <v-btn
+        block
+        @click="roll"
+      >
+        Roll Dice
+      </v-btn>
     </v-list-item>
     <v-divider />
     <v-list-item>
-      <v-radio-group v-model="creatureColorMode" label="Creature Color Mode">
-        <v-radio v-for="(label, id) in colorModes" :key="id" :label="label" :value="id" />
+      <v-radio-group
+        v-model="creatureColorMode"
+        label="Creature Color Mode"
+      >
+        <v-radio
+          v-for="(label, id) in colorModes"
+          :key="id"
+          :label="label"
+          :value="id"
+        />
       </v-radio-group>
     </v-list-item>
     <v-divider />
     <v-list-item>
       <v-list-item-title>Add Creature to Selected Stack</v-list-item-title>
     </v-list-item>
-    <v-list-item v-for="(creature, type) in CREATURE_LIST" :key="type">
-      <v-btn block color="primary" @click="summon(creature)">
+    <v-list-item
+      v-for="(creature, type) in CREATURE_LIST"
+      :key="type"
+    >
+      <v-btn
+        block
+        color="primary"
+        @click="summon(creature)"
+      >
         {{ creature.name }}
       </v-btn>
     </v-list-item>
@@ -94,8 +148,7 @@ import { usePlayerStore } from "~/stores/ui/player"
 import { CreatureColorMode, usePreferencesStore } from "~/stores/ui/preferences"
 import { useSelectionStore } from "~/stores/ui/selection"
 
-const diceRoller =
-  inject<Readonly<Ref<InstanceType<typeof DiceRoller> | null>>>("diceRoller")
+const diceRoller = inject<Readonly<Ref<InstanceType<typeof DiceRoller> | null>>>("diceRoller")
 
 const gameStore = useGameStore()
 const game = gameStore.game

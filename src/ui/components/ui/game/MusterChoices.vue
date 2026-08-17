@@ -7,8 +7,14 @@
       class="ma-1 recruitment-choice"
       @click="chosen = undefined"
     />
-    <template v-for="([creature, musterBasis], index) in musterable" :key="creature">
-      <v-dialog v-model="dialogState[index]" max-width="640">
+    <template
+      v-for="([creature, musterBasis], index) in musterable"
+      :key="creature"
+    >
+      <v-dialog
+        v-model="dialogState[index]"
+        max-width="640"
+      >
         <template #activator="{ props: activatorProps }">
           <Creature
             :type="creature"
@@ -32,8 +38,18 @@
               class="muster-basis-choice pa-2"
               @click="choose([creature, [basisCreature, count]])"
             >
-              <Creature :type="basisCreature" :player-id="playerId" :in-svg="true" />
-              <text x="0" y="0" class="req-count">x{{ count }}</text>
+              <Creature
+                :type="basisCreature"
+                :player-id="playerId"
+                :in-svg="true"
+              />
+              <text
+                x="0"
+                y="0"
+                class="req-count"
+              >
+                x{{ count }}
+              </text>
             </svg>
           </v-card-actions>
         </v-card>

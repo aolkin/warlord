@@ -1,7 +1,15 @@
 <template>
   <g class="engage-icon-root">
-    <g class="rangestrike-icon-container" :class="{ interactive, transparentHover }">
-      <rect v-if="interactive" width="24" height="24" class="interaction-target" />
+    <g
+      class="rangestrike-icon-container"
+      :class="{ interactive, transparentHover }"
+    >
+      <rect
+        v-if="interactive"
+        width="24"
+        height="24"
+        class="interaction-target"
+      />
       <!-- sword-cross from Material Design Icons -->
       <path
         class="engage-graphic"

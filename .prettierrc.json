@@ -6,7 +6,7 @@
     {
       "files": "*.vue",
       "options": {
-        "printWidth": 90
+        "singleAttributePerLine": true
       }
     }
   ]

@@ -4,7 +4,10 @@
     class="d-flex flex-column justify-space-between"
   >
     <div class="text-center round-label">Round</div>
-    <div class="text-center round-counter" v-text="game.round + 1" />
+    <div
+      class="text-center round-counter"
+      v-text="game.round + 1"
+    />
     <v-card
       v-for="player in game.players"
       :key="player.id"
@@ -21,13 +24,19 @@
       />
       <v-tooltip right>
         <template #activator="{ props }">
-          <div class="text-center" v-bind="props">
+          <div
+            class="text-center"
+            v-bind="props"
+          >
             <v-icon icon="mdi-account-circle" />
           </div>
         </template>
         <span v-text="player.name" />
       </v-tooltip>
-      <div class="text-center" v-text="game.score[player.id]" />
+      <div
+        class="text-center"
+        v-text="game.score[player.id]"
+      />
     </v-card>
   </div>
 </template>

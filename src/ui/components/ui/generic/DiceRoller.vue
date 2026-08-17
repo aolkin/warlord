@@ -1,5 +1,8 @@
 <template>
-  <div id="dicebox-container" :class="{ rolling, quickDice: preferencesStore.quickDice }">
+  <div
+    id="dicebox-container"
+    :class="{ rolling, quickDice: preferencesStore.quickDice }"
+  >
     <div class="bg">&nbsp;</div>
   </div>
 </template>

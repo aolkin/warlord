@@ -20,9 +20,7 @@
         <v-btn @click="cycleStacks(-1)"> Previous Stack </v-btn>
         <v-btn @click="cycleStacks(1)"> Next Stack </v-btn>
       </v-card-actions>
-      <v-card-item
-        :title="`${stackPlayer?.name} (${props.focusedStack.creatures.length} creatures)`"
-      >
+      <v-card-item :title="`${stackPlayer?.name} (${props.focusedStack.creatures.length} creatures)`">
         <template #prepend>
           <PlayerMarker
             :color="props.focusedStack.owner"
@@ -48,10 +46,13 @@
         />
       </div>
       <template v-if="game.activePlayerId === props.focusedStack.owner">
-        <v-card-actions v-if="TitanGame.isSplitPhase(game)" class="split-guide">
+        <v-card-actions
+          v-if="TitanGame.isSplitPhase(game)"
+          class="split-guide"
+        >
           <v-card-text v-if="game.round === 0">
-            You must split your starting creatures. Please select four creatures
-            (including one lord) above to split into a separate stack.
+            You must split your starting creatures. Please select four creatures (including one lord) above to split
+            into a separate stack.
             <div
               v-if="Stack.isValidSplit(props.focusedStack, game.round === 0)"
               class="first-round-success"
@@ -64,8 +65,7 @@
           </v-card-text>
           <v-card-text v-else>
             You may select at least 2 and at most
-            {{ props.focusedStack.creatures.length - 2 }} creatures to split into a new
-            stack.
+            {{ props.focusedStack.creatures.length - 2 }} creatures to split into a new stack.
             <div
               v-if="Stack.getSplittingCreatures(props.focusedStack).length > 0"
               class="text-left mt-5"
@@ -106,7 +106,10 @@
             :musterable="musterable"
             :player-id="props.focusedStack.owner"
           />
-          <v-card-subtitle v-if="TitanGame.isMusterPhase(game)" class="mb-3">
+          <v-card-subtitle
+            v-if="TitanGame.isMusterPhase(game)"
+            class="mb-3"
+          >
             {{ musteringCaption }}
           </v-card-subtitle>
         </template>
@@ -142,9 +145,7 @@ const selectionStore = useSelectionStore()
 const owned = computed((): boolean => game.activePlayerId === props.focusedStack?.owner)
 
 const stackPlayer = computed((): Player | undefined =>
-  props.focusedStack === undefined
-    ? undefined
-    : TitanGame.getPlayerById(game, props.focusedStack.owner),
+  props.focusedStack === undefined ? undefined : TitanGame.getPlayerById(game, props.focusedStack.owner),
 )
 
 const musteringTerrain = computed((): Terrain =>
@@ -153,14 +154,10 @@ const musteringTerrain = computed((): Terrain =>
     : (selectionStore.focusedHex?.terrain as Terrain),
 )
 
-const musteringTerrainName = computed((): string =>
-  capitalize(Terrain[musteringTerrain.value]),
-)
+const musteringTerrainName = computed((): string => capitalize(Terrain[musteringTerrain.value]))
 
 const musterable = computed((): MusterPossibility[] =>
-  props.focusedStack !== undefined
-    ? Stack.musterable(props.focusedStack, musteringTerrain.value)
-    : [],
+  props.focusedStack !== undefined ? Stack.musterable(props.focusedStack, musteringTerrain.value) : [],
 )
 
 const mustering = computed({
@@ -184,8 +181,7 @@ const musteringCaption = computed(() => {
   } else if (stack.currentMuster === undefined) {
     return "No recruit chosen."
   } else {
-    let caption =
-      "Mustering " + CREATURE_DATA[stack.currentMuster[0] as CreatureType].name
+    let caption = "Mustering " + CREATURE_DATA[stack.currentMuster[0] as CreatureType].name
     if (stack.currentMuster[1][1] > 0) {
       caption += " with "
       if (stack.currentMuster[1][1] > 1) {

@@ -26,8 +26,7 @@
       </span>
     </v-card-text>
     <v-card-text v-else-if="TitanGame.isMusterPhase(game)">
-      Mustered a recruit in {{ musteredCount }} of
-      {{ gameStore.activeStacks.length }} stacks.
+      Mustered a recruit in {{ musteredCount }} of {{ gameStore.activeStacks.length }} stacks.
     </v-card-text>
     <v-fade-transition leave-absolute>
       <v-card-actions v-if="TitanGame.isSplitPhase(game)">
@@ -57,11 +56,7 @@
           :disabled="!TitanGame.getMayProceed(game)"
           @click="TitanGame.nextPhase(game)"
         >
-          {{
-            TitanGame.getEngagedStacks(game).length > 0
-              ? "Proceed to Battle"
-              : "Proceed to Muster"
-          }}
+          {{ TitanGame.getEngagedStacks(game).length > 0 ? "Proceed to Battle" : "Proceed to Muster" }}
         </v-btn>
       </v-card-actions>
       <v-card-actions v-else-if="TitanGame.isMusterPhase(game)">
@@ -86,8 +81,7 @@ import { MasterboardPhase, TitanGame } from "@/models/game"
 import { Moveable } from "@/models/moveable"
 import { useGameStore } from "~/stores/game"
 
-const diceRoller =
-  inject<Readonly<Ref<InstanceType<typeof DiceRoller> | null>>>("diceRoller")
+const diceRoller = inject<Readonly<Ref<InstanceType<typeof DiceRoller> | null>>>("diceRoller")
 
 const gameStore = useGameStore()
 const game = gameStore.game
@@ -106,15 +100,9 @@ const icon = computed(() => {
       return "mdi-dice-multiple"
   }
 })
-const sevenHighCount = computed(() =>
-  sum(gameStore.activeStacks.map(stack => stack.creatures.length === 7)),
-)
-const movedCount = computed(() =>
-  sum(gameStore.activeStacks.map(stack => Moveable.hasMoved(stack))),
-)
-const musteredCount = computed(() =>
-  sum(gameStore.activeStacks.map(stack => stack.currentMuster !== undefined)),
-)
+const sevenHighCount = computed(() => sum(gameStore.activeStacks.map(stack => stack.creatures.length === 7)))
+const movedCount = computed(() => sum(gameStore.activeStacks.map(stack => Moveable.hasMoved(stack))))
+const musteredCount = computed(() => sum(gameStore.activeStacks.map(stack => stack.currentMuster !== undefined)))
 const engagementsMessage = computed(() => {
   const engagedStacks = TitanGame.getEngagedStacks(game)
   if (engagedStacks.length < 1) {
