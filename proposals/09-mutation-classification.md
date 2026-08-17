@@ -23,7 +23,7 @@ Action names take a namespace prefix matching the model layer's own split: `Tita
 | `battle/rangestrikeCreature` | Same, minus the carryover branch and the optional to-hit. |
 | `battle/commitCarryover` | Applies already-rolled excess hits to the listed targets in order, or forfeits them if the list is empty. |
 
-`assignCarryover(battle, target)` and `skipCarryover(battle)` today build one decision incrementally: call `assignCarryover` once per secondary target, in order, until the excess hits run out or the player calls `skipCarryover` to forfeit the rest. The player is choosing among creatures already visible as carryover-eligible (`Battle.carryoverTargets`), and nothing applies until the allocation settles, so the two collapse into one dispatch: `{ type: "battle/commitCarryover", payload: BattleCreature["id"][] }`. The engine applies the listed targets in order with the same `min(remaining hits, target's remaining capacity)` allocation `assignCarryover` already uses; an empty array is what `skipCarryover` means. `Battle.assignCarryover` and `Battle.skipCarryover` fold into one `Battle.commitCarryover(battle, targets)`.
+`assignCarryover(battle, target)` and `skipCarryover(battle)` today build one decision incrementally: call `assignCarryover` once per secondary target, in order, until the excess hits run out or the player calls `skipCarryover` to forfeit the rest. The player is choosing among creatures already visible as carryover-eligible (`Battle.carryoverTargets`), so the client accumulates the target list locally and the two collapse into one dispatch: `{ type: "battle/commitCarryover", payload: BattleCreature["id"][] }`. The engine applies the listed targets in order with the same `min(remaining hits, target's remaining capacity)` allocation `assignCarryover` already uses. `Battle.assignCarryover` and `Battle.skipCarryover` fold into one `Battle.commitCarryover(battle, targets)`.
 
 ## Client-only
 
@@ -38,7 +38,7 @@ Everything a player can still change their mind about. None of it is an action, 
 
 The UI already treats all four as reversible, and does it by re-dispatching rather than through any undo mechanism — `MasterboardStack.select` calls `TitanGame.move` back to `stack.initialHex`, `BattleBoard.removeSelected` calls `Battle.moveCreature` back to `creature.initialHex`. Selection, focused hexes, preferences, `localPlayer`, and the pre-submission strike inputs are already outside `game` and outside the union; staging joins them.
 
-Staging stores go in `src/ui/stores/ui/` beside `selection.ts`, which is the pattern: it holds phase-scoped client state and clears it with `watch(() => gameStore.game.activePhase, ...)`. Reload durability costs a watcher, not a second persistence path — `preferences.ts` already persists a reactive object to localStorage with the same deep `watch` the game store uses.
+Staging stores go in `src/ui/stores/ui/` beside `selection.ts`, following its pattern: phase-scoped client state, cleared with `watch(() => gameStore.game.activePhase, ...)`. Surviving a reload costs a watcher, not a second persistence path — `preferences.ts` already persists a reactive object to localStorage the same way.
 
 ## Named actions instead of one phase advance
 
@@ -59,7 +59,7 @@ export interface SplitCommit {
   | { type: "battle/endStrikes" }
 ```
 
-`MovePayload`, `MusterPayload`, and `BattleMovePayload` are today's shapes unchanged, so `move`, `setRecruit`, and `moveCreature` become list entries rather than actions. `setRoll` has no counterpart: the movement roll is an output of `finalizeSplits`, not an action — see below.
+`MovePayload`, `MusterPayload`, and `BattleMovePayload` are today's shapes unchanged, so `move`, `setRecruit`, and `moveCreature` become list entries rather than actions. `setRoll` has no counterpart: its movement roll moves under `finalizeSplits` (below).
 
 The name states the phase, so one arriving against a phase the game has already left is rejected on its name alone — `move`, `setRecruit`, and `setRoll` each assert `activePhase` today. `battle/endStrikes` covers both STRIKE and STRIKEBACK, which `Battle.nextPhase` handles in one branch and which stage nothing, each strike having committed on its own. The masterboard BATTLE phase gets no action at all: `nextPhase`'s BATTLE branch asserts a battle exists and advances, nothing calls it, and no code ends a battle.
 
@@ -71,11 +71,11 @@ The name states the phase, so one arriving against a phase the game has already 
 
 ## Randomness is the server's
 
-**No request a client sends ever carries a rolled number.** A client names the choice — finish splitting, take the mulligan, strike this target at this to-hit. The server rolls while committing that choice, and the record it broadcasts carries the roll. A client that supplies its own dice can cheat, so this holds however convenient the local widget is: `TurnPanel.roll()` and `BattleBoard.attackTargetedCreature` both read numbers off the 3D dice roller and pass them into `setRoll` and `AttackPayload.rolls` / `RangestrikePayload.rolls` today.
+**No request a client sends ever carries a rolled number.** A client names the choice — finish splitting, take the mulligan, strike this target at this to-hit. The server rolls while committing that choice, and the record it broadcasts carries the roll. A client that supplies its own dice can cheat: `TurnPanel.roll()` and `BattleBoard.attackTargetedCreature` both read numbers off the 3D dice roller and pass them into `setRoll` and `AttackPayload.rolls` / `RangestrikePayload.rolls` today.
 
-So **`GameAction` is two related types**, a request a client may send and a record the log holds. They differ on four variants and nothing else: the `masterboard/finalizeSplits` and `masterboard/rerollMove` records add the movement roll, the `battle/attackCreature` and `battle/rangestrikeCreature` records add the strike's dice. How many dice to roll and the to-hit they are measured against, the engine already derives — `getAdjustedStrike` and `getRangestrike` compute both from attacker, target, and terrain — so the request supplies neither.
+So **`GameAction` is two related types**, a request a client may send and a record the log holds. They differ on four variants and nothing else: the `masterboard/finalizeSplits` and `masterboard/rerollMove` records add the movement roll, the `battle/attackCreature` and `battle/rangestrikeCreature` records add the strike's dice. How many dice to roll and the unraised to-hit are derived from attacker, target, and terrain — `getAdjustedStrike` takes terrain directly, `getRangestrike` takes the terrain adjustment `rangestrikeTargets` already computed — so the request never supplies either; only `attackCreature`'s optional raised to-hit (rule 12.4, above) rides along in the request.
 
-**A roll is never an action by itself.** It attaches to the action whose commit occasions it, and no committed state sits in between for a second action to record. Rule 6.2's movement roll happens on entering the movement phase, which is `finalizeSplits`; rule 12.2's strike dice happen on striking. The mulligan is the one roll with its own action, because rule 7.6 makes it its own decision. `TurnPanel.roll()` expresses that decision today as `setRoll(undefined)` followed by `setRoll(n)` — two dispatches for one intent, the first inferring its meaning from `activeRoll !== undefined`; `masterboard/rerollMove` names it once.
+**A roll is never an action by itself.** It attaches to the action whose commit occasions it, and no committed state sits in between for a second action to record — rule 6.2's movement roll attaches to `finalizeSplits` the same way rule 12.2's strike dice attach to the strike. The mulligan is the one roll with its own action (rule 7.6, above). `TurnPanel.roll()` expresses that decision today as `setRoll(undefined)` followed by `setRoll(n)` — two dispatches for one intent, the first inferring its meaning from `activeRoll !== undefined`; `masterboard/rerollMove` names it once.
 
 The dice widget stops producing rolls and starts replaying them: it animates the numbers the record carries. Nothing in the model represents that animation and no action waits on it. Rule 12.4's requirement that a raised to-hit be announced before any dice are rolled then holds by construction, the declaration being part of the request that occasions the roll.
 
@@ -83,7 +83,7 @@ The dice widget stops producing rolls and starts replaying them: it animates the
 
 ## What this means for `dispatch`
 
-Nothing. Once staging is client-only every remaining variant is committed, so there is no per-action routing decision to encode — no `serverCommitted` field, no lookup table. The transport broadcasts everything `dispatch` accepts. The one distinction the union does carry is request versus record, and that is about who fills in a roll, not about where an action goes. #226's shape — single entry point, discriminated union, id-carrying payloads — is unaffected; what changes is which variants the union holds and what they are called.
+Nothing. Every remaining variant is committed, so there is no per-action routing decision to encode — no `serverCommitted` field, no lookup table. The transport broadcasts everything `dispatch` accepts. The one distinction the union does carry is request versus record, and that is about who fills in a roll, not about where an action goes. #226's shape — single entry point, discriminated union, id-carrying payloads — is unaffected; what changes is which variants the union holds and what they are called.
 
 ## Interaction with the hidden-information audit
 
@@ -99,9 +99,9 @@ Three writes reach `game` through no action at all, and the classification has n
 
 1. **Split `nextPhase` into the per-phase actions and adopt the prefixes.** `battle/finalizeMoves` and `battle/endStrikes` are new; `initiateBattle` gets demoted. The only change #226 itself needs, and it unblocks it.
 2. **Collapse carryover into `battle/commitCarryover`.** Independent of #226 — it lands whenever the UI is ready to accumulate the target list locally.
-3. **Move split and muster staging to the client.** `masterboard/finalizeSplits` and `masterboard/finalizeMusters` take the decisions as payload, `togglePendingSplit` and `setRecruit` leave the union, and the two fields leave `Stack`.
-4. **Move masterboard and battle movement to the client**, the same way. Larger than step 3 because the staged moves are an ordered list the finalization has to replay, not an independent choice per stack.
-5. **Split request from record** for the four roll-carrying variants. The commit path rolls through `src/game/models/random.ts`'s `Random` seam, which gains a die roll beside its `shuffle`, so single-player behavior is unchanged and the dice widget animates numbers it is handed. This is what makes the log replayable, which doc 04 wants for undo and post-game review. `setRoll` goes away here: the movement roll becomes an output of `masterboard/finalizeSplits`, and the mulligan becomes `masterboard/rerollMove`.
+3. **Move split and muster staging to the client** (what leaves the engine, above): `finalizeSplits` and `finalizeMusters` take the decisions as payload.
+4. **Move masterboard and battle movement to the client**, the same way. Larger than step 3 because the moves are an ordered list to replay, not an independent choice per stack.
+5. **Split request from record** for the four roll-carrying variants. The commit path rolls through `src/game/models/random.ts`'s `Random` seam, which gains a die roll beside its `shuffle`, so single-player behavior is unchanged and the dice widget animates numbers it is handed. This makes the log replayable, supporting undo and post-game review.
 6. **Route the union through the `GameServer` interface** (doc 05 slice 3).
 7. **Decide the fate of the three state-replacement writes.**
 
