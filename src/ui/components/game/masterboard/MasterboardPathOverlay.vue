@@ -36,7 +36,7 @@ const rootClass = computed(() => {
     foe: props.containsEnemy,
     [`distance-${distanceToDest}`]: true,
     [`path-${props.pathIndex}`]: true,
-    destination: pathStepLabel.value === props.pathLength
+    destination: pathStepLabel.value === props.pathLength,
   }
 })
 </script>

@@ -26,7 +26,8 @@ import HexEdge from "./HexEdge.vue"
 const preferencesStore = usePreferencesStore()
 
 const edges = computed((): [MasterboardHex, MasterboardEdge][] =>
-  Array.from(board.hexes.values()).flatMap(
-    hex => hex.getEdges().map((edge): [MasterboardHex, MasterboardEdge] => [hex, edge]))
-    .filter(([, edge]) => edge.rule !== MovementRule.NONE))
+  Array.from(board.hexes.values())
+    .flatMap(hex => hex.getEdges().map((edge): [MasterboardHex, MasterboardEdge] => [hex, edge]))
+    .filter(([, edge]) => edge.rule !== MovementRule.NONE),
+)
 </script>

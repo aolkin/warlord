@@ -20,11 +20,14 @@ import { useSelectionStore } from "~/stores/ui/selection"
 import MasterboardEdges from "./MasterboardEdges.vue"
 import MasterboardHex from "./MasterboardHex.vue"
 
-withDefaults(defineProps<{
-  canFreeMove?: boolean
-}>(), {
-  canFreeMove: false
-})
+withDefaults(
+  defineProps<{
+    canFreeMove?: boolean
+  }>(),
+  {
+    canFreeMove: false,
+  },
+)
 
 const game = useGameStore().game
 const selectionStore = useSelectionStore()

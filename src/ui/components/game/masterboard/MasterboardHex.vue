@@ -8,9 +8,7 @@
         v-if="preferencesStore.fancyGraphics"
         :id="`hex-${hex.id}-clip`"
       >
-        <polygon
-          :points="hexPoints"
-        />
+        <polygon :points="hexPoints" />
       </clipPath>
       <polygon
         v-if="preferencesStore.fancyGraphics"

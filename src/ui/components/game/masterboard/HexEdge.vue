@@ -73,36 +73,43 @@ import { MasterboardEdge, MasterboardHex, MovementRule, Terrain } from "@/models
 import { usePreferencesStore } from "~/stores/ui/preferences"
 import { hexTransform, isHexInverted, TRIANGLE_HEIGHT } from "./utils"
 
-const props = withDefaults(defineProps<{
-  edge: MasterboardEdge
-  hex: MasterboardHex
-  shadow?: boolean
-}>(), {
-  shadow: false
-})
+const props = withDefaults(
+  defineProps<{
+    edge: MasterboardEdge
+    hex: MasterboardHex
+    shadow?: boolean
+  }>(),
+  {
+    shadow: false,
+  },
+)
 
 const preferencesStore = usePreferencesStore()
 
-const multiArrow = computed((): boolean => props.edge.rule === MovementRule.ARROW &&
-  !props.edge.hex.getEdges().some(edge =>
-    edge.rule !== MovementRule.NONE && edge.hex.id === props.hex.id))
+const multiArrow = computed(
+  (): boolean =>
+    props.edge.rule === MovementRule.ARROW &&
+    !props.edge.hex.getEdges().some(edge => edge.rule !== MovementRule.NONE && edge.hex.id === props.hex.id),
+)
 
 const hexTransformStr = computed((): string => hexTransform(props.hex.id).toString())
 
-const transform = computed(() => `rotate(${isHexInverted(props.hex.id) ? 180 : 0})
+const transform = computed(
+  () => `rotate(${isHexInverted(props.hex.id) ? 180 : 0})
               translate(0 10)
               rotate(${(props.edge.hexEdge - 1) * 120})
-              translate(${props.edge.hexEdge === 1 ? 10 : (props.edge.hexEdge === 0 ? 6 : 14)} 0)
-              translate(0 ${TRIANGLE_HEIGHT / 4 + (props.edge.hexEdge === 1 ? 13.75 : 7.25)})`)
+              translate(${props.edge.hexEdge === 1 ? 10 : props.edge.hexEdge === 0 ? 6 : 14} 0)
+              translate(0 ${TRIANGLE_HEIGHT / 4 + (props.edge.hexEdge === 1 ? 13.75 : 7.25)})`,
+)
 
 const classes = computed(() => ({
   [Terrain[props.hex.terrain].toLowerCase()]: true,
   ["to-" + Terrain[props.edge.hex.terrain].toLowerCase()]: true,
   root: !props.shadow,
-  shadow: props.shadow
+  shadow: props.shadow,
 }))
 
-const shadowMaskXs = computed(() => props.shadow ? (multiArrow.value ? [-4, -14, -24] : [-4]) : [])
+const shadowMaskXs = computed(() => (props.shadow ? (multiArrow.value ? [-4, -14, -24] : [-4]) : []))
 </script>
 
 <style lang="sass" scoped>
