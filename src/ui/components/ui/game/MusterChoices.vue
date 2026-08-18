@@ -19,8 +19,10 @@
           <Creature
             :type="creature"
             :player-id="playerId"
-            :class="{ unavailable: creature !== undefined && musterBasis.length < 1,
-                      selected: chosen !== undefined && creature === chosen[0] }"
+            :class="{
+              unavailable: creature !== undefined && musterBasis.length < 1,
+              selected: chosen !== undefined && creature === chosen[0],
+            }"
             class="ma-1 recruitment-choice"
             v-bind="musterBasis.length > 1 ? activatorProps : {}"
             @click="musterBasis.length === 1 && choose([creature, musterBasis[0]])"
@@ -45,7 +47,9 @@
                 x="0"
                 y="0"
                 class="req-count"
-              >x{{ count }}</text>
+              >
+                x{{ count }}
+              </text>
             </svg>
           </v-card-actions>
         </v-card>
@@ -61,16 +65,19 @@ import { PlayerId } from "@/models/player"
 import { MusterChoice, MusterPossibility } from "@/models/stack"
 import Creature from "../../game/Creature.vue"
 
-const props = withDefaults(defineProps<{
-  canDecline: boolean
-  musterable?: MusterPossibility[]
-  playerId?: PlayerId
-  modelValue?: MusterChoice
-}>(), {
-  musterable: () => [],
-  playerId: undefined,
-  modelValue: undefined
-})
+const props = withDefaults(
+  defineProps<{
+    canDecline: boolean
+    musterable?: MusterPossibility[]
+    playerId?: PlayerId
+    modelValue?: MusterChoice
+  }>(),
+  {
+    musterable: () => [],
+    playerId: undefined,
+    modelValue: undefined,
+  },
+)
 
 const emit = defineEmits<{
   "update:modelValue": [value: MusterChoice]
@@ -84,12 +91,15 @@ const chosen = computed({
   },
   set(value: MusterChoice) {
     emit("update:modelValue", value)
-  }
+  },
 })
 
-watch(() => props.musterable, (value) => {
-  dialogState.value = value.map(() => false)
-})
+watch(
+  () => props.musterable,
+  value => {
+    dialogState.value = value.map(() => false)
+  },
+)
 
 function choose(possibility: MusterChoice) {
   chosen.value = possibility
@@ -122,5 +132,4 @@ function choose(possibility: MusterChoice) {
     text-shadow: 2px 2px black
     text-anchor: middle
     dominant-baseline: central
-
 </style>

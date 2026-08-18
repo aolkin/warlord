@@ -27,8 +27,8 @@ withDefaults(
   }>(),
   {
     interactive: false,
-    transparentHover: false
-  }
+    transparentHover: false,
+  },
 )
 </script>
 

@@ -163,17 +163,21 @@ const colorModes = computed(() => ({
   [CreatureColorMode.STANDARD]: "Standard",
   [CreatureColorMode.PLAYER]: "Player Color",
   [CreatureColorMode.STANDARD_UNIFORM_TEXT]: "Standard with Uniform Text",
-  [CreatureColorMode.PLAYER_UNIFORM_TEXT]: "Player Color with Uniform Text"
+  [CreatureColorMode.PLAYER_UNIFORM_TEXT]: "Player Color with Uniform Text",
 }))
 
 const creatureColorMode = computed({
   get: () => `${preferencesStore.creatureColorMode}`,
-  set: (value: string) => { preferencesStore.creatureColorMode = Number(value) }
+  set: (value: string) => {
+    preferencesStore.creatureColorMode = Number(value)
+  },
 })
 
 const uiPlayer = computed({
   get: () => playerStore.localPlayer + 1,
-  set: (value: number) => { playerStore.localPlayer = value - 1 }
+  set: (value: number) => {
+    playerStore.localPlayer = value - 1
+  },
 })
 
 function reset(): void {

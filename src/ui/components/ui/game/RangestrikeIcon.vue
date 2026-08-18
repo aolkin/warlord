@@ -42,8 +42,8 @@ withDefaults(
     interactive: false,
     transparentHover: false,
     longDistance: false,
-    adjustment: undefined
-  }
+    adjustment: undefined,
+  },
 )
 
 const totalAdjustment = computed(() => {

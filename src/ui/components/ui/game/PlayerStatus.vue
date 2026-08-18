@@ -3,9 +3,7 @@
     :style="{ height: game.players.length * 60 + 40 }"
     class="d-flex flex-column justify-space-between"
   >
-    <div class="text-center round-label">
-      Round
-    </div>
+    <div class="text-center round-label">Round</div>
     <div
       class="text-center round-counter"
       v-text="game.round + 1"
@@ -13,7 +11,10 @@
     <v-card
       v-for="player in game.players"
       :key="player.id"
-      :class="{ 'active': game.activePlayerId === player.id, [`bg-player-${player.id}`]: true }"
+      :class="{
+        active: game.activePlayerId === player.id,
+        [`bg-player-${player.id}`]: true,
+      }"
       class="player-card ml-2 mr-1 py-1 my-2"
       elevation="4"
     >
