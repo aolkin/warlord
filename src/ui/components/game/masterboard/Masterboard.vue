@@ -82,9 +82,11 @@ const selectionStore = useSelectionStore()
 const activeRoll = computed(() => game.activeRoll!)
 
 const paths = computed<Path[]>(() => {
-  if (selectionStore.selectedStack?.hex === undefined ||
+  if (
+    selectionStore.selectedStack?.hex === undefined ||
     masterboard.getHex(selectionStore.selectedStack.hex) === undefined ||
-    game.activeRoll === undefined) {
+    game.activeRoll === undefined
+  ) {
     return []
   }
   return TitanGame.getPathsForHex(game, selectionStore.selectedStack.hex)
@@ -97,9 +99,9 @@ const paths = computed<Path[]>(() => {
 // type stops matching the class).
 const focusedStacks = shallowReactive<Stack[]>([])
 
-const focusedStack = computed<Stack | undefined>(() => focusedStacks.length > 0
-  ? focusedStacks[focusedStacks.length - 1]
-  : selectionStore.selectedStack)
+const focusedStack = computed<Stack | undefined>(() =>
+  focusedStacks.length > 0 ? focusedStacks[focusedStacks.length - 1] : selectionStore.selectedStack,
+)
 
 function enterStack(entering: Stack): void {
   if (!focusedStacks.includes(entering)) {
@@ -116,17 +118,22 @@ function leaveStack(leaving: Stack): void {
 
 const sortedStacks = computed((): Stack[] => {
   lastSortedStacks = sortBy(game.stacks, stack =>
-    stack === selectionStore.selectedStack ? 999 : lastSortedStacks.indexOf(stack))
+    stack === selectionStore.selectedStack ? 999 : lastSortedStacks.indexOf(stack),
+  )
   return lastSortedStacks
 })
 const interleavedPaths = computed((): [boolean, MasterboardHex][][] =>
-  range(paths.value[0].path.length).map((colIndex: number) =>
-    paths.value.map((row: Path): [boolean, MasterboardHex] =>
-      [row.foe !== undefined, row.path[colIndex]])).slice(1))
+  range(paths.value[0].path.length)
+    .map((colIndex: number) =>
+      paths.value.map((row: Path): [boolean, MasterboardHex] => [row.foe !== undefined, row.path[colIndex]]),
+    )
+    .slice(1),
+)
 
-const canFreeMove = computed((): boolean =>
-  TitanGame.isMovePhase(game) &&
-  selectionStore.selectedStack !== undefined && preferencesStore.freeMovement)
+const canFreeMove = computed(
+  (): boolean =>
+    TitanGame.isMovePhase(game) && selectionStore.selectedStack !== undefined && preferencesStore.freeMovement,
+)
 
 function moveStack(distance: number, foe: boolean, hex: number): void {
   const stack = selectionStore.selectedStack

@@ -82,8 +82,7 @@ const getEngageTransformForEdge = (hexId: number, edge: HexEdge): Transformation
   const rotation = edge * 120 + 60 + (isHexInverted(hexId) ? 0 : 180)
   const transforms = new Transformations()
   transforms.push(new Transformation(TransformationType.ROTATE, [rotation]))
-  transforms.push(new Transformation(TransformationType.TRANSLATE,
-    [0, edge === HexEdge.SECOND ? 50 : 60]))
+  transforms.push(new Transformation(TransformationType.TRANSLATE, [0, edge === HexEdge.SECOND ? 50 : 60]))
   transforms.push(new Transformation(TransformationType.SCALE, [0.75]))
   return transforms
 }
@@ -111,8 +110,7 @@ const stacksOnHexIndex = computed((): number => stacksOnHex.value.indexOf(props.
 
 const transform = computed((): string => {
   const result = hexTransform(props.stack.hex)
-  result.push(new Transformation(TransformationType.TRANSLATE,
-    [0, isHexInverted(props.stack.hex) ? -12 : 13]))
+  result.push(new Transformation(TransformationType.TRANSLATE, [0, isHexInverted(props.stack.hex) ? -12 : 13]))
   if (stacksOnHex.value.length > 1) {
     result.push(new Transformation(TransformationType.ROTATE, [15 + 35 * stacksOnHexIndex.value]))
   }
@@ -132,8 +130,9 @@ const potentialEngagements = computed((): HexEdge[] => {
     return []
   } else if (!TitanGame.isMovePhase(game)) {
     return []
-  } else if (TitanGame.getStacksForHex(game, props.stack.hex)
-    .some((stack: Stack) => stack.owner === game.activePlayerId)) {
+  } else if (
+    TitanGame.getStacksForHex(game, props.stack.hex).some((stack: Stack) => stack.owner === game.activePlayerId)
+  ) {
     return []
   } else if (TitanGame.canTitanTeleport(game, selectionStore.selectedStack) || preferencesStore.freeMovement) {
     if (masterboard.getHex(props.stack.hex).terrain === Terrain.TOWER) {
@@ -144,21 +143,30 @@ const potentialEngagements = computed((): HexEdge[] => {
     return [HexEdge.FIRST, HexEdge.SECOND, HexEdge.THIRD]
   } else {
     // For paths where this stack is the enemy...
-    return props.paths.filter((path: Path) => path.foe === props.stack).flatMap(({ path }: Path) =>
-      // Find the index on the path where this stack resides...
-      path.map((hex: MasterboardHex, i: number) => hex.id === props.stack.hex
-        // Figure out where the stack would enter this hex from
-        ? hex.getEdges().find((edge: MasterboardEdge) => edge.hex.id === path[i - 1].id)?.hexEdge
-        : undefined)
-    ).filter((item?: HexEdge) => item !== undefined)
+    return props.paths
+      .filter((path: Path) => path.foe === props.stack)
+      .flatMap(({ path }: Path) =>
+        // Find the index on the path where this stack resides...
+        path.map((hex: MasterboardHex, i: number) =>
+          hex.id === props.stack.hex
+            ? // Figure out where the stack would enter this hex from
+              hex.getEdges().find((edge: MasterboardEdge) => edge.hex.id === path[i - 1].id)?.hexEdge
+            : undefined,
+        ),
+      )
+      .filter((item?: HexEdge) => item !== undefined)
   }
 })
 
 const engageable = computed((): [HexEdge, Transformations][] =>
-  potentialEngagements.value.map(edge => [edge, getEngageTransformForEdge(props.stack.hex, edge)]))
+  potentialEngagements.value.map(edge => [edge, getEngageTransformForEdge(props.stack.hex, edge)]),
+)
 
-const engaged = computed((): boolean => isActivePlayer.value && TitanGame.getStacksForHex(game, props.stack.hex)
-  .some((stack: Stack) => stack.owner !== game.activePlayerId))
+const engaged = computed(
+  (): boolean =>
+    isActivePlayer.value &&
+    TitanGame.getStacksForHex(game, props.stack.hex).some((stack: Stack) => stack.owner !== game.activePlayerId),
+)
 
 const isMandatory = computed(() => {
   if (!isActivePlayer.value) {
@@ -183,7 +191,7 @@ const classes = computed(() => ({
   [`player-${props.stack.owner}`]: true,
   "multiple-stacks": stacksOnHex.value.length > 1,
   [`stack-on-hex-${stacksOnHexIndex.value}`]: true,
-  [`phase-${MasterboardPhase[game.activePhase].toLowerCase()}`]: true
+  [`phase-${MasterboardPhase[game.activePhase].toLowerCase()}`]: true,
 }))
 
 const stackSize = computed((): string => {
@@ -293,5 +301,4 @@ function leave(): void {
 .muster-enter-from, .muster-leave-to
   opacity: 0
   transform: rotate(0) scale(1)
-
 </style>
