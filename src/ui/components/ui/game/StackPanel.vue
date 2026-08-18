@@ -33,7 +33,7 @@
 
       <div class="px-2 pb-1">
         <Creature
-          v-for="(creature, index) in props.focusedStack.creatures as CreatureType[]"
+          v-for="(creature, index) in props.focusedStack.creatures"
           :key="index"
           :type="creature"
           :player-id="props.focusedStack.owner"
@@ -70,22 +70,8 @@
               v-if="Stack.getSplittingCreatures(props.focusedStack).length > 0"
               class="text-left mt-5"
             >
-              <p>
-                Remaining:
-                {{
-                  Stack.getStayingCreatures(props.focusedStack)
-                    .map((c: CreatureType) => CREATURE_DATA[c].name)
-                    .join(", ")
-                }}
-              </p>
-              <p>
-                Splitting:
-                {{
-                  Stack.getSplittingCreatures(props.focusedStack)
-                    .map((c: CreatureType) => CREATURE_DATA[c].name)
-                    .join(", ")
-                }}
-              </p>
+              <p>Remaining: {{ stayingCreatureNames }}</p>
+              <p>Splitting: {{ splittingCreatureNames }}</p>
             </div>
           </v-card-text>
         </v-card-actions>
@@ -158,6 +144,18 @@ const musteringTerrainName = computed((): string => capitalize(Terrain[mustering
 
 const musterable = computed((): MusterPossibility[] =>
   props.focusedStack !== undefined ? Stack.musterable(props.focusedStack, musteringTerrain.value) : [],
+)
+
+const stayingCreatureNames = computed((): string =>
+  Stack.getStayingCreatures(props.focusedStack!)
+    .map((c: CreatureType) => CREATURE_DATA[c].name)
+    .join(", "),
+)
+
+const splittingCreatureNames = computed((): string =>
+  Stack.getSplittingCreatures(props.focusedStack!)
+    .map((c: CreatureType) => CREATURE_DATA[c].name)
+    .join(", "),
 )
 
 const mustering = computed({
