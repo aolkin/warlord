@@ -2,9 +2,9 @@
   <v-card-title>
     <span :class="`text-player-${attacker.player}`">
       {{ attacker.name }}
-      <span v-if="attackerHazard !== Hazard.NONE">({{ Hazard[attackerHazard].toLowerCase() }})</span>
+      <span v-if="attackerHazard !== Hazard.NONE">({{ Hazard[attackerHazard].toLowerCase() }}){{ " " }}</span>
     </span>
-    <span>vs</span>
+    <span>{{ "vs " }}</span>
     <span :class="`text-player-${target.player}`">
       {{ target.name }}
       <span v-if="targetHazard !== Hazard.NONE">({{ Hazard[targetHazard].toLowerCase() }})</span>
