@@ -17,8 +17,8 @@
         v-if="selectionStore.selectedStack === props.focusedStack"
         class="justify-space-between"
       >
-        <v-btn @click="cycleStacks(-1)"> Previous Stack </v-btn>
-        <v-btn @click="cycleStacks(1)"> Next Stack </v-btn>
+        <v-btn @click="cycleStacks(-1)">Previous Stack</v-btn>
+        <v-btn @click="cycleStacks(1)">Next Stack</v-btn>
       </v-card-actions>
       <v-card-item :title="`${stackPlayer?.name} (${props.focusedStack.creatures.length} creatures)`">
         <template #prepend>

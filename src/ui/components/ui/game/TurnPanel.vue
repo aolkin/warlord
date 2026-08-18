@@ -15,12 +15,12 @@
           You have {{ sevenHighCount }} full stack{{ sevenHighCount > 1 ? "s" : "" }}!
         </span>
       </span>
-      <span v-else> You must adjust your stack splits before rolling. </span>
+      <span v-else>You must adjust your stack splits before rolling.</span>
     </v-card-text>
     <v-card-text v-else-if="TitanGame.isMovePhase(game)">
       Moved {{ movedCount }} of {{ gameStore.activeStacks.length }} stacks.
       {{ engagementsMessage }}
-      <span v-if="movedCount < 1"> You must move at least one stack! </span>
+      <span v-if="movedCount < 1">You must move at least one stack!</span>
       <span v-else-if="!TitanGame.getMayProceed(game)">
         You must move at least one stack from each split if possible.
       </span>

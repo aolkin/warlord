@@ -6,7 +6,8 @@
     {
       "files": "*.vue",
       "options": {
-        "singleAttributePerLine": true
+        "singleAttributePerLine": true,
+        "htmlWhitespaceSensitivity": "ignore"
       }
     }
   ]
