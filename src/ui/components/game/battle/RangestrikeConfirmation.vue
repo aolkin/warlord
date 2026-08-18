@@ -2,21 +2,21 @@
   <v-dialog max-width="600">
     <v-card :title="`Rangestrike ${target.creature.name} with ${attacker.name}`">
       <v-card-text>
-        Are you sure you want to rangestrike this {{ target.creature.name }}
-        ({{ target.creature.wounds }} hit{{ target.creature.wounds === 1 ? "" : "s" }} taken)
-        with your {{ attacker.name }}?
+        Are you sure you want to rangestrike this {{ target.creature.name }} ({{ target.creature.wounds }} hit{{
+          target.creature.wounds === 1 ? "" : "s"
+        }}
+        taken) with your {{ attacker.name }}?
       </v-card-text>
       <v-card-text>
-        You will roll {{ targetedStrike.dice }} {{ targetedStrike.dice > 1 ? "dice" : "die" }}
-        and must roll {{ targetedStrike.toHit }}s or better to hit your opponent.
+        You will roll {{ targetedStrike.dice }} {{ targetedStrike.dice > 1 ? "dice" : "die" }} and must roll
+        {{ targetedStrike.toHit }}s or better to hit your opponent.
         <span v-if="targetedStrikeWasAdjusted">
           This has been adjusted due to terrain and would otherwise have been
-          {{ targetedStrikeUnadjusted.dice }} {{ targetedStrikeUnadjusted.dice > 1 ? "dice" : "die" }}
-          needing {{ targetedStrikeUnadjusted.toHit }}s or better.
+          {{ targetedStrikeUnadjusted.dice }} {{ targetedStrikeUnadjusted.dice > 1 ? "dice" : "die" }} needing
+          {{ targetedStrikeUnadjusted.toHit }}s or better.
         </span>
         <span v-if="target.longDistance">
-          The strike number needed to hit has been increased by one due to the long distance of this
-          rangestrike.
+          The strike number needed to hit has been increased by one due to the long distance of this rangestrike.
         </span>
       </v-card-text>
       <v-card-actions>
@@ -56,13 +56,12 @@ defineEmits<{
   attack: []
 }>()
 
-const targetedStrike = computed<Strike>(() =>
-  Battle.getTargetedStrike(props.battle, props.attacker, props.target))
+const targetedStrike = computed<Strike>(() => Battle.getTargetedStrike(props.battle, props.attacker, props.target))
 const targetedStrikeUnadjusted = computed<Strike>(() => {
   const rawStrike = Battle.getRawStrike(props.attacker, props.target.creature)
   return {
     toHit: props.target.longDistance ? rawStrike.toHit + 1 : rawStrike.toHit,
-    dice: div(rawStrike.dice, 2)
+    dice: div(rawStrike.dice, 2),
   }
 })
 const targetedStrikeWasAdjusted = computed(() => !isEqual(targetedStrikeUnadjusted.value, targetedStrike.value))
@@ -71,5 +70,4 @@ const targetedStrikeWasAdjusted = computed(() => !isEqual(targetedStrikeUnadjust
 @import "~/styles/terrain-colors.sass"
 
 @include battlemap-colors(".board :deep(.hex)", fill)
-
 </style>

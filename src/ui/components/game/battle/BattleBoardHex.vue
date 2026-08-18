@@ -44,15 +44,17 @@ const props = defineProps<{
 
 const hexClasses = computed(() => ({
   [`elevation-${props.elevation}`]: true,
-  [Hazard[props.hazard].toLowerCase()]: true
+  [Hazard[props.hazard].toLowerCase()]: true,
 }))
 
-const hazardImg = computed(() => new URL(`../../../assets/hazards/${Hazard[props.hazard].toLowerCase()}.svg`,
-  import.meta.url).href)
+const hazardImg = computed(
+  () => new URL(`../../../assets/hazards/${Hazard[props.hazard].toLowerCase()}.svg`, import.meta.url).href,
+)
 
-const edgeHazardImg = computed(() => (hazard: EdgeHazard) =>
-  new URL(`../../../assets/hazards/${EdgeHazard[hazard].toLowerCase()}.svg`,
-    import.meta.url).href)
+const edgeHazardImg = computed(
+  () => (hazard: EdgeHazard) =>
+    new URL(`../../../assets/hazards/${EdgeHazard[hazard].toLowerCase()}.svg`, import.meta.url).href,
+)
 </script>
 
 <style lang="sass" scoped>

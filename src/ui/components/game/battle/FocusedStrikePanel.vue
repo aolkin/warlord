@@ -35,12 +35,12 @@ const engagements = computed<BattleCreature[]>(() => Battle.engagedWith(activeBa
 const rangestrikes = computed<RangestrikeTarget[]>(() => Battle.rangestrikeTargets(activeBattle.value, props.attacker))
 
 const target = computed<BattleCreature | undefined>(() =>
-  engagements.value.includes(props.focusedCreature)
-    ? props.focusedCreature
-    : undefined)
-const rangedFocus = computed<RangestrikeTarget | undefined>(() =>
-  rangestrikes.value.filter(
-    (rangestrike: RangestrikeTarget) => rangestrike.creature === props.focusedCreature)[0])
+  engagements.value.includes(props.focusedCreature) ? props.focusedCreature : undefined,
+)
+const rangedFocus = computed<RangestrikeTarget | undefined>(
+  () =>
+    rangestrikes.value.filter((rangestrike: RangestrikeTarget) => rangestrike.creature === props.focusedCreature)[0],
+)
 const rangedTarget = computed<BattleCreature | undefined>(() => rangedFocus.value?.creature)
 const strike = computed<Strike | undefined>(() => {
   if (target.value) {
@@ -52,5 +52,4 @@ const strike = computed<Strike | undefined>(() => {
 })
 </script>
 
-<style scoped lang="sass">
-</style>
+<style scoped lang="sass"></style>

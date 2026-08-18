@@ -9,9 +9,7 @@
       class="ma-3 ml-14"
     >
       <v-card-title>Battle Land: {{ Terrain[terrain] }}</v-card-title>
-      <v-card-title>
-        Round: {{ battle.round + 1 }} - {{ BATTLE_PHASE_TITLES[battle.phase] }}
-      </v-card-title>
+      <v-card-title>Round: {{ battle.round + 1 }} - {{ BATTLE_PHASE_TITLES[battle.phase] }}</v-card-title>
       <v-card-subtitle v-if="preferencesStore.debugUi && focusedBattleHex !== undefined">
         Hex: {{ focusedBattleHex }} ({{ Hazard[board.getHazard(focusedBattleHex)] }})
         <span v-if="board.getElevation(focusedBattleHex) > 0">+{{ board.getElevation(focusedBattleHex) }}</span>
@@ -43,14 +41,14 @@
           v-for="hex in BATTLE_BOARD_HEXES"
           :key="hex"
           class="debug-hex-id"
-          :class="{'debug-adjacent': debugHexAdjacencies.includes(hex), 'debug-selected': debugHex === hex}"
+          :class="{ 'debug-adjacent': debugHexAdjacencies.includes(hex), 'debug-selected': debugHex === hex }"
           :transform="`${hexTransformStr(hex)}`"
           @click.stop="debugHex = hex"
           v-text="hex"
         />
       </g>
       <Creature
-        v-for="(creature) in activeCreatures"
+        v-for="creature in activeCreatures"
         :key="creature.hex"
         :type="creature.type"
         :player-id="creature.player"
@@ -65,7 +63,7 @@
         @mouseleave="leaveCreature(creature)"
       />
       <EngageIcon
-        v-for="(creature) in (carryoverTargets ?? engagements)"
+        v-for="creature in carryoverTargets ?? engagements"
         :key="creature.hex"
         interactive
         transparent-hover
@@ -76,15 +74,14 @@
         @mouseleave="leaveCreature(creature)"
       />
       <RangestrikeIcon
-        v-for="(rangestrikeTarget) in rangestrikes"
+        v-for="rangestrikeTarget in rangestrikes"
         :key="rangestrikeTarget.creature.hex"
         interactive
         transparent-hover
         :long-distance="rangestrikeTarget.longDistance"
         :adjustment="rangestrikeTarget.adjustment"
         :transform="`${hexTransformStr(rangestrikeTarget.creature.hex)} scale(0.9)
-         rotate(${120 * (battle.attackerEdge - 1) +
-        (rangestrikeTarget.creature.player === defender ? 0 : 180)})`"
+         rotate(${120 * (battle.attackerEdge - 1) + (rangestrikeTarget.creature.player === defender ? 0 : 180)})`"
         @click.stop="targetCreature(rangestrikeTarget)"
         @mouseenter="enterCreature(rangestrikeTarget.creature)"
         @mouseleave="leaveCreature(rangestrikeTarget.creature)"
@@ -171,7 +168,7 @@ import {
   isRangestrike,
   RangestrikeTarget,
   relationToHex,
-  Strike
+  Strike,
 } from "@/models/battle"
 import { Terrain } from "@/models/masterboard"
 import { PlayerId } from "@/models/player"
@@ -214,16 +211,19 @@ const debugHex = ref(0)
 const selectedCreature = shallowRef<BattleCreature>()
 const focusedCreatures = shallowReactive<BattleCreature[]>([])
 
-const focusedCreature = computed<BattleCreature | undefined>(() => focusedCreatures.length > 0
-  ? focusedCreatures[focusedCreatures.length - 1]
-  : selectedCreature.value)
+const focusedCreature = computed<BattleCreature | undefined>(() =>
+  focusedCreatures.length > 0 ? focusedCreatures[focusedCreatures.length - 1] : selectedCreature.value,
+)
 
 const movementHexes = computed<Set<number>>(() =>
-  selectedCreature.value === undefined ? new Set<number>() : Battle.movementFor(props.battle, selectedCreature.value))
+  selectedCreature.value === undefined ? new Set<number>() : Battle.movementFor(props.battle, selectedCreature.value),
+)
 const engagements = computed<BattleCreature[]>(() =>
-  selectedCreature.value === undefined ? [] : Battle.engagedWith(props.battle, selectedCreature.value))
+  selectedCreature.value === undefined ? [] : Battle.engagedWith(props.battle, selectedCreature.value),
+)
 const rangestrikes = computed<RangestrikeTarget[]>(() =>
-  selectedCreature.value === undefined ? [] : Battle.rangestrikeTargets(props.battle, selectedCreature.value))
+  selectedCreature.value === undefined ? [] : Battle.rangestrikeTargets(props.battle, selectedCreature.value),
+)
 const carryoverTargets = computed((): BattleCreature[] | undefined => Battle.carryoverTargets(props.battle))
 
 function selectCreature(selection: BattleCreature): void {
@@ -249,9 +249,9 @@ function leaveCreature(leaving: BattleCreature): void {
 
 const focusedBattleHexes = shallowReactive<number[]>([])
 
-const focusedBattleHex = computed<number | undefined>(() => focusedBattleHexes.length > 0
-  ? focusedBattleHexes[focusedBattleHexes.length - 1]
-  : undefined)
+const focusedBattleHex = computed<number | undefined>(() =>
+  focusedBattleHexes.length > 0 ? focusedBattleHexes[focusedBattleHexes.length - 1] : undefined,
+)
 
 function enterBattleHex(entering: number): void {
   if (!focusedBattleHexes.includes(entering)) {
@@ -278,42 +278,46 @@ const attackCreatureDialog = computed({
     if (!val) {
       target.value = undefined
     }
-  }
+  },
 })
 
 const terrain = computed((): Terrain => props.battle.terrain)
 const board = computed((): BattleBoard => BATTLE_BOARDS[terrain.value as Terrain])
 
 function edgesForHex(hex: number): Record<number, EdgeHazard> {
-  return Object.fromEntries(BATTLE_BOARD_ADJACENCIES[hex]
-    .map((adjacency: number): [number, EdgeHazard] =>
-      [relationToHex(hex, adjacency), board.value.getEdgeHazard(adjacency, hex)])
-    .filter(([, hazard]: [number, EdgeHazard]) => hazard !== EdgeHazard.NONE)
+  return Object.fromEntries(
+    BATTLE_BOARD_ADJACENCIES[hex]
+      .map((adjacency: number): [number, EdgeHazard] => [
+        relationToHex(hex, adjacency),
+        board.value.getEdgeHazard(adjacency, hex),
+      ])
+      .filter(([, hazard]: [number, EdgeHazard]) => hazard !== EdgeHazard.NONE),
   )
 }
 
 const edgeHazardsByHex = computed((): Record<number, Record<number, EdgeHazard>> =>
-  Object.fromEntries(BATTLE_BOARD_HEXES.map((hex: number): [number, Record<number, EdgeHazard>] =>
-    [hex, edgesForHex(hex)])))
+  Object.fromEntries(
+    BATTLE_BOARD_HEXES.map((hex: number): [number, Record<number, EdgeHazard>] => [hex, edgesForHex(hex)]),
+  ),
+)
 
 const defender = computed((): PlayerId => props.battle.defender)
 
-const localPlayerIsDefender = computed((): boolean =>
-  defender.value === game.players[playerStore.localPlayer].id)
+const localPlayerIsDefender = computed((): boolean => defender.value === game.players[playerStore.localPlayer].id)
 
 const selectedCreatureId = computed((): number | undefined => selectedCreature.value?.id)
 
-const selectedStartedOffBoard = computed((): boolean =>
-  (selectedCreature.value?.initialHex ?? -1) >= 36)
+const selectedStartedOffBoard = computed((): boolean => (selectedCreature.value?.initialHex ?? -1) >= 36)
 
 // True once a creature that started off-board has been moved onto the board this turn,
 // making it eligible to be moved back off (PendingCreatures' "Put Back" action).
-const selectedCanLeaveBoard = computed((): boolean =>
-  selectedStartedOffBoard.value && (selectedCreature.value?.hex ?? -1) < 36)
+const selectedCanLeaveBoard = computed(
+  (): boolean => selectedStartedOffBoard.value && (selectedCreature.value?.hex ?? -1) < 36,
+)
 
 const activeCreatures = computed((): BattleCreature[] =>
-  props.battle.creatures.filter((creature: BattleCreature) =>
-    creature.hex > 0 && creature.hex < 36))
+  props.battle.creatures.filter((creature: BattleCreature) => creature.hex > 0 && creature.hex < 36),
+)
 
 function creatureEnabled(creature: BattleCreature): boolean {
   if (creature.player !== battleActivePlayer.value) {
@@ -342,7 +346,7 @@ function creatureClasses(creature: BattleCreature): object {
     interactive: creatureEnabled(creature),
     selected: creature === selectedCreature.value,
     attacker: activeStrike.value?.attacker === creature.hex,
-    target: activeStrike.value?.target === creature.hex
+    target: activeStrike.value?.target === creature.hex,
   }
 }
 
@@ -351,7 +355,8 @@ const activeStrike = computed((): ActiveStrike | undefined => props.battle.activ
 const targetedStrike = computed((): Strike =>
   selectedCreature.value && target.value
     ? Battle.getTargetedStrike(props.battle, selectedCreature.value, target.value)
-    : { toHit: 0, dice: 0 })
+    : { toHit: 0, dice: 0 },
+)
 
 const debugHexAdjacencies = computed((): number[] => BATTLE_BOARD_ADJACENCIES[debugHex.value] ?? [])
 
@@ -363,8 +368,7 @@ function moveSelected(hex: number): void {
 
 function removeSelected(): void {
   if (selectedCreature.value) {
-    Battle.moveCreature(props.battle,
-      { creature: selectedCreature.value.id, hex: selectedCreature.value.initialHex })
+    Battle.moveCreature(props.battle, { creature: selectedCreature.value.id, hex: selectedCreature.value.initialHex })
   }
 }
 
@@ -375,8 +379,12 @@ function chooseCreature(creature: BattleCreature): void {
 }
 
 function targetCreature(creature: BattleCreature | RangestrikeTarget): void {
-  if (!("creature" in creature) && activeStrike.value !== undefined &&
-    ActiveStrike.getCarryoverHits(activeStrike.value) > 0 && carryoverTargets.value) {
+  if (
+    !("creature" in creature) &&
+    activeStrike.value !== undefined &&
+    ActiveStrike.getCarryoverHits(activeStrike.value) > 0 &&
+    carryoverTargets.value
+  ) {
     if (carryoverTargets.value.includes(creature)) {
       Battle.assignCarryover(props.battle, creature.id)
     }
@@ -387,7 +395,7 @@ function targetCreature(creature: BattleCreature | RangestrikeTarget): void {
 
 async function attackTargetedCreature(
   attacker: BattleCreature,
-  attackTarget: BattleCreature | RangestrikeTarget
+  attackTarget: BattleCreature | RangestrikeTarget,
 ): Promise<void> {
   console.log(attacker, target.value)
   if (diceRoller?.value == null) {
@@ -398,14 +406,14 @@ async function attackTargetedCreature(
     Battle.rangestrikeCreature(props.battle, {
       attacker: attacker.id,
       target: { ...attackTarget, creature: attackTarget.creature.id },
-      rolls
+      rolls,
     })
   } else {
     Battle.attackCreature(props.battle, {
       attacker: attacker.id,
       target: attackTarget.id,
       optionalToHit: optionalToHit.value,
-      rolls
+      rolls,
     })
   }
   console.log(props.battle.activeStrike)
@@ -470,5 +478,4 @@ function resetAttack(): void {
 
   &.debug-adjacent
     stroke: lime
-
 </style>
