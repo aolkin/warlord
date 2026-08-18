@@ -2,13 +2,6 @@
   "semi": false,
   "printWidth": 120,
   "arrowParens": "avoid",
-  "overrides": [
-    {
-      "files": "*.vue",
-      "options": {
-        "singleAttributePerLine": true,
-        "htmlWhitespaceSensitivity": "ignore"
-      }
-    }
-  ]
+  "singleAttributePerLine": true,
+  "htmlWhitespaceSensitivity": "ignore"
 }
