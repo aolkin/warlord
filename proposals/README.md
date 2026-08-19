@@ -23,6 +23,7 @@ Written July 2026. The last feature commit landed January 2023 and the last depe
 | [07-testing-and-code-quality.md](07-testing-and-code-quality.md) | Test infrastructure, type strictness, cleanup |
 | [08-bundle-size.md](08-bundle-size.md) | Production bundle size: dice-box chunking, lazy-loading, Vuetify/icon tree-shaking |
 | [09-mutation-classification.md](09-mutation-classification.md) | Which mutations a server must commit and order, and which stay on the client |
+| [11-rendering-performance-findings.md](11-rendering-performance-findings.md) | Measured findings for doc 03's rendering performance question |
 
 ## Suggested sequencing
 
@@ -36,6 +37,7 @@ Status by doc:
 
 - **Doc 01 (toolchain):** fully done — pnpm updated to 11.22.0.
 - **Doc 02 (CI and deployment):** fully landed; the doc has been removed.
+- **Doc 03 (framework and rendering):** fully resolved — the Vue upgrade, the `<script setup>` migration, and the rendering-performance measurement (doc 11) are all done, and doc 11's numbers don't justify Vapor, Svelte, or canvas.
 - **Doc 04 (state management):** done — `Stack`, `BattleCreature`, `ActiveStrike`, `Battle`, and `TitanGame` are all plain interfaces plus free functions now, with no classes left in the model layer.
 - **Doc 05 (multiplayer groundwork):** partially landed — persistence has moved out of the engine and the old `do*`/`m*` method split has collapsed, but the action-union/single-dispatch entry point, the workspace-package extraction, and the hidden-information audit are still pending.
 - **Doc 06 (UI chrome):** fully landed; the doc has been removed.
