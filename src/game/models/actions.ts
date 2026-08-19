@@ -8,14 +8,9 @@ import {
   BattlePhaseType,
   RangestrikeTarget,
 } from "./battle"
-import { MasterboardPhase, MovePayload, MusterPayload, TitanGame } from "./game"
+import { MasterboardPhase, MovePayload, MusterPayload, SplitCommit, TitanGame } from "./game"
 import { defaultRandom, Random } from "./random"
 import { StackRef } from "./stack"
-
-export interface SplitCommit {
-  stack: StackRef
-  creatures: number[] // indices into stack.creatures
-}
 
 export interface AttackRequest {
   attacker: BattleCreature["id"]
@@ -47,26 +42,13 @@ export type GameAction =
 
 export function dispatch(game: TitanGame, action: GameAction, random: Random = defaultRandom): void {
   switch (action.type) {
-    case "masterboard/finalizeSplits": {
+    case "masterboard/finalizeSplits":
       assertPhase(game, MasterboardPhase.SPLIT)
-      const submitted = new Map(action.payload.map(commit => [commit.stack, commit.creatures]))
-      const stacks = TitanGame.getStacksForPlayer(game)
-      assert(
-        stacks.filter(stack => submitted.has(stack.id)).length === submitted.size,
-        "Split submitted for a stack the active player does not own",
-      )
-      // Each stack carries its split as flags the engine reads, so the submission replaces them.
-      stacks.forEach(stack => {
-        const splitting = submitted.get(stack.id) ?? []
-        stack.split.forEach((_, index) => {
-          stack.split[index] = splitting.includes(index)
-        })
-      })
-      TitanGame.nextPhase(game)
+      TitanGame.setSplits(game, action.payload)
+      TitanGame.finalizeSplits(game)
       // Rule 6.2: entering the move phase is what occasions a movement roll.
       TitanGame.setRoll(game, random.die())
       break
-    }
     case "masterboard/rerollMove":
       assert(game.activeRoll !== undefined, "No roll to take a mulligan on")
       // Clearing the roll is what records the mulligan as taken.
@@ -82,12 +64,8 @@ export function dispatch(game: TitanGame, action: GameAction, random: Random = d
       break
     case "masterboard/finalizeMusters":
       assertPhase(game, MasterboardPhase.MUSTER)
-      // A muster the submission leaves out is not committed.
-      TitanGame.getStacksForPlayer(game).forEach(stack => {
-        stack.currentMuster = undefined
-      })
-      action.payload.forEach(muster => TitanGame.setRecruit(game, muster))
-      TitanGame.nextPhase(game)
+      TitanGame.setMusters(game, action.payload)
+      TitanGame.finalizeMusters(game)
       break
     case "battle/finalizeMoves": {
       const battle = requireActiveBattle(game)
@@ -102,22 +80,12 @@ export function dispatch(game: TitanGame, action: GameAction, random: Random = d
       Battle.nextPhase(battle)
       break
     }
-    case "battle/attackCreature": {
-      const battle = requireActiveBattle(game)
-      const attacker = requireCreature(battle, action.payload.attacker)
-      const target = requireCreature(battle, action.payload.target)
-      const rolls = rollDice(random, Battle.getAdjustedStrike(battle, attacker, target).dice)
-      Battle.attackCreature(battle, { ...action.payload, rolls })
+    case "battle/attackCreature":
+      rollAttack(requireActiveBattle(game), action.payload, random)
       break
-    }
-    case "battle/rangestrikeCreature": {
-      const battle = requireActiveBattle(game)
-      const attacker = requireCreature(battle, action.payload.attacker)
-      const target = requireCreature(battle, action.payload.target.creature)
-      const strike = Battle.getRangestrike(attacker, { ...action.payload.target, creature: target })
-      Battle.rangestrikeCreature(battle, { ...action.payload, rolls: rollDice(random, strike.dice) })
+    case "battle/rangestrikeCreature":
+      rollRangestrike(requireActiveBattle(game), action.payload, random)
       break
-    }
     case "battle/commitCarryover": {
       const battle = requireActiveBattle(game)
       action.payload.forEach(target => Battle.assignCarryover(battle, target))
@@ -130,6 +98,20 @@ export function dispatch(game: TitanGame, action: GameAction, random: Random = d
       // without a matching case here.
       throw new Error(`Unhandled action: ${JSON.stringify(action satisfies never)}`)
   }
+}
+
+function rollAttack(battle: Battle, request: AttackRequest, random: Random): void {
+  const attacker = requireCreature(battle, request.attacker)
+  const target = requireCreature(battle, request.target)
+  const rolls = rollDice(random, Battle.getAdjustedStrike(battle, attacker, target).dice)
+  Battle.attackCreature(battle, { ...request, rolls })
+}
+
+function rollRangestrike(battle: Battle, request: RangestrikeRequest, random: Random): void {
+  const attacker = requireCreature(battle, request.attacker)
+  const target = requireCreature(battle, request.target.creature)
+  const strike = Battle.getRangestrike(attacker, { ...request.target, creature: target })
+  Battle.rangestrikeCreature(battle, { ...request, rolls: rollDice(random, strike.dice) })
 }
 
 function assertPhase(game: TitanGame, phase: MasterboardPhase): void {
