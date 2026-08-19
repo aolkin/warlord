@@ -29,6 +29,10 @@ export interface Path {
   path: MasterboardHex[]
 }
 
+export interface SplitCommit {
+  stack: StackRef
+  creatures: number[] // indices into stack.creatures
+}
 export interface MovePayload {
   stack: StackRef
   hex: number
@@ -235,17 +239,49 @@ export namespace TitanGame {
     game.activeBattleHex = attackingStack.hex
   }
 
+  export function finalizeMoves(game: TitanGame, moves: MovePayload[]): void {
+    assert(game.activePhase === MasterboardPhase.MOVE, "Innappropriate phase")
+    moves.forEach(payload => move(game, payload))
+    game.activeRoll = undefined
+    // TODO: recombine splits that failed to move
+    // The battle phase opens with no battle: rule 9.1 has the player initiate each
+    // engagement separately, in the order they pick.
+    advancePhase(game)
+    if (getEngagedStacks(game).length === 0) {
+      advancePhase(game)
+    }
+  }
+
+  /** Pushes each stack's staged split out as a new stack and opens the move phase. */
+  export function finalizeSplits(game: TitanGame): void {
+    // TODO: check mayProceed before advancing — round-1 split rule (exactly 4 creatures with 1 lord) not yet enforced
+    getStacksForPlayer(game)
+      .filter(stack => Stack.getSplittingCreatures(stack).length > 0)
+      .forEach(stack => {
+        // Each pushed stack claims a marker, so the next split needs a fresh read.
+        game.stacks.push(Stack.finalizeSplit(stack, getNextMarker(game)!, game.round))
+      })
+    game.mulliganTaken = false
+    advancePhase(game)
+  }
+
+  /** Recruits each stack's staged muster. */
+  export function finalizeMusters(game: TitanGame): void {
+    getStacksForPlayer(game)
+      .filter((stack): stack is Stack & { currentMuster: MusterChoice } => stack.currentMuster !== undefined)
+      .forEach(stack => {
+        const recruitedCreature = finalizeMuster(game.round, stack)
+        game.creaturePool[recruitedCreature]--
+      })
+    // Muster is a turn's last phase, so advancing past it wraps to the next player's split.
+    advancePhase(game)
+    getStacksForPlayer(game).forEach(startPlayerTurn)
+  }
+
   export function nextPhase(game: TitanGame): void {
     switch (game.activePhase) {
       case MasterboardPhase.SPLIT:
-        // TODO: check mayProceed before advancing — round-1 split rule (exactly 4 creatures with 1 lord) not yet enforced
-        getStacksForPlayer(game)
-          .filter(stack => Stack.getSplittingCreatures(stack).length > 0)
-          .forEach(stack => {
-            // Each pushed stack claims a marker, so the next split needs a fresh read.
-            game.stacks.push(Stack.finalizeSplit(stack, getNextMarker(game)!, game.round))
-          })
-        game.mulliganTaken = false
+        finalizeSplits(game)
         break
       case MasterboardPhase.MOVE: {
         const engagedStacks = getEngagedStacks(game)
@@ -253,32 +289,45 @@ export namespace TitanGame {
         // which battle to resolve first. Refusing to advance keeps the game out of a battle
         // phase with no battle to resolve.
         assert(engagedStacks.length <= 1, "Multiple simultaneous engagements are unsupported")
-        game.activeRoll = undefined
-        // TODO: recombine splits that failed to move
-        if (engagedStacks.length === 0) {
-          advancePhase(game)
-        } else {
+        // Moves are applied to the stacks as the player makes them, so none are left to submit.
+        finalizeMoves(game, [])
+        if (engagedStacks.length > 0) {
           initiateBattle(game, engagedStacks[0].id)
         }
         break
       }
       case MasterboardPhase.BATTLE:
         assert(game.activeBattle !== undefined, "Incomplete battle!")
+        advancePhase(game)
         break
       case MasterboardPhase.MUSTER:
-        getStacksForPlayer(game)
-          .filter((stack): stack is Stack & { currentMuster: MusterChoice } => stack.currentMuster !== undefined)
-          .forEach(stack => {
-            const recruitedCreature = finalizeMuster(game.round, stack)
-            game.creaturePool[recruitedCreature]--
-          })
+        finalizeMusters(game)
+        break
     }
-    advancePhase(game)
-    if (game.activePhase === MasterboardPhase.SPLIT) {
-      // Every other case above leaves activePhase at MOVE, BATTLE, or MUSTER;
-      // only wrapping past END back to SPLIT lands here.
-      getStacksForPlayer(game).forEach(startPlayerTurn)
-    }
+  }
+
+  /** Replaces the active player's staged splits with the submission, so an omitted stack splits nothing. */
+  export function setSplits(game: TitanGame, splits: SplitCommit[]): void {
+    const submitted = new Map(splits.map(commit => [commit.stack, commit.creatures]))
+    const stacks = getStacksForPlayer(game)
+    assert(
+      stacks.filter(stack => submitted.has(stack.id)).length === submitted.size,
+      "Split submitted for a stack the active player does not own",
+    )
+    stacks.forEach(stack => {
+      const splitting = submitted.get(stack.id) ?? []
+      stack.split.forEach((_, index) => {
+        stack.split[index] = splitting.includes(index)
+      })
+    })
+  }
+
+  /** Replaces the active player's staged musters with the submission, so an omitted stack recruits nothing. */
+  export function setMusters(game: TitanGame, musters: MusterPayload[]): void {
+    getStacksForPlayer(game).forEach(stack => {
+      stack.currentMuster = undefined
+    })
+    musters.forEach(muster => setRecruit(game, muster))
   }
 
   export function setRoll(game: TitanGame, payload?: number): void {

@@ -7,7 +7,7 @@ import { Random } from "@/models/random"
 import { Stack } from "@/models/stack"
 import { MasterboardPhase, TitanGame } from "./game"
 
-const noShuffleRandom: Random = { shuffle: collection => [...collection] }
+const noShuffleRandom: Random = { shuffle: collection => [...collection], die: () => 1 }
 
 function newGame(numPlayers = 2): TitanGame {
   return TitanGame.create(numPlayers, noShuffleRandom)
@@ -17,6 +17,7 @@ describe("TitanGame", () => {
   it("assigns player colors via the injected Random instead of a fixed order", () => {
     const reverse: Random = {
       shuffle: collection => [...collection].reverse(),
+      die: () => 1,
     }
 
     const game = TitanGame.create(2, reverse)
