@@ -29,22 +29,25 @@ import { computed } from "vue"
 import { padStart } from "lodash-es"
 import { PlayerId } from "@/models/player"
 
-const props = withDefaults(defineProps<{
-  color: PlayerId
-  marker: number
-  inSvg?: boolean
-  transform?: string
-}>(), {
-  inSvg: false,
-  transform: ""
-})
+const props = withDefaults(
+  defineProps<{
+    color: PlayerId
+    marker: number
+    inSvg?: boolean
+    transform?: string
+  }>(),
+  {
+    inSvg: false,
+    transform: "",
+  },
+)
 
 const imageUrl = computed(() => {
   const id = padStart(String(props.color * 12 + props.marker + 1), 2, "0")
   return new URL(`../../assets/markers/marker-${id}.svg`, import.meta.url).href
 })
 
-const fullTransform = computed(() => props.inSvg ? props.transform + " translate(-50 -50)" : "")
+const fullTransform = computed(() => (props.inSvg ? props.transform + " translate(-50 -50)" : ""))
 </script>
 
 <style scoped lang="sass">

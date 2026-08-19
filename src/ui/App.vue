@@ -110,13 +110,17 @@ const activeBattle = computed(() => gameStore.game.activeBattle)
 // mutations within the same battle (strikes, wounds, etc.) also change activeBattle. Firing
 // immediately covers a battle already active on mount; the reverse transition clears
 // battleVisible since the toggle button is disabled without one and can't do it itself.
-watch(() => activeBattle.value !== undefined, (hasBattle, hadBattle) => {
-  if (hasBattle && !hadBattle) {
-    battleVisible.value = true
-  } else if (hadBattle && !hasBattle) {
-    battleVisible.value = false
-  }
-}, { immediate: true })
+watch(
+  () => activeBattle.value !== undefined,
+  (hasBattle, hadBattle) => {
+    if (hasBattle && !hadBattle) {
+      battleVisible.value = true
+    } else if (hadBattle && !hasBattle) {
+      battleVisible.value = false
+    }
+  },
+  { immediate: true },
+)
 
 function toggleFancyGraphics(): void {
   preferencesStore.fancyGraphics = !preferencesStore.fancyGraphics

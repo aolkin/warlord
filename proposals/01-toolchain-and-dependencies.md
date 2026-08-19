@@ -46,10 +46,10 @@ ESLint 10 (Feb 2026) removed `.eslintrc` support entirely; flat `eslint.config.j
 
 ## Prettier
 
-**Decided: adopt, incrementally, directory by directory.** ESLint's flat config now includes `eslint-config-prettier`, which turns off the stylistic rules that would otherwise fight Prettier; no lint rule changed behavior beyond that.
+**Decided: adopted, incrementally, directory by directory; now complete.** ESLint's flat config now includes `eslint-config-prettier`, which turns off the stylistic rules that would otherwise fight Prettier; no lint rule changed behavior beyond that. All of `src/` is now formatted and covered by a single `format`/`format:check` glob.
 
-- **Pros:** removes formatting bikeshedding from review; each directory's reformat is a small, isolated, easy-to-review diff instead of one repo-wide churn commit.
-- **Cons:** until every directory is covered, some files are formatted and some aren't; each in-flight PR touching a newly-covered directory needs a rebase-and-reformat pass.
+- **Pros:** removed formatting bikeshedding from review; each directory's reformat was a small, isolated, easy-to-review diff instead of one repo-wide churn commit.
+- **Cons:** while the rollout was in progress, some files were formatted and some weren't, and each in-flight PR touching a newly-covered directory needed a rebase-and-reformat pass.
 - **Config:** `semi: false`, `printWidth: 120`, and `arrowParens: "avoid"` override Prettier's defaults to match the codebase's existing conventions (no semicolons, wide lines already common, single-arg arrows unparenthesized); everything else (double quotes, 2-space indent, trailing commas) already matched Prettier's default.
 
 ## Remove dead and vestigial dependencies

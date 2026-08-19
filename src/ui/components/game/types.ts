@@ -6,5 +6,5 @@ export enum TitanColor {
   BLACK = "titan-black",
   BROWN = "titan-brown",
   ORANGE = "titan-orange",
-  PURPLE = "titan-purple"
+  PURPLE = "titan-purple",
 }
