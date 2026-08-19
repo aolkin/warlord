@@ -1,30 +1,28 @@
 # Framework & Rendering
 
-The boards are SVG built from Vue templates: every hex, stack, creature, and icon is a component, with transforms computed per-component from Vuex getters. Constraint from the project owner: game functionality and the in-game UI should stay largely the same.
+The boards are SVG built from Vue templates: every hex, stack, creature, and icon is a component, with transforms computed per-component. Constraint from the project owner: game functionality and the in-game UI should stay largely the same.
+
+(Originally written when transforms were computed from Vuex getters — doc 04's store refactor and the `<script setup>` migration below have both since landed; see each section's status.)
 
 ## Baseline: upgrade Vue itself (done)
 
 Vue is pinned as a direct dependency at 3.5.41, the current stable release (3.6 remains RC). 3.4–3.5 brought a rewritten reactivity system with substantially less overhead and better memory behavior — free wins for exactly the "heavy dynamic SVG" workload suspected to be slow.
 
-## Measure before choosing a rendering strategy
+## Measure before choosing a rendering strategy (done — see doc 11)
 
-The inefficiency is suspected, not measured. Profile first (Vue devtools flamegraph, `performance` marks around drag/muster/battle interactions, forced re-render counts). Likely cheap wins visible in the code today, in rough order of effort:
+[Doc 11](11-rendering-performance-findings.md) profiled this after doc 04 landed. Summary: doc 04's store refactor already eliminated the concern below (confirmed by grep, not just inferred); a real but small O(stack-count) recompute cost exists in `MasterboardStack.vue`'s hex-occupancy check, not in the static geometry math as originally suspected; and a measured move interaction lands within about one display frame (~16ms, click to painted update) on an unoptimized dev build. Doc 11's recommendation: the numbers don't justify Vapor, Svelte, or canvas — stop here.
 
-1. Options-API `mapGetters` over the reflection-built store (doc 04) makes many getters non-cacheable — the store refactor is probably the single biggest performance lever.
+The three items originally listed here, for reference (see doc 11 for what measurement found for each):
+
+1. ~~Options-API `mapGetters` over the reflection-built store (doc 04) makes many getters non-cacheable — the store refactor is probably the single biggest performance lever.~~ Confirmed resolved: doc 04 removed the Vuex reflection bridge entirely, and no component uses `mapGetters`/`mapState`.
 2. Per-component transform objects rebuilt on every dependency touch; memoize or precompute static hex geometry (the masterboard layout never changes).
 3. `v-memo` / `shallowRef` for lists of hexes and stacks.
 
-- **Pro:** may make the framework question moot.
-- **Con:** delays the fun rewrite.
+## Option A — stay Vue, migrate to `<script setup>` Composition API (done)
 
-## Option A — stay Vue, migrate to `<script setup>` Composition API (decided: do regardless)
+Every `.vue` component now uses `<script setup>` — no Options API, no `mapState`/`mapGetters` (`grep -rL "<script setup" src --include="*.vue"` and `grep -r "mapGetters\|mapState" src/` both return nothing).
 
-All components use Options API with `mapState`/`mapGetters`. Migrating to `<script setup>` is mechanical, doesn't change markup, and is the current mainstream Vue API.
-
-What it buys on its own: better TS inference (props are currently typed via runtime constructors), smaller compiled output, and eligibility for Vapor (Option B) — Vapor requires Composition API. What it does **not** buy: runtime performance. Computed caching works the same in both APIs, and the non-cacheable getters come from the Vuex reflection bridge, which survives an API migration untouched. The performance items above land with the store refactor (doc 04), not with this one — which is why doing the two together per component is the efficient path.
-
-- **Pros:** as above; pairs naturally with Pinia (doc 04); no visual change.
-- **Cons:** touches every component; no immediate user-visible payoff.
+What this bought on its own: better TS inference (props are typed via `defineProps<T>()` instead of runtime constructors), smaller compiled output, and eligibility for Vapor (Option B), which requires Composition API. It did not, by itself, buy runtime performance — that came from doc 04's store refactor landing alongside it. See [doc 11](11-rendering-performance-findings.md) for the measurement.
 
 ## Option B — Vue 3.6 Vapor mode for the board components
 
@@ -49,4 +47,4 @@ Replace the SVG board with a canvas scene graph, keeping Vue for chrome and pane
 
 ## Recommendation
 
-A → measure → B if numbers still disappoint. C and D only if a rewrite is independently desired; the board's element count is modest and the suspected slowness more plausibly lives in the store/reactivity wiring than in SVG itself.
+A → measure → B if numbers still disappoint. [Doc 11](11-rendering-performance-findings.md) is that measurement, and the numbers don't disappoint — stop here. C and D remain options only if a rewrite is independently desired, not for performance: the board's element count is modest, and doc 11 found the store/reactivity wiring cheap in absolute terms even before any optimization.
