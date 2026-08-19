@@ -2,12 +2,9 @@
 
 The boards are SVG built from Vue templates: every hex, stack, creature, and icon is a component, with transforms computed per-component from Vuex getters. Constraint from the project owner: game functionality and the in-game UI should stay largely the same.
 
-## Baseline: upgrade Vue itself (do this regardless)
+## Baseline: upgrade Vue itself (done)
 
-Vue resolves to 3.2.45; current stable is 3.5.x, with 3.6 at RC (July 2026). 3.4–3.5 brought a rewritten reactivity system with substantially less overhead and better memory behavior — free wins for exactly the "heavy dynamic SVG" workload suspected to be slow.
-
-- **Pros:** no code changes required; prerequisite for everything below.
-- **Cons:** none.
+Vue is pinned as a direct dependency at 3.5.41, the current stable release (3.6 remains RC). 3.4–3.5 brought a rewritten reactivity system with substantially less overhead and better memory behavior — free wins for exactly the "heavy dynamic SVG" workload suspected to be slow.
 
 ## Measure before choosing a rendering strategy
 
