@@ -1,8 +1,14 @@
 <template>
   <v-card-title class="d-flex ga-1">
-    <span :class="`text-player-${attacker.player}`">{{ attackerLabel }}</span>
+    <span
+      :class="`text-player-${attacker.player}`"
+      v-text="attackerLabel"
+    ></span>
     <span>vs</span>
-    <span :class="`text-player-${target.player}`">{{ targetLabel }}</span>
+    <span
+      :class="`text-player-${target.player}`"
+      v-text="targetLabel"
+    ></span>
   </v-card-title>
 </template>
 <script setup lang="ts">
