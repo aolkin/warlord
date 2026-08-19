@@ -8,15 +8,15 @@ The answer is two buckets, and getting there means moving every staged decision 
 
 A committed action produces randomness, is irreversible once observed, or changes what another player may do next. These are the log, and every one of them broadcasts.
 
-Action names take a namespace prefix matching the model layer's own split: `TitanGame` functions become `masterboard/…`, `Battle` functions `battle/…`.
+Action names take a literal string prefix on the `type` discriminant itself, not a description of which file the function lives in: `TitanGame.finalizeSplits` dispatches as `{ type: "masterboard/finalizeSplits", ... }`, `Battle.finalizeMoves` as `{ type: "battle/finalizeMoves", ... }`, and so on for every action below. `dispatch` switches on that whole string as one discriminated union, the same way for every variant; the prefix isn't a separate routing key, it's naming convention baked into the string, chosen to match the model layer's own split (`TitanGame` vs `Battle`).
 
 | Action | Why it commits |
 |---|---|
 | `masterboard/finalizeSplits` | Splits the submitted creatures off each stack onto a fresh marker, advances `activePhase` from SPLIT to MOVE, and rolls for movement. Today `nextPhase(game)`'s SPLIT branch does the first two and `setRoll` does the third; entering MOVE is the only thing that occasions a movement roll (rule 6.2), so the roll is this commit's output rather than an action of its own. |
 | `masterboard/rerollMove` | The first-move mulligan (rule 7.6): the player asks for one more roll, binding, offered once in round 0 before any stack has moved. `isMulliganAvailable` enforces exactly that today. The request carries nothing; the record carries the new roll. |
-| `masterboard/finalizeMoves` | Applies the submitted moves, then either advances to MUSTER or opens the battle. |
+| `masterboard/finalizeMoves` | Applies the submitted moves and commits movement only — it does not open a battle itself. If no stack ends up engaged, the phase advances to MUSTER; if one or more do, it advances to BATTLE with none of them resolved yet. |
 | `masterboard/finalizeMusters` | Applies the submitted recruits and decrements the creature pool. |
-| `masterboard/initiateBattle` | Reveals both stacks to the opponent. Has a variant but no caller — only `masterboard/finalizeMoves` reaches it. Doc 05 already proposes demoting it to an internal precondition of that action, and this classification agrees. |
+| `masterboard/initiateBattle` | Reveals both stacks to the opponent. Rule 9.1 has the active player choose the order engagements are resolved in only after inspecting each defending stack — a choice `finalizeMoves` can't make on the player's behalf, since it commits before any stack's contents are revealed. A round can engage more than one of the active player's stacks at once (`getEngagedStacks` returns all of them; `nextPhase`'s `assert(engagedStacks.length <= 1, ...)` is what refuses to advance past a second one today, not a rule), so `initiateBattle` must stay a separately dispatchable action, called once per battle, in the order the player picks. This classification does not follow doc 05's proposal to fold it into `finalizeMoves` as an internal precondition — that proposal assumed a round engages at most one stack. |
 | `battle/finalizeMoves` | Applies the submitted battle moves, then eliminates creatures still off-board and enters the strike phase. Today `Battle.nextPhase`'s MOVE branch does the same. |
 | `battle/endStrikes` | Ends a STRIKE or STRIKEBACK phase: clears `activeStrike`, removes the dead after STRIKEBACK, passes initiative. Today `Battle.nextPhase`'s STRIKE/STRIKEBACK branch does the same. |
 | `battle/attackCreature` | Names a target and, per rule 12.4, optionally a raised to-hit; the commit rolls the attacker's dice, and `performAttack` adds wounds immediately and sets `hasStruck`. |
@@ -91,16 +91,15 @@ Movement is not a hidden-information win. That audit has `hex` public and, under
 
 ## Outside the buckets — state replacement
 
-Three writes reach `game` through no action at all, and the classification has nothing to say about them because they are not gameplay: `gameStore.reset()`, `SystemMenu.loadJson()` (the paste-a-save path), and `SystemMenu.summon()` (a debug cheat that pushes a creature straight onto `selectedStack.creatures`). Under a server these become an admin capability or they go away. Worth deciding rather than discovering during the extraction.
+Three writes reach `game` through no action at all, and the classification has nothing to say about them because they are not gameplay: `gameStore.reset()`, `SystemMenu.loadJson()` (the paste-a-save path), and `SystemMenu.summon()` (a debug cheat that pushes a creature straight onto `selectedStack.creatures`). These stay outside the action union and keep bypassing `dispatch`: they are browser-local cheat paths, kept and maintained as such rather than migrated into a server-visible capability or removed.
 
 ## Sequencing
 
-1. **Split `nextPhase` into the per-phase actions and adopt the prefixes.** `battle/finalizeMoves` and `battle/endStrikes` are new; `initiateBattle` gets demoted. The only change #226 itself needs, and it unblocks it.
+1. **Split `nextPhase` into the per-phase actions and adopt the prefixes.** `battle/finalizeMoves` and `battle/endStrikes` are new; `initiateBattle` stays standalone and drops its `engagedStacks.length <= 1` assert so it can be dispatched once per battle when a round engages more than one stack. The only change #226 itself needs, and it unblocks it.
 2. **Collapse carryover into `battle/commitCarryover`.** Independent of #226 — it lands whenever the UI is ready to accumulate the target list locally.
 3. **Move split and muster staging to the client** (what leaves the engine, above): `finalizeSplits` and `finalizeMusters` take the decisions as payload.
 4. **Move masterboard and battle movement to the client**, the same way. Larger than step 3 because the moves are an ordered list to replay, not an independent choice per stack.
 5. **Split request from record** for the four roll-carrying variants. The commit path rolls through `src/game/models/random.ts`'s `Random` seam, which gains a die roll beside its `shuffle`, so single-player behavior is unchanged and the dice widget animates numbers it is handed. This makes the log replayable, supporting undo and post-game review.
 6. **Route the union through the `GameServer` interface** (doc 05 slice 3).
-7. **Decide the fate of the three state-replacement writes.**
 
 Steps 1–5 stand on their own and need no server.
