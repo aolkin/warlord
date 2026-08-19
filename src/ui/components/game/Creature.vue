@@ -91,7 +91,7 @@
           y="75"
           class="wounds label annotation"
         >
-          {{ `Hit${wounds > 1 ? 's' : ''}` }}
+          {{ `Hit${wounds > 1 ? "s" : ""}` }}
         </text>
       </g>
       <g
@@ -148,21 +148,24 @@ const STANDARD_CREATURE_COLORS: Record<CreatureType, TitanColor> = {
   [CreatureType.UNICORN]: TitanColor.ORANGE,
   [CreatureType.WARBEAR]: TitanColor.YELLOW,
   [CreatureType.WARLOCK]: TitanColor.ORANGE,
-  [CreatureType.WYVERN]: TitanColor.PURPLE
+  [CreatureType.WYVERN]: TitanColor.PURPLE,
 }
 
-const props = withDefaults(defineProps<{
-  type: CreatureType | string
-  playerId?: PlayerId
-  inSvg?: boolean
-  transform?: string
-  wounds?: number
-}>(), {
-  playerId: undefined,
-  inSvg: false,
-  transform: "",
-  wounds: 0
-})
+const props = withDefaults(
+  defineProps<{
+    type: CreatureType | string
+    playerId?: PlayerId
+    inSvg?: boolean
+    transform?: string
+    wounds?: number
+  }>(),
+  {
+    playerId: undefined,
+    inSvg: false,
+    transform: "",
+    wounds: 0,
+  },
+)
 
 // `type` is either a real CreatureType (a number) or an arbitrary label string.
 function isCreatureType(type: CreatureType | string): type is CreatureType {
@@ -173,18 +176,21 @@ const gameStore = useGameStore()
 const preferencesStore = usePreferencesStore()
 const theme = useTheme()
 
-const playerScore = computed(() => props.playerId !== undefined ? gameStore.game.score[props.playerId] : undefined)
+const playerScore = computed(() => (props.playerId !== undefined ? gameStore.game.score[props.playerId] : undefined))
 
 const creature = computed((): Creature | undefined =>
-  isCreatureType(props.type) ? CREATURE_DATA[props.type] : undefined)
+  isCreatureType(props.type) ? CREATURE_DATA[props.type] : undefined,
+)
 
 const creatureName = computed((): string => creature.value?.name.toUpperCase() ?? "")
 
-const imageUrl = computed(() => isCreatureType(props.type)
-  ? new URL(`../../assets/creatures/${CreatureType[props.type]}.svg`, import.meta.url).href
-  : "")
+const imageUrl = computed(() =>
+  isCreatureType(props.type)
+    ? new URL(`../../assets/creatures/${CreatureType[props.type]}.svg`, import.meta.url).href
+    : "",
+)
 
-const fullTransform = computed(() => props.inSvg ? props.transform + " translate(-50 -50)" : "")
+const fullTransform = computed(() => (props.inSvg ? props.transform + " translate(-50 -50)" : ""))
 
 const strength = computed(() => creature.value?.getStrength(playerScore.value ?? 0))
 
@@ -197,11 +203,16 @@ const classes = computed(() => {
   }
   const classMap: Record<string, boolean> = {
     [creature.value?.name.toLowerCase() ?? "label"]: true,
-    "uniform-text": [CreatureColorMode.PLAYER_UNIFORM_TEXT,
-      CreatureColorMode.STANDARD_UNIFORM_TEXT].includes(preferencesStore.creatureColorMode)
+    "uniform-text": [CreatureColorMode.PLAYER_UNIFORM_TEXT, CreatureColorMode.STANDARD_UNIFORM_TEXT].includes(
+      preferencesStore.creatureColorMode,
+    ),
   }
-  if ([CreatureColorMode.STANDARD, CreatureColorMode.STANDARD_UNIFORM_TEXT]
-    .includes(preferencesStore.creatureColorMode) && !creature.value?.lord) {
+  if (
+    [CreatureColorMode.STANDARD, CreatureColorMode.STANDARD_UNIFORM_TEXT].includes(
+      preferencesStore.creatureColorMode,
+    ) &&
+    !creature.value?.lord
+  ) {
     classMap.standard = true
   } else {
     classMap[`text-player-${props.playerId ?? 0}`] = true
@@ -210,23 +221,24 @@ const classes = computed(() => {
 })
 
 const titanStrength = computed(() => ({
-  "double-digits": (creature.value?.type === CreatureType.TITAN &&
-    (playerScore.value ?? 0) >= 400)
+  "double-digits": creature.value?.type === CreatureType.TITAN && (playerScore.value ?? 0) >= 400,
 }))
 
 const filter = computed(() => {
-  let color = theme.current.value.colors[STANDARD_CREATURE_COLORS[isCreatureType(props.type) ? props.type : CreatureType.ANGEL]]
+  let color =
+    theme.current.value.colors[STANDARD_CREATURE_COLORS[isCreatureType(props.type) ? props.type : CreatureType.ANGEL]]
   if (props.playerId !== undefined) {
-    if (creature.value?.lord || [CreatureColorMode.PLAYER_UNIFORM_TEXT,
-      CreatureColorMode.PLAYER].includes(preferencesStore.creatureColorMode)) {
+    if (
+      creature.value?.lord ||
+      [CreatureColorMode.PLAYER_UNIFORM_TEXT, CreatureColorMode.PLAYER].includes(preferencesStore.creatureColorMode)
+    ) {
       color = theme.current.value.colors[`player-${props.playerId}`]
     }
   }
   return FilterCache.getForHex(color).filter
 })
 
-const labelWords = computed((): string[] =>
-  isCreatureType(props.type) ? [] : props.type.split(/\s/))
+const labelWords = computed((): string[] => (isCreatureType(props.type) ? [] : props.type.split(/\s/)))
 </script>
 
 <style scoped lang="sass">
