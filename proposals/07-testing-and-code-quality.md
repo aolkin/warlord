@@ -1,6 +1,6 @@
 # Testing & Code Quality
 
-Vitest unit tests, `vue-tsc` typechecking, and lint all run in `.github/workflows/build.yml` on every PR. Playwright E2E infrastructure landed separately (#140) but isn't wired into CI yet — see below.
+Vitest unit tests, `vue-tsc` typechecking, and lint all run in `.github/workflows/build.yml` on every PR. Playwright E2E infrastructure landed separately (#140) and now runs in its own CI workflow — see below.
 
 ## Unit tests for the game engine (highest value)
 
@@ -56,9 +56,9 @@ Below is one scenario for each masterboard phase and battle-phase type that has 
 
 **Strikeback (Attacker's/Defender's Strikebacks).** Load a battle at a strikeback phase with a creature already near-dead, and force a lethal roll via the same target-and-confirm steps as the Strike scenario above. Click "End Strikebacks" and confirm the killed creature is actually removed from the board (`hex` reset to `0`) once the phase advances — `nextPhase`'s strikeback-only cleanup, the one behavior specific to this phase type rather than shared with Strike. (Full battle resolution is known-incomplete per doc 05, so there's no "battle ends" scenario to test yet.)
 
-### Necessary follow-up: wire into CI
+### CI wiring — done
 
-None of the above pays off if it doesn't run automatically, but a `chromium`-driven suite is slow and expensive next to Lint/Typecheck/Test/Build, and a flaky or failed run shouldn't force retrying the whole `build.yml` job. Give it its own `.github/workflows/e2e.yml` instead, so it can be re-run independently. Gate it the way `build.yml` already gates preview deploys — an `if: contains(github.event.pull_request.labels.*.name, 'preview')` check on the upload step — but with its own label (e.g. `e2e`), so it only runs on PRs opted in rather than every PR. Trigger on `pull_request` only, skipping `push: main`, until the suite has proven itself. The job installs with `pnpm exec playwright install --with-deps chromium` and runs `pnpm test:e2e` — the deferred decision from #140.
+A `chromium`-driven suite is slow and expensive next to Lint/Typecheck/Test/Build, and a flaky or failed run shouldn't force retrying the whole `build.yml` job, so it runs as its own `.github/workflows/e2e.yml` instead, re-runnable independently. It's gated the way `build.yml` gates preview deploys — an `if: contains(github.event.pull_request.labels.*.name, 'e2e')` check — so it only runs on PRs opted in via that label rather than every PR. It triggers on `pull_request` only, installs with `pnpm exec playwright install --with-deps chromium`, and runs `pnpm test:e2e`, resolving the deferred decision from #140.
 
 ## Cleanup items observed in passing
 
