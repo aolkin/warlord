@@ -317,7 +317,10 @@ describe("dispatch", () => {
     )
   })
 
-  it("battle/commitCarryover: wounds the listed targets in order", () => {
+  it.each([
+    { label: "wounds the listed targets in order", targets: true, expectedWounds: 2 },
+    { label: "forfeits the excess hits when nothing is listed", targets: false, expectedWounds: 0 },
+  ])("battle/commitCarryover: $label", ({ targets, expectedWounds }) => {
     const { game, lion, centaur1, centaur2 } = newEngagedBattleGame()
     // Five hits on a three-wound centaur leave two to carry over.
     dispatch(
@@ -326,23 +329,9 @@ describe("dispatch", () => {
       seededRandom(6, 6, 6, 6, 6),
     )
 
-    dispatch(game, { type: "battle/commitCarryover", payload: [centaur2.id] })
+    dispatch(game, { type: "battle/commitCarryover", payload: targets ? [centaur2.id] : [] })
 
-    expect(game.activeBattle!.creatures.find(c => c.id === centaur2.id)!.wounds).toBe(2)
-    expect(Battle.carryoverTargets(game.activeBattle!)).toBeUndefined()
-  })
-
-  it("battle/commitCarryover: forfeits the excess hits when nothing is listed", () => {
-    const { game, lion, centaur1, centaur2 } = newEngagedBattleGame()
-    dispatch(
-      game,
-      { type: "battle/attackCreature", payload: { attacker: lion.id, target: centaur1.id } },
-      seededRandom(6, 6, 6, 6, 6),
-    )
-
-    dispatch(game, { type: "battle/commitCarryover", payload: [] })
-
-    expect(game.activeBattle!.creatures.find(c => c.id === centaur2.id)!.wounds).toBe(0)
+    expect(game.activeBattle!.creatures.find(c => c.id === centaur2.id)!.wounds).toBe(expectedWounds)
     expect(Battle.carryoverTargets(game.activeBattle!)).toBeUndefined()
   })
 
