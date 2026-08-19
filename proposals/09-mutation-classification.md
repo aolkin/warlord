@@ -1,6 +1,6 @@
 # Mutation Classification: Server-Committed vs. Local
 
-Extends doc 05's slice 2 (actions as data through a single dispatch). Doc 05 established *that* every state change should flow through a serializable action; this doc asks which of those actions a server must commit and order. Everything below is read off the code as it stands, including the `GameAction` union on the open `feat/dispatch-entry-point` branch.
+Extends doc 05's slice 2 (actions as data through a single dispatch). Doc 05 established *that* every state change should flow through a serializable action; this doc asks which of those actions a server must commit and order, and lays out the resulting `GameAction` union. Everything below is read off the code as it stands on `main`; that union is what #226 (`feat/dispatch-entry-point`) gets rewritten to hold, not an extension of what it holds today.
 
 The answer is two buckets, and getting there means moving every staged decision out of the engine.
 
@@ -17,8 +17,8 @@ Action names take a namespace prefix matching the model layer's own split: `Tita
 | `masterboard/finalizeMoves` | Applies the submitted moves, then either advances to MUSTER or opens the battle. |
 | `masterboard/finalizeMusters` | Applies the submitted recruits and decrements the creature pool. |
 | `masterboard/initiateBattle` | Reveals both stacks to the opponent. Has a variant but no caller — only `masterboard/finalizeMoves` reaches it. Doc 05 already proposes demoting it to an internal precondition of that action, and this classification agrees. |
-| `battle/finalizeMoves` | Applies the submitted battle moves, then eliminates creatures still off-board and enters the strike phase. **Not in the union today.** |
-| `battle/endStrikes` | Ends a STRIKE or STRIKEBACK phase: clears `activeStrike`, removes the dead after STRIKEBACK, passes initiative. **Not in the union today.** |
+| `battle/finalizeMoves` | Applies the submitted battle moves, then eliminates creatures still off-board and enters the strike phase. Today `Battle.nextPhase`'s MOVE branch does the same. |
+| `battle/endStrikes` | Ends a STRIKE or STRIKEBACK phase: clears `activeStrike`, removes the dead after STRIKEBACK, passes initiative. Today `Battle.nextPhase`'s STRIKE/STRIKEBACK branch does the same. |
 | `battle/attackCreature` | Names a target and, per rule 12.4, optionally a raised to-hit; the commit rolls the attacker's dice, and `performAttack` adds wounds immediately and sets `hasStruck`. |
 | `battle/rangestrikeCreature` | Same, minus the carryover branch and the optional to-hit. |
 | `battle/commitCarryover` | Applies already-rolled excess hits to the listed targets in order, or forfeits them if the list is empty. |
@@ -81,7 +81,7 @@ The dice widget stops producing rolls and starts replaying the ones the record c
 
 ## What this means for `dispatch`
 
-Nothing. Every remaining variant is committed, so there is no per-action routing decision to encode — no `serverCommitted` field, no lookup table. The transport broadcasts everything `dispatch` accepts. The one distinction the union does carry is request versus record, and that is about who fills in a roll, not about where an action goes. #226's shape — single entry point, discriminated union, id-carrying payloads — is unaffected; what changes is which variants the union holds and what they are called.
+Nothing. Every remaining variant is committed, so there is no per-action routing decision to encode — no `serverCommitted` field, no lookup table. The transport broadcasts everything `dispatch` accepts. The one distinction the union does carry is request versus record, and that is about who fills in a roll, not about where an action goes. Doc 05's dispatch shape — single entry point, discriminated union, id-carrying payloads — is unaffected; this classification only settles which variants the union holds and what they're called.
 
 ## Interaction with the hidden-information audit
 
