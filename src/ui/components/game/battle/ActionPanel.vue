@@ -16,14 +16,13 @@
       />
     </template>
     <v-card-text v-if="battlePhaseType === BattlePhaseType.MOVE && pendingCreatures > 0">
-      You have {{ pendingCreatures }} creature{{ pendingCreatures > 1 ? 's' : '' }} that
-      {{ pendingCreatures > 1 ? 'have' : 'has' }} not entered the battle board. If they do
-      not do so this round, they will be eliminated.
+      You have {{ pendingCreatures }} creature{{ pendingCreatures > 1 ? "s" : "" }} that
+      {{ pendingCreatures > 1 ? "have" : "has" }} not entered the battle board. If they do not do so this round, they
+      will be eliminated.
     </v-card-text>
     <v-card-text v-if="pendingStrikes.length > 0">
-      You have {{ pendingStrikes.length }} creature{{ pendingStrikes.length > 1 ? 's' : '' }} that
-      {{ pendingStrikes.length > 1 ? 'have' : 'has' }} not yet struck. Every creature that can strike
-      must do so.
+      You have {{ pendingStrikes.length }} creature{{ pendingStrikes.length > 1 ? "s" : "" }} that
+      {{ pendingStrikes.length > 1 ? "have" : "has" }} not yet struck. Every creature that can strike must do so.
     </v-card-text>
     <v-fade-transition
       leave
@@ -44,12 +43,7 @@
 </template>
 <script setup lang="ts">
 import { computed } from "vue"
-import {
-  BATTLE_PHASE_TYPES,
-  Battle,
-  BattleCreature,
-  BattlePhaseType
-} from "@/models/battle"
+import { BATTLE_PHASE_TYPES, Battle, BattleCreature, BattlePhaseType } from "@/models/battle"
 import { TitanGame } from "@/models/game"
 import { PlayerId } from "@/models/player"
 import { useGameStore } from "~/stores/game"
@@ -92,29 +86,29 @@ const phaseIcon = computed((): string => {
 })
 
 const pendingStrikes = computed((): BattleCreature[] => {
-  if (battlePhaseType.value === BattlePhaseType.STRIKE ||
-    battlePhaseType.value === BattlePhaseType.STRIKEBACK) {
+  if (battlePhaseType.value === BattlePhaseType.STRIKE || battlePhaseType.value === BattlePhaseType.STRIKEBACK) {
     return Battle.getPendingStrikes(props.battle)
   } else {
     return []
   }
 })
 
-const mayProceed = computed((): boolean =>
-  pendingStrikes.value.length === 0 && !Battle.carryoverTargets(props.battle))
+const mayProceed = computed((): boolean => pendingStrikes.value.length === 0 && !Battle.carryoverTargets(props.battle))
 
 const roundIcon = computed((): string => {
   const name = `mdi-numeric-${props.battle.round + 1}-box`
   return name + (battleActivePlayerId.value === props.battle.defender ? "-outline" : "")
 })
 
-const pendingCreatures = computed((): number =>
-  props.battle.creatures.filter((creature: BattleCreature) =>
-    creature.player === battleActivePlayerId.value && creature.hex >= 36).length)
+const pendingCreatures = computed(
+  (): number =>
+    props.battle.creatures.filter(
+      (creature: BattleCreature) => creature.player === battleActivePlayerId.value && creature.hex >= 36,
+    ).length,
+)
 </script>
 <style scoped lang="sass">
 @import "~/styles/terrain-colors.sass"
 
 @include battlemap-colors(".board :deep(.hex)", fill)
-
 </style>

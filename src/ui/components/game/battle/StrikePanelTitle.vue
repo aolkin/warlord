@@ -1,14 +1,14 @@
 <template>
-  <v-card-title>
-    <span :class="`text-player-${attacker.player}`">
-      {{ attacker.name }}
-      <span v-if="attackerHazard !== Hazard.NONE">({{ Hazard[attackerHazard].toLowerCase() }}) </span>
-    </span>
-    <span>vs </span>
-    <span :class="`text-player-${target.player}`">
-      {{ target.name }}
-      <span v-if="targetHazard !== Hazard.NONE">({{ Hazard[targetHazard].toLowerCase() }})</span>
-    </span>
+  <v-card-title class="d-flex ga-1">
+    <span
+      :class="`text-player-${attacker.player}`"
+      v-text="attackerLabel"
+    ></span>
+    <span>vs</span>
+    <span
+      :class="`text-player-${target.player}`"
+      v-text="targetLabel"
+    ></span>
   </v-card-title>
 </template>
 <script setup lang="ts">
@@ -24,7 +24,14 @@ const props = defineProps<{
 
 const board = computed((): BattleBoard => BATTLE_BOARDS[props.terrain])
 const attackerHazard = computed((): Hazard =>
-  props.attacker ? board.value.getHazard(props.attacker.hex) : Hazard.NONE)
-const targetHazard = computed((): Hazard =>
-  props.target ? board.value.getHazard(props.target.hex) : Hazard.NONE)
+  props.attacker ? board.value.getHazard(props.attacker.hex) : Hazard.NONE,
+)
+const targetHazard = computed((): Hazard => (props.target ? board.value.getHazard(props.target.hex) : Hazard.NONE))
+
+function withHazardSuffix(name: string, hazard: Hazard): string {
+  return hazard === Hazard.NONE ? name : `${name} (${Hazard[hazard].toLowerCase()})`
+}
+
+const attackerLabel = computed(() => withHazardSuffix(props.attacker.name, attackerHazard.value))
+const targetLabel = computed(() => withHazardSuffix(props.target.name, targetHazard.value))
 </script>

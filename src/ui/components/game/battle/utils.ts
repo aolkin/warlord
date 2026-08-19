@@ -5,8 +5,7 @@ export const hexTransform = (hex: number): Transformations => {
   const row = div(hex, 6) - 3
   const offset = mod(row, 2) * -58
   const column = mod(hex, 6) - 3
-  const translation = new Transformation(TransformationType.TRANSLATE,
-    [offset + column * 116, row * 100])
+  const translation = new Transformation(TransformationType.TRANSLATE, [offset + column * 116, row * 100])
   return new Transformations(translation)
 }
 

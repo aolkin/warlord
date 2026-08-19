@@ -5,8 +5,7 @@
       :key="creature.id"
       :type="creature.type"
       :player-id="creature.player"
-      :class="{ interactive,
-                selected: creature.id === selectedCreatureId }"
+      :class="{ interactive, selected: creature.id === selectedCreatureId }"
       class="ma-1 pending"
       @click="interactive && emit('select', creature)"
     />

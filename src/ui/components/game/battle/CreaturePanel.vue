@@ -17,10 +17,7 @@
           class="d-flex flex-column"
           :class="orderingClasses"
         >
-          <div
-            v-if="pendingOffense.length > 0 ||
-              (attackerMoveActive && props.selectedCanLeaveBoard)"
-          >
+          <div v-if="pendingOffense.length > 0 || (attackerMoveActive && props.selectedCanLeaveBoard)">
             <v-card-title>{{ attacker.name }}'s Pending Creatures</v-card-title>
             <PendingCreatures
               :creatures="pendingOffense"
@@ -32,10 +29,7 @@
               @remove="emit('remove')"
             />
           </div>
-          <div
-            v-if="pendingDefense.length > 0 ||
-              (defenderMoveActive && props.selectedCanLeaveBoard)"
-          >
+          <div v-if="pendingDefense.length > 0 || (defenderMoveActive && props.selectedCanLeaveBoard)">
             <v-card-title>{{ defender.name }}'s Pending Creatures</v-card-title>
             <PendingCreatures
               :creatures="pendingDefense"
@@ -107,26 +101,29 @@ const activeBattle = computed(() => game.activeBattle!)
 const attackerMoveActive = computed(() => activeBattle.value.phase === BattlePhase.ATTACKER_MOVE)
 const defenderMoveActive = computed(() => activeBattle.value.phase === BattlePhase.DEFENDER_MOVE)
 
-const orderingClasses = computed(() =>
-  ({
-    "flex-column-reverse": props.localPlayerIsDefender
-  }))
-const attacker = computed<Player>(() =>
-  TitanGame.getPlayerById(game, activeBattle.value.attacker))
-const defender = computed<Player>(() =>
-  TitanGame.getPlayerById(game, activeBattle.value.defender))
+const orderingClasses = computed(() => ({
+  "flex-column-reverse": props.localPlayerIsDefender,
+}))
+const attacker = computed<Player>(() => TitanGame.getPlayerById(game, activeBattle.value.attacker))
+const defender = computed<Player>(() => TitanGame.getPlayerById(game, activeBattle.value.defender))
 const offense = computed<BattleCreature[]>(() =>
-  activeBattle.value.creatures.filter(creature => creature.player === activeBattle.value.attacker))
+  activeBattle.value.creatures.filter(creature => creature.player === activeBattle.value.attacker),
+)
 const defense = computed<BattleCreature[]>(() =>
-  activeBattle.value.creatures.filter(creature => creature.player === activeBattle.value.defender))
+  activeBattle.value.creatures.filter(creature => creature.player === activeBattle.value.defender),
+)
 const pendingOffense = computed<BattleCreature[]>(() =>
-  offense.value.filter((creature: BattleCreature) => creature.hex >= 36))
+  offense.value.filter((creature: BattleCreature) => creature.hex >= 36),
+)
 const pendingDefense = computed<BattleCreature[]>(() =>
-  defense.value.filter((creature: BattleCreature) => creature.hex >= 36))
+  defense.value.filter((creature: BattleCreature) => creature.hex >= 36),
+)
 const deadOffense = computed<BattleCreature[]>(() =>
-  offense.value.filter((creature: BattleCreature) => creature.hex === 0))
+  offense.value.filter((creature: BattleCreature) => creature.hex === 0),
+)
 const deadDefense = computed<BattleCreature[]>(() =>
-  defense.value.filter((creature: BattleCreature) => creature.hex === 0))
+  defense.value.filter((creature: BattleCreature) => creature.hex === 0),
+)
 </script>
 <style scoped lang="sass">
 .interactive
