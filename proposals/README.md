@@ -22,13 +22,22 @@ Written July 2026. The last feature commit landed January 2023 and the last depe
 | [05-multiplayer-architecture.md](05-multiplayer-architecture.md) | Preparing for server-mediated multiplayer |
 | [07-testing-and-code-quality.md](07-testing-and-code-quality.md) | Test infrastructure, type strictness, cleanup |
 | [08-bundle-size.md](08-bundle-size.md) | Production bundle size: dice-box chunking, lazy-loading, Vuetify/icon tree-shaking |
+| [09-mutation-classification.md](09-mutation-classification.md) | Which mutations a server must commit and order, and which stay on the client |
 
 ## Suggested sequencing
 
 1. **Toolchain** (doc 01): everything else is easier on current Vite/TS/ESLint, and none of it changes app behavior.
 2. **Mechanical model split + tests around game logic** (doc 07): the models are pure TypeScript and testable today; do this before refactoring them.
 3. **State management** (doc 04): the Vuex-reflection layer is the biggest structural obstacle to both performance work and multiplayer.
-4. **Multiplayer groundwork** (doc 05): engine extraction behind a local-server interface while touching the store anyway.
+4. **Multiplayer groundwork** (docs 05 and 09): engine extraction behind a local-server interface while touching the store anyway. Doc 09 classifies the mutations that interface carries.
 5. **Rendering** (doc 03): measure once the store refactor has landed, then decide on Vapor/canvas.
 
-Doc 01 (toolchain) is fully done: pnpm updated to 11.22.0. Doc 02 (CI and deployment) is fully landed; the doc has been removed. Doc 04 (state management) is done: `Stack`, `BattleCreature`, `ActiveStrike`, `Battle`, and `TitanGame` are all plain interfaces plus free functions now, with no classes left in the model layer. Doc 05 (multiplayer groundwork) is partially landed: persistence has moved out of the engine and the old `do*`/`m*` method split has collapsed, but the action-union/single-dispatch entry point, the workspace-package extraction, and the hidden-information audit are still pending. Doc 06 (UI chrome) is fully landed; the doc has been removed. Doc 08 (bundle size) is resolved except one open item: a Vite/Rolldown chunk-duplication bug in dice-box's `world.offscreen.js` build output, non-urgent since lazy-loading already keeps that chunk off the critical path.
+Status by doc:
+
+- **Doc 01 (toolchain):** fully done — pnpm updated to 11.22.0.
+- **Doc 02 (CI and deployment):** fully landed; the doc has been removed.
+- **Doc 04 (state management):** done — `Stack`, `BattleCreature`, `ActiveStrike`, `Battle`, and `TitanGame` are all plain interfaces plus free functions now, with no classes left in the model layer.
+- **Doc 05 (multiplayer groundwork):** partially landed — persistence has moved out of the engine and the old `do*`/`m*` method split has collapsed, but the action-union/single-dispatch entry point, the workspace-package extraction, and the hidden-information audit are still pending.
+- **Doc 06 (UI chrome):** fully landed; the doc has been removed.
+- **Doc 08 (bundle size):** resolved except one open item — a Vite/Rolldown chunk-duplication bug in dice-box's `world.offscreen.js` build output, non-urgent since lazy-loading already keeps that chunk off the critical path.
+- **Doc 09 (mutation classification):** entirely unbuilt and written to be argued with first; its first step gates doc 05's pending dispatch entry point.
