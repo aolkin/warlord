@@ -235,6 +235,19 @@ export namespace TitanGame {
     game.activeBattleHex = attackingStack.hex
   }
 
+  export function finalizeMoves(game: TitanGame, moves: MovePayload[]): void {
+    assert(game.activePhase === MasterboardPhase.MOVE, "Innappropriate phase")
+    moves.forEach(payload => move(game, payload))
+    game.activeRoll = undefined
+    // TODO: recombine splits that failed to move
+    // The battle phase opens with no battle: rule 9.1 has the player initiate each
+    // engagement separately, in the order they pick.
+    advancePhase(game)
+    if (getEngagedStacks(game).length === 0) {
+      advancePhase(game)
+    }
+  }
+
   export function nextPhase(game: TitanGame): void {
     switch (game.activePhase) {
       case MasterboardPhase.SPLIT:
@@ -253,14 +266,12 @@ export namespace TitanGame {
         // which battle to resolve first. Refusing to advance keeps the game out of a battle
         // phase with no battle to resolve.
         assert(engagedStacks.length <= 1, "Multiple simultaneous engagements are unsupported")
-        game.activeRoll = undefined
-        // TODO: recombine splits that failed to move
-        if (engagedStacks.length === 0) {
-          advancePhase(game)
-        } else {
+        // Moves are applied to the stacks as the player makes them, so none are left to submit.
+        finalizeMoves(game, [])
+        if (engagedStacks.length > 0) {
           initiateBattle(game, engagedStacks[0].id)
         }
-        break
+        return
       }
       case MasterboardPhase.BATTLE:
         assert(game.activeBattle !== undefined, "Incomplete battle!")

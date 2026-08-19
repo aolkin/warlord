@@ -1,4 +1,4 @@
-import { shuffle } from "lodash-es"
+import { random, shuffle } from "lodash-es"
 
 /**
  * Seam for gameplay-relevant randomness, so callers (tests, multiplayer's shared-seed
@@ -6,8 +6,11 @@ import { shuffle } from "lodash-es"
  */
 export interface Random {
   shuffle<T>(collection: readonly T[]): T[]
+  /** One six-sided die, 1 through 6. */
+  die(): number
 }
 
 export const defaultRandom: Random = {
   shuffle: collection => shuffle(collection),
+  die: () => random(1, 6),
 }
