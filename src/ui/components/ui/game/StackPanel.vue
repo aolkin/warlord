@@ -130,12 +130,8 @@ const game = gameStore.game
 const selectionStore = useSelectionStore()
 const splitStagingStore = useSplitStagingStore()
 
-const owned = computed((): boolean => game.activePlayerId === props.focusedStack?.owner)
-
-// A split needs at least 2 creatures remaining and 2 splitting off, so any stack of 2 or
-// fewer can never produce a valid split.
 const splittable = computed(
-  (): boolean => owned.value && TitanGame.isSplitPhase(game) && (props.focusedStack?.creatures.length ?? 0) > 2,
+  (): boolean => props.focusedStack !== undefined && splitStagingStore.isSplittable(props.focusedStack.id),
 )
 
 const stagedSplit = computed((): number[] =>
@@ -204,9 +200,7 @@ const musteringCaption = computed(() => {
 })
 
 function toggleSplit(index: number): void {
-  if (splittable.value) {
-    splitStagingStore.toggle(props.focusedStack!.id, index)
-  }
+  splitStagingStore.toggle(props.focusedStack!.id, index)
 }
 
 function cycleStacks(by: number): void {

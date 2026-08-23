@@ -1,6 +1,6 @@
 import { defineStore } from "pinia"
 import { computed, reactive, watch } from "vue"
-import { SplitCommit } from "@/models/game"
+import { SplitCommit, TitanGame } from "@/models/game"
 import { StackRef } from "@/models/stack"
 import { useGameStore } from "~/stores/game"
 
@@ -14,7 +14,22 @@ export const useSplitStagingStore = defineStore("splitStaging", () => {
     return [...(staged.get(stack) ?? [])]
   }
 
+  // A split needs at least 2 creatures remaining and 2 splitting off, so any stack of 2 or
+  // fewer can never produce a valid split.
+  function isSplittable(stack: StackRef): boolean {
+    const found = gameStore.game.stacks.find(s => s.id === stack)
+    return (
+      found !== undefined &&
+      found.owner === gameStore.game.activePlayerId &&
+      TitanGame.isSplitPhase(gameStore.game) &&
+      found.creatures.length > 2
+    )
+  }
+
   function toggle(stack: StackRef, index: number): void {
+    if (!isSplittable(stack)) {
+      return
+    }
     if (!staged.has(stack)) {
       staged.set(stack, new Set())
     }
@@ -37,6 +52,7 @@ export const useSplitStagingStore = defineStore("splitStaging", () => {
 
   return {
     splittingIndices,
+    isSplittable,
     toggle,
     pendingCommits,
   }
