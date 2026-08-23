@@ -4,11 +4,7 @@ import { MusterPayload } from "@/models/game"
 import { MusterChoice, StackRef } from "@/models/stack"
 import { useGameStore } from "~/stores/game"
 
-/**
- * Which recruit the player has picked for each of their stacks. The pick is reversible until
- * it is submitted, so it never reaches `game`: the whole set is handed to
- * TitanGame.finalizeMusters at once (see proposals/09-mutation-classification.md).
- */
+/** Which recruit for each stack, reversible until submitted to TitanGame.finalizeMusters. */
 export const useMusterStagingStore = defineStore("musterStaging", () => {
   const gameStore = useGameStore()
 
