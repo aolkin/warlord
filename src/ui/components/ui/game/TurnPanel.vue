@@ -9,7 +9,7 @@
       <v-icon size="x-large" />
     </template>
     <v-card-text v-if="TitanGame.isSplitPhase(game)">
-      <span v-if="TitanGame.getMayProceed(game)">
+      <span v-if="mayProceed">
         Split stacks if desired, or proceed to roll.
         <span v-if="sevenHighCount > 0">
           You have {{ sevenHighCount }} full stack{{ sevenHighCount > 1 ? "s" : "" }}!
@@ -21,9 +21,7 @@
       Moved {{ movedCount }} of {{ gameStore.activeStacks.length }} stacks.
       {{ engagementsMessage }}
       <span v-if="movedCount < 1">You must move at least one stack!</span>
-      <span v-else-if="!TitanGame.getMayProceed(game)">
-        You must move at least one stack from each split if possible.
-      </span>
+      <span v-else-if="!mayProceed">You must move at least one stack from each split if possible.</span>
     </v-card-text>
     <v-card-text v-else-if="TitanGame.isMusterPhase(game)">
       Mustered a recruit in {{ musteredCount }} of {{ gameStore.activeStacks.length }} stacks.
@@ -32,7 +30,7 @@
       <v-card-actions v-if="TitanGame.isSplitPhase(game)">
         <v-btn
           block
-          :disabled="!TitanGame.getMayProceed(game)"
+          :disabled="!mayProceed"
           variant="outlined"
           @click="proceedToRoll"
         >
@@ -53,7 +51,7 @@
           v-else
           block
           :variant="movedCount === gameStore.activeStacks.length ? 'outlined' : 'tonal'"
-          :disabled="!TitanGame.getMayProceed(game)"
+          :disabled="!mayProceed"
           @click="TitanGame.nextPhase(game)"
         >
           {{ TitanGame.getEngagedStacks(game).length > 0 ? "Proceed to Battle" : "Proceed to Muster" }}
@@ -63,7 +61,7 @@
         <v-btn
           block
           variant="outlined"
-          :disabled="!TitanGame.getMayProceed(game)"
+          :disabled="!mayProceed"
           @click="TitanGame.nextPhase(game)"
         >
           End Turn
@@ -80,11 +78,15 @@ import type DiceRoller from "~/components/ui/generic/DiceRoller"
 import { MasterboardPhase, TitanGame } from "@/models/game"
 import { Moveable } from "@/models/moveable"
 import { useGameStore } from "~/stores/game"
+import { useStackSplitsStore } from "~/stores/ui/stackSplits"
 
 const diceRoller = inject<Readonly<Ref<InstanceType<typeof DiceRoller> | null>>>("diceRoller")
 
 const gameStore = useGameStore()
 const game = gameStore.game
+const stackSplitsStore = useStackSplitsStore()
+
+const mayProceed = computed(() => TitanGame.getMayProceed(game, stackSplitsStore.pendingSplits))
 
 const icon = computed(() => {
   switch (game.activePhase) {
@@ -122,7 +124,7 @@ function roll(): void {
 }
 
 function proceedToRoll(): void {
-  TitanGame.nextPhase(game)
+  TitanGame.finalizeSplits(game, stackSplitsStore.pendingSplits)
   roll()
 }
 </script>

@@ -10,3 +10,5 @@ nuxt.d.ts
 .idea/*
 test-results
 playwright-report
+public/assets/ammo
+public/assets/themes

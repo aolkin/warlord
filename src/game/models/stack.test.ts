@@ -5,70 +5,46 @@ import { Terrain } from "./masterboard"
 import { PlayerId } from "./player"
 
 describe("Stack splitting", () => {
+  // Default 8 creatures: [TITAN, ANGEL, CENTAUR, CENTAUR, OGRE, OGRE, GARGOYLE, GARGOYLE]
+  const newStack = (): Stack => Stack.create({ owner: PlayerId.RED, hex: 5, marker: 0, createdRound: 0 })
+
   it("rejects a first-round split unless exactly 4 creatures split off with exactly one lord", () => {
-    const stack = Stack.create({ owner: PlayerId.RED, hex: 5, marker: 0, createdRound: 0 })
-    // Default 8: [TITAN, ANGEL, CENTAUR, CENTAUR, OGRE, OGRE, GARGOYLE, GARGOYLE]
-    expect(Stack.isValidSplit(stack, true)).toBe(false) // nothing marked yet
-
-    stack.split[0] = true // TITAN
-    stack.split[2] = true // CENTAUR
-    stack.split[4] = true // OGRE
-    expect(Stack.isValidSplit(stack, true)).toBe(false) // only 3 marked
-
-    stack.split[1] = true // ANGEL - now 4 marked but 2 lords (TITAN + ANGEL)
-    expect(Stack.isValidSplit(stack, true)).toBe(false)
-
-    stack.split[1] = false
-    stack.split[6] = true // GARGOYLE - back to 4 marked, 1 lord (TITAN)
-    expect(Stack.isValidSplit(stack, true)).toBe(true)
+    const stack = newStack()
+    expect(Stack.isValidSplit(stack, [], true)).toBe(false) // nothing selected yet
+    expect(Stack.isValidSplit(stack, [0, 2, 4], true)).toBe(false) // only 3 selected
+    expect(Stack.isValidSplit(stack, [0, 1, 2, 4], true)).toBe(false) // 4 selected but 2 lords (TITAN + ANGEL)
+    expect(Stack.isValidSplit(stack, [0, 2, 4, 6], true)).toBe(true) // 4 selected, 1 lord (TITAN)
   })
 
   it("allows splitting off zero, or two-or-more leaving at least two behind, in later rounds", () => {
-    const stack = Stack.create({ owner: PlayerId.RED, hex: 5, marker: 0, createdRound: 0 })
-    expect(Stack.isValidSplit(stack)).toBe(true) // no pending split is always valid outside round 1
-
-    stack.split[0] = true
-    expect(Stack.isValidSplit(stack)).toBe(false) // splitting exactly 1 creature is never valid
-
-    stack.split[1] = true
-    expect(Stack.isValidSplit(stack)).toBe(true) // 2 splitting, 6 remaining
-
-    // Splitting off 6 of 8 would leave only 2 behind, which is still valid...
-    for (let i = 2; i < 6; i++) stack.split[i] = true
-    expect(Stack.getSplittingCreatures(stack).length).toBe(6)
-    expect(Stack.isValidSplit(stack)).toBe(true)
-
+    const stack = newStack()
+    expect(Stack.isValidSplit(stack, [])).toBe(true) // selecting nothing is always valid outside round 1
+    expect(Stack.isValidSplit(stack, [0])).toBe(false) // splitting exactly 1 creature is never valid
+    expect(Stack.isValidSplit(stack, [0, 1])).toBe(true) // 2 splitting, 6 remaining
+    // Splitting off 6 of 8 leaves 2 behind, which is still valid...
+    expect(Stack.isValidSplit(stack, [0, 1, 2, 3, 4, 5])).toBe(true)
     // ...but leaving fewer than 2 behind is not.
-    stack.split[6] = true
-    expect(Stack.getSplittingCreatures(stack).length).toBe(7)
-    expect(Stack.isValidSplit(stack)).toBe(false)
+    expect(Stack.isValidSplit(stack, [0, 1, 2, 3, 4, 5, 6])).toBe(false)
   })
 
   it("finalizes a split into a new stack sharing the same hex but a new marker", () => {
-    const stack = Stack.create({ owner: PlayerId.RED, hex: 5, marker: 0, createdRound: 0 })
-    stack.split[0] = true
-    stack.split[2] = true
-    stack.split[4] = true
-    stack.split[6] = true
-    const splitOff = Stack.getSplittingCreatures(stack)
+    const stack = newStack()
+    const splitting = [0, 2, 4, 6]
+    const splitOff = Stack.getSplittingCreatures(stack, splitting)
+    const staying = Stack.getStayingCreatures(stack, splitting)
 
-    const newStack = Stack.finalizeSplit(stack, 1, 0)
+    const splitStack = Stack.finalizeSplit(stack, splitting, 1, 0)
 
-    expect(newStack.owner).toBe(PlayerId.RED)
-    expect(newStack.hex).toBe(5)
-    expect(newStack.initialHex).toBe(5)
-    expect(newStack.marker).toBe(1)
-    expect(newStack.creatures).toEqual(splitOff)
-    expect(stack.creatures.length).toBe(4)
-    expect(stack.creatures).toEqual(Stack.getStayingCreatures(stack))
-    // The pending split markers are cleared after finalizing.
-    expect(Stack.getSplittingCreatures(stack).length).toBe(0)
+    expect(splitStack.owner).toBe(PlayerId.RED)
+    expect(splitStack.hex).toBe(5)
+    expect(splitStack.initialHex).toBe(5)
+    expect(splitStack.marker).toBe(1)
+    expect(splitStack.creatures).toEqual(splitOff)
+    expect(stack.creatures).toEqual(staying)
   })
 
   it("refuses to finalize an invalid split", () => {
-    const stack = Stack.create({ owner: PlayerId.RED, hex: 5, marker: 0, createdRound: 0 })
-    stack.split[0] = true // only 1 marked, never valid
-    expect(() => Stack.finalizeSplit(stack, 1, 0)).toThrow()
+    expect(() => Stack.finalizeSplit(newStack(), [0], 1, 0)).toThrow()
   })
 })
 
