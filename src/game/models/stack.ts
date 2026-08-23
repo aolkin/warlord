@@ -70,7 +70,7 @@ export namespace Stack {
     return Moveable.hasMoved(stack) && !isFull(stack)
   }
 
-  // `splitting` is a parameter rather than state on `Stack` because the pick is reversible until submitted (see proposals/09-mutation-classification.md).
+  // `splitting` is a parameter rather than state on `Stack` because the pick is reversible until submitted.
   export function isValidSplit(stack: Stack, splitting: number[], firstRound?: boolean): boolean {
     if (firstRound ?? false) {
       if (splitting.length !== 4) {

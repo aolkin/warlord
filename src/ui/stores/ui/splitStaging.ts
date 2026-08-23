@@ -4,7 +4,7 @@ import { SplitCommit } from "@/models/game"
 import { StackRef } from "@/models/stack"
 import { useGameStore } from "~/stores/game"
 
-// The pick is reversible until submitted, so it never reaches `game` (see proposals/09-mutation-classification.md).
+// The pick is reversible until submitted, so it never reaches `game`.
 export const useSplitStagingStore = defineStore("splitStaging", () => {
   const gameStore = useGameStore()
 
