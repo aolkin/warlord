@@ -20,4 +20,4 @@ export { ActiveStrike, Strike, isRangestrike } from "./battle/strike"
 export type { RangestrikeTarget } from "./battle/strike"
 
 export { Battle } from "./battle/engine"
-export type { BattleSide } from "./battle/engine"
+export type { BattleMovePayload, BattleSide } from "./battle/engine"

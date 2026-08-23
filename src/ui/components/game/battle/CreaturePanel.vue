@@ -78,6 +78,7 @@ import { BattleCreature, BattlePhase } from "@/models/battle"
 import { TitanGame } from "@/models/game"
 import { Player } from "@/models/player"
 import { useGameStore } from "~/stores/game"
+import { useBattleMoveStagingStore } from "~/stores/ui/battleMoveStaging"
 import Creature from "../Creature.vue"
 import PendingCreatures from "./PendingCreatures.vue"
 
@@ -93,6 +94,7 @@ const emit = defineEmits<{
 }>()
 
 const game = useGameStore().game
+const stagingStore = useBattleMoveStagingStore()
 
 const minimized = ref(false)
 
@@ -113,10 +115,10 @@ const defense = computed<BattleCreature[]>(() =>
   activeBattle.value.creatures.filter(creature => creature.player === activeBattle.value.defender),
 )
 const pendingOffense = computed<BattleCreature[]>(() =>
-  offense.value.filter((creature: BattleCreature) => creature.hex >= 36),
+  offense.value.filter((creature: BattleCreature) => stagingStore.hexOf(creature) >= 36),
 )
 const pendingDefense = computed<BattleCreature[]>(() =>
-  defense.value.filter((creature: BattleCreature) => creature.hex >= 36),
+  defense.value.filter((creature: BattleCreature) => stagingStore.hexOf(creature) >= 36),
 )
 const deadOffense = computed<BattleCreature[]>(() =>
   offense.value.filter((creature: BattleCreature) => creature.hex === 0),

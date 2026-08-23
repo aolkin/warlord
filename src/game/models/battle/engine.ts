@@ -105,14 +105,35 @@ export namespace Battle {
     )
   }
 
-  export function creatureOnHex(battle: Battle, hex: number): BattleCreature | undefined {
-    return battle.creatures.find(creature => creature.hex === hex)
+  // `moves` throughout is the moves the player has staged so far, in the order they were
+  // made: a move is reversible until it is submitted, so it stays out of `battle` until
+  // finalizeMoves replays it (see proposals/09-mutation-classification.md). A later move's
+  // legality depends on the earlier ones, so every rule that reads a battle position during
+  // a move phase reads it through the staged list.
+
+  export function getStagedHex(creature: BattleCreature, moves: BattleMovePayload[]): number {
+    return moves.findLast(move => move.creature === creature.id)?.hex ?? creature.hex
   }
 
-  export function creatureMovementCost(battle: Battle, hex: number, origin: number, creature: BattleCreature): number {
+  export function creatureOnHex(
+    battle: Battle,
+    hex: number,
+    moves: BattleMovePayload[] = [],
+  ): BattleCreature | undefined {
+    return battle.creatures.find(creature => getStagedHex(creature, moves) === hex)
+  }
+
+  export function creatureMovementCost(
+    battle: Battle,
+    hex: number,
+    origin: number,
+    creature: BattleCreature,
+    moves: BattleMovePayload[] = [],
+  ): number {
     const board = BATTLE_BOARDS[battle.terrain]
     const canFly = CREATURE_DATA[creature.type].canFly
-    if (canFly || hex === creature.hex || creatureOnHex(battle, hex) === undefined) {
+    const occupant = creatureOnHex(battle, hex, moves)
+    if (canFly || occupant === undefined || occupant === creature) {
       let cost = 1
       if (!canFly) {
         const upEdgeHazard = board.getEdgeHazard(origin, hex)
@@ -149,36 +170,41 @@ export namespace Battle {
   }
 
   /** This function assumes the creature can enter - for efficiency, it will not check all rules */
-  export function creatureCanLand(battle: Battle, hex: number, creature: BattleCreature): boolean {
+  export function creatureCanLand(
+    battle: Battle,
+    hex: number,
+    creature: BattleCreature,
+    moves: BattleMovePayload[] = [],
+  ): boolean {
     const hazard = BATTLE_BOARDS[battle.terrain].getHazard(hex)
     return !(
       hazard === Hazard.TREE ||
       (hazard === Hazard.BOG && !isCreatureNative(creature.type, hazard)) ||
-      creatureOnHex(battle, hex) !== undefined
+      creatureOnHex(battle, hex, moves) !== undefined
     )
   }
 
   // TODO: rule 11.3 (a creature already in contact with an enemy may not move) is not enforced
   // anywhere in this function or its callers - no engagement check exists in the movement-legality path.
-  export function movementFor(battle: Battle, creature: BattleCreature): Set<number> {
-    if (creature.initialHex === 0) {
+  export function movementFor(battle: Battle, creature: BattleCreature, moves: BattleMovePayload[] = []): Set<number> {
+    if (creature.hex === 0) {
       return new Set<number>()
     }
     // Map of hex to remaining movement last time it was visited
     const possibilities = new Map<number, number>()
-    const stack: Array<[number, number]> = [[creature.initialHex, CREATURE_DATA[creature.type].skill]]
+    const stack: Array<[number, number]> = [[creature.hex, CREATURE_DATA[creature.type].skill]]
     let entry
     while ((entry = stack.pop()) !== undefined) {
       const [origin, remainingMovement] = entry
       const adjacencies = BATTLE_BOARD_ADJACENCIES[origin].filter(i => (possibilities.get(i) ?? -1) < remainingMovement)
       adjacencies.forEach(potentialHex => {
-        const movementCost = creatureMovementCost(battle, potentialHex, origin, creature)
+        const movementCost = creatureMovementCost(battle, potentialHex, origin, creature, moves)
         // console.log({ origin, potentialHex, remainingMovement, movementCost })
         if (movementCost <= remainingMovement) {
           if (remainingMovement - movementCost > 0) {
             stack.push([potentialHex, remainingMovement - movementCost])
           }
-          if (creatureCanLand(battle, potentialHex, creature)) {
+          if (creatureCanLand(battle, potentialHex, creature, moves)) {
             possibilities.set(potentialHex, remainingMovement - movementCost)
           }
         }
@@ -189,8 +215,7 @@ export namespace Battle {
 
   export function engagedWith(battle: Battle, whom: BattleCreature, includeDead = false): BattleCreature[] {
     const board = BATTLE_BOARDS[battle.terrain]
-    const hex = BATTLE_PHASE_TYPES[battle.phase] === BattlePhaseType.MOVE ? whom.initialHex : whom.hex
-    const adjacencies = BATTLE_BOARD_ADJACENCIES[hex]
+    const adjacencies = BATTLE_BOARD_ADJACENCIES[whom.hex]
     return battle.creatures.filter(
       creature =>
         creature.player !== whom.player &&
@@ -216,7 +241,7 @@ export namespace Battle {
   //       This is very annoying, as it breaks the majority of the assumptions in this function
   export function rangestrikeTargets(battle: Battle, creature: BattleCreature): RangestrikeTarget[] {
     const creatureStats = CREATURE_DATA[creature.type]
-    if (creature.initialHex === 0 || !creatureStats.canRangestrike || engagedWith(battle, creature, true).length > 0) {
+    if (creature.hex === 0 || !creatureStats.canRangestrike || engagedWith(battle, creature, true).length > 0) {
       return []
     }
     // Distance = 2
@@ -489,12 +514,21 @@ export namespace Battle {
 
   // Actions
 
-  export function moveCreature(battle: Battle, payload: BattleMovePayload): void {
-    const creature = battle.creatures.find(c => c.id === payload.creature)
-    assert(creature !== undefined, "Unexpected creature")
+  export function finalizeMoves(battle: Battle, moves: BattleMovePayload[]): void {
     assert(BATTLE_PHASE_TYPES[battle.phase] === BattlePhaseType.MOVE, "Not in movement phase")
-    assert(creature.player === battle.activePlayer, "Incorrect player")
-    creature.hex = payload.hex
+    moves.forEach(({ creature: ref, hex }) => {
+      const creature = battle.creatures.find(c => c.id === ref)
+      assert(creature !== undefined, "Unexpected creature")
+      assert(creature.player === battle.activePlayer, "Incorrect player")
+      creature.hex = hex
+    })
+    // Hexes 36 and up are the entrance zones, off the board proper.
+    getActiveCreatures(battle).forEach(creature => {
+      if (creature.hex >= 36) {
+        creature.hex = 0
+      }
+    })
+    advancePhase(battle)
   }
 
   export function attackCreature(battle: Battle, { attacker, target, rolls, optionalToHit }: AttackPayload): void {
@@ -579,26 +613,23 @@ export namespace Battle {
   }
 
   export function nextPhase(battle: Battle): void {
-    if (BATTLE_PHASE_TYPES[battle.phase] === BattlePhaseType.MOVE) {
-      getActiveCreatures(battle).forEach(creature => {
-        if (creature.hex >= 36) {
+    assert(
+      BATTLE_PHASE_TYPES[battle.phase] !== BattlePhaseType.MOVE,
+      "The move phase ends through finalizeMoves, which carries the moves",
+    )
+    assert(getPendingStrikes(battle).length === 0, "All eligible creatures must strike")
+    battle.activeStrike = undefined
+    if (BATTLE_PHASE_TYPES[battle.phase] === BattlePhaseType.STRIKEBACK) {
+      battle.creatures.forEach(creature => {
+        if (creature.wounds >= creature.strength) {
           creature.hex = 0
         }
       })
-    } else if (
-      BATTLE_PHASE_TYPES[battle.phase] === BattlePhaseType.STRIKE ||
-      BATTLE_PHASE_TYPES[battle.phase] === BattlePhaseType.STRIKEBACK
-    ) {
-      assert(getPendingStrikes(battle).length === 0, "All eligible creatures must strike")
-      battle.activeStrike = undefined
-      if (BATTLE_PHASE_TYPES[battle.phase] === BattlePhaseType.STRIKEBACK) {
-        battle.creatures.forEach(creature => {
-          if (creature.wounds >= creature.strength) {
-            creature.hex = 0
-          }
-        })
-      }
     }
+    advancePhase(battle)
+  }
+
+  function advancePhase(battle: Battle): void {
     if (battle.phase === BattlePhase.DEFENDER_STRIKEBACK) {
       battle.round += 1
       battle.phase = BattlePhase.DEFENDER_MOVE
@@ -617,11 +648,7 @@ export namespace Battle {
         battle.activePlayer = battle.attacker
         break
     }
-    if (BATTLE_PHASE_TYPES[battle.phase] === BattlePhaseType.MOVE) {
-      getActiveCreatures(battle).forEach(creature => {
-        creature.initialHex = creature.hex
-      })
-    } else if (BATTLE_PHASE_TYPES[battle.phase] === BattlePhaseType.STRIKE) {
+    if (BATTLE_PHASE_TYPES[battle.phase] === BattlePhaseType.STRIKE) {
       phaseEnterStrike(battle)
     }
 

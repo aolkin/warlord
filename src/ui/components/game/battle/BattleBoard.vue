@@ -49,13 +49,13 @@
       </g>
       <Creature
         v-for="creature in activeCreatures"
-        :key="creature.hex"
+        :key="creature.id"
         :type="creature.type"
         :player-id="creature.player"
         :wounds="creature.wounds"
         class="battle-creature"
         :class="creatureClasses(creature)"
-        :transform="`${hexTransformStr(creature.hex)} scale(0.9)
+        :transform="`${hexTransformStr(stagingStore.hexOf(creature))} scale(0.9)
          rotate(${120 * (battle.attackerEdge - 1) + (creature.player === defender ? 180 : 0)})`"
         in-svg
         @click.stop="chooseCreature(creature)"
@@ -173,6 +173,7 @@ import {
 import { Terrain } from "@/models/masterboard"
 import { PlayerId } from "@/models/player"
 import { useGameStore } from "~/stores/game"
+import { useBattleMoveStagingStore } from "~/stores/ui/battleMoveStaging"
 import { usePlayerStore } from "~/stores/ui/player"
 import { usePreferencesStore } from "~/stores/ui/preferences"
 import type DiceRoller from "~/components/ui/generic/DiceRoller"
@@ -198,6 +199,7 @@ const gameStore = useGameStore()
 const game = gameStore.game
 const playerStore = usePlayerStore()
 const preferencesStore = usePreferencesStore()
+const stagingStore = useBattleMoveStagingStore()
 
 const target = ref<BattleCreature | RangestrikeTarget | undefined>(undefined)
 const optionalToHit = ref<number | undefined>(undefined)
@@ -216,7 +218,9 @@ const focusedCreature = computed<BattleCreature | undefined>(() =>
 )
 
 const movementHexes = computed<Set<number>>(() =>
-  selectedCreature.value === undefined ? new Set<number>() : Battle.movementFor(props.battle, selectedCreature.value),
+  selectedCreature.value === undefined
+    ? new Set<number>()
+    : Battle.movementFor(props.battle, selectedCreature.value, stagingStore.moves),
 )
 const engagements = computed<BattleCreature[]>(() =>
   selectedCreature.value === undefined ? [] : Battle.engagedWith(props.battle, selectedCreature.value),
@@ -307,16 +311,22 @@ const localPlayerIsDefender = computed((): boolean => defender.value === game.pl
 
 const selectedCreatureId = computed((): number | undefined => selectedCreature.value?.id)
 
-const selectedStartedOffBoard = computed((): boolean => (selectedCreature.value?.initialHex ?? -1) >= 36)
+const selectedStartedOffBoard = computed((): boolean => (selectedCreature.value?.hex ?? -1) >= 36)
 
 // True once a creature that started off-board has been moved onto the board this turn,
 // making it eligible to be moved back off (PendingCreatures' "Put Back" action).
 const selectedCanLeaveBoard = computed(
-  (): boolean => selectedStartedOffBoard.value && (selectedCreature.value?.hex ?? -1) < 36,
+  (): boolean =>
+    selectedStartedOffBoard.value &&
+    selectedCreature.value !== undefined &&
+    stagingStore.hexOf(selectedCreature.value) < 36,
 )
 
 const activeCreatures = computed((): BattleCreature[] =>
-  props.battle.creatures.filter((creature: BattleCreature) => creature.hex > 0 && creature.hex < 36),
+  props.battle.creatures.filter((creature: BattleCreature) => {
+    const hex = stagingStore.hexOf(creature)
+    return hex > 0 && hex < 36
+  }),
 )
 
 function creatureEnabled(creature: BattleCreature): boolean {
@@ -362,13 +372,13 @@ const debugHexAdjacencies = computed((): number[] => BATTLE_BOARD_ADJACENCIES[de
 
 function moveSelected(hex: number): void {
   if (selectedCreature.value && movementHexes.value.has(hex)) {
-    Battle.moveCreature(props.battle, { creature: selectedCreature.value.id, hex })
+    stagingStore.stage(selectedCreature.value.id, hex)
   }
 }
 
 function removeSelected(): void {
   if (selectedCreature.value) {
-    Battle.moveCreature(props.battle, { creature: selectedCreature.value.id, hex: selectedCreature.value.initialHex })
+    stagingStore.unstage(selectedCreature.value.id)
   }
 }
 

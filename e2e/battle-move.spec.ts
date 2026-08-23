@@ -11,7 +11,7 @@ import { seedGame } from "./fixtures"
 // HexEdge.SECOND puts a Centaur (skill 4, native to nothing on this board) within reach of hex 8
 // with exactly enough movement left to cross the Slope onto hex 15, so hex 15's absence below is
 // the hazard rule at work, not a movement-range shortfall.
-test("a non-flying creature's Battle Move on Mountains excludes hazard-blocked hexes and doesn't strand a moved creature off-board", async ({ page }) => {
+test("a non-flying creature's Battle Move on Mountains excludes hazard-blocked hexes, takes a move back on request, and doesn't strand a moved creature off-board", async ({ page }) => {
   await seedGame(page, 2, game => {
     game.activePhase = MasterboardPhase.BATTLE
     game.activeBattle = Battle.create({
@@ -34,6 +34,16 @@ test("a non-flying creature's Battle Move on Mountains excludes hazard-blocked h
   await expect(board.locator("g.available-move.hex-15")).toHaveCount(0)
   await expect(board.locator("g.available-move.hex-20")).toBeVisible()
 
+  await board.locator("g.hex-20").click()
+  await expect(battleboard).toContainText("You have 1 creature that has not entered the battle board")
+
+  // Re-selecting the moved Centaur offers "Put Back" (the only creature tile with a text label
+  // rather than a portrait), which returns it to the entrance zone.
+  await board.locator("g.battle-creature.centaur").click()
+  await battleboard.locator(".creature-root.label").click()
+  await expect(battleboard).toContainText("You have 2 creatures that have not entered the battle board")
+
+  // Putting it back leaves it selected, so it can go straight back out.
   await board.locator("g.hex-20").click()
   await expect(battleboard).toContainText("You have 1 creature that has not entered the battle board")
 

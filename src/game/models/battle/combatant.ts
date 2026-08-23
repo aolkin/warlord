@@ -11,7 +11,6 @@ export interface BattleCreature {
   readonly strength: number
 
   hex: number
-  initialHex: number
   wounds: number
   hasStruck: boolean
 }
@@ -30,7 +29,6 @@ export namespace BattleCreature {
       strength: data.getStrength(options.playerScore),
       hex: options.hex,
       wounds: 0,
-      initialHex: options.hex,
       hasStruck: false,
     }
   }

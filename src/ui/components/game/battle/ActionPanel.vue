@@ -33,7 +33,7 @@
           block
           variant="outlined"
           :disabled="!mayProceed"
-          @click="Battle.nextPhase(battle)"
+          @click="endPhase"
         >
           End {{ phaseTypeTitle }}
         </v-btn>
@@ -47,6 +47,7 @@ import { BATTLE_PHASE_TYPES, Battle, BattleCreature, BattlePhaseType } from "@/m
 import { TitanGame } from "@/models/game"
 import { PlayerId } from "@/models/player"
 import { useGameStore } from "~/stores/game"
+import { useBattleMoveStagingStore } from "~/stores/ui/battleMoveStaging"
 
 const props = defineProps<{
   battle: Battle
@@ -54,6 +55,7 @@ const props = defineProps<{
 
 const gameStore = useGameStore()
 const game = gameStore.game
+const stagingStore = useBattleMoveStagingStore()
 
 const battlePhaseType = computed(() => BATTLE_PHASE_TYPES[props.battle.phase])
 const battleActivePlayerId = computed((): PlayerId => props.battle.activePlayer)
@@ -103,9 +105,18 @@ const roundIcon = computed((): string => {
 const pendingCreatures = computed(
   (): number =>
     props.battle.creatures.filter(
-      (creature: BattleCreature) => creature.player === battleActivePlayerId.value && creature.hex >= 36,
+      (creature: BattleCreature) =>
+        creature.player === battleActivePlayerId.value && stagingStore.hexOf(creature) >= 36,
     ).length,
 )
+
+function endPhase(): void {
+  if (battlePhaseType.value === BattlePhaseType.MOVE) {
+    Battle.finalizeMoves(props.battle, stagingStore.moves)
+  } else {
+    Battle.nextPhase(props.battle)
+  }
+}
 </script>
 <style scoped lang="sass">
 @import "~/styles/terrain-colors.sass"
