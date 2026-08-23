@@ -38,7 +38,7 @@
           :type="creature"
           :player-id="props.focusedStack.owner"
           :class="{
-            splitting: props.focusedStack.split[index],
+            splitting: stagedSplit.includes(index),
             interactive: TitanGame.isSplitPhase(game) && owned,
           }"
           class="ma-1"
@@ -54,7 +54,7 @@
             You must split your starting creatures. Please select four creatures (including one lord) above to split
             into a separate stack.
             <div
-              v-if="Stack.isValidSplit(props.focusedStack, game.round === 0)"
+              v-if="Stack.isValidSplit(props.focusedStack, stagedSplit, game.round === 0)"
               class="first-round-success"
             >
               You have selected a valid split and may roll the die to start your turn!
@@ -67,7 +67,7 @@
             You may select at least 2 and at most
             {{ props.focusedStack.creatures.length - 2 }} creatures to split into a new stack.
             <div
-              v-if="Stack.getSplittingCreatures(props.focusedStack).length > 0"
+              v-if="stagedSplit.length > 0"
               class="text-left mt-5"
             >
               <p>Remaining: {{ stayingCreatureNames }}</p>
@@ -115,6 +115,7 @@ import { Player } from "@/models/player"
 import { MusterChoice, MusterPossibility, Stack } from "@/models/stack"
 import { useGameStore } from "~/stores/game"
 import { useSelectionStore } from "~/stores/ui/selection"
+import { useSplitStagingStore } from "~/stores/ui/splitStaging"
 import { mod } from "~/utils/math"
 import Creature from "../../game/Creature.vue"
 import PlayerMarker from "../../game/Marker.vue"
@@ -127,8 +128,13 @@ const props = defineProps<{
 const gameStore = useGameStore()
 const game = gameStore.game
 const selectionStore = useSelectionStore()
+const splitStagingStore = useSplitStagingStore()
 
 const owned = computed((): boolean => game.activePlayerId === props.focusedStack?.owner)
+
+const stagedSplit = computed((): number[] =>
+  props.focusedStack === undefined ? [] : splitStagingStore.splittingIndices(props.focusedStack.id),
+)
 
 const stackPlayer = computed((): Player | undefined =>
   props.focusedStack === undefined ? undefined : TitanGame.getPlayerById(game, props.focusedStack.owner),
@@ -147,13 +153,13 @@ const musterable = computed((): MusterPossibility[] =>
 )
 
 const stayingCreatureNames = computed((): string =>
-  Stack.getStayingCreatures(props.focusedStack!)
+  Stack.getStayingCreatures(props.focusedStack!, stagedSplit.value)
     .map((c: CreatureType) => CREATURE_DATA[c].name)
     .join(", "),
 )
 
 const splittingCreatureNames = computed((): string =>
-  Stack.getSplittingCreatures(props.focusedStack!)
+  Stack.getSplittingCreatures(props.focusedStack!, stagedSplit.value)
     .map((c: CreatureType) => CREATURE_DATA[c].name)
     .join(", "),
 )
@@ -192,9 +198,8 @@ const musteringCaption = computed(() => {
 })
 
 function toggleSplit(index: number): void {
-  if (TitanGame.isSplitPhase(game) && (props.focusedStack?.creatures.length ?? 0) > 2) {
-    const stack = props.focusedStack!
-    Stack.togglePendingSplit(stack, index)
+  if (owned.value && TitanGame.isSplitPhase(game) && (props.focusedStack?.creatures.length ?? 0) > 2) {
+    splitStagingStore.toggle(props.focusedStack!.id, index)
   }
 }
 

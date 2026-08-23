@@ -70,6 +70,7 @@ import { Stack } from "@/models/stack"
 import { useGameStore } from "~/stores/game"
 import { usePreferencesStore } from "~/stores/ui/preferences"
 import { useSelectionStore } from "~/stores/ui/selection"
+import { useSplitStagingStore } from "~/stores/ui/splitStaging"
 import { Transformation, Transformations, TransformationType } from "~/utils/svg"
 import EngageIcon from "../../ui/game/EngageIcon.vue"
 import Creature from "../Creature.vue"
@@ -101,6 +102,7 @@ const gameStore = useGameStore()
 const game = gameStore.game
 const selectionStore = useSelectionStore()
 const preferencesStore = usePreferencesStore()
+const splitStagingStore = useSplitStagingStore()
 
 const selected = computed(() => props.stack === selectionStore.selectedStack)
 
@@ -124,6 +126,8 @@ const transform = computed((): string => {
 })
 
 const isActivePlayer = computed(() => game.activePlayerId === props.stack.owner)
+
+const stagedSplit = computed((): number[] => splitStagingStore.splittingIndices(props.stack.id))
 
 const potentialEngagements = computed((): HexEdge[] => {
   if (selectionStore.selectedStack === undefined) {
@@ -174,7 +178,7 @@ const isMandatory = computed(() => {
   }
   switch (game.activePhase) {
     case MasterboardPhase.SPLIT:
-      return !Stack.isValidSplit(props.stack, game.round === 0)
+      return !Stack.isValidSplit(props.stack, stagedSplit.value, game.round === 0)
     case MasterboardPhase.MOVE:
       return gameStore.mandatoryMoves.includes(props.stack)
   }
@@ -195,8 +199,8 @@ const classes = computed(() => ({
 }))
 
 const stackSize = computed((): string => {
-  if (props.stack.split.some(i => i)) {
-    const splitting = Stack.getSplittingCreatures(props.stack).length
+  const splitting = stagedSplit.value.length
+  if (splitting > 0) {
     return `${props.stack.creatures.length - splitting} / ${splitting}`
   }
   return `${props.stack.creatures.length}`

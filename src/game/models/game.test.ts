@@ -104,23 +104,19 @@ describe("TitanGame mandatory moves (stack splitting during movement)", () => {
   it("requires splitting apart two stacks sharing a hex until one of them moves away", () => {
     const game = newGame()
     const original = game.stacks[0]
-    original.split[0] = true // TITAN
-    original.split[2] = true // CENTAUR
-    original.split[4] = true // OGRE
-    original.split[6] = true // GARGOYLE
-    TitanGame.nextPhase(game)
+    TitanGame.finalizeSplits(game, [{ stack: original.id, creatures: [0, 2, 4, 6] }])
     const sibling = game.stacks.at(-1)!
     game.activeRoll = 1
 
     expect(TitanGame.getMandatoryMoves(game)).toEqual(expect.arrayContaining([original, sibling]))
     expect(TitanGame.getMandatoryMoves(game)).toHaveLength(2)
-    expect(TitanGame.getMayProceed(game)).toBe(false)
+    expect(TitanGame.getMayProceed(game, [])).toBe(false)
 
     TitanGame.move(game, { stack: original.id, hex: 3 })
 
     // Once split apart, the remaining stack alone on the origin hex is no longer mandatory.
     expect(TitanGame.getMandatoryMoves(game)).toEqual([])
-    expect(TitanGame.getMayProceed(game)).toBe(true)
+    expect(TitanGame.getMayProceed(game, [])).toBe(true)
   })
 })
 
@@ -128,15 +124,11 @@ describe("TitanGame mayProceed for the split phase", () => {
   it("blocks proceeding out of the split phase in round 1 until every active stack has a valid split", () => {
     const game = newGame()
     expect(game.round).toBe(0)
-    expect(TitanGame.getMayProceed(game)).toBe(false)
+    expect(TitanGame.getMayProceed(game, [])).toBe(false)
 
-    const stack = game.stacks[0]
-    stack.split[0] = true
-    stack.split[2] = true
-    stack.split[4] = true
-    stack.split[6] = true
+    const splits = [{ stack: game.stacks[0].id, creatures: [0, 2, 4, 6] }]
 
-    expect(TitanGame.getMayProceed(game)).toBe(true)
+    expect(TitanGame.getMayProceed(game, splits)).toBe(true)
   })
 })
 
@@ -185,12 +177,8 @@ describe("TitanGame turn and phase transitions", () => {
     const original = game.stacks[0]
     // Stale state from a previous turn, cleared on move entry.
     game.mulliganTaken = true
-    original.split[0] = true // TITAN
-    original.split[2] = true // CENTAUR
-    original.split[4] = true // OGRE
-    original.split[6] = true // GARGOYLE
 
-    TitanGame.nextPhase(game)
+    TitanGame.finalizeSplits(game, [{ stack: original.id, creatures: [0, 2, 4, 6] }])
 
     expect(game.activePhase).toBe(MasterboardPhase.MOVE)
     expect(game.stacks).toHaveLength(3)
@@ -250,11 +238,7 @@ describe("TitanGame turn and phase transitions", () => {
   it("refuses to leave the move phase with multiple simultaneous engagements", () => {
     const game = newGame(3) // BLUE @ 100, GREEN @ 300, RED @ 500
     const original = game.stacks[0]
-    original.split[0] = true
-    original.split[2] = true
-    original.split[4] = true
-    original.split[6] = true
-    TitanGame.nextPhase(game)
+    TitanGame.finalizeSplits(game, [{ stack: original.id, creatures: [0, 2, 4, 6] }])
     const sibling = game.stacks.at(-1)!
     original.hex = game.stacks[1].hex // engage GREEN
     sibling.hex = game.stacks[2].hex // engage RED

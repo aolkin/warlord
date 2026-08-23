@@ -1,4 +1,4 @@
-import { range, remove, sum } from "lodash-es"
+import { remove, sum } from "lodash-es"
 import { assert } from "@/utils/assert"
 import { CREATURE_DATA, CreatureType, MUSTER_DATA } from "./creature"
 import { HexEdge, Terrain } from "./masterboard"
@@ -19,7 +19,6 @@ export interface Stack extends Moveable {
   readonly owner: PlayerId
   readonly creatures: CreatureType[]
   readonly marker: number
-  readonly split: boolean[]
   readonly recruits: Record<number, MusterChoice>
   readonly id: number
   readonly createdRound: number
@@ -46,7 +45,6 @@ export namespace Stack {
         CreatureType.GARGOYLE,
         CreatureType.GARGOYLE,
       ],
-      split: range(8).map(() => false),
       marker: options.marker,
       recruits: {},
       id: stackIdCounter++,
@@ -72,29 +70,30 @@ export namespace Stack {
     return Moveable.hasMoved(stack) && !isFull(stack)
   }
 
-  export function isValidSplit(stack: Stack, firstRound?: boolean): boolean {
-    const numSplitting = getSplittingCreatures(stack).length
+  // `splitting` throughout is a list of indices into `stack.creatures`: the creatures the
+  // player has picked to split off. It is passed in rather than held on the stack, since a
+  // pick is reversible until it is submitted (see proposals/09-mutation-classification.md).
+
+  export function isValidSplit(stack: Stack, splitting: number[], firstRound?: boolean): boolean {
     if (firstRound ?? false) {
-      if (numSplitting !== 4) {
+      if (splitting.length !== 4) {
         return false
       }
-      const splitLords: number = sum(
-        stack.creatures.map((creature, index) => stack.split[index] && CREATURE_DATA[creature].lord),
-      )
+      const splitLords: number = sum(splitting.map(index => CREATURE_DATA[stack.creatures[index]].lord))
       if (splitLords !== 1) {
         return false
       }
     }
-    const remaining = stack.creatures.length - numSplitting
-    return numSplitting === 0 || (numSplitting >= 2 && remaining >= 2)
+    const remaining = stack.creatures.length - splitting.length
+    return splitting.length === 0 || (splitting.length >= 2 && remaining >= 2)
   }
 
-  export function getSplittingCreatures(stack: Stack): CreatureType[] {
-    return stack.creatures.filter((_, index) => stack.split[index])
+  export function getSplittingCreatures(stack: Stack, splitting: number[]): CreatureType[] {
+    return stack.creatures.filter((_, index) => splitting.includes(index))
   }
 
-  export function getStayingCreatures(stack: Stack): CreatureType[] {
-    return stack.creatures.filter((_, index) => !stack.split[index])
+  export function getStayingCreatures(stack: Stack, splitting: number[]): CreatureType[] {
+    return stack.creatures.filter((_, index) => !splitting.includes(index))
   }
 
   export function musterable(stack: Stack, terrain: Terrain): MusterPossibility[] {
@@ -139,16 +138,11 @@ export namespace Stack {
     return possibilities
   }
 
-  export function togglePendingSplit(stack: Stack, index: number): void {
-    stack.split[index] = !stack.split[index]
-  }
-
-  export function finalizeSplit(stack: Stack, marker: number, round: number): Stack {
-    assert(isValidSplit(stack), "Invalid split")
+  export function finalizeSplit(stack: Stack, splitting: number[], marker: number, round: number): Stack {
+    assert(isValidSplit(stack, splitting), "Invalid split")
     assert(marker >= 0, "Invalid marker")
-    const creatures = getSplittingCreatures(stack)
-    remove(stack.creatures, (creature, index) => stack.split[index])
-    stack.split.fill(false)
+    const creatures = getSplittingCreatures(stack, splitting)
+    remove(stack.creatures, (_, index) => splitting.includes(index))
     return create({ owner: stack.owner, hex: stack.hex, marker, createdRound: round, creatures })
   }
 }
