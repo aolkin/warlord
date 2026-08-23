@@ -78,15 +78,15 @@ import type DiceRoller from "~/components/ui/generic/DiceRoller"
 import { MasterboardPhase, TitanGame } from "@/models/game"
 import { Moveable } from "@/models/moveable"
 import { useGameStore } from "~/stores/game"
-import { useSplitStagingStore } from "~/stores/ui/splitStaging"
+import { useStackSplitsStore } from "~/stores/ui/stackSplits"
 
 const diceRoller = inject<Readonly<Ref<InstanceType<typeof DiceRoller> | null>>>("diceRoller")
 
 const gameStore = useGameStore()
 const game = gameStore.game
-const splitStagingStore = useSplitStagingStore()
+const stackSplitsStore = useStackSplitsStore()
 
-const mayProceed = computed(() => TitanGame.getMayProceed(game, splitStagingStore.pendingCommits))
+const mayProceed = computed(() => TitanGame.getMayProceed(game, stackSplitsStore.pendingSplits))
 
 const icon = computed(() => {
   switch (game.activePhase) {
@@ -124,7 +124,7 @@ function roll(): void {
 }
 
 function proceedToRoll(): void {
-  TitanGame.finalizeSplits(game, splitStagingStore.pendingCommits)
+  TitanGame.finalizeSplits(game, stackSplitsStore.pendingSplits)
   roll()
 }
 </script>

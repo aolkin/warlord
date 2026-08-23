@@ -29,7 +29,7 @@ export interface Path {
   path: MasterboardHex[]
 }
 
-export interface SplitCommit {
+export interface StackSplit {
   stack: StackRef
   creatures: number[] // indices into stack.creatures
 }
@@ -158,7 +158,7 @@ export namespace TitanGame {
     )
   }
 
-  export function getMayProceed(game: TitanGame, splits: SplitCommit[]): boolean {
+  export function getMayProceed(game: TitanGame, splits: StackSplit[]): boolean {
     switch (game.activePhase) {
       case MasterboardPhase.SPLIT: {
         const submitted = new Map(splits.map(commit => [commit.stack, commit.creatures]))
@@ -244,7 +244,7 @@ export namespace TitanGame {
   }
 
   /** Splits the submitted creatures off their stacks onto fresh markers and enters the move phase. */
-  export function finalizeSplits(game: TitanGame, splits: SplitCommit[]): void {
+  export function finalizeSplits(game: TitanGame, splits: StackSplit[]): void {
     assert(game.activePhase === MasterboardPhase.SPLIT, "Innappropriate phase")
     // TODO: check mayProceed before advancing — round-1 split rule (exactly 4 creatures with 1 lord) not yet enforced
     const owned = getStacksForPlayer(game)

@@ -42,7 +42,7 @@
             interactive: splittable,
           }"
           class="ma-1"
-          @click="toggleSplit(index)"
+          @click="stackSplitsStore.toggle(props.focusedStack.id, index)"
         />
       </div>
       <template v-if="game.activePlayerId === props.focusedStack.owner">
@@ -115,7 +115,7 @@ import { Player } from "@/models/player"
 import { MusterChoice, MusterPossibility, Stack } from "@/models/stack"
 import { useGameStore } from "~/stores/game"
 import { useSelectionStore } from "~/stores/ui/selection"
-import { useSplitStagingStore } from "~/stores/ui/splitStaging"
+import { useStackSplitsStore } from "~/stores/ui/stackSplits"
 import { mod } from "~/utils/math"
 import Creature from "../../game/Creature.vue"
 import PlayerMarker from "../../game/Marker.vue"
@@ -128,14 +128,14 @@ const props = defineProps<{
 const gameStore = useGameStore()
 const game = gameStore.game
 const selectionStore = useSelectionStore()
-const splitStagingStore = useSplitStagingStore()
+const stackSplitsStore = useStackSplitsStore()
 
 const splittable = computed(
-  (): boolean => props.focusedStack !== undefined && splitStagingStore.isSplittable(props.focusedStack.id),
+  (): boolean => props.focusedStack !== undefined && gameStore.isSplittable(props.focusedStack.id),
 )
 
 const stagedSplit = computed((): number[] =>
-  props.focusedStack === undefined ? [] : splitStagingStore.splittingIndices(props.focusedStack.id),
+  props.focusedStack === undefined ? [] : stackSplitsStore.splittingIndices(props.focusedStack.id),
 )
 
 const stackPlayer = computed((): Player | undefined =>
@@ -198,10 +198,6 @@ const musteringCaption = computed(() => {
     return caption
   }
 })
-
-function toggleSplit(index: number): void {
-  splitStagingStore.toggle(props.focusedStack!.id, index)
-}
 
 function cycleStacks(by: number): void {
   let index = gameStore.activeStacks.indexOf(selectionStore.requireSelectedStack())

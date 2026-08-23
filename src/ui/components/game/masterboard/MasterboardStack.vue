@@ -70,7 +70,7 @@ import { Stack } from "@/models/stack"
 import { useGameStore } from "~/stores/game"
 import { usePreferencesStore } from "~/stores/ui/preferences"
 import { useSelectionStore } from "~/stores/ui/selection"
-import { useSplitStagingStore } from "~/stores/ui/splitStaging"
+import { useStackSplitsStore } from "~/stores/ui/stackSplits"
 import { Transformation, Transformations, TransformationType } from "~/utils/svg"
 import EngageIcon from "../../ui/game/EngageIcon.vue"
 import Creature from "../Creature.vue"
@@ -102,7 +102,7 @@ const gameStore = useGameStore()
 const game = gameStore.game
 const selectionStore = useSelectionStore()
 const preferencesStore = usePreferencesStore()
-const splitStagingStore = useSplitStagingStore()
+const stackSplitsStore = useStackSplitsStore()
 
 const selected = computed(() => props.stack === selectionStore.selectedStack)
 
@@ -127,7 +127,7 @@ const transform = computed((): string => {
 
 const isActivePlayer = computed(() => game.activePlayerId === props.stack.owner)
 
-const stagedSplit = computed((): number[] => splitStagingStore.splittingIndices(props.stack.id))
+const stagedSplit = computed((): number[] => stackSplitsStore.splittingIndices(props.stack.id))
 
 const potentialEngagements = computed((): HexEdge[] => {
   if (selectionStore.selectedStack === undefined) {
