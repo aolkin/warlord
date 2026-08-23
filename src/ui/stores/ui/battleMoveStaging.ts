@@ -6,8 +6,7 @@ import { useGameStore } from "~/stores/game"
 /**
  * Where the player has tentatively moved each creature this battle phase, in the order the
  * moves were made. A move is reversible until it is submitted, so it never reaches `battle`:
- * the whole list is handed to Battle.finalizeMoves at once (see
- * proposals/09-mutation-classification.md).
+ * the whole list is handed to Battle.finalizeMoves at once.
  */
 export const useBattleMoveStagingStore = defineStore("battleMoveStaging", () => {
   const gameStore = useGameStore()

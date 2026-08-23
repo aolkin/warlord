@@ -107,7 +107,7 @@ export namespace Battle {
 
   // `moves` throughout is the moves the player has staged so far, in the order they were
   // made: a move is reversible until it is submitted, so it stays out of `battle` until
-  // finalizeMoves replays it (see proposals/09-mutation-classification.md). A later move's
+  // finalizeMoves replays it. A later move's
   // legality depends on the earlier ones, so every rule that reads a battle position during
   // a move phase reads it through the staged list.
 
