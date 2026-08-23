@@ -86,7 +86,7 @@ const gameStore = useGameStore()
 const game = gameStore.game
 const splitStagingStore = useSplitStagingStore()
 
-const mayProceed = computed(() => TitanGame.getMayProceed(game, splitStagingStore.commits))
+const mayProceed = computed(() => TitanGame.getMayProceed(game, splitStagingStore.pendingCommits))
 
 const icon = computed(() => {
   switch (game.activePhase) {
@@ -124,7 +124,7 @@ function roll(): void {
 }
 
 function proceedToRoll(): void {
-  TitanGame.finalizeSplits(game, splitStagingStore.commits)
+  TitanGame.finalizeSplits(game, splitStagingStore.pendingCommits)
   roll()
 }
 </script>

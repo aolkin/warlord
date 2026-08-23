@@ -70,10 +70,7 @@ export namespace Stack {
     return Moveable.hasMoved(stack) && !isFull(stack)
   }
 
-  // `splitting` throughout is a list of indices into `stack.creatures`: the creatures the
-  // player has picked to split off. It is passed in rather than held on the stack, since a
-  // pick is reversible until it is submitted (see proposals/09-mutation-classification.md).
-
+  // `splitting` is a parameter rather than state on `Stack` because the pick is reversible until submitted (see proposals/09-mutation-classification.md).
   export function isValidSplit(stack: Stack, splitting: number[], firstRound?: boolean): boolean {
     if (firstRound ?? false) {
       if (splitting.length !== 4) {
