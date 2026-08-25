@@ -52,7 +52,7 @@
         class="recruited-creature"
       >
         <Creature
-          :type="stack.currentMuster[0]"
+          :type="stack.currentMuster.creature"
           :player-id="stack.owner"
           in-svg
         />

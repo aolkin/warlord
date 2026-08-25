@@ -322,7 +322,7 @@ export namespace TitanGame {
     if (!Stack.canMuster(recruitingStack)) {
       throw new Error("Stack is not eligible to muster!")
     }
-    if (recruit !== undefined && game.creaturePool[recruit[0]] < 1 && !CREATURE_DATA[recruit[0]].lord) {
+    if (recruit !== undefined && game.creaturePool[recruit.creature] < 1 && !CREATURE_DATA[recruit.creature].lord) {
       throw new Error("No more of the requested creature remaining")
     }
     assert(game.activePhase === MasterboardPhase.MUSTER, "Innappropriate phase")
@@ -358,8 +358,8 @@ function startPlayerTurn(stack: Stack): void {
 
 function finalizeMuster(round: number, stack: Stack & { currentMuster: MusterChoice }): CreatureType {
   stack.recruits[round] = stack.currentMuster
-  stack.creatures.push(stack.currentMuster[0])
-  return stack.currentMuster[0]
+  stack.creatures.push(stack.currentMuster.creature)
+  return stack.currentMuster.creature
 }
 
 function advancePhase(game: TitanGame): void {

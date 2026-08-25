@@ -21,11 +21,11 @@
             :player-id="playerId"
             :class="{
               unavailable: creature !== undefined && musterBasis.length < 1,
-              selected: chosen !== undefined && creature === chosen[0],
+              selected: chosen !== undefined && creature === chosen.creature,
             }"
             class="ma-1 recruitment-choice"
             v-bind="musterBasis.length > 1 ? activatorProps : {}"
-            @click="musterBasis.length === 1 && choose([creature, musterBasis[0]])"
+            @click="musterBasis.length === 1 && choose({ creature, basis: musterBasis[0] })"
           />
         </template>
         <v-card>
@@ -36,7 +36,7 @@
               :key="basisCreature"
               viewBox="-50 -50 100 100"
               class="muster-basis-choice pa-2"
-              @click="choose([creature, [basisCreature, count]])"
+              @click="choose({ creature, basis: [basisCreature, count] })"
             >
               <Creature
                 :type="basisCreature"
