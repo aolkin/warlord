@@ -186,6 +186,10 @@ export namespace TitanGame {
     return getMandatoryMoves(game, moves, getCurrentHex).length === 0 && moves.size > 0
   }
 
+  export function mayProceedFromMuster(): boolean {
+    return true
+  }
+
   export function isStackActive(game: TitanGame, stack: Stack, moves: StagedMoves = new Map()): boolean {
     if (stack.owner !== game.activePlayerId) {
       return false
