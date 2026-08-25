@@ -39,7 +39,7 @@
           :player-id="props.focusedStack.owner"
           :class="{
             splitting: stagedSplit.includes(index),
-            interactive: interactive,
+            interactive,
           }"
           class="ma-1"
           @click="stackSplitsStore.toggle(props.focusedStack.id, index)"
