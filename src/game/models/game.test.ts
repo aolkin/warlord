@@ -4,7 +4,7 @@ import { CreatureType } from "@/models/creature"
 import { HexEdge } from "@/models/masterboard"
 import { PlayerId } from "@/models/player"
 import { Random } from "@/models/random"
-import { Stack } from "@/models/stack"
+import { MusterChoice, Stack } from "@/models/stack"
 import { MasterboardPhase, TitanGame } from "./game"
 
 const noShuffleRandom: Random = { shuffle: collection => [...collection] }
@@ -273,7 +273,7 @@ describe("TitanGame turn and phase transitions", () => {
     expect(game.round).toBe(0)
 
     game.activePhase = MasterboardPhase.MUSTER
-    game.stacks[0].currentMuster = [CreatureType.CENTAUR, [CreatureType.CENTAUR, 0]]
+    game.stacks[0].currentMuster = { creature: CreatureType.CENTAUR, basis: [CreatureType.CENTAUR, 0] }
     // Stale movement state left over from this player's earlier MOVE phase this round.
     game.stacks[0].attackEdge = HexEdge.FIRST
     game.stacks[0].initialHex = 3
@@ -363,7 +363,7 @@ describe("TitanGame mustering (setRecruit)", () => {
     expect(() =>
       TitanGame.setRecruit(game, {
         stack: stack.id,
-        recruit: [CreatureType.CENTAUR, [CreatureType.CENTAUR, 0]],
+        recruit: { creature: CreatureType.CENTAUR, basis: [CreatureType.CENTAUR, 0] },
       }),
     ).toThrow("not eligible to muster")
   })
@@ -384,7 +384,7 @@ describe("TitanGame mustering (setRecruit)", () => {
     expect(() =>
       TitanGame.setRecruit(game, {
         stack: stack.id,
-        recruit: [CreatureType.LION, [CreatureType.CENTAUR, 2]],
+        recruit: { creature: CreatureType.LION, basis: [CreatureType.CENTAUR, 2] },
       }),
     ).toThrow("Innappropriate phase")
   })
@@ -405,7 +405,7 @@ describe("TitanGame mustering (setRecruit)", () => {
     game.stacks.push(stack)
     game.creaturePool[creatureType] = 0
     game.activePhase = MasterboardPhase.MUSTER
-    const recruit: [CreatureType, [CreatureType, number]] = [creatureType, [CreatureType.CENTAUR, 2]]
+    const recruit: MusterChoice = { creature: creatureType, basis: [CreatureType.CENTAUR, 2] }
 
     if (expectSuccess) {
       TitanGame.setRecruit(game, { stack: stack.id, recruit })
@@ -430,12 +430,15 @@ describe("TitanGame mustering (setRecruit)", () => {
     game.stacks.push(stack)
     const poolBefore = game.creaturePool[CreatureType.LION]
     game.activePhase = MasterboardPhase.MUSTER
-    TitanGame.setRecruit(game, { stack: stack.id, recruit: [CreatureType.LION, [CreatureType.CENTAUR, 2]] })
+    TitanGame.setRecruit(game, {
+      stack: stack.id,
+      recruit: { creature: CreatureType.LION, basis: [CreatureType.CENTAUR, 2] },
+    })
 
     TitanGame.nextPhase(game)
 
     expect(stack.creatures).toContain(CreatureType.LION)
     expect(game.creaturePool[CreatureType.LION]).toBe(poolBefore - 1)
-    expect(stack.recruits[game.round]).toEqual([CreatureType.LION, [CreatureType.CENTAUR, 2]])
+    expect(stack.recruits[game.round]).toEqual({ creature: CreatureType.LION, basis: [CreatureType.CENTAUR, 2] })
   })
 })

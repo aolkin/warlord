@@ -13,7 +13,10 @@ export type MusterBasis = [CreatureType, number]
 // One recruitable creature and the ways it can currently be mustered.
 export type MusterPossibility = [CreatureType, MusterBasis[]]
 // A recruit that has actually been chosen: the creature and the single basis used to muster it.
-export type MusterChoice = [CreatureType, MusterBasis]
+export interface MusterChoice {
+  creature: CreatureType
+  basis: MusterBasis
+}
 
 export interface Stack extends Moveable {
   readonly owner: PlayerId
