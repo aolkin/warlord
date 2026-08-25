@@ -1,6 +1,6 @@
 import { defineStore } from "pinia"
 import { computed, reactive, watch } from "vue"
-import { StackSplit } from "@/models/game"
+import { StackSplit, TitanGame } from "@/models/game"
 import { StackRef } from "@/models/stack"
 import { useGameStore } from "~/stores/game"
 
@@ -15,7 +15,8 @@ export const useStackSplitsStore = defineStore("stackSplits", () => {
   }
 
   function toggle(stack: StackRef, index: number): void {
-    if (!gameStore.isSplittable(stack)) {
+    const found = gameStore.game.stacks.find(s => s.id === stack)
+    if (found === undefined || !TitanGame.isStackActive(gameStore.game, found)) {
       return
     }
     if (!staged.has(stack)) {

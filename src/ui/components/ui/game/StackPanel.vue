@@ -131,7 +131,7 @@ const selectionStore = useSelectionStore()
 const stackSplitsStore = useStackSplitsStore()
 
 const splittable = computed(
-  (): boolean => props.focusedStack !== undefined && gameStore.isSplittable(props.focusedStack.id),
+  (): boolean => props.focusedStack !== undefined && TitanGame.isStackActive(game, props.focusedStack),
 )
 
 const stagedSplit = computed((): number[] =>
