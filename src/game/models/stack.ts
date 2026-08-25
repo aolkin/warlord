@@ -9,7 +9,6 @@ let stackIdCounter = 0
 
 export type StackRef = number
 
-// A creature type present in the stack and the count of it needed to muster with it as a basis.
 export interface MusterBasis {
   creature: CreatureType
   count: number
