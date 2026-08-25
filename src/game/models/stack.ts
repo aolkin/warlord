@@ -9,9 +9,16 @@ let stackIdCounter = 0
 
 export type StackRef = number
 
-export type MusterBasis = [CreatureType, number]
+// A creature type present in the stack and the count of it needed to muster with it as a basis.
+export interface MusterBasis {
+  creature: CreatureType
+  count: number
+}
 // One recruitable creature and the ways it can currently be mustered.
-export type MusterPossibility = [CreatureType, MusterBasis[]]
+export interface MusterPossibility {
+  creature: CreatureType
+  bases: MusterBasis[]
+}
 // A recruit that has actually been chosen: the creature and the single basis used to muster it.
 export interface MusterChoice {
   creature: CreatureType
@@ -104,18 +111,20 @@ export namespace Stack {
     const terrainData = MUSTER_DATA[terrain]
     const possibilities: MusterPossibility[] = []
     if (terrain === Terrain.TOWER) {
-      possibilities.push(...terrainData.map(([, creature]) => [creature, [[creature, 0]]] as MusterPossibility))
+      possibilities.push(
+        ...terrainData.map(([, creature]): MusterPossibility => ({ creature, bases: [{ creature, count: 0 }] })),
+      )
       const creaturePossibilities: MusterBasis[] = []
       creatureCounts.forEach((count, type) => {
         if (count >= 3) {
-          creaturePossibilities.push([type, 3])
+          creaturePossibilities.push({ creature: type, count: 3 })
         }
       })
-      possibilities.push([CreatureType.GUARDIAN, creaturePossibilities])
-      possibilities.push([
-        CreatureType.WARLOCK,
-        creatureCounts.get(CreatureType.TITAN) !== undefined ? [[CreatureType.TITAN, 1]] : [],
-      ])
+      possibilities.push({ creature: CreatureType.GUARDIAN, bases: creaturePossibilities })
+      possibilities.push({
+        creature: CreatureType.WARLOCK,
+        bases: creatureCounts.get(CreatureType.TITAN) !== undefined ? [{ creature: CreatureType.TITAN, count: 1 }] : [],
+      })
     } else {
       for (let i = 0; i < terrainData.length; ++i) {
         const [req, type] = terrainData[i]
@@ -123,16 +132,16 @@ export namespace Stack {
         if (req !== null) {
           const previousCreature = terrainData[i - 1][1]
           if ((creatureCounts.get(previousCreature) ?? 0) >= req) {
-            creaturePossibilities.push([previousCreature, req])
+            creaturePossibilities.push({ creature: previousCreature, count: req })
           }
         }
         for (let k = i; k < terrainData.length; ++k) {
           const [, advancedType] = terrainData[k]
           if (creatureCounts.get(advancedType) !== undefined) {
-            creaturePossibilities.push([advancedType, 1])
+            creaturePossibilities.push({ creature: advancedType, count: 1 })
           }
         }
-        possibilities.push([type, creaturePossibilities])
+        possibilities.push({ creature: type, bases: creaturePossibilities })
       }
     }
     return possibilities
