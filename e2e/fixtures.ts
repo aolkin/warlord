@@ -6,7 +6,8 @@ const GAME_STORAGE_KEY = "warlord-v1"
 
 // TitanGame.create defaults to Math.random-based shuffling
 const deterministicRandom: Random = {
-  shuffle: collection => [...collection]
+  shuffle: collection => [...collection],
+  die: () => 1
 }
 
 // writes to localStorage via addInitScript, so call this before page.goto()
@@ -28,6 +29,8 @@ export async function seedGame(
 export async function forceNextRoll(page: Page, ...rolls: number[]): Promise<void> {
   await page.waitForFunction(() => "DebugDice" in window)
   await page.evaluate(rolls => {
-    (window as unknown as { DebugDice: { nextRolls?: number[] } }).DebugDice.nextRolls = rolls
+    const debugDice = (window as unknown as { DebugDice: { nextRolls?: number[]; nextDie?: number } }).DebugDice
+    debugDice.nextRolls = rolls
+    debugDice.nextDie = rolls[0]
   }, rolls)
 }

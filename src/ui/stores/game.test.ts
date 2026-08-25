@@ -2,7 +2,10 @@ import { createPinia, setActivePinia } from "pinia"
 import { afterEach, beforeEach, describe, expect, it } from "vitest"
 import { nextTick } from "vue"
 import { MasterboardPhase, TitanGame } from "@/models/game"
+import { Random } from "@/models/random"
 import { useGameStore } from "~/stores/game"
+
+const fixedRoll: Random = { shuffle: collection => [...collection], die: () => 4 }
 
 describe("game store persistence watcher", () => {
   // jsdom's Storage doesn't route bracket-notation assignment through Storage.prototype.setItem
@@ -40,7 +43,7 @@ describe("game store persistence watcher", () => {
     expect(writeCount).toBe(0)
 
     gameStore.game.activePhase = MasterboardPhase.MOVE // a second mutation, still before any await
-    TitanGame.setRoll(gameStore.game, 4)
+    TitanGame.takeMulligan(gameStore.game, fixedRoll)
     await nextTick()
 
     expect(writeCount).toBe(1)

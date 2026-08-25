@@ -7,7 +7,7 @@ import { Random } from "@/models/random"
 import { MusterChoice, Stack } from "@/models/stack"
 import { MasterboardPhase, TitanGame } from "./game"
 
-const noShuffleRandom: Random = { shuffle: collection => [...collection] }
+const noShuffleRandom: Random = { shuffle: collection => [...collection], die: () => 1 }
 
 function newGame(numPlayers = 2): TitanGame {
   return TitanGame.create(numPlayers, noShuffleRandom)
@@ -17,6 +17,7 @@ describe("TitanGame", () => {
   it("assigns player colors via the injected Random instead of a fixed order", () => {
     const reverse: Random = {
       shuffle: collection => [...collection].reverse(),
+      die: () => 1,
     }
 
     const game = TitanGame.create(2, reverse)
@@ -104,9 +105,8 @@ describe("TitanGame mandatory moves (stack splitting during movement)", () => {
   it("requires splitting apart two stacks sharing a hex until one of them moves away", () => {
     const game = newGame()
     const original = game.stacks[0]
-    TitanGame.finalizeSplits(game, [{ stack: original.id, creatures: [0, 2, 4, 6] }])
+    TitanGame.finalizeSplits(game, [{ stack: original.id, creatures: [0, 2, 4, 6] }], noShuffleRandom)
     const sibling = game.stacks.at(-1)!
-    game.activeRoll = 1
 
     expect(TitanGame.getMandatoryMoves(game)).toEqual(expect.arrayContaining([original, sibling]))
     expect(TitanGame.getMandatoryMoves(game)).toHaveLength(2)
@@ -172,15 +172,19 @@ describe("TitanGame.isStackActive", () => {
 })
 
 describe("TitanGame turn and phase transitions", () => {
-  it("advances from split to move, finalizing pending splits", () => {
+  it("advances from split to move, finalizing pending splits and rolling for movement", () => {
     const game = newGame()
     const original = game.stacks[0]
     // Stale state from a previous turn, cleared on move entry.
     game.mulliganTaken = true
 
-    TitanGame.finalizeSplits(game, [{ stack: original.id, creatures: [0, 2, 4, 6] }])
+    TitanGame.finalizeSplits(game, [{ stack: original.id, creatures: [0, 2, 4, 6] }], {
+      ...noShuffleRandom,
+      die: () => 4,
+    })
 
     expect(game.activePhase).toBe(MasterboardPhase.MOVE)
+    expect(game.activeRoll).toBe(4)
     expect(game.stacks).toHaveLength(3)
     const sibling = game.stacks.find(s => s !== original && s.owner === original.owner)!
     expect(sibling.hex).toBe(original.hex)
@@ -238,7 +242,7 @@ describe("TitanGame turn and phase transitions", () => {
   it("refuses to leave the move phase with multiple simultaneous engagements", () => {
     const game = newGame(3) // BLUE @ 100, GREEN @ 300, RED @ 500
     const original = game.stacks[0]
-    TitanGame.finalizeSplits(game, [{ stack: original.id, creatures: [0, 2, 4, 6] }])
+    TitanGame.finalizeSplits(game, [{ stack: original.id, creatures: [0, 2, 4, 6] }], noShuffleRandom)
     const sibling = game.stacks.at(-1)!
     original.hex = game.stacks[1].hex // engage GREEN
     sibling.hex = game.stacks[2].hex // engage RED
@@ -294,25 +298,24 @@ describe("TitanGame turn and phase transitions", () => {
   })
 })
 
-describe("TitanGame roll setting (setRoll)", () => {
-  it("records the roll during the move phase", () => {
-    const game = newGame()
-    game.activePhase = MasterboardPhase.MOVE
-
-    TitanGame.setRoll(game, 4)
-
-    expect(game.activeRoll).toBe(4)
-  })
-
-  it("taking a mulligan clears the roll and marks it taken", () => {
+describe("TitanGame.takeMulligan", () => {
+  it("re-rolls and marks the mulligan taken", () => {
     const game = newGame()
     game.activePhase = MasterboardPhase.MOVE
     game.activeRoll = 3
 
-    TitanGame.setRoll(game, undefined)
+    TitanGame.takeMulligan(game, { ...noShuffleRandom, die: () => 5 })
 
-    expect(game.activeRoll).toBeUndefined()
+    expect(game.activeRoll).toBe(5)
     expect(game.mulliganTaken).toBe(true)
+  })
+
+  it("refuses a second mulligan", () => {
+    const game = newGame()
+    game.activePhase = MasterboardPhase.MOVE
+    game.mulliganTaken = true
+
+    expect(() => TitanGame.takeMulligan(game, noShuffleRandom)).toThrow("Mulligan unavailable")
   })
 })
 
