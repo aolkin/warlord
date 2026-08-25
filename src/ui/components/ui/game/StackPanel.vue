@@ -39,7 +39,7 @@
           :player-id="props.focusedStack.owner"
           :class="{
             splitting: stagedSplit.includes(index),
-            interactive: splittable,
+            interactive: interactive,
           }"
           class="ma-1"
           @click="stackSplitsStore.toggle(props.focusedStack.id, index)"
@@ -130,7 +130,7 @@ const game = gameStore.game
 const selectionStore = useSelectionStore()
 const stackSplitsStore = useStackSplitsStore()
 
-const splittable = computed(
+const interactive = computed(
   (): boolean => props.focusedStack !== undefined && TitanGame.isStackActive(game, props.focusedStack),
 )
 
