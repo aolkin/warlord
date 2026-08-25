@@ -62,6 +62,7 @@ import { Path, TitanGame } from "@/models/game"
 import masterboard, { MasterboardHex } from "@/models/masterboard"
 import { Stack } from "@/models/stack"
 import { useGameStore } from "~/stores/game"
+import { useMoveStagingStore } from "~/stores/ui/moveStaging"
 import { usePreferencesStore } from "~/stores/ui/preferences"
 import { useSelectionStore } from "~/stores/ui/selection"
 import StackPanel from "../../ui/game/StackPanel.vue"
@@ -75,6 +76,7 @@ let lastSortedStacks: Stack[] = []
 const game = useGameStore().game
 const preferencesStore = usePreferencesStore()
 const selectionStore = useSelectionStore()
+const moveStagingStore = useMoveStagingStore()
 
 // activeRoll is only read from template branches that are only rendered once "paths"
 // below is non-empty, which itself requires activeRoll to be defined.
@@ -88,7 +90,7 @@ const paths = computed<Path[]>(() => {
   ) {
     return []
   }
-  return TitanGame.getPathsForHex(game, selectionStore.selectedStack.hex)
+  return TitanGame.getPathsForHex(game, moveStagingStore.hexOf(selectionStore.selectedStack), moveStagingStore.moves)
 })
 
 // Stack instances here always come from the game store's own reactive state, so they're
@@ -136,10 +138,10 @@ const canFreeMove = computed(
 
 function moveStack(distance: number, foe: boolean, hex: number): void {
   const stack = selectionStore.selectedStack
-  if (distance !== activeRoll.value - 1 || stack === undefined || stack.hasMoved || foe) {
+  if (distance !== activeRoll.value - 1 || stack === undefined || moveStagingStore.hasMoved(stack) || foe) {
     return
   }
-  TitanGame.move(game, { stack: stack.id, hex })
+  moveStagingStore.stage(stack.id, hex)
   selectionStore.deselectStack()
 }
 </script>

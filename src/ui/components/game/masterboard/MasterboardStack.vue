@@ -67,6 +67,7 @@ import { MasterboardPhase, Path, TitanGame } from "@/models/game"
 import masterboard, { HexEdge, MasterboardEdge, MasterboardHex, Terrain } from "@/models/masterboard"
 import { Stack } from "@/models/stack"
 import { useGameStore } from "~/stores/game"
+import { useMoveStagingStore } from "~/stores/ui/moveStaging"
 import { usePreferencesStore } from "~/stores/ui/preferences"
 import { useSelectionStore } from "~/stores/ui/selection"
 import { useStackSplitsStore } from "~/stores/ui/stackSplits"
@@ -97,21 +98,23 @@ const emit = defineEmits<{
   leave: [stack: Stack]
 }>()
 
-const gameStore = useGameStore()
-const game = gameStore.game
+const game = useGameStore().game
 const selectionStore = useSelectionStore()
 const preferencesStore = usePreferencesStore()
 const stackSplitsStore = useStackSplitsStore()
+const moveStagingStore = useMoveStagingStore()
 
 const selected = computed(() => props.stack === selectionStore.selectedStack)
 
-const stacksOnHex = computed((): Stack[] => TitanGame.getStacksForHex(game, props.stack.hex))
+const hex = computed((): number => moveStagingStore.hexOf(props.stack))
+
+const stacksOnHex = computed((): Stack[] => TitanGame.getStacksForHex(game, hex.value, moveStagingStore.moves))
 
 const stacksOnHexIndex = computed((): number => stacksOnHex.value.indexOf(props.stack))
 
 const transform = computed((): string => {
-  const result = hexTransform(props.stack.hex)
-  result.push(new Transformation(TransformationType.TRANSLATE, [0, isHexInverted(props.stack.hex) ? -12 : 13]))
+  const result = hexTransform(hex.value)
+  result.push(new Transformation(TransformationType.TRANSLATE, [0, isHexInverted(hex.value) ? -12 : 13]))
   if (stacksOnHex.value.length > 1) {
     result.push(new Transformation(TransformationType.ROTATE, [15 + 35 * stacksOnHexIndex.value]))
   }
@@ -133,12 +136,10 @@ const potentialEngagements = computed((): HexEdge[] => {
     return []
   } else if (!TitanGame.isMovePhase(game)) {
     return []
-  } else if (
-    TitanGame.getStacksForHex(game, props.stack.hex).some((stack: Stack) => stack.owner === game.activePlayerId)
-  ) {
+  } else if (stacksOnHex.value.some((stack: Stack) => stack.owner === game.activePlayerId)) {
     return []
   } else if (TitanGame.canTitanTeleport(game, selectionStore.selectedStack) || preferencesStore.freeMovement) {
-    if (masterboard.getHex(props.stack.hex).terrain === Terrain.TOWER) {
+    if (masterboard.getHex(hex.value).terrain === Terrain.TOWER) {
       // Battle.create normalizes all Tower attacks to this edge regardless of
       // arrival direction.
       return [HexEdge.SECOND]
@@ -150,10 +151,10 @@ const potentialEngagements = computed((): HexEdge[] => {
       .filter((path: Path) => path.foe === props.stack)
       .flatMap(({ path }: Path) =>
         // Find the index on the path where this stack resides...
-        path.map((hex: MasterboardHex, i: number) =>
-          hex.id === props.stack.hex
+        path.map((step: MasterboardHex, i: number) =>
+          step.id === hex.value
             ? // Figure out where the stack would enter this hex from
-              hex.getEdges().find((edge: MasterboardEdge) => edge.hex.id === path[i - 1].id)?.hexEdge
+              step.getEdges().find((edge: MasterboardEdge) => edge.hex.id === path[i - 1].id)?.hexEdge
             : undefined,
         ),
       )
@@ -162,13 +163,11 @@ const potentialEngagements = computed((): HexEdge[] => {
 })
 
 const engageable = computed((): [HexEdge, Transformations][] =>
-  potentialEngagements.value.map(edge => [edge, getEngageTransformForEdge(props.stack.hex, edge)]),
+  potentialEngagements.value.map(edge => [edge, getEngageTransformForEdge(hex.value, edge)]),
 )
 
 const engaged = computed(
-  (): boolean =>
-    isActivePlayer.value &&
-    TitanGame.getStacksForHex(game, props.stack.hex).some((stack: Stack) => stack.owner !== game.activePlayerId),
+  (): boolean => isActivePlayer.value && stacksOnHex.value.some((stack: Stack) => stack.owner !== game.activePlayerId),
 )
 
 const isMandatory = computed(() => {
@@ -179,7 +178,7 @@ const isMandatory = computed(() => {
     case MasterboardPhase.SPLIT:
       return !Stack.isValidSplit(props.stack, stagedSplit.value, game.round === 0)
     case MasterboardPhase.MOVE:
-      return gameStore.mandatoryMoves.includes(props.stack)
+      return moveStagingStore.mandatoryMoves.includes(props.stack)
   }
   return false
 })
@@ -188,7 +187,7 @@ const classes = computed(() => ({
   selected: selected.value,
   owned: isActivePlayer.value,
   mandatory: isMandatory.value,
-  disabled: !TitanGame.isStackActive(game, props.stack),
+  disabled: !TitanGame.isStackActive(game, props.stack, moveStagingStore.moves),
   engageable: engageable.value.length > 0,
   engaged: engaged.value,
   [`player-${props.stack.owner}`]: true,
@@ -209,33 +208,34 @@ function select(): void {
   if (!isActivePlayer.value) {
     return
   }
-  if (TitanGame.isMovePhase(game) && props.stack.hasMoved) {
-    if (!TitanGame.getStacksForHex(game, props.stack.initialHex).some((stack: Stack) => stack.hasMoved)) {
-      TitanGame.undoMove(game, props.stack.id)
+  if (TitanGame.isMovePhase(game) && moveStagingStore.hasMoved(props.stack)) {
+    const origin = TitanGame.getStacksForHex(game, props.stack.hex, moveStagingStore.moves)
+    if (!origin.some((stack: Stack) => moveStagingStore.hasMoved(stack))) {
+      moveStagingStore.unstage(props.stack.id)
     }
   }
   if (selected.value) {
     selectionStore.deselectStack()
   } else {
-    if (TitanGame.isStackActive(game, props.stack)) {
+    if (TitanGame.isStackActive(game, props.stack, moveStagingStore.moves)) {
       selectionStore.selectStack(props.stack)
     }
   }
 }
 
 function attack(edge: HexEdge): void {
-  TitanGame.move(game, { stack: selectionStore.requireSelectedStack().id, hex: props.stack.hex, edge })
+  moveStagingStore.stage(selectionStore.requireSelectedStack().id, hex.value, edge)
   selectionStore.deselectStack()
 }
 
 function enter(): void {
   emit("enter", props.stack)
-  selectionStore.enterHex(masterboard.getHex(props.stack.hex))
+  selectionStore.enterHex(masterboard.getHex(hex.value))
 }
 
 function leave(): void {
   emit("leave", props.stack)
-  selectionStore.leaveHex(masterboard.getHex(props.stack.hex))
+  selectionStore.leaveHex(masterboard.getHex(hex.value))
 }
 </script>
 
