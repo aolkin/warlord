@@ -187,14 +187,14 @@ const musteringCaption = computed(() => {
   } else if (stack.currentMuster === undefined) {
     return "No recruit chosen."
   } else {
-    const [basisCreature, basisCount] = stack.currentMuster.basis
+    const basis = stack.currentMuster.basis
     let caption = "Mustering " + CREATURE_DATA[stack.currentMuster.creature].name
-    if (basisCount > 0) {
+    if (basis.count > 0) {
       caption += " with "
-      if (basisCount > 1) {
-        caption += `${basisCount}x `
+      if (basis.count > 1) {
+        caption += `${basis.count}x `
       }
-      caption += CREATURE_DATA[basisCreature].name
+      caption += CREATURE_DATA[basis.creature].name
     }
     return caption
   }

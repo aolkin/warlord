@@ -273,7 +273,10 @@ describe("TitanGame turn and phase transitions", () => {
     expect(game.round).toBe(0)
 
     game.activePhase = MasterboardPhase.MUSTER
-    game.stacks[0].currentMuster = { creature: CreatureType.CENTAUR, basis: [CreatureType.CENTAUR, 0] }
+    game.stacks[0].currentMuster = {
+      creature: CreatureType.CENTAUR,
+      basis: { creature: CreatureType.CENTAUR, count: 0 },
+    }
     // Stale movement state left over from this player's earlier MOVE phase this round.
     game.stacks[0].attackEdge = HexEdge.FIRST
     game.stacks[0].initialHex = 3
@@ -363,7 +366,7 @@ describe("TitanGame mustering (setRecruit)", () => {
     expect(() =>
       TitanGame.setRecruit(game, {
         stack: stack.id,
-        recruit: { creature: CreatureType.CENTAUR, basis: [CreatureType.CENTAUR, 0] },
+        recruit: { creature: CreatureType.CENTAUR, basis: { creature: CreatureType.CENTAUR, count: 0 } },
       }),
     ).toThrow("not eligible to muster")
   })
@@ -384,7 +387,7 @@ describe("TitanGame mustering (setRecruit)", () => {
     expect(() =>
       TitanGame.setRecruit(game, {
         stack: stack.id,
-        recruit: { creature: CreatureType.LION, basis: [CreatureType.CENTAUR, 2] },
+        recruit: { creature: CreatureType.LION, basis: { creature: CreatureType.CENTAUR, count: 2 } },
       }),
     ).toThrow("Innappropriate phase")
   })
@@ -405,7 +408,7 @@ describe("TitanGame mustering (setRecruit)", () => {
     game.stacks.push(stack)
     game.creaturePool[creatureType] = 0
     game.activePhase = MasterboardPhase.MUSTER
-    const recruit: MusterChoice = { creature: creatureType, basis: [CreatureType.CENTAUR, 2] }
+    const recruit: MusterChoice = { creature: creatureType, basis: { creature: CreatureType.CENTAUR, count: 2 } }
 
     if (expectSuccess) {
       TitanGame.setRecruit(game, { stack: stack.id, recruit })
@@ -432,13 +435,16 @@ describe("TitanGame mustering (setRecruit)", () => {
     game.activePhase = MasterboardPhase.MUSTER
     TitanGame.setRecruit(game, {
       stack: stack.id,
-      recruit: { creature: CreatureType.LION, basis: [CreatureType.CENTAUR, 2] },
+      recruit: { creature: CreatureType.LION, basis: { creature: CreatureType.CENTAUR, count: 2 } },
     })
 
     TitanGame.nextPhase(game)
 
     expect(stack.creatures).toContain(CreatureType.LION)
     expect(game.creaturePool[CreatureType.LION]).toBe(poolBefore - 1)
-    expect(stack.recruits[game.round]).toEqual({ creature: CreatureType.LION, basis: [CreatureType.CENTAUR, 2] })
+    expect(stack.recruits[game.round]).toEqual({
+      creature: CreatureType.LION,
+      basis: { creature: CreatureType.CENTAUR, count: 2 },
+    })
   })
 })

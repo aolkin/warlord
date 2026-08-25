@@ -8,7 +8,7 @@
       @click="chosen = undefined"
     />
     <template
-      v-for="([creature, musterBasis], index) in musterable"
+      v-for="({ creature, bases: musterBasis }, index) in musterable"
       :key="creature"
     >
       <v-dialog
@@ -32,14 +32,14 @@
           <v-card-title>Muster a {{ CREATURE_DATA[creature].name }} with...</v-card-title>
           <v-card-actions>
             <svg
-              v-for="[basisCreature, count] in musterBasis"
-              :key="basisCreature"
+              v-for="basis in musterBasis"
+              :key="basis.creature"
               viewBox="-50 -50 100 100"
               class="muster-basis-choice pa-2"
-              @click="choose({ creature, basis: [basisCreature, count] })"
+              @click="choose({ creature, basis })"
             >
               <Creature
-                :type="basisCreature"
+                :type="basis.creature"
                 :player-id="playerId"
                 :in-svg="true"
               />
@@ -48,7 +48,7 @@
                 y="0"
                 class="req-count"
               >
-                x{{ count }}
+                x{{ basis.count }}
               </text>
             </svg>
           </v-card-actions>
