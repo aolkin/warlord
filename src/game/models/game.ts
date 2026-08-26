@@ -258,14 +258,15 @@ export namespace TitanGame {
     })
     game.mulliganTaken = false
     advancePhase(game)
-    rollMovement(game, random)
+    game.activeRoll = random.die()
   }
 
   /** Re-rolls movement, which rule 7.6 allows once on a player's first turn. */
   export function takeMulligan(game: TitanGame, random: Random = defaultRandom): void {
     assert(isMulliganAvailable(game), "Mulligan unavailable")
     game.mulliganTaken = true
-    rollMovement(game, random)
+    assert(game.activePhase === MasterboardPhase.MOVE, "Innappropriate phase")
+    game.activeRoll = random.die()
   }
 
   export function nextPhase(game: TitanGame): void {
@@ -357,12 +358,6 @@ function finalizeMuster(round: number, stack: Stack & { currentMuster: MusterCho
   stack.recruits[round] = stack.currentMuster
   stack.creatures.push(stack.currentMuster.creature)
   return stack.currentMuster.creature
-}
-
-// Rule 6.2 puts the movement roll at the start of the move phase, not on a step of its own.
-function rollMovement(game: TitanGame, random: Random): void {
-  assert(game.activePhase === MasterboardPhase.MOVE, "Innappropriate phase")
-  game.activeRoll = random.die()
 }
 
 function advancePhase(game: TitanGame): void {
