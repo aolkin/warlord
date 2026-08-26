@@ -187,7 +187,8 @@ export namespace TitanGame {
   }
 
   export function mayProceedFromMuster(game: TitanGame, musters: MusterPayload[]): boolean {
-    return musters.every(muster => isValidMuster(game, muster))
+    const requestedCounts = countRequestedRecruits(musters)
+    return musters.every(muster => isValidMuster(game, muster, requestedCounts))
   }
 
   export function isStackActive(game: TitanGame, stack: Stack, moves: StagedMoves = new Map()): boolean {
@@ -303,48 +304,20 @@ export namespace TitanGame {
     advancePhase(game)
   }
 
-  /** Recruits each submitted muster into its stack and passes the turn to the next player. */
   export function finalizeMusters(game: TitanGame, musters: MusterPayload[]): void {
     assert(game.activePhase === MasterboardPhase.MUSTER, "Innappropriate phase")
     musters.forEach(({ stack: ref, recruit }) => {
       const stack = getStacksForPlayer(game).find(candidate => candidate.id === ref)
       assert(stack !== undefined, `The active player does not own a stack with id ${ref}`)
       assert(Stack.canMuster(stack), `Stack ${ref} is not eligible to muster`)
-      const recruited = recruit.creature
-      assert(isInPool(game, recruited), "No more of the requested creature remaining")
+      assert(isInPool(game, recruit.creature), "No more of the requested creature remaining")
       stack.recruits[game.round] = recruit
-      stack.creatures.push(recruited)
-      game.creaturePool[recruited]--
+      stack.creatures.push(recruit.creature)
+      game.creaturePool[recruit.creature]--
     })
     // Muster is a turn's last phase, so advancing past it wraps to the next player's split.
     advancePhase(game)
     getStacksForPlayer(game).forEach(startPlayerTurn)
-  }
-
-  export function nextPhase(game: TitanGame): void {
-    switch (game.activePhase) {
-      case MasterboardPhase.SPLIT:
-        throw new Error("The split phase ends through finalizeSplits, which carries the splits")
-      case MasterboardPhase.MOVE:
-        throw new Error("The move phase ends through finalizeMoves, which carries the moves")
-      case MasterboardPhase.BATTLE:
-        assert(game.activeBattle !== undefined, "Incomplete battle!")
-        break
-      case MasterboardPhase.MUSTER:
-        throw new Error("The muster phase ends through finalizeMusters, which carries the musters")
-    }
-    advancePhase(game)
-  }
-
-  export function setRoll(game: TitanGame, payload?: number): void {
-    if (payload === undefined && game.activeRoll !== undefined) {
-      assert(isMulliganAvailable(game), "Mulligan unavailable")
-    }
-    assert(game.activePhase === MasterboardPhase.MOVE, "Innappropriate phase")
-    if (payload === undefined && game.activeRoll !== undefined) {
-      game.mulliganTaken = true
-    }
-    game.activeRoll = payload
   }
 
   export function hydrate(persisted?: string): TitanGame {
@@ -375,13 +348,27 @@ function startPlayerTurn(stack: Stack): void {
 }
 
 // Lords are stocked at a quantity of 0, so the pool never reports any available.
-function isInPool(game: TitanGame, creature: CreatureType): boolean {
-  return CREATURE_DATA[creature].lord || game.creaturePool[creature] > 0
+function isInPool(game: TitanGame, creature: CreatureType, requested = 1): boolean {
+  return CREATURE_DATA[creature].lord || game.creaturePool[creature] >= requested
 }
 
-function isValidMuster(game: TitanGame, { stack: ref, recruit }: MusterPayload): boolean {
+function countRequestedRecruits(musters: MusterPayload[]): Map<CreatureType, number> {
+  const counts = new Map<CreatureType, number>()
+  musters.forEach(({ recruit }) => counts.set(recruit.creature, (counts.get(recruit.creature) ?? 0) + 1))
+  return counts
+}
+
+function isValidMuster(
+  game: TitanGame,
+  { stack: ref, recruit }: MusterPayload,
+  requestedCounts: Map<CreatureType, number>,
+): boolean {
   const stack = TitanGame.getStacksForPlayer(game).find(candidate => candidate.id === ref)
-  return stack !== undefined && Stack.canMuster(stack) && isInPool(game, recruit.creature)
+  return (
+    stack !== undefined &&
+    Stack.canMuster(stack) &&
+    isInPool(game, recruit.creature, requestedCounts.get(recruit.creature))
+  )
 }
 
 function advancePhase(game: TitanGame): void {

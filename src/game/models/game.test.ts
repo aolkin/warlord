@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest"
-import { Battle } from "@/models/battle"
 import { CreatureType } from "@/models/creature"
 import { HexEdge } from "@/models/masterboard"
 import { PlayerId } from "@/models/player"
@@ -238,18 +237,6 @@ describe("TitanGame turn and phase transitions", () => {
     expect(game.activePhase).toBe(MasterboardPhase.BATTLE)
   })
 
-  it("advances from battle to muster once a battle is present", () => {
-    const game = newGame()
-    game.activePhase = MasterboardPhase.BATTLE
-    // Battle mechanics themselves are exercised by the battle test suite; only the
-    // phase-transition gating (an active battle must exist) is under test here.
-    game.activeBattle = {} as unknown as Battle
-
-    TitanGame.nextPhase(game)
-
-    expect(game.activePhase).toBe(MasterboardPhase.MUSTER)
-  })
-
   it("rotates to the next player after musters, then wraps to the first player and advances the round on the next muster", () => {
     const game = newGame()
     game.activePhase = MasterboardPhase.MUSTER
@@ -420,6 +407,21 @@ describe("TitanGame mustering (finalizeMusters)", () => {
     } else {
       expect(() => TitanGame.finalizeMusters(game, musters)).toThrow("No more of the requested creature remaining")
     }
+  })
+
+  it("refuses simultaneous musters of the same creature that together exceed the remaining pool", () => {
+    const game = newGame()
+    const stackA = eligibleStack(game)
+    const stackB = eligibleStack(game)
+    game.creaturePool[CreatureType.LION] = 1
+    game.activePhase = MasterboardPhase.MUSTER
+    const musters: MusterPayload[] = [
+      { stack: stackA.id, recruit: { creature: CreatureType.LION, basis: { creature: CreatureType.CENTAUR, count: 2 } } },
+      { stack: stackB.id, recruit: { creature: CreatureType.LION, basis: { creature: CreatureType.CENTAUR, count: 2 } } },
+    ]
+
+    expect(TitanGame.mayProceedFromMuster(game, musters)).toBe(false)
+    expect(() => TitanGame.finalizeMusters(game, musters)).toThrow("No more of the requested creature remaining")
   })
 
   it("applies the submitted musters to the stack and pool when the muster phase ends", () => {

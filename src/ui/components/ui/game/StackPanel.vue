@@ -183,16 +183,15 @@ const mustering = computed({
 
 const musteringCaption = computed(() => {
   const stack = props.focusedStack!
-  const recruit = mustering.value
   if (!stack.hasMoved) {
     return "You cannot muster in a stack that did not move this turn."
   } else if (Stack.isFull(stack)) {
     return "This stack is already full and cannot muster."
-  } else if (recruit === undefined) {
+  } else if (mustering.value === undefined) {
     return "No recruit chosen."
   } else {
-    const basis = recruit.basis
-    let caption = "Mustering " + CREATURE_DATA[recruit.creature].name
+    const basis = mustering.value.basis
+    let caption = "Mustering " + CREATURE_DATA[mustering.value.creature].name
     if (basis.count > 0) {
       caption += " with "
       if (basis.count > 1) {
