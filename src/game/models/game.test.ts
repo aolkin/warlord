@@ -368,7 +368,7 @@ describe("TitanGame mustering (finalizeMusters)", () => {
       } as MusterPayload,
     ]
 
-    expect(TitanGame.getMayProceed(game, [], musters)).toBe(false)
+    expect(TitanGame.mayProceedFromMuster(game, musters)).toBe(false)
     expect(() => TitanGame.finalizeMusters(game, musters)).toThrow("not eligible to muster")
   })
 
@@ -382,7 +382,7 @@ describe("TitanGame mustering (finalizeMusters)", () => {
       } as MusterPayload,
     ]
 
-    expect(TitanGame.getMayProceed(game, [], musters)).toBe(false)
+    expect(TitanGame.mayProceedFromMuster(game, musters)).toBe(false)
     expect(() => TitanGame.finalizeMusters(game, musters)).toThrow("does not own")
   })
 
@@ -413,7 +413,7 @@ describe("TitanGame mustering (finalizeMusters)", () => {
       { stack: stack.id, recruit: { creature: creatureType, basis: { creature: CreatureType.CENTAUR, count: 2 } } },
     ]
 
-    expect(TitanGame.getMayProceed(game, [], musters)).toBe(expectSuccess)
+    expect(TitanGame.mayProceedFromMuster(game, musters)).toBe(expectSuccess)
     if (expectSuccess) {
       TitanGame.finalizeMusters(game, musters)
       expect(stack.creatures).toContain(creatureType)
