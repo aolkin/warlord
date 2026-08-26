@@ -244,7 +244,7 @@ export namespace TitanGame {
   }
 
   /** Splits the submitted creatures off their stacks onto fresh markers and enters the move phase. */
-  export function finalizeSplits(game: TitanGame, splits: StackSplit[]): void {
+  export function finalizeSplits(game: TitanGame, splits: StackSplit[], random: Random = defaultRandom): void {
     assert(game.activePhase === MasterboardPhase.SPLIT, "Innappropriate phase")
     // TODO: check mayProceed before advancing — round-1 split rule (exactly 4 creatures with 1 lord) not yet enforced
     const owned = getStacksForPlayer(game)
@@ -258,6 +258,15 @@ export namespace TitanGame {
     })
     game.mulliganTaken = false
     advancePhase(game)
+    game.activeRoll = random.die()
+  }
+
+  /** Re-rolls movement, which rule 7.6 allows once on a player's first turn. */
+  export function takeMulligan(game: TitanGame, random: Random = defaultRandom): void {
+    assert(isMulliganAvailable(game), "Mulligan unavailable")
+    assert(game.activePhase === MasterboardPhase.MOVE, "Innappropriate phase")
+    game.mulliganTaken = true
+    game.activeRoll = random.die()
   }
 
   export function nextPhase(game: TitanGame): void {
@@ -295,17 +304,6 @@ export namespace TitanGame {
         return
     }
     advancePhase(game)
-  }
-
-  export function setRoll(game: TitanGame, payload?: number): void {
-    if (payload === undefined && game.activeRoll !== undefined) {
-      assert(isMulliganAvailable(game), "Mulligan unavailable")
-    }
-    assert(game.activePhase === MasterboardPhase.MOVE, "Innappropriate phase")
-    if (payload === undefined && game.activeRoll !== undefined) {
-      game.mulliganTaken = true
-    }
-    game.activeRoll = payload
   }
 
   export function move(game: TitanGame, { stack, hex, edge }: MovePayload): void {

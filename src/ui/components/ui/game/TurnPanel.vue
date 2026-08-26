@@ -32,7 +32,7 @@
           block
           :disabled="!mayProceed"
           variant="outlined"
-          @click="proceedToRoll"
+          @click="TitanGame.finalizeSplits(game, stackSplitsStore.pendingSplits)"
         >
           Finish Splits and Roll
         </v-btn>
@@ -43,7 +43,7 @@
           block
           variant="outlined"
           title="On the first round only, you may opt to re-roll your die once."
-          @click="roll"
+          @click="TitanGame.takeMulligan(game)"
         >
           Mulligan (Roll Again)
         </v-btn>
@@ -72,15 +72,12 @@
 </template>
 
 <script setup lang="ts">
-import { computed, inject, Ref } from "vue"
+import { computed } from "vue"
 import { sum } from "lodash-es"
-import type DiceRoller from "~/components/ui/generic/DiceRoller"
 import { MasterboardPhase, TitanGame } from "@/models/game"
 import { Moveable } from "@/models/moveable"
 import { useGameStore } from "~/stores/game"
 import { useStackSplitsStore } from "~/stores/ui/stackSplits"
-
-const diceRoller = inject<Readonly<Ref<InstanceType<typeof DiceRoller> | null>>>("diceRoller")
 
 const gameStore = useGameStore()
 const game = gameStore.game
@@ -115,18 +112,6 @@ const engagementsMessage = computed(() => {
     return `${engagedStacks.length} pending battles.`
   }
 })
-
-function roll(): void {
-  if (game.activeRoll !== undefined) {
-    TitanGame.setRoll(game, undefined)
-  }
-  diceRoller?.value?.roll().then((rolled: number[]) => TitanGame.setRoll(game, rolled[0]))
-}
-
-function proceedToRoll(): void {
-  TitanGame.finalizeSplits(game, stackSplitsStore.pendingSplits)
-  roll()
-}
 </script>
 
 <style scoped lang="sass"></style>
