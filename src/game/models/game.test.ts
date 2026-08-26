@@ -5,12 +5,16 @@ import { HexEdge } from "@/models/masterboard"
 import { PlayerId } from "@/models/player"
 import { Random } from "@/models/random"
 import { MusterChoice, Stack } from "@/models/stack"
-import { MasterboardPhase, TitanGame } from "./game"
+import { CurrentStackHexGetter, MasterboardPhase, StagedMoves, TitanGame } from "./game"
 
 const noShuffleRandom: Random = { shuffle: collection => [...collection], die: () => 1 }
 
 function newGame(numPlayers = 2): TitanGame {
   return TitanGame.create(numPlayers, noShuffleRandom)
+}
+
+function hexGetter(moves: StagedMoves): CurrentStackHexGetter {
+  return stack => moves.get(stack.id)?.hex ?? stack.hex
 }
 
 describe("TitanGame", () => {
@@ -110,53 +114,25 @@ describe("TitanGame mandatory moves (stack splitting during movement)", () => {
 
     expect(TitanGame.getMandatoryMoves(game)).toEqual(expect.arrayContaining([original, sibling]))
     expect(TitanGame.getMandatoryMoves(game)).toHaveLength(2)
-    expect(TitanGame.getMayProceed(game, [])).toBe(false)
+    expect(TitanGame.mayProceedFromMove(game, new Map())).toBe(false)
 
-    TitanGame.move(game, { stack: original.id, hex: 3 })
+    const moves = new Map([[original.id, { hex: 3 }]])
 
     // Once split apart, the remaining stack alone on the origin hex is no longer mandatory.
-    expect(TitanGame.getMandatoryMoves(game)).toEqual([])
-    expect(TitanGame.getMayProceed(game, [])).toBe(true)
+    expect(TitanGame.getMandatoryMoves(game, moves, hexGetter(moves))).toEqual([])
+    expect(TitanGame.mayProceedFromMove(game, moves, hexGetter(moves))).toBe(true)
   })
 })
 
-describe("TitanGame.move", () => {
-  it("counts a move that ends on the hex it started from", () => {
-    const game = newGame()
-    game.activePhase = MasterboardPhase.MOVE
-    const stack = game.stacks[0]
-
-    TitanGame.move(game, { stack: stack.id, hex: stack.initialHex })
-
-    expect(stack.hasMoved).toBe(true)
-    expect(TitanGame.isStackActive(game, stack)).toBe(false)
-  })
-
-  it("returns the stack to its starting hex and clears the move on undo", () => {
-    const game = newGame()
-    game.activePhase = MasterboardPhase.MOVE
-    const stack = game.stacks[0]
-    const origin = stack.hex
-    TitanGame.move(game, { stack: stack.id, hex: 3, edge: HexEdge.FIRST })
-
-    TitanGame.undoMove(game, stack.id)
-
-    expect(stack.hex).toBe(origin)
-    expect(stack.attackEdge).toBeUndefined()
-    expect(stack.hasMoved).toBe(false)
-    expect(TitanGame.isStackActive(game, stack)).toBe(true)
-  })
-})
-
-describe("TitanGame mayProceed for the split phase", () => {
+describe("TitanGame mayProceedFromSplit", () => {
   it("blocks proceeding out of the split phase in round 1 until every active stack has a valid split", () => {
     const game = newGame()
     expect(game.round).toBe(0)
-    expect(TitanGame.getMayProceed(game, [])).toBe(false)
+    expect(TitanGame.mayProceedFromSplit(game, [])).toBe(false)
 
     const splits = [{ stack: game.stacks[0].id, creatures: [0, 2, 4, 6] }]
 
-    expect(TitanGame.getMayProceed(game, splits)).toBe(true)
+    expect(TitanGame.mayProceedFromSplit(game, splits)).toBe(true)
   })
 })
 
@@ -171,14 +147,13 @@ describe("TitanGame.isStackActive", () => {
     expect(TitanGame.isStackActive(game, stack)).toBe(false) // down to 3, below the 4-creature minimum
   })
 
-  it("gates MOVE phase on not having moved yet", () => {
+  it("gates MOVE phase on not having a move staged yet", () => {
     const game = newGame()
     game.activePhase = MasterboardPhase.MOVE
     const stack = game.stacks[0]
     expect(TitanGame.isStackActive(game, stack)).toBe(true)
 
-    stack.hasMoved = true
-    expect(TitanGame.isStackActive(game, stack)).toBe(false)
+    expect(TitanGame.isStackActive(game, stack, new Map([[stack.id, { hex: stack.hex + 1 }]]))).toBe(false)
   })
 
   it("gates MUSTER phase on Stack.canMuster", () => {
@@ -241,45 +216,26 @@ describe("TitanGame turn and phase transitions", () => {
     game.activePhase = MasterboardPhase.MOVE
     game.activeRoll = 1
 
-    TitanGame.nextPhase(game)
+    TitanGame.finalizeMoves(game, new Map([[game.stacks[0].id, { hex: 3 }]]))
 
     expect(game.activePhase).toBe(MasterboardPhase.MUSTER)
     expect(game.activeRoll).toBeUndefined()
+    expect(game.stacks[0].hasMoved).toBe(true)
   })
 
   it("initiates a battle and stays in the battle phase when one stack ends on an enemy hex", () => {
     const game = newGame()
     const attacker = game.stacks[0]
     const defender = game.stacks[1]
-    attacker.hex = defender.hex // stacks are engaged by sharing a hex
-    attacker.attackEdge = HexEdge.FIRST
     game.activePhase = MasterboardPhase.MOVE
     game.activeRoll = 1
 
-    TitanGame.nextPhase(game)
+    TitanGame.finalizeMoves(game, new Map([[attacker.id, { hex: defender.hex, edge: HexEdge.FIRST }]]))
 
     expect(game.activeBattle?.attacker).toBe(attacker.owner)
     expect(game.activeBattle?.defender).toBe(defender.owner)
     expect(game.activeBattleHex).toBe(attacker.hex)
     expect(game.activePhase).toBe(MasterboardPhase.BATTLE)
-  })
-
-  // Real Titan rules allow multiple simultaneous engagements, resolved one battle at a time.
-  // Until a player can choose the resolution order, nextPhase refuses to leave the move
-  // phase rather than advancing into a battle phase with no battle. See its TODO.
-  it("refuses to leave the move phase with multiple simultaneous engagements", () => {
-    const game = newGame(3) // BLUE @ 100, GREEN @ 300, RED @ 500
-    const original = game.stacks[0]
-    TitanGame.finalizeSplits(game, [{ stack: original.id, creatures: [0, 2, 4, 6] }], noShuffleRandom)
-    const sibling = game.stacks.at(-1)!
-    original.hex = game.stacks[1].hex // engage GREEN
-    sibling.hex = game.stacks[2].hex // engage RED
-    game.activeRoll = 1
-
-    expect(() => TitanGame.nextPhase(game)).toThrow("Multiple simultaneous engagements")
-
-    expect(game.activePhase).toBe(MasterboardPhase.MOVE)
-    expect(game.activeBattle).toBeUndefined()
   })
 
   it("advances from battle to muster once a battle is present", () => {

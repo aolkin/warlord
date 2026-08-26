@@ -113,6 +113,7 @@ import masterboard, { Terrain } from "@/models/masterboard"
 import { Player } from "@/models/player"
 import { MusterChoice, MusterPossibility, Stack } from "@/models/stack"
 import { useGameStore } from "~/stores/game"
+import { useMoveStagingStore } from "~/stores/ui/moveStaging"
 import { useSelectionStore } from "~/stores/ui/selection"
 import { useStackSplitsStore } from "~/stores/ui/stackSplits"
 import { mod } from "~/utils/math"
@@ -128,6 +129,7 @@ const gameStore = useGameStore()
 const game = gameStore.game
 const selectionStore = useSelectionStore()
 const stackSplitsStore = useStackSplitsStore()
+const moveStagingStore = useMoveStagingStore()
 
 const interactive = computed(
   (): boolean => props.focusedStack !== undefined && TitanGame.isStackActive(game, props.focusedStack),
@@ -205,7 +207,7 @@ function cycleStacks(by: number): void {
   do {
     index += by
     candidateStack = gameStore.activeStacks[mod(index, gameStore.activeStacks.length)]
-  } while (!TitanGame.isStackActive(game, candidateStack))
+  } while (!TitanGame.isStackActive(game, candidateStack, moveStagingStore.moves))
   selectionStore.selectStack(candidateStack)
 }
 </script>

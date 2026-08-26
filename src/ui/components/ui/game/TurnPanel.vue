@@ -9,7 +9,7 @@
       <v-icon size="x-large" />
     </template>
     <v-card-text v-if="TitanGame.isSplitPhase(game)">
-      <span v-if="mayProceed">
+      <span v-if="splitMayProceed">
         Split stacks if desired, or proceed to roll.
         <span v-if="sevenHighCount > 0">
           You have {{ sevenHighCount }} full stack{{ sevenHighCount > 1 ? "s" : "" }}!
@@ -21,7 +21,7 @@
       Moved {{ movedCount }} of {{ gameStore.activeStacks.length }} stacks.
       {{ engagementsMessage }}
       <span v-if="movedCount < 1">You must move at least one stack!</span>
-      <span v-else-if="!mayProceed">You must move at least one stack from each split if possible.</span>
+      <span v-else-if="!moveMayProceed">You must move at least one stack from each split if possible.</span>
     </v-card-text>
     <v-card-text v-else-if="TitanGame.isMusterPhase(game)">
       Mustered a recruit in {{ musteredCount }} of {{ gameStore.activeStacks.length }} stacks.
@@ -30,7 +30,7 @@
       <v-card-actions v-if="TitanGame.isSplitPhase(game)">
         <v-btn
           block
-          :disabled="!mayProceed"
+          :disabled="!splitMayProceed"
           variant="outlined"
           @click="TitanGame.finalizeSplits(game, stackSplitsStore.pendingSplits)"
         >
@@ -51,17 +51,16 @@
           v-else
           block
           :variant="movedCount === gameStore.activeStacks.length ? 'outlined' : 'tonal'"
-          :disabled="!mayProceed"
-          @click="TitanGame.nextPhase(game)"
+          :disabled="!moveMayProceed"
+          @click="TitanGame.finalizeMoves(game, moveStagingStore.moves)"
         >
-          {{ TitanGame.getEngagedStacks(game).length > 0 ? "Proceed to Battle" : "Proceed to Muster" }}
+          {{ engagedStacks.length > 0 ? "Proceed to Battle" : "Proceed to Muster" }}
         </v-btn>
       </v-card-actions>
       <v-card-actions v-else-if="TitanGame.isMusterPhase(game)">
         <v-btn
           block
           variant="outlined"
-          :disabled="!mayProceed"
           @click="TitanGame.nextPhase(game)"
         >
           End Turn
@@ -76,13 +75,19 @@ import { computed } from "vue"
 import { sum } from "lodash-es"
 import { MasterboardPhase, TitanGame } from "@/models/game"
 import { useGameStore } from "~/stores/game"
+import { useMoveStagingStore } from "~/stores/ui/moveStaging"
 import { useStackSplitsStore } from "~/stores/ui/stackSplits"
 
 const gameStore = useGameStore()
 const game = gameStore.game
 const stackSplitsStore = useStackSplitsStore()
+const moveStagingStore = useMoveStagingStore()
 
-const mayProceed = computed(() => TitanGame.getMayProceed(game, stackSplitsStore.pendingSplits))
+const splitMayProceed = computed(() => TitanGame.mayProceedFromSplit(game, stackSplitsStore.pendingSplits))
+const moveMayProceed = computed(() =>
+  TitanGame.mayProceedFromMove(game, moveStagingStore.moves, moveStagingStore.hexOf),
+)
+const engagedStacks = computed(() => TitanGame.getEngagedStacks(game, moveStagingStore.hexOf))
 
 const icon = computed(() => {
   switch (game.activePhase) {
@@ -99,16 +104,15 @@ const icon = computed(() => {
   }
 })
 const sevenHighCount = computed(() => sum(gameStore.activeStacks.map(stack => stack.creatures.length === 7)))
-const movedCount = computed(() => sum(gameStore.activeStacks.map(stack => stack.hasMoved)))
+const movedCount = computed(() => moveStagingStore.moves.size)
 const musteredCount = computed(() => sum(gameStore.activeStacks.map(stack => stack.currentMuster !== undefined)))
 const engagementsMessage = computed(() => {
-  const engagedStacks = TitanGame.getEngagedStacks(game)
-  if (engagedStacks.length < 1) {
+  if (engagedStacks.value.length < 1) {
     return ""
-  } else if (engagedStacks.length === 1) {
+  } else if (engagedStacks.value.length === 1) {
     return "1 pending battle."
   } else {
-    return `${engagedStacks.length} pending battles.`
+    return `${engagedStacks.value.length} pending battles.`
   }
 })
 </script>
