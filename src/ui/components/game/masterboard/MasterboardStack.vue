@@ -108,7 +108,7 @@ const selected = computed(() => props.stack === selectionStore.selectedStack)
 
 const hex = computed((): number => moveStagingStore.hexOf(props.stack))
 
-const stacksOnHex = computed((): Stack[] => TitanGame.getStacksForHex(game, hex.value, moveStagingStore.moves))
+const stacksOnHex = computed((): Stack[] => TitanGame.getStacksForHex(game, hex.value, moveStagingStore.hexOf))
 
 const stacksOnHexIndex = computed((): number => stacksOnHex.value.indexOf(props.stack))
 
@@ -209,7 +209,7 @@ function select(): void {
     return
   }
   if (TitanGame.isMovePhase(game) && moveStagingStore.hasMoved(props.stack)) {
-    const origin = TitanGame.getStacksForHex(game, props.stack.hex, moveStagingStore.moves)
+    const origin = TitanGame.getStacksForHex(game, props.stack.hex, moveStagingStore.hexOf)
     if (!origin.some((stack: Stack) => moveStagingStore.hasMoved(stack))) {
       moveStagingStore.unstage(props.stack.id)
     }

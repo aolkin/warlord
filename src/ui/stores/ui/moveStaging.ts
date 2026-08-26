@@ -13,7 +13,7 @@ export const useMoveStagingStore = defineStore("moveStaging", () => {
 
   const moves = computed((): StagedMoves => staged.value)
 
-  const mandatoryMoves = computed(() => TitanGame.getMandatoryMoves(gameStore.game, staged.value))
+  const mandatoryMoves = computed(() => TitanGame.getMandatoryMoves(gameStore.game, staged.value, hexOf))
 
   function stage(stack: StackRef, hex: number, edge?: HexEdge): void {
     staged.value = new Map(staged.value).set(stack, { hex, edge })
@@ -33,16 +33,8 @@ export const useMoveStagingStore = defineStore("moveStaging", () => {
     return staged.value.has(stack.id)
   }
 
-  watch(
-    () => gameStore.game.activePhase,
-    () => (staged.value = new Map()),
-  )
-
   // A mulligan re-rolls movement, so anything staged under the old roll may no longer be legal.
-  watch(
-    () => gameStore.game.mulliganTaken,
-    () => (staged.value = new Map()),
-  )
+  watch([() => gameStore.game.activePhase, () => gameStore.game.mulliganTaken], () => (staged.value = new Map()))
 
   return {
     moves,

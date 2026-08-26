@@ -39,7 +39,7 @@ const hexes = computed(() => masterboard.getHexIds())
 function move(hex: number): void {
   // A foe-occupied hex triggers an engagement via the enemy stack's attack-edge picker,
   // not this click handler.
-  if (TitanGame.getStacksForHex(game, hex, moveStagingStore.moves).length > 0) {
+  if (TitanGame.getStacksForHex(game, hex, moveStagingStore.hexOf).length > 0) {
     return
   }
   moveStagingStore.stage(selectionStore.requireSelectedStack().id, hex)

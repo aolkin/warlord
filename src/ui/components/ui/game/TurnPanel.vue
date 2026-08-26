@@ -84,8 +84,10 @@ const stackSplitsStore = useStackSplitsStore()
 const moveStagingStore = useMoveStagingStore()
 
 const splitMayProceed = computed(() => TitanGame.mayProceedFromSplit(game, stackSplitsStore.pendingSplits))
-const moveMayProceed = computed(() => TitanGame.mayProceedFromMove(game, moveStagingStore.moves))
-const engagedStacks = computed(() => TitanGame.getEngagedStacks(game, moveStagingStore.moves))
+const moveMayProceed = computed(() =>
+  TitanGame.mayProceedFromMove(game, moveStagingStore.moves, moveStagingStore.hexOf),
+)
+const engagedStacks = computed(() => TitanGame.getEngagedStacks(game, moveStagingStore.hexOf))
 
 const icon = computed(() => {
   switch (game.activePhase) {

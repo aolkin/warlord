@@ -90,7 +90,7 @@ const paths = computed<Path[]>(() => {
   ) {
     return []
   }
-  return TitanGame.getPathsForHex(game, moveStagingStore.hexOf(selectionStore.selectedStack), moveStagingStore.moves)
+  return TitanGame.getPathsForHex(game, moveStagingStore.hexOf(selectionStore.selectedStack), moveStagingStore.hexOf)
 })
 
 // Stack instances here always come from the game store's own reactive state, so they're

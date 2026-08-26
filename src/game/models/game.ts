@@ -35,7 +35,9 @@ export interface StackSplit {
 
 export type StagedMoves = ReadonlyMap<StackRef, { hex: number; edge?: HexEdge }>
 
-export type CurrentStackHexGetter = (stack: Stack) => number;
+export type CurrentStackHexGetter = (stack: Stack) => number
+
+const committedHex: CurrentStackHexGetter = stack => stack.hex
 
 export interface MusterPayload {
   stack: StackRef
@@ -108,11 +110,19 @@ export namespace TitanGame {
     return range(0, 12).find(marker => !usedMarkers.includes(marker))
   }
 
-  export function getStacksForHex(game: TitanGame, hex: number, moves: StagedMoves = new Map()): Stack[] {
-    return game.stacks.filter(stack => (moves.get(stack.id)?.hex ?? stack.hex) === hex)
+  export function getStacksForHex(
+    game: TitanGame,
+    hex: number,
+    getCurrentHex: CurrentStackHexGetter = committedHex,
+  ): Stack[] {
+    return game.stacks.filter(stack => getCurrentHex(stack) === hex)
   }
 
-  export function getPathsForHex(game: TitanGame, hexNum: number, moves: StagedMoves = new Map()): Path[] {
+  export function getPathsForHex(
+    game: TitanGame,
+    hexNum: number,
+    getCurrentHex: CurrentStackHexGetter = committedHex,
+  ): Path[] {
     if (game.activeRoll === undefined) {
       return []
     }
@@ -125,7 +135,7 @@ export namespace TitanGame {
     while ((entry = stack.pop()) !== undefined) {
       const [path, , hex] = entry
       let foe = entry[1]
-      const occupants: Stack[] = getStacksForHex(game, hex.id, moves)
+      const occupants: Stack[] = getStacksForHex(game, hex.id, getCurrentHex)
       if (foe === undefined) {
         const foes = occupants.filter((stack: Stack) => stack.owner !== game.activePlayerId)
         if (foes.length > 0) {
@@ -148,12 +158,16 @@ export namespace TitanGame {
     return paths
   }
 
-  export function getMandatoryMoves(game: TitanGame, moves: StagedMoves): Stack[] {
+  export function getMandatoryMoves(
+    game: TitanGame,
+    moves: StagedMoves = new Map(),
+    getCurrentHex: CurrentStackHexGetter = committedHex,
+  ): Stack[] {
     return getStacksForPlayer(game).filter(
       stack =>
         !moves.has(stack.id) &&
-        getStacksForHex(game, stack.hex, moves).length > 1 &&
-        getPathsForHex(game, stack.hex, moves).length > 0,
+        getStacksForHex(game, stack.hex, getCurrentHex).length > 1 &&
+        getPathsForHex(game, stack.hex, getCurrentHex).length > 0,
     )
   }
 
@@ -164,8 +178,12 @@ export namespace TitanGame {
     )
   }
 
-  export function mayProceedFromMove(game: TitanGame, moves: StagedMoves = new Map()): boolean {
-    return getMandatoryMoves(game, moves).length === 0 && moves.size > 0
+  export function mayProceedFromMove(
+    game: TitanGame,
+    moves: StagedMoves = new Map(),
+    getCurrentHex: CurrentStackHexGetter = committedHex,
+  ): boolean {
+    return getMandatoryMoves(game, moves, getCurrentHex).length === 0 && moves.size > 0
   }
 
   export function isStackActive(game: TitanGame, stack: Stack, moves: StagedMoves = new Map()): boolean {
@@ -200,12 +218,10 @@ export namespace TitanGame {
     return game.activePhase === MasterboardPhase.MUSTER
   }
 
-  export function getEngagedStacks(game: TitanGame, moves: StagedMoves = new Map()): Stack[] {
+  export function getEngagedStacks(game: TitanGame, getCurrentHex: CurrentStackHexGetter = committedHex): Stack[] {
     const activePlayerId = game.activePlayerId
     return getStacksForPlayer(game).filter(stack =>
-      getStacksForHex(game, moves.get(stack.id)?.hex ?? stack.hex, moves).some(
-        occupant => occupant.owner !== activePlayerId,
-      ),
+      getStacksForHex(game, getCurrentHex(stack), getCurrentHex).some(occupant => occupant.owner !== activePlayerId),
     )
   }
 
@@ -264,7 +280,6 @@ export namespace TitanGame {
 
   export function finalizeMoves(game: TitanGame, moves: StagedMoves): void {
     assert(game.activePhase === MasterboardPhase.MOVE, "Innappropriate phase")
-    const engagedStacks = getEngagedStacks(game, moves)
     moves.forEach(({ hex, edge }, ref) => {
       const movingStack = game.stacks.find(stack => stack.id === ref)
       assert(movingStack !== undefined, `No stack with id ${ref}`)
@@ -272,6 +287,7 @@ export namespace TitanGame {
       movingStack.attackEdge = edge
       movingStack.hasMoved = true
     })
+    const engagedStacks = getEngagedStacks(game)
     game.activeRoll = undefined
     // TODO: recombine splits that failed to move
     // TODO: handle 2+ simultaneous engagements

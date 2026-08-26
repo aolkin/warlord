@@ -5,12 +5,16 @@ import { HexEdge } from "@/models/masterboard"
 import { PlayerId } from "@/models/player"
 import { Random } from "@/models/random"
 import { MusterChoice, Stack } from "@/models/stack"
-import { MasterboardPhase, TitanGame } from "./game"
+import { CurrentStackHexGetter, MasterboardPhase, StagedMoves, TitanGame } from "./game"
 
 const noShuffleRandom: Random = { shuffle: collection => [...collection], die: () => 1 }
 
 function newGame(numPlayers = 2): TitanGame {
   return TitanGame.create(numPlayers, noShuffleRandom)
+}
+
+function hexGetter(moves: StagedMoves): CurrentStackHexGetter {
+  return stack => moves.get(stack.id)?.hex ?? stack.hex
 }
 
 describe("TitanGame", () => {
@@ -115,8 +119,8 @@ describe("TitanGame mandatory moves (stack splitting during movement)", () => {
     const moves = new Map([[original.id, { hex: 3 }]])
 
     // Once split apart, the remaining stack alone on the origin hex is no longer mandatory.
-    expect(TitanGame.getMandatoryMoves(game, moves)).toEqual([])
-    expect(TitanGame.mayProceedFromMove(game, moves)).toBe(true)
+    expect(TitanGame.getMandatoryMoves(game, moves, hexGetter(moves))).toEqual([])
+    expect(TitanGame.mayProceedFromMove(game, moves, hexGetter(moves))).toBe(true)
   })
 })
 
