@@ -264,8 +264,8 @@ export namespace TitanGame {
   /** Re-rolls movement, which rule 7.6 allows once on a player's first turn. */
   export function takeMulligan(game: TitanGame, random: Random = defaultRandom): void {
     assert(isMulliganAvailable(game), "Mulligan unavailable")
-    game.mulliganTaken = true
     assert(game.activePhase === MasterboardPhase.MOVE, "Innappropriate phase")
+    game.mulliganTaken = true
     game.activeRoll = random.die()
   }
 
