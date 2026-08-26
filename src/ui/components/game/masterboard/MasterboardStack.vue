@@ -106,9 +106,7 @@ const stackSplitsStore = useStackSplitsStore()
 const moveStagingStore = useMoveStagingStore()
 const musterStagingStore = useMusterStagingStore()
 
-const stagedRecruit = computed(() => musterStagingStore.recruitFor(props.stack.id))
-
-const visibleMuster = computed(() => stagedRecruit.value ?? props.stack.latestMuster)
+const visibleMuster = computed(() => musterStagingStore.recruitFor(props.stack.id) ?? props.stack.latestMuster)
 
 const selected = computed(() => props.stack === selectionStore.selectedStack)
 

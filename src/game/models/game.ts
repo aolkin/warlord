@@ -356,7 +356,6 @@ function startPlayerTurn(stack: Stack): void {
   stack.latestMuster = undefined
 }
 
-// Lords are stocked at a quantity of 0, so the pool never reports any available.
 function isInPool(game: TitanGame, creature: CreatureType, requested = 1): boolean {
   return CREATURE_DATA[creature].lord || game.creaturePool[creature] >= requested
 }
