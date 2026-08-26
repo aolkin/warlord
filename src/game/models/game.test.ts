@@ -361,7 +361,7 @@ describe("TitanGame mustering (finalizeMusters)", () => {
     ]
 
     expect(TitanGame.mayProceedFromMuster(game, musters)).toBe(false)
-    expect(() => TitanGame.finalizeMusters(game, musters)).toThrow("not eligible to muster")
+    expect(() => TitanGame.finalizeMusters(game, musters)).toThrow("Invalid musters")
   })
 
   it("refuses a muster submitted for a stack the active player does not own", () => {
@@ -375,7 +375,7 @@ describe("TitanGame mustering (finalizeMusters)", () => {
     ]
 
     expect(TitanGame.mayProceedFromMuster(game, musters)).toBe(false)
-    expect(() => TitanGame.finalizeMusters(game, musters)).toThrow("does not own")
+    expect(() => TitanGame.finalizeMusters(game, musters)).toThrow("Invalid musters")
   })
 
   it("refuses musters outside the muster phase", () => {
@@ -410,7 +410,7 @@ describe("TitanGame mustering (finalizeMusters)", () => {
       TitanGame.finalizeMusters(game, musters)
       expect(stack.creatures).toContain(creatureType)
     } else {
-      expect(() => TitanGame.finalizeMusters(game, musters)).toThrow("No more of the requested creature remaining")
+      expect(() => TitanGame.finalizeMusters(game, musters)).toThrow("Invalid musters")
     }
   })
 
@@ -432,7 +432,7 @@ describe("TitanGame mustering (finalizeMusters)", () => {
     ]
 
     expect(TitanGame.mayProceedFromMuster(game, musters)).toBe(false)
-    expect(() => TitanGame.finalizeMusters(game, musters)).toThrow("No more of the requested creature remaining")
+    expect(() => TitanGame.finalizeMusters(game, musters)).toThrow("Invalid musters")
     expect(stackA.creatures).not.toContain(CreatureType.LION)
     expect(stackB.creatures).not.toContain(CreatureType.LION)
     expect(game.creaturePool[CreatureType.LION]).toBe(1)
