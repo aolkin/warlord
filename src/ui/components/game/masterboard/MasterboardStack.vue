@@ -48,11 +48,11 @@
     />
     <transition name="muster">
       <g
-        v-if="stagedRecruit !== undefined"
+        v-if="visibleMuster !== undefined"
         class="recruited-creature"
       >
         <Creature
-          :type="stagedRecruit.creature"
+          :type="visibleMuster.creature"
           :player-id="stack.owner"
           in-svg
         />
@@ -107,6 +107,8 @@ const moveStagingStore = useMoveStagingStore()
 const musterStagingStore = useMusterStagingStore()
 
 const stagedRecruit = computed(() => musterStagingStore.recruitFor(props.stack.id))
+
+const visibleMuster = computed(() => stagedRecruit.value ?? props.stack.latestMuster)
 
 const selected = computed(() => props.stack === selectionStore.selectedStack)
 

@@ -312,6 +312,7 @@ export namespace TitanGame {
       assert(Stack.canMuster(stack), `Stack ${ref} is not eligible to muster`)
       assert(isInPool(game, recruit.creature), "No more of the requested creature remaining")
       stack.recruits[game.round] = recruit
+      stack.latestMuster = recruit
       stack.creatures.push(recruit.creature)
       game.creaturePool[recruit.creature]--
     })
@@ -345,6 +346,7 @@ function startPlayerTurn(stack: Stack): void {
   stack.initialHex = stack.hex
   stack.hasMoved = false
   stack.attackEdge = undefined
+  stack.latestMuster = undefined
 }
 
 // Lords are stocked at a quantity of 0, so the pool never reports any available.

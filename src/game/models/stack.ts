@@ -35,6 +35,7 @@ export interface Stack {
   initialHex: number
   hasMoved: boolean
   attackEdge: HexEdge | undefined
+  latestMuster: MusterChoice | undefined
 }
 
 export type CreateStackOptions = Pick<Stack, "owner" | "marker" | "createdRound" | "hex"> &
@@ -63,6 +64,7 @@ export namespace Stack {
       hex: options.hex,
       hasMoved: false,
       attackEdge: undefined,
+      latestMuster: undefined,
     }
   }
 

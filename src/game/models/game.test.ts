@@ -252,6 +252,9 @@ describe("TitanGame turn and phase transitions", () => {
     game.stacks[0].attackEdge = HexEdge.FIRST
     game.stacks[0].initialHex = 3
     game.stacks[0].hasMoved = true
+    const priorMuster = { creature: CreatureType.LION, basis: { creature: CreatureType.CENTAUR, count: 2 } }
+    game.stacks[0].latestMuster = priorMuster
+    game.stacks[1].latestMuster = priorMuster
 
     TitanGame.finalizeMusters(game, [])
     expect(game.activePhase).toBe(MasterboardPhase.SPLIT)
@@ -263,6 +266,8 @@ describe("TitanGame turn and phase transitions", () => {
     expect(game.stacks[0].attackEdge).toBeUndefined()
     expect(game.stacks[0].initialHex).toBe(game.stacks[0].hex)
     expect(game.stacks[0].hasMoved).toBe(false)
+    expect(game.stacks[0].latestMuster).toBeUndefined()
+    expect(game.stacks[1].latestMuster).toBe(priorMuster)
   })
 })
 
@@ -416,8 +421,14 @@ describe("TitanGame mustering (finalizeMusters)", () => {
     game.creaturePool[CreatureType.LION] = 1
     game.activePhase = MasterboardPhase.MUSTER
     const musters: MusterPayload[] = [
-      { stack: stackA.id, recruit: { creature: CreatureType.LION, basis: { creature: CreatureType.CENTAUR, count: 2 } } },
-      { stack: stackB.id, recruit: { creature: CreatureType.LION, basis: { creature: CreatureType.CENTAUR, count: 2 } } },
+      {
+        stack: stackA.id,
+        recruit: { creature: CreatureType.LION, basis: { creature: CreatureType.CENTAUR, count: 2 } },
+      },
+      {
+        stack: stackB.id,
+        recruit: { creature: CreatureType.LION, basis: { creature: CreatureType.CENTAUR, count: 2 } },
+      },
     ]
 
     expect(TitanGame.mayProceedFromMuster(game, musters)).toBe(false)
@@ -441,6 +452,10 @@ describe("TitanGame mustering (finalizeMusters)", () => {
     expect(stack.creatures).toContain(CreatureType.LION)
     expect(game.creaturePool[CreatureType.LION]).toBe(poolBefore - 1)
     expect(stack.recruits[round]).toEqual({
+      creature: CreatureType.LION,
+      basis: { creature: CreatureType.CENTAUR, count: 2 },
+    })
+    expect(stack.latestMuster).toEqual({
       creature: CreatureType.LION,
       basis: { creature: CreatureType.CENTAUR, count: 2 },
     })
