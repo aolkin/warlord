@@ -433,6 +433,9 @@ describe("TitanGame mustering (finalizeMusters)", () => {
 
     expect(TitanGame.mayProceedFromMuster(game, musters)).toBe(false)
     expect(() => TitanGame.finalizeMusters(game, musters)).toThrow("No more of the requested creature remaining")
+    expect(stackA.creatures).not.toContain(CreatureType.LION)
+    expect(stackB.creatures).not.toContain(CreatureType.LION)
+    expect(game.creaturePool[CreatureType.LION]).toBe(1)
   })
 
   it("applies the submitted musters to the stack and pool when the muster phase ends", () => {

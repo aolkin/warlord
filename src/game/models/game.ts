@@ -187,10 +187,7 @@ export namespace TitanGame {
   }
 
   export function mayProceedFromMuster(game: TitanGame, musters: MusterPayload[]): boolean {
-    const requestedCounts = new Map<CreatureType, number>()
-    musters.forEach(({ recruit }) =>
-      requestedCounts.set(recruit.creature, (requestedCounts.get(recruit.creature) ?? 0) + 1),
-    )
+    const requestedCounts = countRequestedRecruits(musters)
     return musters.every(muster => isValidMuster(game, muster, requestedCounts))
   }
 
@@ -309,11 +306,18 @@ export namespace TitanGame {
 
   export function finalizeMusters(game: TitanGame, musters: MusterPayload[]): void {
     assert(game.activePhase === MasterboardPhase.MUSTER, "Innappropriate phase")
-    musters.forEach(({ stack: ref, recruit }) => {
+    const requestedCounts = countRequestedRecruits(musters)
+    const resolved = musters.map(({ stack: ref, recruit }) => {
       const stack = getStacksForPlayer(game).find(candidate => candidate.id === ref)
       assert(stack !== undefined, `The active player does not own a stack with id ${ref}`)
       assert(Stack.canMuster(stack), `Stack ${ref} is not eligible to muster`)
-      assert(isInPool(game, recruit.creature), "No more of the requested creature remaining")
+      assert(
+        isInPool(game, recruit.creature, requestedCounts.get(recruit.creature)),
+        "No more of the requested creature remaining",
+      )
+      return { stack, recruit }
+    })
+    resolved.forEach(({ stack, recruit }) => {
       stack.recruits[game.round] = recruit
       stack.latestMuster = recruit
       stack.creatures.push(recruit.creature)
@@ -355,6 +359,12 @@ function startPlayerTurn(stack: Stack): void {
 // Lords are stocked at a quantity of 0, so the pool never reports any available.
 function isInPool(game: TitanGame, creature: CreatureType, requested = 1): boolean {
   return CREATURE_DATA[creature].lord || game.creaturePool[creature] >= requested
+}
+
+function countRequestedRecruits(musters: MusterPayload[]): Map<CreatureType, number> {
+  const counts = new Map<CreatureType, number>()
+  musters.forEach(({ recruit }) => counts.set(recruit.creature, (counts.get(recruit.creature) ?? 0) + 1))
+  return counts
 }
 
 function isValidMuster(
