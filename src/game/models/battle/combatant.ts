@@ -1,16 +1,17 @@
 import { CREATURE_DATA, CreatureType } from "../creature"
-import { Moveable } from "../moveable"
 import { PlayerId } from "../player"
 
 let battleCreatureIdCounter = 0
 
-export interface BattleCreature extends Moveable {
+export interface BattleCreature {
   readonly type: CreatureType
   readonly player: PlayerId
   readonly id: number
   readonly name: string
   readonly strength: number
 
+  hex: number
+  initialHex: number
   wounds: number
   hasStruck: boolean
 }

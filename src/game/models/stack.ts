@@ -2,7 +2,6 @@ import { remove, sum } from "lodash-es"
 import { assert } from "@/utils/assert"
 import { CREATURE_DATA, CreatureType, MUSTER_DATA } from "./creature"
 import { HexEdge, Terrain } from "./masterboard"
-import { Moveable } from "./moveable"
 import { PlayerId } from "./player"
 
 let stackIdCounter = 0
@@ -24,7 +23,7 @@ export interface MusterChoice {
   basis: MusterBasis
 }
 
-export interface Stack extends Moveable {
+export interface Stack {
   readonly owner: PlayerId
   readonly creatures: CreatureType[]
   readonly marker: number
@@ -32,6 +31,9 @@ export interface Stack extends Moveable {
   readonly id: number
   readonly createdRound: number
 
+  hex: number
+  initialHex: number
+  hasMoved: boolean
   attackEdge: HexEdge | undefined
   currentMuster: MusterChoice | undefined
 }
@@ -60,6 +62,7 @@ export namespace Stack {
       createdRound: options.createdRound,
       initialHex: options.hex,
       hex: options.hex,
+      hasMoved: false,
       attackEdge: undefined,
       currentMuster: undefined,
     }
@@ -76,7 +79,7 @@ export namespace Stack {
   }
 
   export function canMuster(stack: Stack): boolean {
-    return Moveable.hasMoved(stack) && !isFull(stack)
+    return stack.hasMoved && !isFull(stack)
   }
 
   // `splitting` is a parameter rather than state on `Stack` because the pick is reversible until submitted.

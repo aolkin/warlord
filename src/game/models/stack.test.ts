@@ -61,7 +61,7 @@ describe("Stack mustering eligibility", () => {
       createdRound: 0,
       creatures: new Array(creatureCount).fill(CreatureType.CENTAUR),
     })
-    if (moved) stack.hex = 6
+    stack.hasMoved = moved
 
     expect(Stack.canMuster(stack)).toBe(expected)
   })

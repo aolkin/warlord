@@ -110,7 +110,6 @@ import { capitalize } from "lodash-es"
 import { CREATURE_DATA, CreatureType } from "@/models/creature"
 import { TitanGame } from "@/models/game"
 import masterboard, { Terrain } from "@/models/masterboard"
-import { Moveable } from "@/models/moveable"
 import { Player } from "@/models/player"
 import { MusterChoice, MusterPossibility, Stack } from "@/models/stack"
 import { useGameStore } from "~/stores/game"
@@ -180,7 +179,7 @@ const mustering = computed({
 
 const musteringCaption = computed(() => {
   const stack = props.focusedStack!
-  if (!Moveable.hasMoved(stack)) {
+  if (!stack.hasMoved) {
     return "You cannot muster in a stack that did not move this turn."
   } else if (Stack.isFull(stack)) {
     return "This stack is already full and cannot muster."

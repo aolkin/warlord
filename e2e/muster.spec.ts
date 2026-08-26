@@ -5,7 +5,7 @@ import { seedGame } from "./fixtures"
 
 // Player 0 starts at tower hex 100 (see move.spec.ts); hex 200 is a different tower left
 // unoccupied by a 2-player game (TitanGame's INITIAL_HEXES[2] is [100, 400]). Moving the
-// stack there without touching initialHex simulates a completed move onto Tower terrain,
+// stack there and flagging it as moved simulates a completed move onto Tower terrain,
 // which always offers a free Centaur/Ogre/Gargoyle recruit regardless of stack composition
 // (see Stack.musterable's Tower branch), so no path-following through Move is needed.
 //
@@ -19,6 +19,7 @@ test("mustering a moved stack at a tower adds the recruit and lets the turn end"
     const [stack] = TitanGame.getStacksForPlayer(game, game.activePlayerId)
     stack.creatures.splice(-2, 2)
     stack.hex = 200
+    stack.hasMoved = true
   })
   await page.goto("/")
 
@@ -63,6 +64,7 @@ test("mustering a recruit with more than one basis opens a choice dialog", async
       CreatureType.TITAN, CreatureType.LION, CreatureType.LION, CreatureType.MINOTAUR,
       CreatureType.OGRE, CreatureType.GARGOYLE)
     stack.hex = 1000
+    stack.hasMoved = true
   })
   await page.goto("/")
 

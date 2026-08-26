@@ -120,6 +120,34 @@ describe("TitanGame mandatory moves (stack splitting during movement)", () => {
   })
 })
 
+describe("TitanGame.move", () => {
+  it("counts a move that ends on the hex it started from", () => {
+    const game = newGame()
+    game.activePhase = MasterboardPhase.MOVE
+    const stack = game.stacks[0]
+
+    TitanGame.move(game, { stack: stack.id, hex: stack.initialHex })
+
+    expect(stack.hasMoved).toBe(true)
+    expect(TitanGame.isStackActive(game, stack)).toBe(false)
+  })
+
+  it("returns the stack to its starting hex and clears the move on undo", () => {
+    const game = newGame()
+    game.activePhase = MasterboardPhase.MOVE
+    const stack = game.stacks[0]
+    const origin = stack.hex
+    TitanGame.move(game, { stack: stack.id, hex: 3, edge: HexEdge.FIRST })
+
+    TitanGame.undoMove(game, stack.id)
+
+    expect(stack.hex).toBe(origin)
+    expect(stack.attackEdge).toBeUndefined()
+    expect(stack.hasMoved).toBe(false)
+    expect(TitanGame.isStackActive(game, stack)).toBe(true)
+  })
+})
+
 describe("TitanGame mayProceed for the split phase", () => {
   it("blocks proceeding out of the split phase in round 1 until every active stack has a valid split", () => {
     const game = newGame()
@@ -149,7 +177,7 @@ describe("TitanGame.isStackActive", () => {
     const stack = game.stacks[0]
     expect(TitanGame.isStackActive(game, stack)).toBe(true)
 
-    stack.hex = stack.initialHex + 1
+    stack.hasMoved = true
     expect(TitanGame.isStackActive(game, stack)).toBe(false)
   })
 
@@ -160,7 +188,7 @@ describe("TitanGame.isStackActive", () => {
     stack.creatures.splice(3) // below the 7-creature cap, so only "hasn't moved" blocks mustering
     expect(TitanGame.isStackActive(game, stack)).toBe(false) // hasn't moved, so can't muster
 
-    stack.hex = stack.initialHex + 1
+    stack.hasMoved = true
     expect(TitanGame.isStackActive(game, stack)).toBe(true)
   })
 
@@ -284,6 +312,7 @@ describe("TitanGame turn and phase transitions", () => {
     // Stale movement state left over from this player's earlier MOVE phase this round.
     game.stacks[0].attackEdge = HexEdge.FIRST
     game.stacks[0].initialHex = 3
+    game.stacks[0].hasMoved = true
 
     TitanGame.nextPhase(game)
     expect(game.activePhase).toBe(MasterboardPhase.SPLIT)
@@ -295,6 +324,7 @@ describe("TitanGame turn and phase transitions", () => {
     expect(game.stacks[0].currentMuster).toBeUndefined()
     expect(game.stacks[0].attackEdge).toBeUndefined()
     expect(game.stacks[0].initialHex).toBe(game.stacks[0].hex)
+    expect(game.stacks[0].hasMoved).toBe(false)
   })
 })
 
@@ -383,7 +413,7 @@ describe("TitanGame mustering (setRecruit)", () => {
       createdRound: game.round,
       creatures: [CreatureType.CENTAUR, CreatureType.CENTAUR],
     })
-    stack.hex = 101 // moved, so otherwise eligible to muster
+    stack.hasMoved = true
     game.stacks.push(stack)
     game.activePhase = MasterboardPhase.MOVE
 
@@ -407,7 +437,7 @@ describe("TitanGame mustering (setRecruit)", () => {
       createdRound: game.round,
       creatures: [CreatureType.CENTAUR, CreatureType.CENTAUR],
     })
-    stack.hex = 101 // moved
+    stack.hasMoved = true
     game.stacks.push(stack)
     game.creaturePool[creatureType] = 0
     game.activePhase = MasterboardPhase.MUSTER
@@ -432,7 +462,7 @@ describe("TitanGame mustering (setRecruit)", () => {
       createdRound: game.round,
       creatures: [CreatureType.CENTAUR, CreatureType.CENTAUR],
     })
-    stack.hex = 101
+    stack.hasMoved = true
     game.stacks.push(stack)
     const poolBefore = game.creaturePool[CreatureType.LION]
     game.activePhase = MasterboardPhase.MUSTER

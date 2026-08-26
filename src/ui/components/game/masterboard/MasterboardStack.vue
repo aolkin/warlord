@@ -65,7 +65,6 @@
 import { computed } from "vue"
 import { MasterboardPhase, Path, TitanGame } from "@/models/game"
 import masterboard, { HexEdge, MasterboardEdge, MasterboardHex, Terrain } from "@/models/masterboard"
-import { Moveable } from "@/models/moveable"
 import { Stack } from "@/models/stack"
 import { useGameStore } from "~/stores/game"
 import { usePreferencesStore } from "~/stores/ui/preferences"
@@ -210,9 +209,9 @@ function select(): void {
   if (!isActivePlayer.value) {
     return
   }
-  if (TitanGame.isMovePhase(game) && Moveable.hasMoved(props.stack)) {
-    if (!TitanGame.getStacksForHex(game, props.stack.initialHex).some((stack: Stack) => Moveable.hasMoved(stack))) {
-      TitanGame.move(game, { stack: props.stack.id, hex: props.stack.initialHex })
+  if (TitanGame.isMovePhase(game) && props.stack.hasMoved) {
+    if (!TitanGame.getStacksForHex(game, props.stack.initialHex).some((stack: Stack) => stack.hasMoved)) {
+      TitanGame.undoMove(game, props.stack.id)
     }
   }
   if (selected.value) {
