@@ -3,7 +3,6 @@ import { assert } from "@/utils/assert"
 import { Battle, BattleSide } from "./battle"
 import { CREATURE_DATA, CREATURE_LIST, CreatureType } from "./creature"
 import masterboard, { HexEdge, MasterboardHex } from "./masterboard"
-import { Moveable } from "./moveable"
 import { Player, PlayerId } from "./player"
 import { defaultRandom, Random } from "./random"
 import { MusterChoice, Stack, StackRef } from "./stack"
@@ -152,7 +151,7 @@ export namespace TitanGame {
   export function getMandatoryMoves(game: TitanGame): Stack[] {
     return getStacksForPlayer(game).filter(
       stack =>
-        !Moveable.hasMoved(stack) &&
+        !stack.hasMoved &&
         getStacksForHex(game, stack.initialHex).length > 1 &&
         getPathsForHex(game, stack.hex).length > 0,
     )
@@ -167,7 +166,7 @@ export namespace TitanGame {
         )
       }
       case MasterboardPhase.MOVE:
-        return getMandatoryMoves(game).length === 0 && getStacksForPlayer(game).some(stack => Moveable.hasMoved(stack))
+        return getMandatoryMoves(game).length === 0 && getStacksForPlayer(game).some(stack => stack.hasMoved)
       case MasterboardPhase.BATTLE:
         return true
       case MasterboardPhase.MUSTER:
@@ -185,7 +184,7 @@ export namespace TitanGame {
       case MasterboardPhase.SPLIT:
         return stack.creatures.length >= 4
       case MasterboardPhase.MOVE:
-        return !Moveable.hasMoved(stack)
+        return !stack.hasMoved
       case MasterboardPhase.MUSTER:
         return Stack.canMuster(stack)
       default:
@@ -194,7 +193,7 @@ export namespace TitanGame {
   }
 
   export function isMulliganAvailable(game: TitanGame): boolean {
-    return game.round === 0 && !game.mulliganTaken && !getStacksForPlayer(game).some(stack => Moveable.hasMoved(stack))
+    return game.round === 0 && !game.mulliganTaken && !getStacksForPlayer(game).some(stack => stack.hasMoved)
   }
 
   export function isSplitPhase(game: TitanGame): boolean {
@@ -312,6 +311,16 @@ export namespace TitanGame {
     assert(game.activePhase === MasterboardPhase.MOVE, "Innappropriate phase")
     movingStack.attackEdge = edge
     movingStack.hex = hex
+    movingStack.hasMoved = true
+  }
+
+  export function undoMove(game: TitanGame, stack: StackRef): void {
+    const movingStack = game.stacks.find(s => s.id === stack)
+    assert(movingStack !== undefined, `No stack with id ${stack}`)
+    assert(game.activePhase === MasterboardPhase.MOVE, "Innappropriate phase")
+    movingStack.attackEdge = undefined
+    movingStack.hex = movingStack.initialHex
+    movingStack.hasMoved = false
   }
 
   export function setRecruit(game: TitanGame, { stack, recruit }: MusterPayload): void {
@@ -350,6 +359,7 @@ function toBattleSide(stack: Stack, score: number): BattleSide {
 
 function startPlayerTurn(stack: Stack): void {
   stack.initialHex = stack.hex
+  stack.hasMoved = false
   stack.attackEdge = undefined
   stack.currentMuster = undefined
 }

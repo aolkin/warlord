@@ -75,7 +75,6 @@
 import { computed } from "vue"
 import { sum } from "lodash-es"
 import { MasterboardPhase, TitanGame } from "@/models/game"
-import { Moveable } from "@/models/moveable"
 import { useGameStore } from "~/stores/game"
 import { useStackSplitsStore } from "~/stores/ui/stackSplits"
 
@@ -100,7 +99,7 @@ const icon = computed(() => {
   }
 })
 const sevenHighCount = computed(() => sum(gameStore.activeStacks.map(stack => stack.creatures.length === 7)))
-const movedCount = computed(() => sum(gameStore.activeStacks.map(stack => Moveable.hasMoved(stack))))
+const movedCount = computed(() => sum(gameStore.activeStacks.map(stack => stack.hasMoved)))
 const musteredCount = computed(() => sum(gameStore.activeStacks.map(stack => stack.currentMuster !== undefined)))
 const engagementsMessage = computed(() => {
   const engagedStacks = TitanGame.getEngagedStacks(game)
