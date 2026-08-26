@@ -178,7 +178,7 @@ const isMandatory = computed(() => {
     case MasterboardPhase.SPLIT:
       return !Stack.isValidSplit(props.stack, stagedSplit.value, game.round === 0)
     case MasterboardPhase.MOVE:
-      return moveStagingStore.mandatoryMoves.includes(props.stack)
+      return TitanGame.getMandatoryMoves(game, moveStagingStore.moves, moveStagingStore.hexOf).includes(props.stack)
   }
   return false
 })
