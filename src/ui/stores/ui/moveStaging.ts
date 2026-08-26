@@ -1,8 +1,8 @@
-import { defineStore } from "pinia"
-import { computed, shallowRef, watch } from "vue"
 import { StagedMoves, TitanGame } from "@/models/game"
 import { HexEdge } from "@/models/masterboard"
 import { Stack, StackRef } from "@/models/stack"
+import { defineStore } from "pinia"
+import { computed, shallowRef, watch } from "vue"
 import { useGameStore } from "~/stores/game"
 
 // A move is reversible until submitted, so it never reaches `game`.
@@ -26,11 +26,11 @@ export const useMoveStagingStore = defineStore("moveStaging", () => {
   }
 
   function hexOf(stack: Stack): number {
-    return TitanGame.getStagedHex(stack, staged.value)
+    return staged.value.get(stack.id)?.hex ?? stack.hex
   }
 
   function hasMoved(stack: Stack): boolean {
-    return TitanGame.hasStagedMove(stack, staged.value)
+    return staged.value.has(stack.id)
   }
 
   watch(

@@ -1,5 +1,5 @@
-import { range } from "lodash-es"
 import { assert } from "@/utils/assert"
+import { range } from "lodash-es"
 import { Battle, BattleSide } from "./battle"
 import { CREATURE_DATA, CREATURE_LIST, CreatureType } from "./creature"
 import masterboard, { HexEdge, MasterboardHex } from "./masterboard"
@@ -32,7 +32,11 @@ export interface StackSplit {
   stack: StackRef
   creatures: number[] // indices into stack.creatures
 }
+
 export type StagedMoves = ReadonlyMap<StackRef, { hex: number; edge?: HexEdge }>
+
+export type CurrentStackHexGetter = (stack: Stack) => number;
+
 export interface MusterPayload {
   stack: StackRef
   recruit: MusterChoice
@@ -104,16 +108,8 @@ export namespace TitanGame {
     return range(0, 12).find(marker => !usedMarkers.includes(marker))
   }
 
-  export function getStagedHex(stack: Stack, moves: StagedMoves): number {
-    return moves.get(stack.id)?.hex ?? stack.hex
-  }
-
-  export function hasStagedMove(stack: Stack, moves: StagedMoves): boolean {
-    return moves.has(stack.id)
-  }
-
   export function getStacksForHex(game: TitanGame, hex: number, moves: StagedMoves = new Map()): Stack[] {
-    return game.stacks.filter(stack => getStagedHex(stack, moves) === hex)
+    return game.stacks.filter(stack => (moves.get(stack.id)?.hex ?? stack.hex) === hex)
   }
 
   export function getPathsForHex(game: TitanGame, hexNum: number, moves: StagedMoves = new Map()): Path[] {
@@ -152,10 +148,10 @@ export namespace TitanGame {
     return paths
   }
 
-  export function getMandatoryMoves(game: TitanGame, moves: StagedMoves = new Map()): Stack[] {
+  export function getMandatoryMoves(game: TitanGame, moves: StagedMoves): Stack[] {
     return getStacksForPlayer(game).filter(
       stack =>
-        !hasStagedMove(stack, moves) &&
+        !moves.has(stack.id) &&
         getStacksForHex(game, stack.hex, moves).length > 1 &&
         getPathsForHex(game, stack.hex, moves).length > 0,
     )
@@ -180,7 +176,7 @@ export namespace TitanGame {
       case MasterboardPhase.SPLIT:
         return stack.creatures.length >= 4
       case MasterboardPhase.MOVE:
-        return !hasStagedMove(stack, moves)
+        return !moves.has(stack.id)
       case MasterboardPhase.MUSTER:
         return Stack.canMuster(stack)
       default:
@@ -207,7 +203,9 @@ export namespace TitanGame {
   export function getEngagedStacks(game: TitanGame, moves: StagedMoves = new Map()): Stack[] {
     const activePlayerId = game.activePlayerId
     return getStacksForPlayer(game).filter(stack =>
-      getStacksForHex(game, getStagedHex(stack, moves), moves).some(occupant => occupant.owner !== activePlayerId),
+      getStacksForHex(game, moves.get(stack.id)?.hex ?? stack.hex, moves).some(
+        occupant => occupant.owner !== activePlayerId,
+      ),
     )
   }
 
