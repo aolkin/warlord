@@ -61,7 +61,6 @@
         <v-btn
           block
           variant="outlined"
-          :disabled="!musterMayProceed"
           @click="TitanGame.nextPhase(game)"
         >
           End Turn
@@ -86,7 +85,6 @@ const moveStagingStore = useMoveStagingStore()
 
 const splitMayProceed = computed(() => TitanGame.mayProceedFromSplit(game, stackSplitsStore.pendingSplits))
 const moveMayProceed = computed(() => TitanGame.mayProceedFromMove(game, moveStagingStore.moves))
-const musterMayProceed = computed(() => TitanGame.mayProceedFromMuster())
 const engagedStacks = computed(() => TitanGame.getEngagedStacks(game, moveStagingStore.moves))
 
 const icon = computed(() => {

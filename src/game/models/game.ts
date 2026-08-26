@@ -172,10 +172,6 @@ export namespace TitanGame {
     return getMandatoryMoves(game, moves).length === 0 && moves.size > 0
   }
 
-  export function mayProceedFromMuster(): boolean {
-    return true
-  }
-
   export function isStackActive(game: TitanGame, stack: Stack, moves: StagedMoves = new Map()): boolean {
     if (stack.owner !== game.activePlayerId) {
       return false
@@ -245,7 +241,7 @@ export namespace TitanGame {
   /** Splits the submitted creatures off their stacks onto fresh markers and enters the move phase. */
   export function finalizeSplits(game: TitanGame, splits: StackSplit[], random: Random = defaultRandom): void {
     assert(game.activePhase === MasterboardPhase.SPLIT, "Innappropriate phase")
-    // TODO: check mayProceedFromSplit before advancing — round-1 split rule (exactly 4 creatures with 1 lord) not yet enforced
+    assert(mayProceedFromSplit(game, splits), "Invalid splits")
     const owned = getStacksForPlayer(game)
     splits.forEach(({ stack: ref, creatures }) => {
       const stack = owned.find(candidate => candidate.id === ref)
@@ -280,8 +276,7 @@ export namespace TitanGame {
     })
     game.activeRoll = undefined
     // TODO: recombine splits that failed to move
-    // TODO: handle 2+ simultaneous engagements — no UI yet exists to let the player choose
-    // which battle to resolve first.
+    // TODO: handle 2+ simultaneous engagements
     if (engagedStacks.length === 0) {
       advancePhase(game)
     } else {
