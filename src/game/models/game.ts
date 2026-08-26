@@ -187,7 +187,10 @@ export namespace TitanGame {
   }
 
   export function mayProceedFromMuster(game: TitanGame, musters: MusterPayload[]): boolean {
-    const requestedCounts = countRequestedRecruits(musters)
+    const requestedCounts = new Map<CreatureType, number>()
+    musters.forEach(({ recruit }) =>
+      requestedCounts.set(recruit.creature, (requestedCounts.get(recruit.creature) ?? 0) + 1),
+    )
     return musters.every(muster => isValidMuster(game, muster, requestedCounts))
   }
 
@@ -352,12 +355,6 @@ function startPlayerTurn(stack: Stack): void {
 // Lords are stocked at a quantity of 0, so the pool never reports any available.
 function isInPool(game: TitanGame, creature: CreatureType, requested = 1): boolean {
   return CREATURE_DATA[creature].lord || game.creaturePool[creature] >= requested
-}
-
-function countRequestedRecruits(musters: MusterPayload[]): Map<CreatureType, number> {
-  const counts = new Map<CreatureType, number>()
-  musters.forEach(({ recruit }) => counts.set(recruit.creature, (counts.get(recruit.creature) ?? 0) + 1))
-  return counts
 }
 
 function isValidMuster(
