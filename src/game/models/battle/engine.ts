@@ -110,7 +110,6 @@ export namespace Battle {
     return battle.creatures.find(creature => (moves.get(creature.id) ?? creature.hex) === hex)
   }
 
-  /** This function assumes the creature can enter - for efficiency, it will not check all rules */
   export function creatureMovementCost(
     battle: Battle,
     hex: number,
@@ -127,38 +126,38 @@ export namespace Battle {
       (hazard === Hazard.BOG && !isCreatureNative(creature.type, hazard)) ||
       occupant !== undefined
     )
-    if (canFly || occupant === undefined || occupant === creature) {
-      let cost = 1
-      if (!canFly) {
-        const upEdgeHazard = board.getEdgeHazard(origin, hex)
-        const downEdgeHazard = board.getEdgeHazard(hex, origin)
-        if (upEdgeHazard === EdgeHazard.CLIFF || downEdgeHazard === EdgeHazard.CLIFF) {
-          return { canLand }
-        } else if (
-          upEdgeHazard === EdgeHazard.WALL ||
-          (upEdgeHazard === EdgeHazard.SLOPE && !isCreatureEdgeNative(creature.type, upEdgeHazard))
-        ) {
-          cost += 1
-        }
-      }
-
-      const native = isCreatureNative(creature.type, hazard)
-      switch (hazard) {
-        case Hazard.NONE:
-          return { cost, canLand }
-        case Hazard.BRAMBLE:
-        case Hazard.DRIFT:
-          return { cost: native ? cost : cost + 1, canLand }
-        case Hazard.BOG:
-        case Hazard.TREE:
-          return { cost: native || canFly ? cost : undefined, canLand }
-        case Hazard.SAND:
-          return { cost: native || canFly ? cost : cost + 1, canLand }
-        case Hazard.VOLCANO:
-          return { cost: native ? cost : undefined, canLand }
-      }
-    } else {
+    if (!canFly && occupant !== undefined && occupant !== creature) {
       return { canLand }
+    }
+
+    let cost = 1
+    if (!canFly) {
+      const upEdgeHazard = board.getEdgeHazard(origin, hex)
+      const downEdgeHazard = board.getEdgeHazard(hex, origin)
+      if (upEdgeHazard === EdgeHazard.CLIFF || downEdgeHazard === EdgeHazard.CLIFF) {
+        return { canLand }
+      } else if (
+        upEdgeHazard === EdgeHazard.WALL ||
+        (upEdgeHazard === EdgeHazard.SLOPE && !isCreatureEdgeNative(creature.type, upEdgeHazard))
+      ) {
+        cost += 1
+      }
+    }
+
+    const native = isCreatureNative(creature.type, hazard)
+    switch (hazard) {
+      case Hazard.NONE:
+        return { cost, canLand }
+      case Hazard.BRAMBLE:
+      case Hazard.DRIFT:
+        return { cost: native ? cost : cost + 1, canLand }
+      case Hazard.BOG:
+      case Hazard.TREE:
+        return { cost: native || canFly ? cost : undefined, canLand }
+      case Hazard.SAND:
+        return { cost: native || canFly ? cost : cost + 1, canLand }
+      case Hazard.VOLCANO:
+        return { cost: native ? cost : undefined, canLand }
     }
   }
 
