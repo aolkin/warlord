@@ -54,7 +54,7 @@ test("mustering a moved stack at a tower adds the recruit and lets the turn end"
 // Hex 1000 is a Mountains hex. MUSTER_DATA[Terrain.MOUNTAINS] offers a Minotaur via either
 // 2 Lions or an existing Minotaur, so a stack holding both bases makes Stack.musterable
 // return more than one basis for that recruit, which is what opens MusterChoices.vue's
-// basis-choice dialog instead of setting currentMuster on a single click.
+// basis-choice dialog instead of staging the recruit on a single click.
 test("mustering a recruit with more than one basis opens a choice dialog", async ({ page }) => {
   await seedGame(page, 2, game => {
     game.round = 1

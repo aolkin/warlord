@@ -48,11 +48,11 @@
     />
     <transition name="muster">
       <g
-        v-if="stack.currentMuster !== undefined"
+        v-if="visibleMuster !== undefined"
         class="recruited-creature"
       >
         <Creature
-          :type="stack.currentMuster.creature"
+          :type="visibleMuster.creature"
           :player-id="stack.owner"
           in-svg
         />
@@ -68,6 +68,7 @@ import masterboard, { HexEdge, MasterboardEdge, MasterboardHex, Terrain } from "
 import { Stack } from "@/models/stack"
 import { useGameStore } from "~/stores/game"
 import { useMoveStagingStore } from "~/stores/ui/moveStaging"
+import { useMusterStagingStore } from "~/stores/ui/musterStaging"
 import { usePreferencesStore } from "~/stores/ui/preferences"
 import { useSelectionStore } from "~/stores/ui/selection"
 import { useStackSplitsStore } from "~/stores/ui/stackSplits"
@@ -103,6 +104,9 @@ const selectionStore = useSelectionStore()
 const preferencesStore = usePreferencesStore()
 const stackSplitsStore = useStackSplitsStore()
 const moveStagingStore = useMoveStagingStore()
+const musterStagingStore = useMusterStagingStore()
+
+const visibleMuster = computed(() => musterStagingStore.recruitFor(props.stack.id) ?? props.stack.latestMuster)
 
 const selected = computed(() => props.stack === selectionStore.selectedStack)
 

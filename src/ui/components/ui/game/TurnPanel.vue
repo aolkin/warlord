@@ -61,7 +61,8 @@
         <v-btn
           block
           variant="outlined"
-          @click="TitanGame.nextPhase(game)"
+          :disabled="!musterMayProceed"
+          @click="TitanGame.finalizeMusters(game, musterStagingStore.musters)"
         >
           End Turn
         </v-btn>
@@ -76,17 +77,20 @@ import { sum } from "lodash-es"
 import { MasterboardPhase, TitanGame } from "@/models/game"
 import { useGameStore } from "~/stores/game"
 import { useMoveStagingStore } from "~/stores/ui/moveStaging"
+import { useMusterStagingStore } from "~/stores/ui/musterStaging"
 import { useStackSplitsStore } from "~/stores/ui/stackSplits"
 
 const gameStore = useGameStore()
 const game = gameStore.game
 const stackSplitsStore = useStackSplitsStore()
 const moveStagingStore = useMoveStagingStore()
+const musterStagingStore = useMusterStagingStore()
 
 const splitMayProceed = computed(() => TitanGame.mayProceedFromSplit(game, stackSplitsStore.pendingSplits))
 const moveMayProceed = computed(() =>
   TitanGame.mayProceedFromMove(game, moveStagingStore.moves, moveStagingStore.hexOf),
 )
+const musterMayProceed = computed(() => TitanGame.mayProceedFromMuster(game, musterStagingStore.musters))
 const engagedStacks = computed(() => TitanGame.getEngagedStacks(game, moveStagingStore.hexOf))
 
 const icon = computed(() => {
@@ -105,7 +109,7 @@ const icon = computed(() => {
 })
 const sevenHighCount = computed(() => sum(gameStore.activeStacks.map(stack => stack.creatures.length === 7)))
 const movedCount = computed(() => moveStagingStore.moves.size)
-const musteredCount = computed(() => sum(gameStore.activeStacks.map(stack => stack.currentMuster !== undefined)))
+const musteredCount = computed(() => musterStagingStore.musters.length)
 const engagementsMessage = computed(() => {
   if (engagedStacks.value.length < 1) {
     return ""

@@ -1,11 +1,10 @@
 import { describe, expect, it } from "vitest"
-import { Battle } from "@/models/battle"
 import { CreatureType } from "@/models/creature"
 import { HexEdge } from "@/models/masterboard"
 import { PlayerId } from "@/models/player"
 import { Random } from "@/models/random"
-import { MusterChoice, Stack } from "@/models/stack"
-import { CurrentStackHexGetter, MasterboardPhase, StagedMoves, TitanGame } from "./game"
+import { Stack } from "@/models/stack"
+import { CurrentStackHexGetter, MasterboardPhase, MusterPayload, StagedMoves, TitanGame } from "./game"
 
 const noShuffleRandom: Random = { shuffle: collection => [...collection], die: () => 1 }
 
@@ -238,49 +237,37 @@ describe("TitanGame turn and phase transitions", () => {
     expect(game.activePhase).toBe(MasterboardPhase.BATTLE)
   })
 
-  it("advances from battle to muster once a battle is present", () => {
-    const game = newGame()
-    game.activePhase = MasterboardPhase.BATTLE
-    // Battle mechanics themselves are exercised by the battle test suite; only the
-    // phase-transition gating (an active battle must exist) is under test here.
-    game.activeBattle = {} as unknown as Battle
-
-    TitanGame.nextPhase(game)
-
-    expect(game.activePhase).toBe(MasterboardPhase.MUSTER)
-  })
-
   it("rotates to the next player after musters, then wraps to the first player and advances the round on the next muster", () => {
     const game = newGame()
     game.activePhase = MasterboardPhase.MUSTER
 
-    TitanGame.nextPhase(game)
+    TitanGame.finalizeMusters(game, [])
     expect(game.activePhase).toBe(MasterboardPhase.SPLIT)
     expect(game.activePlayerIndex).toBe(1)
     expect(game.activePlayerId).toBe(game.players[1].id)
     expect(game.round).toBe(0)
 
     game.activePhase = MasterboardPhase.MUSTER
-    game.stacks[0].currentMuster = {
-      creature: CreatureType.CENTAUR,
-      basis: { creature: CreatureType.CENTAUR, count: 0 },
-    }
     // Stale movement state left over from this player's earlier MOVE phase this round.
     game.stacks[0].attackEdge = HexEdge.FIRST
     game.stacks[0].initialHex = 3
     game.stacks[0].hasMoved = true
+    const priorMuster = { creature: CreatureType.LION, basis: { creature: CreatureType.CENTAUR, count: 2 } }
+    game.stacks[0].latestMuster = priorMuster
+    game.stacks[1].latestMuster = priorMuster
 
-    TitanGame.nextPhase(game)
+    TitanGame.finalizeMusters(game, [])
     expect(game.activePhase).toBe(MasterboardPhase.SPLIT)
     expect(game.activePlayerIndex).toBe(0)
     expect(game.activePlayerId).toBe(game.players[0].id)
     expect(game.round).toBe(1)
-    // Wrapping to the new active player starts their turn: clears any stale pending muster
-    // and resets per-turn movement state left on their stacks.
-    expect(game.stacks[0].currentMuster).toBeUndefined()
+    // Wrapping to the new active player starts their turn: resets the per-turn movement state
+    // left on their stacks.
     expect(game.stacks[0].attackEdge).toBeUndefined()
     expect(game.stacks[0].initialHex).toBe(game.stacks[0].hex)
     expect(game.stacks[0].hasMoved).toBe(false)
+    expect(game.stacks[0].latestMuster).toBeUndefined()
+    expect(game.stacks[1].latestMuster).toBe(priorMuster)
   })
 })
 
@@ -346,24 +333,12 @@ describe("TitanGame persistence", () => {
   })
 })
 
-describe("TitanGame mustering (setRecruit)", () => {
-  it("refuses to record a recruit for a stack that isn't eligible to muster", () => {
-    const game = newGame()
-    const stack = game.stacks[0] // hasn't moved this turn
-    game.activePhase = MasterboardPhase.MUSTER
-
-    expect(() =>
-      TitanGame.setRecruit(game, {
-        stack: stack.id,
-        recruit: { creature: CreatureType.CENTAUR, basis: { creature: CreatureType.CENTAUR, count: 0 } },
-      }),
-    ).toThrow("not eligible to muster")
-  })
-
-  it("refuses to record a recruit outside the muster phase", () => {
-    const game = newGame()
+describe("TitanGame mustering (finalizeMusters)", () => {
+  // A stack that has moved this turn and has room for a recruit, so only the submission
+  // itself is under test.
+  function eligibleStack(game: TitanGame): Stack {
     const stack = Stack.create({
-      owner: game.players[0].id,
+      owner: game.activePlayerId,
       hex: 100,
       marker: 1,
       createdRound: game.round,
@@ -371,13 +346,50 @@ describe("TitanGame mustering (setRecruit)", () => {
     })
     stack.hasMoved = true
     game.stacks.push(stack)
+    return stack
+  }
+
+  it("refuses a muster submitted for a stack that isn't eligible", () => {
+    const game = newGame()
+    const stack = game.stacks[0] // hasn't moved this turn
+    game.activePhase = MasterboardPhase.MUSTER
+    const musters = [
+      {
+        stack: stack.id,
+        recruit: { creature: CreatureType.CENTAUR, basis: { creature: CreatureType.CENTAUR, count: 0 } },
+      } as MusterPayload,
+    ]
+
+    expect(TitanGame.mayProceedFromMuster(game, musters)).toBe(false)
+    expect(() => TitanGame.finalizeMusters(game, musters)).toThrow("Invalid musters")
+  })
+
+  it("refuses a muster submitted for a stack the active player does not own", () => {
+    const game = newGame()
+    game.activePhase = MasterboardPhase.MUSTER
+    const musters = [
+      {
+        stack: game.stacks[1].id,
+        recruit: { creature: CreatureType.CENTAUR, basis: { creature: CreatureType.CENTAUR, count: 0 } },
+      } as MusterPayload,
+    ]
+
+    expect(TitanGame.mayProceedFromMuster(game, musters)).toBe(false)
+    expect(() => TitanGame.finalizeMusters(game, musters)).toThrow("Invalid musters")
+  })
+
+  it("refuses musters outside the muster phase", () => {
+    const game = newGame()
+    const stack = eligibleStack(game)
     game.activePhase = MasterboardPhase.MOVE
 
     expect(() =>
-      TitanGame.setRecruit(game, {
-        stack: stack.id,
-        recruit: { creature: CreatureType.LION, basis: { creature: CreatureType.CENTAUR, count: 2 } },
-      }),
+      TitanGame.finalizeMusters(game, [
+        {
+          stack: stack.id,
+          recruit: { creature: CreatureType.LION, basis: { creature: CreatureType.CENTAUR, count: 2 } },
+        },
+      ]),
     ).toThrow("Innappropriate phase")
   })
 
@@ -386,52 +398,67 @@ describe("TitanGame mustering (setRecruit)", () => {
     { label: "a lord", creatureType: CreatureType.TITAN, expectSuccess: true },
   ])("recruiting $label when its pool is exhausted: succeeds only for the lord", ({ creatureType, expectSuccess }) => {
     const game = newGame()
-    const stack = Stack.create({
-      owner: game.players[0].id,
-      hex: 100,
-      marker: 1,
-      createdRound: game.round,
-      creatures: [CreatureType.CENTAUR, CreatureType.CENTAUR],
-    })
-    stack.hasMoved = true
-    game.stacks.push(stack)
+    const stack = eligibleStack(game)
     game.creaturePool[creatureType] = 0
     game.activePhase = MasterboardPhase.MUSTER
-    const recruit: MusterChoice = { creature: creatureType, basis: { creature: CreatureType.CENTAUR, count: 2 } }
+    const musters: MusterPayload[] = [
+      { stack: stack.id, recruit: { creature: creatureType, basis: { creature: CreatureType.CENTAUR, count: 2 } } },
+    ]
 
+    expect(TitanGame.mayProceedFromMuster(game, musters)).toBe(expectSuccess)
     if (expectSuccess) {
-      TitanGame.setRecruit(game, { stack: stack.id, recruit })
-      expect(stack.currentMuster).toEqual(recruit)
+      TitanGame.finalizeMusters(game, musters)
+      expect(stack.creatures).toContain(creatureType)
     } else {
-      expect(() => TitanGame.setRecruit(game, { stack: stack.id, recruit })).toThrow(
-        "No more of the requested creature remaining",
-      )
+      expect(() => TitanGame.finalizeMusters(game, musters)).toThrow("Invalid musters")
     }
   })
 
-  it("applies the pending muster to the stack and pool when the muster phase ends", () => {
+  it("refuses simultaneous musters of the same creature that together exceed the remaining pool", () => {
     const game = newGame()
-    const stack = Stack.create({
-      owner: game.players[0].id,
-      hex: 100,
-      marker: 1,
-      createdRound: game.round,
-      creatures: [CreatureType.CENTAUR, CreatureType.CENTAUR],
-    })
-    stack.hasMoved = true
-    game.stacks.push(stack)
+    const stackA = eligibleStack(game)
+    const stackB = eligibleStack(game)
+    game.creaturePool[CreatureType.LION] = 1
+    game.activePhase = MasterboardPhase.MUSTER
+    const musters: MusterPayload[] = [
+      {
+        stack: stackA.id,
+        recruit: { creature: CreatureType.LION, basis: { creature: CreatureType.CENTAUR, count: 2 } },
+      },
+      {
+        stack: stackB.id,
+        recruit: { creature: CreatureType.LION, basis: { creature: CreatureType.CENTAUR, count: 2 } },
+      },
+    ]
+
+    expect(TitanGame.mayProceedFromMuster(game, musters)).toBe(false)
+    expect(() => TitanGame.finalizeMusters(game, musters)).toThrow("Invalid musters")
+    expect(stackA.creatures).not.toContain(CreatureType.LION)
+    expect(stackB.creatures).not.toContain(CreatureType.LION)
+    expect(game.creaturePool[CreatureType.LION]).toBe(1)
+  })
+
+  it("applies the submitted musters to the stack and pool when the muster phase ends", () => {
+    const game = newGame()
+    const stack = eligibleStack(game)
     const poolBefore = game.creaturePool[CreatureType.LION]
     game.activePhase = MasterboardPhase.MUSTER
-    TitanGame.setRecruit(game, {
-      stack: stack.id,
-      recruit: { creature: CreatureType.LION, basis: { creature: CreatureType.CENTAUR, count: 2 } },
-    })
+    const round = game.round
 
-    TitanGame.nextPhase(game)
+    TitanGame.finalizeMusters(game, [
+      {
+        stack: stack.id,
+        recruit: { creature: CreatureType.LION, basis: { creature: CreatureType.CENTAUR, count: 2 } },
+      },
+    ])
 
     expect(stack.creatures).toContain(CreatureType.LION)
     expect(game.creaturePool[CreatureType.LION]).toBe(poolBefore - 1)
-    expect(stack.recruits[game.round]).toEqual({
+    expect(stack.recruits[round]).toEqual({
+      creature: CreatureType.LION,
+      basis: { creature: CreatureType.CENTAUR, count: 2 },
+    })
+    expect(stack.latestMuster).toEqual({
       creature: CreatureType.LION,
       basis: { creature: CreatureType.CENTAUR, count: 2 },
     })

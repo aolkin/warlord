@@ -186,6 +186,23 @@ export namespace TitanGame {
     return getMandatoryMoves(game, moves, getCurrentHex).length === 0 && moves.size > 0
   }
 
+  export function mayProceedFromMuster(game: TitanGame, musters: MusterPayload[]): boolean {
+    const requestedCounts = new Map<CreatureType, number>()
+    musters.forEach(({ recruit }) =>
+      requestedCounts.set(recruit.creature, (requestedCounts.get(recruit.creature) ?? 0) + 1),
+    )
+    const poolHasCapacity = Array.from(requestedCounts.entries()).every(
+      ([creature, requested]) => CREATURE_DATA[creature].lord || game.creaturePool[creature] >= requested,
+    )
+    return (
+      poolHasCapacity &&
+      musters.every(({ stack: ref }) => {
+        const stack = getStacksForPlayer(game).find(candidate => candidate.id === ref)
+        return stack !== undefined && Stack.canMuster(stack)
+      })
+    )
+  }
+
   export function isStackActive(game: TitanGame, stack: Stack, moves: StagedMoves = new Map()): boolean {
     if (stack.owner !== game.activePlayerId) {
       return false
@@ -299,41 +316,20 @@ export namespace TitanGame {
     advancePhase(game)
   }
 
-  export function nextPhase(game: TitanGame): void {
-    switch (game.activePhase) {
-      case MasterboardPhase.SPLIT:
-        throw new Error("The split phase ends through finalizeSplits, which carries the splits")
-      case MasterboardPhase.MOVE:
-        throw new Error("The move phase ends through finalizeMoves, which carries the moves")
-      case MasterboardPhase.BATTLE:
-        assert(game.activeBattle !== undefined, "Incomplete battle!")
-        break
-      case MasterboardPhase.MUSTER:
-        getStacksForPlayer(game)
-          .filter((stack): stack is Stack & { currentMuster: MusterChoice } => stack.currentMuster !== undefined)
-          .forEach(stack => {
-            const recruitedCreature = finalizeMuster(game.round, stack)
-            game.creaturePool[recruitedCreature]--
-          })
-        // Muster is a turn's last phase, so advancing past it wraps to the next player's split.
-        advancePhase(game)
-        getStacksForPlayer(game).forEach(startPlayerTurn)
-        return
-    }
-    advancePhase(game)
-  }
-
-  export function setRecruit(game: TitanGame, { stack, recruit }: MusterPayload): void {
-    const recruitingStack = game.stacks.find(s => s.id === stack)
-    assert(recruitingStack !== undefined, `No stack with id ${stack}`)
-    if (!Stack.canMuster(recruitingStack)) {
-      throw new Error("Stack is not eligible to muster!")
-    }
-    if (recruit !== undefined && game.creaturePool[recruit.creature] < 1 && !CREATURE_DATA[recruit.creature].lord) {
-      throw new Error("No more of the requested creature remaining")
-    }
+  export function finalizeMusters(game: TitanGame, musters: MusterPayload[]): void {
     assert(game.activePhase === MasterboardPhase.MUSTER, "Innappropriate phase")
-    recruitingStack.currentMuster = recruit
+    assert(mayProceedFromMuster(game, musters), "Invalid musters")
+    musters.forEach(({ stack: ref, recruit }) => {
+      const stack = getStacksForPlayer(game).find(candidate => candidate.id === ref)
+      assert(stack !== undefined, `The active player does not own a stack with id ${ref}`)
+      stack.recruits[game.round] = recruit
+      stack.latestMuster = recruit
+      stack.creatures.push(recruit.creature)
+      game.creaturePool[recruit.creature]--
+    })
+    // Muster is a turn's last phase, so advancing past it wraps to the next player's split.
+    advancePhase(game)
+    getStacksForPlayer(game).forEach(startPlayerTurn)
   }
 
   export function hydrate(persisted?: string): TitanGame {
@@ -361,13 +357,7 @@ function startPlayerTurn(stack: Stack): void {
   stack.initialHex = stack.hex
   stack.hasMoved = false
   stack.attackEdge = undefined
-  stack.currentMuster = undefined
-}
-
-function finalizeMuster(round: number, stack: Stack & { currentMuster: MusterChoice }): CreatureType {
-  stack.recruits[round] = stack.currentMuster
-  stack.creatures.push(stack.currentMuster.creature)
-  return stack.currentMuster.creature
+  stack.latestMuster = undefined
 }
 
 function advancePhase(game: TitanGame): void {
