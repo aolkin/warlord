@@ -121,14 +121,14 @@ export namespace Battle {
     const canFly = CREATURE_DATA[creature.type].canFly
     const occupant = creatureOnHex(battle, hex, moves)
     const hazard = board.getHazard(hex)
+    if (!canFly && occupant !== undefined && occupant !== creature) {
+      return { canLand: false }
+    }
     const canLand = !(
       hazard === Hazard.TREE ||
       (hazard === Hazard.BOG && !isCreatureNative(creature.type, hazard)) ||
       occupant !== undefined
     )
-    if (!canFly && occupant !== undefined && occupant !== creature) {
-      return { canLand }
-    }
 
     let cost = 1
     if (!canFly) {
