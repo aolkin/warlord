@@ -191,7 +191,15 @@ export namespace TitanGame {
     musters.forEach(({ recruit }) =>
       requestedCounts.set(recruit.creature, (requestedCounts.get(recruit.creature) ?? 0) + 1),
     )
-    return musters.every(muster => isValidMuster(game, muster, requestedCounts))
+    return musters.every(({ stack: ref, recruit }) => {
+      const stack = getStacksForPlayer(game).find(candidate => candidate.id === ref)
+      const requested = requestedCounts.get(recruit.creature) ?? 1
+      return (
+        stack !== undefined &&
+        Stack.canMuster(stack) &&
+        (CREATURE_DATA[recruit.creature].lord || game.creaturePool[recruit.creature] >= requested)
+      )
+    })
   }
 
   export function isStackActive(game: TitanGame, stack: Stack, moves: StagedMoves = new Map()): boolean {
@@ -349,20 +357,6 @@ function startPlayerTurn(stack: Stack): void {
   stack.hasMoved = false
   stack.attackEdge = undefined
   stack.latestMuster = undefined
-}
-
-function isValidMuster(
-  game: TitanGame,
-  { stack: ref, recruit }: MusterPayload,
-  requestedCounts: Map<CreatureType, number>,
-): boolean {
-  const stack = TitanGame.getStacksForPlayer(game).find(candidate => candidate.id === ref)
-  const requested = requestedCounts.get(recruit.creature) ?? 1
-  return (
-    stack !== undefined &&
-    Stack.canMuster(stack) &&
-    (CREATURE_DATA[recruit.creature].lord || game.creaturePool[recruit.creature] >= requested)
-  )
 }
 
 function advancePhase(game: TitanGame): void {
