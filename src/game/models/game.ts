@@ -191,15 +191,16 @@ export namespace TitanGame {
     musters.forEach(({ recruit }) =>
       requestedCounts.set(recruit.creature, (requestedCounts.get(recruit.creature) ?? 0) + 1),
     )
-    return musters.every(({ stack: ref, recruit }) => {
-      const stack = getStacksForPlayer(game).find(candidate => candidate.id === ref)
-      const requested = requestedCounts.get(recruit.creature) ?? 1
-      return (
-        stack !== undefined &&
-        Stack.canMuster(stack) &&
-        (CREATURE_DATA[recruit.creature].lord || game.creaturePool[recruit.creature] >= requested)
-      )
-    })
+    const poolHasCapacity = Array.from(requestedCounts.entries()).every(
+      ([creature, requested]) => CREATURE_DATA[creature].lord || game.creaturePool[creature] >= requested,
+    )
+    return (
+      poolHasCapacity &&
+      musters.every(({ stack: ref }) => {
+        const stack = getStacksForPlayer(game).find(candidate => candidate.id === ref)
+        return stack !== undefined && Stack.canMuster(stack)
+      })
+    )
   }
 
   export function isStackActive(game: TitanGame, stack: Stack, moves: StagedMoves = new Map()): boolean {
