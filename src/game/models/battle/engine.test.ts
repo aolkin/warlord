@@ -42,11 +42,11 @@ describe("Battle engagement", () => {
     expect(Battle.movementFor(battle, centaur).has(7)).toBe(true)
     // Nothing is on the board to engage yet, so strike/strikeback for both sides
     // are auto-skipped straight through to the attacker's move.
-    Battle.finalizeMoves(battle, [{ creature: centaur.id, hex: 7 }])
+    Battle.finalizeMoves(battle, new Map([[centaur.id, 7]]))
     expect(battle.phase).toBe(BattlePhase.ATTACKER_MOVE)
 
     expect(Battle.movementFor(battle, lion).has(8)).toBe(true)
-    Battle.finalizeMoves(battle, [{ creature: lion.id, hex: 8 }])
+    Battle.finalizeMoves(battle, new Map([[lion.id, 8]]))
     expect(battle.phase).toBe(BattlePhase.ATTACKER_STRIKE)
     expect(Battle.engagedWith(battle, lion)).toEqual([centaur])
     expect(Battle.getPendingStrikes(battle)).toEqual([lion])
@@ -387,7 +387,7 @@ describe("Movement legality (movementFor)", () => {
     // Ogre (skill 2) entering from battle-hex 37 (the attacker's entrance zone on
     // HexEdge.FIRST), on hazard-free Plains: every hex within 2 movement points.
     const { battle, offense } = setupBattle(Terrain.PLAINS, [CreatureType.OGRE], [CreatureType.CENTAUR])
-    Battle.finalizeMoves(battle, []) // nobody engaged yet, so this auto-skips straight to ATTACKER_MOVE
+    Battle.finalizeMoves(battle, new Map()) // nobody engaged yet, so this auto-skips straight to ATTACKER_MOVE
     const [ogre] = offense
     expect(ogre.hex).toBe(37)
 
@@ -400,7 +400,7 @@ describe("Movement legality (movementFor)", () => {
       [CreatureType.LION, CreatureType.CENTAUR],
       [CreatureType.OGRE],
     )
-    Battle.finalizeMoves(battle, []) // nobody engaged yet, so this auto-skips straight to ATTACKER_MOVE
+    Battle.finalizeMoves(battle, new Map()) // nobody engaged yet, so this auto-skips straight to ATTACKER_MOVE
     const [lion, centaur] = offense
     centaur.hex = 4
 
@@ -408,7 +408,7 @@ describe("Movement legality (movementFor)", () => {
 
     // A staged move frees the hex it leaves and blocks the one it enters, so a later move
     // in the same phase must be judged against it.
-    const moves = [{ creature: centaur.id, hex: 10 }]
+    const moves = new Map([[centaur.id, 10]])
     expect(Battle.movementFor(battle, lion, moves).has(4)).toBe(true)
     expect(Battle.movementFor(battle, lion, moves).has(10)).toBe(false)
   })
@@ -426,7 +426,7 @@ describe("Movement legality (movementFor)", () => {
       [CreatureType.CENTAUR, CreatureType.GRIFFON, CreatureType.LION, CreatureType.LION],
       [CreatureType.CENTAUR],
     )
-    Battle.finalizeMoves(battle, []) // nobody engaged yet, so this auto-skips straight to ATTACKER_MOVE
+    Battle.finalizeMoves(battle, new Map()) // nobody engaged yet, so this auto-skips straight to ATTACKER_MOVE
     const [centaur, griffon, blocker1, blocker2] = offense
     centaur.hex = 2
     griffon.hex = 2
@@ -570,7 +570,7 @@ describe("Battle phase transitions", () => {
     }
     expectPhase(BattlePhase.DEFENDER_MOVE, 0)
 
-    Battle.finalizeMoves(battle, [])
+    Battle.finalizeMoves(battle, new Map())
     expectPhase(BattlePhase.DEFENDER_STRIKE, 0)
     centaur.hasStruck = true // stand in for an actual strike() call - only hasStruck matters here
 
@@ -581,7 +581,7 @@ describe("Battle phase transitions", () => {
     Battle.nextPhase(battle)
     expectPhase(BattlePhase.ATTACKER_MOVE, 0)
 
-    Battle.finalizeMoves(battle, [])
+    Battle.finalizeMoves(battle, new Map())
     expectPhase(BattlePhase.ATTACKER_STRIKE, 0)
     lion.hasStruck = true
 
@@ -597,9 +597,9 @@ describe("Battle phase transitions", () => {
     const { battle } = setupBattle(Terrain.PLAINS, [CreatureType.LION], [CreatureType.CENTAUR])
 
     expect(battle.phase).toBe(BattlePhase.DEFENDER_MOVE)
-    Battle.finalizeMoves(battle, []) // no engagement -> DEFENDER_STRIKE, ATTACKER_STRIKEBACK both skipped
+    Battle.finalizeMoves(battle, new Map()) // no engagement -> DEFENDER_STRIKE, ATTACKER_STRIKEBACK both skipped
     expect(battle.phase).toBe(BattlePhase.ATTACKER_MOVE)
-    Battle.finalizeMoves(battle, []) // -> ATTACKER_STRIKE, DEFENDER_STRIKEBACK both skipped, round increments
+    Battle.finalizeMoves(battle, new Map()) // -> ATTACKER_STRIKE, DEFENDER_STRIKEBACK both skipped, round increments
     expect(battle.phase).toBe(BattlePhase.DEFENDER_MOVE)
     expect(battle.round).toBe(1)
   })
@@ -611,7 +611,7 @@ describe("Battle phase transitions", () => {
     centaur.hex = 7
     lion.hex = 8
 
-    Battle.finalizeMoves(battle, []) // -> DEFENDER_STRIKE, Centaur is now pending and never strikes
+    Battle.finalizeMoves(battle, new Map()) // -> DEFENDER_STRIKE, Centaur is now pending and never strikes
     expect(Battle.getPendingStrikes(battle)).toEqual([centaur])
     expect(() => Battle.nextPhase(battle)).toThrow("All eligible creatures must strike")
   })
@@ -638,7 +638,7 @@ describe("Battle phase transitions", () => {
     const [unmoved, moved] = defense
     expect(unmoved.hex).toBe(36) // the defender's entrance zone for HexEdge.FIRST
 
-    Battle.finalizeMoves(battle, [{ creature: moved.id, hex: 7 }])
+    Battle.finalizeMoves(battle, new Map([[moved.id, 7]]))
 
     expect(unmoved.hex).toBe(0)
     expect(moved.hex).toBe(7)

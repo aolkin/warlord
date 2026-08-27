@@ -14,7 +14,7 @@ import {
   isCreatureNative,
   relationToHex,
 } from "./board"
-import { BattleCreature } from "./combatant"
+import { BattleCreature, CreatureRef } from "./combatant"
 import { BATTLE_PHASE_TYPES, BattlePhase, BattlePhaseType } from "./phase"
 import { ActiveStrike, RangestrikeTarget, Strike, isRangestrike } from "./strike"
 
@@ -24,10 +24,8 @@ export interface BattleSide {
   creatures: CreatureType[]
 }
 
-export interface BattleMovePayload {
-  creature: BattleCreature["id"]
-  hex: number
-}
+export type StagedMoves = ReadonlyMap<CreatureRef, number>
+
 interface IStrikePayload {
   attacker: BattleCreature["id"]
   rolls: number[]
@@ -105,22 +103,12 @@ export namespace Battle {
     )
   }
 
-  // `moves` throughout is the moves the player has staged so far, in the order they were
-  // made: a move is reversible until it is submitted, so it stays out of `battle` until
-  // finalizeMoves replays it. A later move's
-  // legality depends on the earlier ones, so every rule that reads a battle position during
-  // a move phase reads it through the staged list.
-
-  export function getStagedHex(creature: BattleCreature, moves: BattleMovePayload[]): number {
-    return moves.findLast(move => move.creature === creature.id)?.hex ?? creature.hex
-  }
-
   export function creatureOnHex(
     battle: Battle,
     hex: number,
-    moves: BattleMovePayload[] = [],
+    moves: StagedMoves = new Map(),
   ): BattleCreature | undefined {
-    return battle.creatures.find(creature => getStagedHex(creature, moves) === hex)
+    return battle.creatures.find(creature => (moves.get(creature.id) ?? creature.hex) === hex)
   }
 
   export function creatureMovementCost(
@@ -128,7 +116,7 @@ export namespace Battle {
     hex: number,
     origin: number,
     creature: BattleCreature,
-    moves: BattleMovePayload[] = [],
+    moves: StagedMoves = new Map(),
   ): number {
     const board = BATTLE_BOARDS[battle.terrain]
     const canFly = CREATURE_DATA[creature.type].canFly
@@ -174,7 +162,7 @@ export namespace Battle {
     battle: Battle,
     hex: number,
     creature: BattleCreature,
-    moves: BattleMovePayload[] = [],
+    moves: StagedMoves = new Map(),
   ): boolean {
     const hazard = BATTLE_BOARDS[battle.terrain].getHazard(hex)
     return !(
@@ -186,7 +174,7 @@ export namespace Battle {
 
   // TODO: rule 11.3 (a creature already in contact with an enemy may not move) is not enforced
   // anywhere in this function or its callers - no engagement check exists in the movement-legality path.
-  export function movementFor(battle: Battle, creature: BattleCreature, moves: BattleMovePayload[] = []): Set<number> {
+  export function movementFor(battle: Battle, creature: BattleCreature, moves: StagedMoves = new Map()): Set<number> {
     if (creature.hex === 0) {
       return new Set<number>()
     }
@@ -514,15 +502,14 @@ export namespace Battle {
 
   // Actions
 
-  export function finalizeMoves(battle: Battle, moves: BattleMovePayload[]): void {
+  export function finalizeMoves(battle: Battle, moves: StagedMoves): void {
     assert(BATTLE_PHASE_TYPES[battle.phase] === BattlePhaseType.MOVE, "Not in movement phase")
-    moves.forEach(({ creature: ref, hex }) => {
+    moves.forEach((hex, ref) => {
       const creature = battle.creatures.find(c => c.id === ref)
       assert(creature !== undefined, "Unexpected creature")
       assert(creature.player === battle.activePlayer, "Incorrect player")
       creature.hex = hex
     })
-    // Hexes 36 and up are the entrance zones, off the board proper.
     getActiveCreatures(battle).forEach(creature => {
       if (creature.hex >= 36) {
         creature.hex = 0

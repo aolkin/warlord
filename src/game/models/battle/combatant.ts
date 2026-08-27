@@ -3,10 +3,12 @@ import { PlayerId } from "../player"
 
 let battleCreatureIdCounter = 0
 
+export type CreatureRef = number
+
 export interface BattleCreature {
   readonly type: CreatureType
   readonly player: PlayerId
-  readonly id: number
+  readonly id: CreatureRef
   readonly name: string
   readonly strength: number
 
