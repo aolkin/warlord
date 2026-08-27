@@ -121,13 +121,13 @@ export namespace Battle {
     const canFly = CREATURE_DATA[creature.type].canFly
     const occupant = creatureOnHex(battle, hex, moves)
     const hazard = board.getHazard(hex)
-    if (!canFly && occupant !== undefined && occupant !== creature) {
+    if (!canFly && occupant && occupant !== creature) {
       return { canLand: false }
     }
     const canLand = !(
       hazard === Hazard.TREE ||
       (hazard === Hazard.BOG && !isCreatureNative(creature.type, hazard)) ||
-      occupant !== undefined
+      occupant
     )
 
     let cost = 1
@@ -135,7 +135,7 @@ export namespace Battle {
       const upEdgeHazard = board.getEdgeHazard(origin, hex)
       const downEdgeHazard = board.getEdgeHazard(hex, origin)
       if (upEdgeHazard === EdgeHazard.CLIFF || downEdgeHazard === EdgeHazard.CLIFF) {
-        return { canLand }
+        return { canLand: false }
       } else if (
         upEdgeHazard === EdgeHazard.WALL ||
         (upEdgeHazard === EdgeHazard.SLOPE && !isCreatureEdgeNative(creature.type, upEdgeHazard))
@@ -157,7 +157,7 @@ export namespace Battle {
       case Hazard.SAND:
         return { cost: native || canFly ? cost : cost + 1, canLand }
       case Hazard.VOLCANO:
-        return { cost: native ? cost : undefined, canLand }
+        return native ? { cost, canLand } : { cost: undefined, canLand: false }
     }
   }
 
