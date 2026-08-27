@@ -111,7 +111,7 @@ export namespace Battle {
   }
 
   /** This function assumes the creature can enter - for efficiency, it will not check all rules */
-  export function movementCostAndLanding(
+  export function creatureMovementCost(
     battle: Battle,
     hex: number,
     origin: number,
@@ -176,7 +176,7 @@ export namespace Battle {
       const [origin, remainingMovement] = entry
       const adjacencies = BATTLE_BOARD_ADJACENCIES[origin].filter(i => (possibilities.get(i) ?? -1) < remainingMovement)
       adjacencies.forEach(potentialHex => {
-        const { cost: movementCost, canLand } = movementCostAndLanding(battle, potentialHex, origin, creature, moves)
+        const { cost: movementCost, canLand } = creatureMovementCost(battle, potentialHex, origin, creature, moves)
         // console.log({ origin, potentialHex, remainingMovement, movementCost })
         if (movementCost !== undefined && movementCost <= remainingMovement) {
           if (remainingMovement - movementCost > 0) {
