@@ -187,7 +187,10 @@ export namespace TitanGame {
   }
 
   export function mayProceedFromMuster(game: TitanGame, musters: MusterPayload[]): boolean {
-    const requestedCounts = countRequestedRecruits(musters)
+    const requestedCounts = new Map<CreatureType, number>()
+    musters.forEach(({ recruit }) =>
+      requestedCounts.set(recruit.creature, (requestedCounts.get(recruit.creature) ?? 0) + 1),
+    )
     return musters.every(muster => isValidMuster(game, muster, requestedCounts))
   }
 
@@ -348,26 +351,17 @@ function startPlayerTurn(stack: Stack): void {
   stack.latestMuster = undefined
 }
 
-function isInPool(game: TitanGame, creature: CreatureType, requested = 1): boolean {
-  return CREATURE_DATA[creature].lord || game.creaturePool[creature] >= requested
-}
-
-function countRequestedRecruits(musters: MusterPayload[]): Map<CreatureType, number> {
-  const counts = new Map<CreatureType, number>()
-  musters.forEach(({ recruit }) => counts.set(recruit.creature, (counts.get(recruit.creature) ?? 0) + 1))
-  return counts
-}
-
 function isValidMuster(
   game: TitanGame,
   { stack: ref, recruit }: MusterPayload,
   requestedCounts: Map<CreatureType, number>,
 ): boolean {
   const stack = TitanGame.getStacksForPlayer(game).find(candidate => candidate.id === ref)
+  const requested = requestedCounts.get(recruit.creature) ?? 1
   return (
     stack !== undefined &&
     Stack.canMuster(stack) &&
-    isInPool(game, recruit.creature, requestedCounts.get(recruit.creature))
+    (CREATURE_DATA[recruit.creature].lord || game.creaturePool[recruit.creature] >= requested)
   )
 }
 
