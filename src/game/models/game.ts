@@ -1,5 +1,5 @@
-import { range } from "lodash-es"
 import { assert } from "@/utils/assert"
+import { range } from "lodash-es"
 import { Battle, BattleSide } from "./battle"
 import { CREATURE_DATA, CREATURE_LIST, CreatureType } from "./creature"
 import masterboard, { HexEdge, MasterboardHex } from "./masterboard"
@@ -32,11 +32,13 @@ export interface StackSplit {
   stack: StackRef
   creatures: number[] // indices into stack.creatures
 }
-export interface MovePayload {
-  stack: StackRef
-  hex: number
-  edge?: HexEdge
-}
+
+export type StagedMoves = ReadonlyMap<StackRef, { hex: number; edge?: HexEdge }>
+
+export type CurrentStackHexGetter = (stack: Stack) => number
+
+const committedHex: CurrentStackHexGetter = stack => stack.hex
+
 export interface MusterPayload {
   stack: StackRef
   recruit: MusterChoice
@@ -108,11 +110,19 @@ export namespace TitanGame {
     return range(0, 12).find(marker => !usedMarkers.includes(marker))
   }
 
-  export function getStacksForHex(game: TitanGame, hex: number): Stack[] {
-    return game.stacks.filter(stack => stack.hex === hex)
+  export function getStacksForHex(
+    game: TitanGame,
+    hex: number,
+    getCurrentHex: CurrentStackHexGetter = committedHex,
+  ): Stack[] {
+    return game.stacks.filter(stack => getCurrentHex(stack) === hex)
   }
 
-  export function getPathsForHex(game: TitanGame, hexNum: number): Path[] {
+  export function getPathsForHex(
+    game: TitanGame,
+    hexNum: number,
+    getCurrentHex: CurrentStackHexGetter = committedHex,
+  ): Path[] {
     if (game.activeRoll === undefined) {
       return []
     }
@@ -125,7 +135,7 @@ export namespace TitanGame {
     while ((entry = stack.pop()) !== undefined) {
       const [path, , hex] = entry
       let foe = entry[1]
-      const occupants: Stack[] = getStacksForHex(game, hex.id)
+      const occupants: Stack[] = getStacksForHex(game, hex.id, getCurrentHex)
       if (foe === undefined) {
         const foes = occupants.filter((stack: Stack) => stack.owner !== game.activePlayerId)
         if (foes.length > 0) {
@@ -148,35 +158,52 @@ export namespace TitanGame {
     return paths
   }
 
-  export function getMandatoryMoves(game: TitanGame): Stack[] {
+  export function getMandatoryMoves(
+    game: TitanGame,
+    moves: StagedMoves = new Map(),
+    getCurrentHex: CurrentStackHexGetter = committedHex,
+  ): Stack[] {
     return getStacksForPlayer(game).filter(
       stack =>
-        !stack.hasMoved &&
-        getStacksForHex(game, stack.initialHex).length > 1 &&
-        getPathsForHex(game, stack.hex).length > 0,
+        !moves.has(stack.id) &&
+        getStacksForHex(game, stack.hex, getCurrentHex).length > 1 &&
+        getPathsForHex(game, stack.hex, getCurrentHex).length > 0,
     )
   }
 
-  export function getMayProceed(game: TitanGame, splits: StackSplit[]): boolean {
-    switch (game.activePhase) {
-      case MasterboardPhase.SPLIT: {
-        const submitted = new Map(splits.map(commit => [commit.stack, commit.creatures]))
-        return getStacksForPlayer(game).every(stack =>
-          Stack.isValidSplit(stack, submitted.get(stack.id) ?? [], game.round === 0),
-        )
-      }
-      case MasterboardPhase.MOVE:
-        return getMandatoryMoves(game).length === 0 && getStacksForPlayer(game).some(stack => stack.hasMoved)
-      case MasterboardPhase.BATTLE:
-        return true
-      case MasterboardPhase.MUSTER:
-        return true
-      case MasterboardPhase.END:
-        return true
-    }
+  export function mayProceedFromSplit(game: TitanGame, splits: StackSplit[]): boolean {
+    const submitted = new Map(splits.map(commit => [commit.stack, commit.creatures]))
+    return getStacksForPlayer(game).every(stack =>
+      Stack.isValidSplit(stack, submitted.get(stack.id) ?? [], game.round === 0),
+    )
   }
 
-  export function isStackActive(game: TitanGame, stack: Stack): boolean {
+  export function mayProceedFromMove(
+    game: TitanGame,
+    moves: StagedMoves = new Map(),
+    getCurrentHex: CurrentStackHexGetter = committedHex,
+  ): boolean {
+    return getMandatoryMoves(game, moves, getCurrentHex).length === 0 && moves.size > 0
+  }
+
+  export function mayProceedFromMuster(game: TitanGame, musters: MusterPayload[]): boolean {
+    const requestedCounts = new Map<CreatureType, number>()
+    musters.forEach(({ recruit }) =>
+      requestedCounts.set(recruit.creature, (requestedCounts.get(recruit.creature) ?? 0) + 1),
+    )
+    const poolHasCapacity = Array.from(requestedCounts.entries()).every(
+      ([creature, requested]) => CREATURE_DATA[creature].lord || game.creaturePool[creature] >= requested,
+    )
+    return (
+      poolHasCapacity &&
+      musters.every(({ stack: ref }) => {
+        const stack = getStacksForPlayer(game).find(candidate => candidate.id === ref)
+        return stack !== undefined && Stack.canMuster(stack)
+      })
+    )
+  }
+
+  export function isStackActive(game: TitanGame, stack: Stack, moves: StagedMoves = new Map()): boolean {
     if (stack.owner !== game.activePlayerId) {
       return false
     }
@@ -184,7 +211,7 @@ export namespace TitanGame {
       case MasterboardPhase.SPLIT:
         return stack.creatures.length >= 4
       case MasterboardPhase.MOVE:
-        return !stack.hasMoved
+        return !moves.has(stack.id)
       case MasterboardPhase.MUSTER:
         return Stack.canMuster(stack)
       default:
@@ -193,7 +220,7 @@ export namespace TitanGame {
   }
 
   export function isMulliganAvailable(game: TitanGame): boolean {
-    return game.round === 0 && !game.mulliganTaken && !getStacksForPlayer(game).some(stack => stack.hasMoved)
+    return game.round === 0 && !game.mulliganTaken
   }
 
   export function isSplitPhase(game: TitanGame): boolean {
@@ -208,10 +235,10 @@ export namespace TitanGame {
     return game.activePhase === MasterboardPhase.MUSTER
   }
 
-  export function getEngagedStacks(game: TitanGame): Stack[] {
+  export function getEngagedStacks(game: TitanGame, getCurrentHex: CurrentStackHexGetter = committedHex): Stack[] {
     const activePlayerId = game.activePlayerId
     return getStacksForPlayer(game).filter(stack =>
-      getStacksForHex(game, stack.hex).some(occupant => occupant.owner !== activePlayerId),
+      getStacksForHex(game, getCurrentHex(stack), getCurrentHex).some(occupant => occupant.owner !== activePlayerId),
     )
   }
 
@@ -245,7 +272,7 @@ export namespace TitanGame {
   /** Splits the submitted creatures off their stacks onto fresh markers and enters the move phase. */
   export function finalizeSplits(game: TitanGame, splits: StackSplit[], random: Random = defaultRandom): void {
     assert(game.activePhase === MasterboardPhase.SPLIT, "Innappropriate phase")
-    // TODO: check mayProceed before advancing — round-1 split rule (exactly 4 creatures with 1 lord) not yet enforced
+    assert(mayProceedFromSplit(game, splits), "Invalid splits")
     const owned = getStacksForPlayer(game)
     splits.forEach(({ stack: ref, creatures }) => {
       const stack = owned.find(candidate => candidate.id === ref)
@@ -268,72 +295,41 @@ export namespace TitanGame {
     game.activeRoll = random.die()
   }
 
-  export function nextPhase(game: TitanGame): void {
-    switch (game.activePhase) {
-      case MasterboardPhase.SPLIT:
-        throw new Error("The split phase ends through finalizeSplits, which carries the splits")
-      case MasterboardPhase.MOVE: {
-        const engagedStacks = getEngagedStacks(game)
-        // TODO: handle 2+ simultaneous engagements — no UI yet exists to let the player choose
-        // which battle to resolve first. Refusing to advance keeps the game out of a battle
-        // phase with no battle to resolve.
-        assert(engagedStacks.length <= 1, "Multiple simultaneous engagements are unsupported")
-        game.activeRoll = undefined
-        // TODO: recombine splits that failed to move
-        if (engagedStacks.length === 0) {
-          advancePhase(game)
-        } else {
-          initiateBattle(game, engagedStacks[0].id)
-        }
-        break
-      }
-      case MasterboardPhase.BATTLE:
-        assert(game.activeBattle !== undefined, "Incomplete battle!")
-        break
-      case MasterboardPhase.MUSTER:
-        getStacksForPlayer(game)
-          .filter((stack): stack is Stack & { currentMuster: MusterChoice } => stack.currentMuster !== undefined)
-          .forEach(stack => {
-            const recruitedCreature = finalizeMuster(game.round, stack)
-            game.creaturePool[recruitedCreature]--
-          })
-        // Muster is a turn's last phase, so advancing past it wraps to the next player's split.
-        advancePhase(game)
-        getStacksForPlayer(game).forEach(startPlayerTurn)
-        return
+  export function finalizeMoves(game: TitanGame, moves: StagedMoves): void {
+    assert(game.activePhase === MasterboardPhase.MOVE, "Innappropriate phase")
+    moves.forEach(({ hex, edge }, ref) => {
+      const movingStack = game.stacks.find(stack => stack.id === ref)
+      assert(movingStack !== undefined, `No stack with id ${ref}`)
+      movingStack.hex = hex
+      movingStack.attackEdge = edge
+      movingStack.hasMoved = true
+    })
+    const engagedStacks = getEngagedStacks(game)
+    game.activeRoll = undefined
+    // TODO: recombine splits that failed to move
+    // TODO: handle 2+ simultaneous engagements
+    if (engagedStacks.length === 0) {
+      advancePhase(game)
+    } else {
+      initiateBattle(game, engagedStacks[0].id)
     }
     advancePhase(game)
   }
 
-  export function move(game: TitanGame, { stack, hex, edge }: MovePayload): void {
-    const movingStack = game.stacks.find(s => s.id === stack)
-    assert(movingStack !== undefined, `No stack with id ${stack}`)
-    assert(game.activePhase === MasterboardPhase.MOVE, "Innappropriate phase")
-    movingStack.attackEdge = edge
-    movingStack.hex = hex
-    movingStack.hasMoved = true
-  }
-
-  export function undoMove(game: TitanGame, stack: StackRef): void {
-    const movingStack = game.stacks.find(s => s.id === stack)
-    assert(movingStack !== undefined, `No stack with id ${stack}`)
-    assert(game.activePhase === MasterboardPhase.MOVE, "Innappropriate phase")
-    movingStack.attackEdge = undefined
-    movingStack.hex = movingStack.initialHex
-    movingStack.hasMoved = false
-  }
-
-  export function setRecruit(game: TitanGame, { stack, recruit }: MusterPayload): void {
-    const recruitingStack = game.stacks.find(s => s.id === stack)
-    assert(recruitingStack !== undefined, `No stack with id ${stack}`)
-    if (!Stack.canMuster(recruitingStack)) {
-      throw new Error("Stack is not eligible to muster!")
-    }
-    if (recruit !== undefined && game.creaturePool[recruit.creature] < 1 && !CREATURE_DATA[recruit.creature].lord) {
-      throw new Error("No more of the requested creature remaining")
-    }
+  export function finalizeMusters(game: TitanGame, musters: MusterPayload[]): void {
     assert(game.activePhase === MasterboardPhase.MUSTER, "Innappropriate phase")
-    recruitingStack.currentMuster = recruit
+    assert(mayProceedFromMuster(game, musters), "Invalid musters")
+    musters.forEach(({ stack: ref, recruit }) => {
+      const stack = getStacksForPlayer(game).find(candidate => candidate.id === ref)
+      assert(stack !== undefined, `The active player does not own a stack with id ${ref}`)
+      stack.recruits[game.round] = recruit
+      stack.latestMuster = recruit
+      stack.creatures.push(recruit.creature)
+      game.creaturePool[recruit.creature]--
+    })
+    // Muster is a turn's last phase, so advancing past it wraps to the next player's split.
+    advancePhase(game)
+    getStacksForPlayer(game).forEach(startPlayerTurn)
   }
 
   export function hydrate(persisted?: string): TitanGame {
@@ -361,13 +357,7 @@ function startPlayerTurn(stack: Stack): void {
   stack.initialHex = stack.hex
   stack.hasMoved = false
   stack.attackEdge = undefined
-  stack.currentMuster = undefined
-}
-
-function finalizeMuster(round: number, stack: Stack & { currentMuster: MusterChoice }): CreatureType {
-  stack.recruits[round] = stack.currentMuster
-  stack.creatures.push(stack.currentMuster.creature)
-  return stack.currentMuster.creature
+  stack.latestMuster = undefined
 }
 
 function advancePhase(game: TitanGame): void {

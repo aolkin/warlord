@@ -16,6 +16,7 @@ import { computed } from "vue"
 import { TitanGame } from "@/models/game"
 import masterboard from "@/models/masterboard"
 import { useGameStore } from "~/stores/game"
+import { useMoveStagingStore } from "~/stores/ui/moveStaging"
 import { useSelectionStore } from "~/stores/ui/selection"
 import MasterboardEdges from "./MasterboardEdges.vue"
 import MasterboardHex from "./MasterboardHex.vue"
@@ -31,15 +32,16 @@ withDefaults(
 
 const game = useGameStore().game
 const selectionStore = useSelectionStore()
+const moveStagingStore = useMoveStagingStore()
 
 const hexes = computed(() => masterboard.getHexIds())
 
 function move(hex: number): void {
   // A foe-occupied hex triggers an engagement via the enemy stack's attack-edge picker,
   // not this click handler.
-  if (TitanGame.getStacksForHex(game, hex).length > 0) {
+  if (TitanGame.getStacksForHex(game, hex, moveStagingStore.hexOf).length > 0) {
     return
   }
-  TitanGame.move(game, { stack: selectionStore.requireSelectedStack().id, hex })
+  moveStagingStore.stage(selectionStore.requireSelectedStack().id, hex)
 }
 </script>

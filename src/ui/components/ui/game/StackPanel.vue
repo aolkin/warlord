@@ -113,6 +113,8 @@ import masterboard, { Terrain } from "@/models/masterboard"
 import { Player } from "@/models/player"
 import { MusterChoice, MusterPossibility, Stack } from "@/models/stack"
 import { useGameStore } from "~/stores/game"
+import { useMoveStagingStore } from "~/stores/ui/moveStaging"
+import { useMusterStagingStore } from "~/stores/ui/musterStaging"
 import { useSelectionStore } from "~/stores/ui/selection"
 import { useStackSplitsStore } from "~/stores/ui/stackSplits"
 import { mod } from "~/utils/math"
@@ -128,6 +130,8 @@ const gameStore = useGameStore()
 const game = gameStore.game
 const selectionStore = useSelectionStore()
 const stackSplitsStore = useStackSplitsStore()
+const moveStagingStore = useMoveStagingStore()
+const musterStagingStore = useMusterStagingStore()
 
 const interactive = computed(
   (): boolean => props.focusedStack !== undefined && TitanGame.isStackActive(game, props.focusedStack),
@@ -167,13 +171,13 @@ const splittingCreatureNames = computed((): string =>
 
 const mustering = computed({
   get() {
-    return props.focusedStack?.currentMuster
+    return props.focusedStack === undefined ? undefined : musterStagingStore.recruitFor(props.focusedStack.id)
   },
-  set(value: MusterChoice) {
+  set(value: MusterChoice | undefined) {
     if (!TitanGame.isMusterPhase(game)) {
       return
     }
-    TitanGame.setRecruit(game, { stack: props.focusedStack!.id, recruit: value })
+    musterStagingStore.stage(props.focusedStack!.id, value)
   },
 })
 
@@ -183,11 +187,11 @@ const musteringCaption = computed(() => {
     return "You cannot muster in a stack that did not move this turn."
   } else if (Stack.isFull(stack)) {
     return "This stack is already full and cannot muster."
-  } else if (stack.currentMuster === undefined) {
+  } else if (mustering.value === undefined) {
     return "No recruit chosen."
   } else {
-    const basis = stack.currentMuster.basis
-    let caption = "Mustering " + CREATURE_DATA[stack.currentMuster.creature].name
+    const basis = mustering.value.basis
+    let caption = "Mustering " + CREATURE_DATA[mustering.value.creature].name
     if (basis.count > 0) {
       caption += " with "
       if (basis.count > 1) {
@@ -205,7 +209,7 @@ function cycleStacks(by: number): void {
   do {
     index += by
     candidateStack = gameStore.activeStacks[mod(index, gameStore.activeStacks.length)]
-  } while (!TitanGame.isStackActive(game, candidateStack))
+  } while (!TitanGame.isStackActive(game, candidateStack, moveStagingStore.moves))
   selectionStore.selectStack(candidateStack)
 }
 </script>
