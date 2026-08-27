@@ -8,7 +8,6 @@ import {
   BATTLE_BOARDS,
   EdgeHazard,
   Hazard,
-  UNATTAINABLE_MOVEMENT_COST,
   getAdjacentHexForRelation,
   isCreatureEdgeNative,
   isCreatureNative,
@@ -111,23 +110,30 @@ export namespace Battle {
     return battle.creatures.find(creature => (moves.get(creature.id) ?? creature.hex) === hex)
   }
 
-  export function creatureMovementCost(
+  /** This function assumes the creature can enter - for efficiency, it will not check all rules */
+  export function movementCostAndLanding(
     battle: Battle,
     hex: number,
     origin: number,
     creature: BattleCreature,
     moves: StagedMoves = new Map(),
-  ): number {
+  ): { cost?: number; canLand: boolean } {
     const board = BATTLE_BOARDS[battle.terrain]
     const canFly = CREATURE_DATA[creature.type].canFly
     const occupant = creatureOnHex(battle, hex, moves)
+    const hazard = board.getHazard(hex)
+    const canLand = !(
+      hazard === Hazard.TREE ||
+      (hazard === Hazard.BOG && !isCreatureNative(creature.type, hazard)) ||
+      occupant !== undefined
+    )
     if (canFly || occupant === undefined || occupant === creature) {
       let cost = 1
       if (!canFly) {
         const upEdgeHazard = board.getEdgeHazard(origin, hex)
         const downEdgeHazard = board.getEdgeHazard(hex, origin)
         if (upEdgeHazard === EdgeHazard.CLIFF || downEdgeHazard === EdgeHazard.CLIFF) {
-          return UNATTAINABLE_MOVEMENT_COST
+          return { canLand }
         } else if (
           upEdgeHazard === EdgeHazard.WALL ||
           (upEdgeHazard === EdgeHazard.SLOPE && !isCreatureEdgeNative(creature.type, upEdgeHazard))
@@ -136,40 +142,24 @@ export namespace Battle {
         }
       }
 
-      const hazard = board.getHazard(hex)
       const native = isCreatureNative(creature.type, hazard)
       switch (hazard) {
         case Hazard.NONE:
-          return cost
+          return { cost, canLand }
         case Hazard.BRAMBLE:
         case Hazard.DRIFT:
-          return native ? cost : cost + 1
+          return { cost: native ? cost : cost + 1, canLand }
         case Hazard.BOG:
         case Hazard.TREE:
-          return native || canFly ? cost : UNATTAINABLE_MOVEMENT_COST
+          return { cost: native || canFly ? cost : undefined, canLand }
         case Hazard.SAND:
-          return native || canFly ? cost : cost + 1
+          return { cost: native || canFly ? cost : cost + 1, canLand }
         case Hazard.VOLCANO:
-          return native ? cost : UNATTAINABLE_MOVEMENT_COST
+          return { cost: native ? cost : undefined, canLand }
       }
     } else {
-      return UNATTAINABLE_MOVEMENT_COST
+      return { canLand }
     }
-  }
-
-  /** This function assumes the creature can enter - for efficiency, it will not check all rules */
-  export function creatureCanLand(
-    battle: Battle,
-    hex: number,
-    creature: BattleCreature,
-    moves: StagedMoves = new Map(),
-  ): boolean {
-    const hazard = BATTLE_BOARDS[battle.terrain].getHazard(hex)
-    return !(
-      hazard === Hazard.TREE ||
-      (hazard === Hazard.BOG && !isCreatureNative(creature.type, hazard)) ||
-      creatureOnHex(battle, hex, moves) !== undefined
-    )
   }
 
   // TODO: rule 11.3 (a creature already in contact with an enemy may not move) is not enforced
@@ -186,13 +176,13 @@ export namespace Battle {
       const [origin, remainingMovement] = entry
       const adjacencies = BATTLE_BOARD_ADJACENCIES[origin].filter(i => (possibilities.get(i) ?? -1) < remainingMovement)
       adjacencies.forEach(potentialHex => {
-        const movementCost = creatureMovementCost(battle, potentialHex, origin, creature, moves)
+        const { cost: movementCost, canLand } = movementCostAndLanding(battle, potentialHex, origin, creature, moves)
         // console.log({ origin, potentialHex, remainingMovement, movementCost })
-        if (movementCost <= remainingMovement) {
+        if (movementCost !== undefined && movementCost <= remainingMovement) {
           if (remainingMovement - movementCost > 0) {
             stack.push([potentialHex, remainingMovement - movementCost])
           }
-          if (creatureCanLand(battle, potentialHex, creature, moves)) {
+          if (canLand) {
             possibilities.set(potentialHex, remainingMovement - movementCost)
           }
         }

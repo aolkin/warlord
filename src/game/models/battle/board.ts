@@ -66,8 +66,6 @@ export const isCreatureNative = (type: CreatureType, hazard: Hazard): boolean =>
 export const isCreatureEdgeNative = (type: CreatureType, hazard: EdgeHazard): boolean =>
   EDGE_HAZARD_NATIVES[hazard].has(type)
 
-export const UNATTAINABLE_MOVEMENT_COST = 99
-
 export interface BattleBoardProps {
   elevations?: Record<number, number>
   hazards?: Record<number, Hazard>

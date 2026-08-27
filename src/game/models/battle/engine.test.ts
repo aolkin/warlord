@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest"
 import { CREATURE_DATA, CreatureType } from "@/models/creature"
 import { HexEdge, Terrain } from "@/models/masterboard"
 import { PlayerId } from "@/models/player"
-import { UNATTAINABLE_MOVEMENT_COST } from "./board"
 import { BattleCreature } from "./combatant"
 import { Battle, BattleSide } from "./engine"
 import { BattlePhase } from "./phase"
@@ -303,8 +302,8 @@ describe("Battle board movement cost", () => {
     const troll = getOffense(battle)[0]
     const centaur = getDefense(battle)[0]
 
-    expect(Battle.creatureMovementCost(battle, 8, 2, troll)).toBe(1)
-    expect(Battle.creatureMovementCost(battle, 8, 2, centaur)).toBe(UNATTAINABLE_MOVEMENT_COST)
+    expect(Battle.movementCostAndLanding(battle, 8, 2, troll).cost).toBe(1)
+    expect(Battle.movementCostAndLanding(battle, 8, 2, centaur).cost).toBeUndefined()
   })
 
   it("blocks a volcano hazard for non-native creatures even if they can fly", () => {
@@ -317,7 +316,7 @@ describe("Battle board movement cost", () => {
     const griffon = getOffense(battle)[0]
 
     expect(CREATURE_DATA[CreatureType.GRIFFON].canFly).toBe(true)
-    expect(Battle.creatureMovementCost(battle, 15, 9, griffon)).toBe(UNATTAINABLE_MOVEMENT_COST)
+    expect(Battle.movementCostAndLanding(battle, 15, 9, griffon).cost).toBeUndefined()
   })
 
   it("lets a flying creature cross a tree hex without stopping, but never land in it", () => {
@@ -330,9 +329,10 @@ describe("Battle board movement cost", () => {
     const griffon = getOffense(battle)[0]
     const centaur = getDefense(battle)[0]
 
-    expect(Battle.creatureMovementCost(battle, 3, 2, griffon)).toBe(1)
-    expect(Battle.creatureCanLand(battle, 3, griffon)).toBe(false)
-    expect(Battle.creatureMovementCost(battle, 3, 2, centaur)).toBe(UNATTAINABLE_MOVEMENT_COST)
+    const griffonResult = Battle.movementCostAndLanding(battle, 3, 2, griffon)
+    expect(griffonResult.cost).toBe(1)
+    expect(griffonResult.canLand).toBe(false)
+    expect(Battle.movementCostAndLanding(battle, 3, 2, centaur).cost).toBeUndefined()
   })
 
   it("charges an extra movement point to cross a slope uphill unless edge-native, but never downhill", () => {
@@ -344,9 +344,9 @@ describe("Battle board movement cost", () => {
     const ogre = getOffense(battle)[0]
     const centaur = getDefense(battle)[0]
 
-    expect(Battle.creatureMovementCost(battle, 2, 3, ogre)).toBe(1) // uphill, native: no penalty
-    expect(Battle.creatureMovementCost(battle, 2, 3, centaur)).toBe(2) // uphill, non-native: +1
-    expect(Battle.creatureMovementCost(battle, 3, 2, centaur)).toBe(1) // downhill: no penalty regardless
+    expect(Battle.movementCostAndLanding(battle, 2, 3, ogre).cost).toBe(1) // uphill, native: no penalty
+    expect(Battle.movementCostAndLanding(battle, 2, 3, centaur).cost).toBe(2) // uphill, non-native: +1
+    expect(Battle.movementCostAndLanding(battle, 3, 2, centaur).cost).toBe(1) // downhill: no penalty regardless
   })
 
   it("charges an extra movement point to cross a wall in one direction only, regardless of native status", () => {
@@ -358,8 +358,8 @@ describe("Battle board movement cost", () => {
     const battle = Battle.create({ terrain: Terrain.TOWER, edge: HexEdge.FIRST, attacking, defending })
     const centaur = getOffense(battle)[0]
 
-    expect(Battle.creatureMovementCost(battle, 8, 2, centaur)).toBe(2) // upward, across the wall
-    expect(Battle.creatureMovementCost(battle, 2, 8, centaur)).toBe(1) // downward: no penalty
+    expect(Battle.movementCostAndLanding(battle, 8, 2, centaur).cost).toBe(2) // upward, across the wall
+    expect(Battle.movementCostAndLanding(battle, 2, 8, centaur).cost).toBe(1) // downward: no penalty
   })
 
   it("makes a cliff edge impassable in both directions, unlike walls and slopes", () => {
@@ -369,8 +369,8 @@ describe("Battle board movement cost", () => {
     const battle = Battle.create({ terrain: Terrain.DESERT, edge: HexEdge.FIRST, attacking, defending })
     const centaur = getOffense(battle)[0]
 
-    expect(Battle.creatureMovementCost(battle, 15, 20, centaur)).toBe(UNATTAINABLE_MOVEMENT_COST)
-    expect(Battle.creatureMovementCost(battle, 20, 15, centaur)).toBe(UNATTAINABLE_MOVEMENT_COST)
+    expect(Battle.movementCostAndLanding(battle, 15, 20, centaur).cost).toBeUndefined()
+    expect(Battle.movementCostAndLanding(battle, 20, 15, centaur).cost).toBeUndefined()
   })
 })
 
