@@ -7,15 +7,15 @@ import {
   BATTLE_BOARD_ADJACENCIES,
   BATTLE_BOARDS,
   EdgeHazard,
-  Hazard,
   getAdjacentHexForRelation,
+  Hazard,
   isCreatureEdgeNative,
   isCreatureNative,
-  relationToHex,
+  relationToHex
 } from "./board"
 import { BattleCreature, CreatureRef } from "./combatant"
 import { BATTLE_PHASE_TYPES, BattlePhase, BattlePhaseType } from "./phase"
-import { ActiveStrike, RangestrikeTarget, Strike, isRangestrike } from "./strike"
+import { ActiveStrike, isRangestrike, RangestrikeTarget, Strike } from "./strike"
 
 export interface BattleSide {
   player: PlayerId
@@ -120,18 +120,13 @@ export namespace Battle {
     const board = BATTLE_BOARDS[battle.terrain]
     const canFly = CREATURE_DATA[creature.type].canFly
     const occupant = creatureOnHex(battle, hex, moves)
-    const hazard = board.getHazard(hex)
-    if (!canFly && occupant && occupant !== creature) {
-      return { canLand: false }
-    }
-    const canLand = !(
-      hazard === Hazard.TREE ||
-      (hazard === Hazard.BOG && !isCreatureNative(creature.type, hazard)) ||
-      occupant
-    )
+    const canLand = !occupant || occupant === creature
 
     let cost = 1
     if (!canFly) {
+      if (!canLand) {
+        return { canLand }
+      }
       const upEdgeHazard = board.getEdgeHazard(origin, hex)
       const downEdgeHazard = board.getEdgeHazard(hex, origin)
       if (upEdgeHazard === EdgeHazard.CLIFF || downEdgeHazard === EdgeHazard.CLIFF) {
@@ -144,6 +139,7 @@ export namespace Battle {
       }
     }
 
+    const hazard = board.getHazard(hex)
     const native = isCreatureNative(creature.type, hazard)
     switch (hazard) {
       case Hazard.NONE:
@@ -153,7 +149,7 @@ export namespace Battle {
         return { cost: native ? cost : cost + 1, canLand }
       case Hazard.BOG:
       case Hazard.TREE:
-        return { cost: native || canFly ? cost : undefined, canLand }
+        return { cost: native || canFly ? cost : undefined, canLand: canLand && native }
       case Hazard.SAND:
         return { cost: native || canFly ? cost : cost + 1, canLand }
       case Hazard.VOLCANO:
