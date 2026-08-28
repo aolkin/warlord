@@ -153,7 +153,7 @@ export namespace Battle {
       case Hazard.SAND:
         return { cost: native || canFly ? cost : cost + 1, canLand }
       case Hazard.VOLCANO:
-        return native ? { cost, canLand } : { cost: undefined, canLand: false }
+        return { cost: native ? cost : undefined, canLand: canLand && native }
     }
   }
 
