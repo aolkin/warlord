@@ -120,12 +120,13 @@ export namespace Battle {
     const board = BATTLE_BOARDS[battle.terrain]
     const canFly = CREATURE_DATA[creature.type].canFly
     const occupant = creatureOnHex(battle, hex, moves)
-    const canLand = !occupant || occupant === creature
+    const canPass = !occupant || occupant === creature
+    const canLand = !occupant
 
     let cost = 1
     if (!canFly) {
-      if (!canLand) {
-        return { canLand }
+      if (!canPass) {
+        return { canLand: false }
       }
       const upEdgeHazard = board.getEdgeHazard(origin, hex)
       const downEdgeHazard = board.getEdgeHazard(hex, origin)
