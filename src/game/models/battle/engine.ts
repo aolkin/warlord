@@ -11,7 +11,7 @@ import {
   Hazard,
   isCreatureEdgeNative,
   isCreatureNative,
-  relationToHex
+  relationToHex,
 } from "./board"
 import { BattleCreature, CreatureRef } from "./combatant"
 import { BATTLE_PHASE_TYPES, BattlePhase, BattlePhaseType } from "./phase"
