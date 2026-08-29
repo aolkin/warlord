@@ -34,7 +34,7 @@ TypeScript 7.0 (GA July 2026) is the Go-native compiler, roughly 10× faster; 6.
 
 - **Pros:** massively faster checks (7.x); years of language features; current `@types` packages require modern TS.
 - **Cons:** the jump will surface new type errors; and two tools this repo needs cannot use 7.x yet — `vue-tsc`/Volar embeds TypeScript's programmatic API, which the Go compiler doesn't ship until ~7.1 (expected fall 2026), and typescript-eslint's supported range is `>=4.8.4 <6.1.0`. **So the practical target now is 6.x**; revisit 7.x when 7.1 lands and Volar adopts it. (A future Vue-free engine package could use `tsc` 7 immediately; oxlint's tsgolint also does type-aware linting on the native compiler already.)
-- Also: `tsconfig.json` currently extends `./.nuxt/tsconfig.json`, which doesn't exist outside a Nuxt build (CI literally renames tsconfig away to build). Write a real standalone tsconfig.
+- **Done:** `tsconfig.json` is now a real standalone config (no `extends`, no Nuxt reference); CI runs `pnpm typecheck` directly.
 
 ## ESLint: 7 → 10, flat config
 
@@ -52,9 +52,9 @@ ESLint 10 (Feb 2026) removed `.eslintrc` support entirely; flat `eslint.config.j
 - **Cons:** while the rollout was in progress, some files were formatted and some weren't, and each in-flight PR touching a newly-covered directory needed a rebase-and-reformat pass.
 - **Config:** `semi: false`, `printWidth: 120`, and `arrowParens: "avoid"` override Prettier's defaults to match the codebase's existing conventions (no semicolons, wide lines already common, single-arg arrows unparenthesized); everything else (double quotes, 2-space indent, trailing commas) already matched Prettier's default.
 
-## Remove dead and vestigial dependencies
+## Remove dead and vestigial dependencies (done)
 
-None of these participate in the actual Vite build:
+None of these are in `package.json` any more:
 
 - `nuxt3` (a 2022 RC snapshot; the package line itself is dead — Nuxt is now `nuxt` 4.x), `nuxt.config.ts`, and the Nuxt-flavored README
 - `@vue/cli-service`, `@vue/cli-plugin-babel`, `vue-cli-plugin-vuetify`, `vuetify-loader`, `sass-loader` (webpack-era)
@@ -63,9 +63,9 @@ None of these participate in the actual Vite build:
 
 **Pro:** install size and audit noise drop sharply; the lockfile stops pulling webpack 5, express, etc. **Con:** none, beyond verifying nothing quietly imports them (a grep shows only `webfontloader` is imported).
 
-## Declare real dependencies
+## Declare real dependencies (done)
 
-`vue` is not in `package.json`; it resolves transitively (currently 3.2.45). Declare `vue` explicitly and pin the intended major. Same review for anything else imported but undeclared.
+`vue` is now a direct dependency (`^3.5.41`) instead of resolving transitively.
 
 ## Lodash
 

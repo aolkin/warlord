@@ -30,21 +30,18 @@ Options tried, none landed:
 
 **Status:** parked on the upstream fix. `DiceRoller.vue` is already lazy-loaded ([PR #97](https://github.com/aolkin/warlord/pull/97)), so this chunk doesn't block initial page load regardless of size — that's what makes leaving the duplication parked tolerable.
 
-## Lazy-load `DiceRoller.vue` (independent of doc 06)
+## Lazy-load `DiceRoller.vue` (independent of doc 06, done)
 
-`DiceRoller.vue` is statically imported and unconditionally rendered in `App.vue` (`<DiceRoller ref="diceRoller" />`, no `v-if`), so `Dice-*.js` plus whichever `world.*` chunk gets picked — up to ~3.6 MB with the default `offscreen: true` — loads on every page visit, including for a session that never rolls dice.
+`DiceRoller.vue` was statically imported and unconditionally rendered in `App.vue` (`<DiceRoller ref="diceRoller" />`, no `v-if`), so `Dice-*.js` plus whichever `world.*` chunk gets picked — up to ~3.6 MB with the default `offscreen: true` — loaded on every page visit, including for a session that never rolls dice.
 
-Switching to `defineAsyncComponent(() => import(...))` raises one complication: `App.vue` currently exposes the mounted instance via `provide("diceRoller", readonly(diceRoller))`, and three components (`TurnPanel.vue`, `SystemMenu.vue`, `BattleBoard.vue`) `inject: ["diceRoller"]` and call `this.diceRoller.roll(...)` directly with no null check. That works today because `diceRoller` is bound as a template ref to a component that's always mounted synchronously. With an async component, Vue only populates that ref once the (now-async) chunk resolves and mounts, so the injected value stays `null` for a window after initial render — calling `.roll()` during that window would throw synchronously instead of behaving as it does today, where `DiceRoller.vue` handles "not ready" internally by rejecting the returned promise if `diceBox.init()` hasn't resolved.
+Switching to `defineAsyncComponent(() => import(...))` raised one complication: `App.vue` exposed the mounted instance via `provide("diceRoller", readonly(diceRoller))`, and the consumers injecting it called `.roll(...)` directly. That worked before because `diceRoller` was bound as a template ref to a component that's always mounted synchronously. With an async component, Vue only populates that ref once the (now-async) chunk resolves and mounts, so the injected value stays `null` for a window after initial render.
 
-Rather than pushing a null check into each of the three call sites, `App.vue` can provide a small facade object instead of the raw instance — created synchronously at setup time, with a stable identity and a `roll()` method that delegates to the mounted instance once it exists and otherwise rejects: `roll: (...args) => instance.value ? instance.value.roll(...args) : Promise.reject(new Error("dice not ready"))`, passed to `provide("diceRoller", facade)` in place of the template ref.
+Rather than a shared facade, each consumer now handles that window itself: `BattleBoard.vue` throws if `diceRoller.value` is `null` when a strike is attempted, and `SystemMenu.vue`'s debug roll button no-ops via `diceRoller?.value?.roll(...)`. (`TurnPanel.vue` no longer injects `diceRoller` at all — masterboard movement rolls no longer go through the 3D dice widget.)
 
-The three consumers keep calling `this.diceRoller.roll(...)` exactly as they do today — `diceRoller` is never `null` from their perspective, so none of them change. The "is it ready" check moves from three call sites into this one facade, and since `roll()` is already async/promise-based today, the facade preserves the existing rejection-based contract rather than introducing a new synchronous-throw failure mode.
+`App.vue`'s `<DiceRoller ref="diceRoller" />` is still unconditionally present in the template (not behind `v-if`), so wrapping it in `defineAsyncComponent` alone starts the fetch at initial mount. That moves dice-box out of `index-*.js` and off the initial script-evaluation cost, but doesn't defer the network fetch itself — gating actual mount on first use (e.g. a `v-if` flipped by the first roll) would defer that too.
 
-Separately, the component is still unconditionally present in the template (not behind `v-if`), so wrapping it in `defineAsyncComponent` alone starts the fetch at initial mount. That moves dice-box out of `index-*.js` and off the initial script-evaluation cost, but doesn't defer the network fetch itself — gating actual mount on first use (e.g. a `v-if` flipped by the first roll) would defer that too.
-
-- **Pros:** initial load stops evaluating/parsing megabytes of Babylon.js before the board is interactive.
-- **Cons:** adds a small facade indirection in `App.vue` between the provided value and the mounted instance.
-- **Decided:** do this regardless of the `offscreen`/chunk-dedup decisions above — it helps whichever `world.*` chunk ends up loaded.
+- **Result:** initial load stops evaluating/parsing megabytes of Babylon.js before the board is interactive.
+- **Landed as [PR #97](https://github.com/aolkin/warlord/pull/97).**
 
 ## Vuetify component tree-shaking (done)
 
@@ -64,4 +61,4 @@ PR #227 also looked into avoiding the enumeration itself rather than re-proposin
 
 ## Sequencing
 
-Nothing in this doc depends on anything else in the `proposals/` folder. Dice-box's chunking and lazy-loading `DiceRoller.vue` can land any time, including before doc 01's toolchain work. The icon-font item above is rejected, not pending.
+Nothing in this doc depends on anything else in the `proposals/` folder. Lazy-loading `DiceRoller.vue` has landed; dice-box's chunking can land whenever the upstream fix does, including before doc 01's toolchain work. The icon-font item above is rejected, not pending.
