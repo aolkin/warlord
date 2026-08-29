@@ -1,5 +1,5 @@
 import { assert } from "@/utils/assert"
-import { range } from "lodash-es"
+import { range, remove } from "lodash-es"
 import { Battle, BattleSide } from "./battle"
 import { CREATURE_DATA, CREATURE_LIST, CreatureType } from "./creature"
 import masterboard, { HexEdge, MasterboardHex } from "./masterboard"
@@ -309,7 +309,17 @@ export namespace TitanGame {
       movingStack.hasMoved = true
     })
     game.activeRoll = undefined
-    // TODO: recombine splits that failed to move
+    getStacksForPlayer(game)
+      .filter(stack => !stack.hasMoved)
+      .forEach(stack => {
+        const splitOff = getStacksForPlayer(game).find(
+          candidate => candidate.hex === stack.hex && candidate.id > stack.id && !candidate.hasMoved,
+        )
+        if (splitOff !== undefined) {
+          Stack.recombine(stack, splitOff)
+          remove(game.stacks, candidate => candidate === splitOff)
+        }
+      })
     advancePhase(game)
     if (getEngagedStacks(game).length === 0) {
       advancePhase(game)

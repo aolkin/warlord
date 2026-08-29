@@ -156,4 +156,8 @@ export namespace Stack {
     remove(stack.creatures, (_, index) => splitting.includes(index))
     return create({ owner: stack.owner, hex: stack.hex, marker, createdRound: round, creatures })
   }
+
+  export function recombine(original: Stack, splitOff: Stack): void {
+    original.creatures.push(...splitOff.creatures)
+  }
 }
