@@ -222,7 +222,7 @@ describe("TitanGame turn and phase transitions", () => {
     expect(game.stacks[0].hasMoved).toBe(true)
   })
 
-  it("initiates a battle and stays in the battle phase when one stack ends on an enemy hex", () => {
+  it("enters the battle phase with the engagement unresolved when a stack ends on an enemy hex", () => {
     const game = newGame()
     const attacker = game.stacks[0]
     const defender = game.stacks[1]
@@ -230,6 +230,13 @@ describe("TitanGame turn and phase transitions", () => {
     game.activeRoll = 1
 
     TitanGame.finalizeMoves(game, new Map([[attacker.id, { hex: defender.hex, edge: HexEdge.FIRST }]]))
+
+    expect(game.activePhase).toBe(MasterboardPhase.BATTLE)
+    expect(game.activeBattle).toBeUndefined()
+    expect(game.activeBattleHex).toBeUndefined()
+    expect(TitanGame.getEngagedStacks(game)).toEqual([attacker])
+
+    TitanGame.initiateBattle(game, attacker.id)
 
     expect(game.activeBattle?.attacker).toBe(attacker.owner)
     expect(game.activeBattle?.defender).toBe(defender.owner)

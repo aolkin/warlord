@@ -231,6 +231,10 @@ export namespace TitanGame {
     return game.activePhase === MasterboardPhase.MOVE
   }
 
+  export function isBattlePhase(game: TitanGame): boolean {
+    return game.activePhase === MasterboardPhase.BATTLE
+  }
+
   export function isMusterPhase(game: TitanGame): boolean {
     return game.activePhase === MasterboardPhase.MUSTER
   }
@@ -304,16 +308,12 @@ export namespace TitanGame {
       movingStack.attackEdge = edge
       movingStack.hasMoved = true
     })
-    const engagedStacks = getEngagedStacks(game)
     game.activeRoll = undefined
     // TODO: recombine splits that failed to move
-    // TODO: handle 2+ simultaneous engagements
-    if (engagedStacks.length === 0) {
-      advancePhase(game)
-    } else {
-      initiateBattle(game, engagedStacks[0].id)
-    }
     advancePhase(game)
+    if (getEngagedStacks(game).length === 0) {
+      advancePhase(game)
+    }
   }
 
   export function finalizeMusters(game: TitanGame, musters: MusterPayload[]): void {

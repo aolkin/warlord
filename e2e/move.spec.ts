@@ -100,7 +100,9 @@ test("clicking an already-moved stack does not unstage it while another moved st
   await expect(board.locator("g.marker.owned.disabled")).toHaveCount(2)
 })
 
-test("moving onto an enemy-occupied hex engages it, and Proceed to Battle starts the fight", async ({ page }) => {
+test("moving onto an enemy-occupied hex engages it, and finalizing moves advances to Battle phase without starting the fight", async ({
+  page,
+}) => {
   await seedGame(page, 2, game => {
     game.round = 1
     game.activePhase = MasterboardPhase.MOVE
@@ -129,5 +131,5 @@ test("moving onto an enemy-occupied hex engages it, and Proceed to Battle starts
   await expect(proceedButton).toBeEnabled()
   await proceedButton.click()
 
-  await expect(page.locator(".battleboard-root")).toBeVisible()
+  await expect(page.locator(".battleboard-root")).toBeHidden()
 })
