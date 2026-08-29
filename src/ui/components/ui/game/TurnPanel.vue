@@ -64,20 +64,6 @@
           {{ engagedStacks.length > 0 ? "Proceed to Battle" : "Proceed to Muster" }}
         </v-btn>
       </v-card-actions>
-      <v-card-actions
-        v-else-if="TitanGame.isBattlePhase(game) && game.activeBattle === undefined"
-        class="flex-column ga-2"
-      >
-        <v-btn
-          v-for="stack in engagedStacks"
-          :key="stack.id"
-          block
-          variant="outlined"
-          @click="TitanGame.initiateBattle(game, stack.id)"
-        >
-          Fight in {{ terrainName(stack.hex) }} ({{ stack.hex }})
-        </v-btn>
-      </v-card-actions>
       <v-card-actions v-else-if="TitanGame.isMusterPhase(game)">
         <v-btn
           block
@@ -94,9 +80,8 @@
 
 <script setup lang="ts">
 import { computed } from "vue"
-import { capitalize, sum } from "lodash-es"
+import { sum } from "lodash-es"
 import { MasterboardPhase, TitanGame } from "@/models/game"
-import masterboard, { Terrain } from "@/models/masterboard"
 import { useGameStore } from "~/stores/game"
 import { useMoveStagingStore } from "~/stores/ui/moveStaging"
 import { useMusterStagingStore } from "~/stores/ui/musterStaging"
@@ -141,10 +126,6 @@ const engagementsMessage = computed(() => {
     return `${engagedStacks.value.length} pending battles.`
   }
 })
-
-function terrainName(hex: number): string {
-  return capitalize(Terrain[masterboard.getHex(hex).terrain])
-}
 </script>
 
 <style scoped lang="sass"></style>
