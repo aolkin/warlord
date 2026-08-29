@@ -413,14 +413,24 @@ describe("Movement legality (movementFor)", () => {
     expect(Battle.movementFor(battle, lion, moves).has(10)).toBe(false)
   })
 
+  it("returns no legal moves for a creature already engaged with an enemy (rule 11.3)", () => {
+    const { battle, offense, defense } = setupBattle(Terrain.PLAINS, [CreatureType.LION], [CreatureType.CENTAUR])
+    const [lion] = offense
+    const [centaur] = defense
+    lion.hex = 8
+    centaur.hex = 7
+
+    expect(Battle.movementFor(battle, lion)).toEqual(new Set())
+    expect(Battle.movementFor(battle, centaur)).toEqual(new Set())
+  })
+
   it("lets a flying creature path through hexes blocked for grounded creatures, reaching further", () => {
     // Battle-hex 2 has only three neighbors (3, 7, 8); occupying both 7 and 8 seals off
     // everything past them for a grounded mover, since creatureMovementCost treats an
     // occupied hex as UNATTAINABLE for pathing (not just landing) unless flying - regardless
     // of which player occupies it. The blockers are on the SAME side as the movers (rather
-    // than the enemy) so the movers aren't in contact with an enemy at phase start; movementFor
-    // doesn't enforce rule 11.3 (in-contact creatures may not move - see the TODO on
-    // movementFor in engine.ts), but this test isn't about that gap.
+    // than the enemy), so the movers aren't in contact with an enemy at phase start and rule
+    // 11.3 doesn't disqualify them from moving.
     const { battle, offense } = setupBattle(
       Terrain.PLAINS,
       [CreatureType.CENTAUR, CreatureType.GRIFFON, CreatureType.LION, CreatureType.LION],
@@ -526,6 +536,20 @@ describe("Engagement edge cases", () => {
     expect(centaur.wounds).toBe(3)
   })
 
+  it("throws if a melee strike's roll count doesn't match the strike's expected dice count", () => {
+    const { battle, offense, defense } = setupBattle(Terrain.PLAINS, [CreatureType.LION], [CreatureType.CENTAUR])
+    battle.phase = BattlePhase.ATTACKER_STRIKE
+    battle.activePlayer = battle.attacker
+    const [lion] = offense
+    const [centaur] = defense
+    lion.hex = 8
+    centaur.hex = 7
+
+    expect(() => Battle.attackCreature(battle, { attacker: lion.id, target: centaur.id, rolls: [6, 6, 6] })).toThrow(
+      "Expected 5 rolls but received 3",
+    )
+  })
+
   it("resolves a rangestrike attack the same way as a melee strike, but never allows carryover", () => {
     const { battle, offense, defense } = setupBattle(Terrain.PLAINS, [CreatureType.RANGER], [CreatureType.CENTAUR])
     battle.phase = BattlePhase.ATTACKER_STRIKE
@@ -551,6 +575,25 @@ describe("Engagement edge cases", () => {
     expect(battle.activeStrike && ActiveStrike.isRangestrike(battle.activeStrike)).toBe(true)
     // overkilled, but rangestrikes never carry over
     expect(battle.activeStrike && ActiveStrike.getCarryoverHits(battle.activeStrike) > 0).toBe(false)
+  })
+
+  it("throws if a rangestrike's roll count doesn't match the strike's expected dice count", () => {
+    const { battle, offense, defense } = setupBattle(Terrain.PLAINS, [CreatureType.RANGER], [CreatureType.CENTAUR])
+    battle.phase = BattlePhase.ATTACKER_STRIKE
+    battle.activePlayer = battle.attacker
+    const [ranger] = offense
+    const [centaur] = defense
+    ranger.hex = 8
+    centaur.hex = 20
+
+    const targets = Battle.rangestrikeTargets(battle, ranger)
+    expect(() =>
+      Battle.rangestrikeCreature(battle, {
+        attacker: ranger.id,
+        target: { ...targets[0], creature: targets[0].creature.id },
+        rolls: [6],
+      }),
+    ).toThrow("Expected 2 rolls but received 1")
   })
 })
 

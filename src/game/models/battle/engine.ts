@@ -156,10 +156,8 @@ export namespace Battle {
     }
   }
 
-  // TODO: rule 11.3 (a creature already in contact with an enemy may not move) is not enforced
-  // anywhere in this function or its callers - no engagement check exists in the movement-legality path.
   export function movementFor(battle: Battle, creature: BattleCreature, moves: StagedMoves = new Map()): Set<number> {
-    if (creature.hex === 0) {
+    if (creature.hex === 0 || engagedWith(battle, creature).length > 0) {
       return new Set<number>()
     }
     // Map of hex to remaining movement last time it was visited
@@ -504,18 +502,19 @@ export namespace Battle {
 
   export function attackCreature(battle: Battle, { attacker, target, rolls, optionalToHit }: AttackPayload): void {
     const { attackerCreature, targetCreature } = resolveStrikingCreatures(battle, attacker, target)
-    let toHit = toHitAdjusted(battle, attackerCreature, targetCreature)
+    const computedStrike = getAdjustedStrike(battle, attackerCreature, targetCreature)
+    let toHit = computedStrike.toHit
     if (optionalToHit !== undefined) {
       assert(optionalToHit >= toHit, "Cannot choose a lower to-hit")
       toHit = optionalToHit
     }
-    performAttack(battle, attackerCreature, targetCreature, rolls, toHit, false)
+    performAttack(battle, attackerCreature, targetCreature, rolls, toHit, false, computedStrike.dice)
   }
 
   export function rangestrikeCreature(battle: Battle, { attacker, target, rolls }: RangestrikePayload): void {
     const { attackerCreature, targetCreature } = resolveStrikingCreatures(battle, attacker, target.creature)
     const computedStrike = getRangestrike(attackerCreature, { ...target, creature: targetCreature })
-    performAttack(battle, attackerCreature, targetCreature, rolls, computedStrike.toHit, true)
+    performAttack(battle, attackerCreature, targetCreature, rolls, computedStrike.toHit, true, computedStrike.dice)
   }
 
   export function assignCarryover(battle: Battle, target: BattleCreature["id"]): void {
@@ -561,8 +560,6 @@ export namespace Battle {
     return { attackerCreature, targetCreature }
   }
 
-  // TODO: rolls is never validated against the strike's expected dice count (see
-  // getAdjustedStrike/getRangestrike), so a caller can pass the wrong number of dice unnoticed.
   export function performAttack(
     battle: Battle,
     attacker: BattleCreature,
@@ -570,7 +567,9 @@ export namespace Battle {
     rolls: number[],
     toHit: number,
     rangestrike: boolean,
+    expectedDice: number,
   ): void {
+    assert(rolls.length === expectedDice, `Expected ${expectedDice} rolls but received ${rolls.length}`)
     attacker.hasStruck = true
     battle.activeStrike = ActiveStrike.create({
       attacker: attacker.hex,
