@@ -119,8 +119,7 @@ export namespace Battle {
   ): { cost?: number; canLand: boolean } {
     const board = BATTLE_BOARDS[battle.terrain]
     const canFly = CREATURE_DATA[creature.type].canFly
-    const occupant = creatureOnHex(battle, hex, moves)
-    const canLand = !occupant
+    const canLand = !creatureOnHex(battle, hex, moves)
 
     let cost = 1
     if (!canFly) {
@@ -489,13 +488,13 @@ export namespace Battle {
 
   export function finalizeMoves(battle: Battle, moves: StagedMoves): void {
     assert(BATTLE_PHASE_TYPES[battle.phase] === BattlePhaseType.MOVE, "Not in movement phase")
-    moves.forEach((hex, ref) => {
+    moves.forEach((_, ref) => {
       const creature = battle.creatures.find(c => c.id === ref)
       assert(creature !== undefined, "Unexpected creature")
       assert(creature.player === battle.activePlayer, "Incorrect player")
-      creature.hex = hex
     })
     getActiveCreatures(battle).forEach(creature => {
+      creature.hex = moves.get(creature.id) ?? creature.hex
       if (creature.hex >= 36) {
         creature.hex = 0
       }
