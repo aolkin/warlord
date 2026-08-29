@@ -23,6 +23,13 @@
       <span v-if="movedCount < 1">You must move at least one stack!</span>
       <span v-else-if="!moveMayProceed">You must move at least one stack from each split if possible.</span>
     </v-card-text>
+    <v-card-text v-else-if="TitanGame.isBattlePhase(game)">
+      <span v-if="game.activeBattle !== undefined">A battle is under way.</span>
+      <template v-else>
+        {{ engagementsMessage }}
+        <span v-if="engagedStacks.length > 1">Pick the engagement to resolve first.</span>
+      </template>
+    </v-card-text>
     <v-card-text v-else-if="TitanGame.isMusterPhase(game)">
       Mustered a recruit in {{ musteredCount }} of {{ gameStore.activeStacks.length }} stacks.
     </v-card-text>
@@ -57,6 +64,20 @@
           {{ engagedStacks.length > 0 ? "Proceed to Battle" : "Proceed to Muster" }}
         </v-btn>
       </v-card-actions>
+      <v-card-actions
+        v-else-if="TitanGame.isBattlePhase(game) && game.activeBattle === undefined"
+        class="flex-column ga-2"
+      >
+        <v-btn
+          v-for="stack in engagedStacks"
+          :key="stack.id"
+          block
+          variant="outlined"
+          @click="TitanGame.initiateBattle(game, stack.id)"
+        >
+          Fight in {{ terrainName(stack.hex) }} ({{ stack.hex }})
+        </v-btn>
+      </v-card-actions>
       <v-card-actions v-else-if="TitanGame.isMusterPhase(game)">
         <v-btn
           block
@@ -73,8 +94,9 @@
 
 <script setup lang="ts">
 import { computed } from "vue"
-import { sum } from "lodash-es"
+import { capitalize, sum } from "lodash-es"
 import { MasterboardPhase, TitanGame } from "@/models/game"
+import masterboard, { Terrain } from "@/models/masterboard"
 import { useGameStore } from "~/stores/game"
 import { useMoveStagingStore } from "~/stores/ui/moveStaging"
 import { useMusterStagingStore } from "~/stores/ui/musterStaging"
@@ -119,6 +141,10 @@ const engagementsMessage = computed(() => {
     return `${engagedStacks.value.length} pending battles.`
   }
 })
+
+function terrainName(hex: number): string {
+  return capitalize(Terrain[masterboard.getHex(hex).terrain])
+}
 </script>
 
 <style scoped lang="sass"></style>
