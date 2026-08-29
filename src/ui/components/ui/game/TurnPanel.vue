@@ -23,13 +23,6 @@
       <span v-if="movedCount < 1">You must move at least one stack!</span>
       <span v-else-if="!moveMayProceed">You must move at least one stack from each split if possible.</span>
     </v-card-text>
-    <v-card-text v-else-if="TitanGame.isBattlePhase(game)">
-      <span v-if="game.activeBattle !== undefined">A battle is under way.</span>
-      <template v-else>
-        {{ engagementsMessage }}
-        <span v-if="engagedStacks.length > 1">Pick the engagement to resolve first.</span>
-      </template>
-    </v-card-text>
     <v-card-text v-else-if="TitanGame.isMusterPhase(game)">
       Mustered a recruit in {{ musteredCount }} of {{ gameStore.activeStacks.length }} stacks.
     </v-card-text>
