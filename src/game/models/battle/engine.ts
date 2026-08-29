@@ -7,16 +7,15 @@ import {
   BATTLE_BOARD_ADJACENCIES,
   BATTLE_BOARDS,
   EdgeHazard,
-  Hazard,
-  UNATTAINABLE_MOVEMENT_COST,
   getAdjacentHexForRelation,
+  Hazard,
   isCreatureEdgeNative,
   isCreatureNative,
   relationToHex,
 } from "./board"
-import { BattleCreature } from "./combatant"
+import { BattleCreature, CreatureRef } from "./combatant"
 import { BATTLE_PHASE_TYPES, BattlePhase, BattlePhaseType } from "./phase"
-import { ActiveStrike, RangestrikeTarget, Strike, isRangestrike } from "./strike"
+import { ActiveStrike, isRangestrike, RangestrikeTarget, Strike } from "./strike"
 
 export interface BattleSide {
   player: PlayerId
@@ -24,10 +23,8 @@ export interface BattleSide {
   creatures: CreatureType[]
 }
 
-export interface BattleMovePayload {
-  creature: BattleCreature["id"]
-  hex: number
-}
+export type StagedMoves = ReadonlyMap<CreatureRef, number>
+
 interface IStrikePayload {
   attacker: BattleCreature["id"]
   rolls: number[]
@@ -105,80 +102,81 @@ export namespace Battle {
     )
   }
 
-  export function creatureOnHex(battle: Battle, hex: number): BattleCreature | undefined {
-    return battle.creatures.find(creature => creature.hex === hex)
+  export function creatureOnHex(
+    battle: Battle,
+    hex: number,
+    moves: StagedMoves = new Map(),
+  ): BattleCreature | undefined {
+    return battle.creatures.find(creature => (moves.get(creature.id) ?? creature.hex) === hex)
   }
 
-  export function creatureMovementCost(battle: Battle, hex: number, origin: number, creature: BattleCreature): number {
+  export function creatureMovementCost(
+    battle: Battle,
+    hex: number,
+    origin: number,
+    creature: BattleCreature,
+    moves: StagedMoves = new Map(),
+  ): { cost?: number; canLand: boolean } {
     const board = BATTLE_BOARDS[battle.terrain]
     const canFly = CREATURE_DATA[creature.type].canFly
-    if (canFly || hex === creature.hex || creatureOnHex(battle, hex) === undefined) {
-      let cost = 1
-      if (!canFly) {
-        const upEdgeHazard = board.getEdgeHazard(origin, hex)
-        const downEdgeHazard = board.getEdgeHazard(hex, origin)
-        if (upEdgeHazard === EdgeHazard.CLIFF || downEdgeHazard === EdgeHazard.CLIFF) {
-          return UNATTAINABLE_MOVEMENT_COST
-        } else if (
-          upEdgeHazard === EdgeHazard.WALL ||
-          (upEdgeHazard === EdgeHazard.SLOPE && !isCreatureEdgeNative(creature.type, upEdgeHazard))
-        ) {
-          cost += 1
-        }
-      }
+    const canLand = !creatureOnHex(battle, hex, moves)
 
-      const hazard = board.getHazard(hex)
-      const native = isCreatureNative(creature.type, hazard)
-      switch (hazard) {
-        case Hazard.NONE:
-          return cost
-        case Hazard.BRAMBLE:
-        case Hazard.DRIFT:
-          return native ? cost : cost + 1
-        case Hazard.BOG:
-        case Hazard.TREE:
-          return native || canFly ? cost : UNATTAINABLE_MOVEMENT_COST
-        case Hazard.SAND:
-          return native || canFly ? cost : cost + 1
-        case Hazard.VOLCANO:
-          return native ? cost : UNATTAINABLE_MOVEMENT_COST
+    let cost = 1
+    if (!canFly) {
+      if (!canLand) {
+        return { canLand: false }
       }
-    } else {
-      return UNATTAINABLE_MOVEMENT_COST
+      const upEdgeHazard = board.getEdgeHazard(origin, hex)
+      const downEdgeHazard = board.getEdgeHazard(hex, origin)
+      if (upEdgeHazard === EdgeHazard.CLIFF || downEdgeHazard === EdgeHazard.CLIFF) {
+        return { canLand: false }
+      } else if (
+        upEdgeHazard === EdgeHazard.WALL ||
+        (upEdgeHazard === EdgeHazard.SLOPE && !isCreatureEdgeNative(creature.type, upEdgeHazard))
+      ) {
+        cost += 1
+      }
     }
-  }
 
-  /** This function assumes the creature can enter - for efficiency, it will not check all rules */
-  export function creatureCanLand(battle: Battle, hex: number, creature: BattleCreature): boolean {
-    const hazard = BATTLE_BOARDS[battle.terrain].getHazard(hex)
-    return !(
-      hazard === Hazard.TREE ||
-      (hazard === Hazard.BOG && !isCreatureNative(creature.type, hazard)) ||
-      creatureOnHex(battle, hex) !== undefined
-    )
+    const hazard = board.getHazard(hex)
+    const native = isCreatureNative(creature.type, hazard)
+    switch (hazard) {
+      case Hazard.NONE:
+        return { cost, canLand }
+      case Hazard.BRAMBLE:
+      case Hazard.DRIFT:
+        return { cost: native ? cost : cost + 1, canLand }
+      case Hazard.BOG:
+      case Hazard.TREE:
+        return { cost: native || canFly ? cost : undefined, canLand: canLand && native }
+      case Hazard.SAND:
+        return { cost: native || canFly ? cost : cost + 1, canLand }
+      case Hazard.VOLCANO:
+        return { cost: native ? cost : undefined, canLand: canLand && native }
+    }
   }
 
   // TODO: rule 11.3 (a creature already in contact with an enemy may not move) is not enforced
   // anywhere in this function or its callers - no engagement check exists in the movement-legality path.
-  export function movementFor(battle: Battle, creature: BattleCreature): Set<number> {
-    if (creature.initialHex === 0) {
+  export function movementFor(battle: Battle, creature: BattleCreature, moves: StagedMoves = new Map()): Set<number> {
+    if (creature.hex === 0) {
       return new Set<number>()
     }
     // Map of hex to remaining movement last time it was visited
     const possibilities = new Map<number, number>()
-    const stack: Array<[number, number]> = [[creature.initialHex, CREATURE_DATA[creature.type].skill]]
+    const stack: Array<[number, number]> = [[creature.hex, CREATURE_DATA[creature.type].skill]]
     let entry
     while ((entry = stack.pop()) !== undefined) {
       const [origin, remainingMovement] = entry
       const adjacencies = BATTLE_BOARD_ADJACENCIES[origin].filter(i => (possibilities.get(i) ?? -1) < remainingMovement)
       adjacencies.forEach(potentialHex => {
-        const movementCost = creatureMovementCost(battle, potentialHex, origin, creature)
+        const { cost: movementCost, canLand } = creatureMovementCost(battle, potentialHex, origin, creature, moves)
         // console.log({ origin, potentialHex, remainingMovement, movementCost })
-        if (movementCost <= remainingMovement) {
+        if (movementCost !== undefined && movementCost <= remainingMovement) {
           if (remainingMovement - movementCost > 0) {
             stack.push([potentialHex, remainingMovement - movementCost])
           }
-          if (creatureCanLand(battle, potentialHex, creature)) {
+          if (canLand) {
             possibilities.set(potentialHex, remainingMovement - movementCost)
           }
         }
@@ -189,8 +187,7 @@ export namespace Battle {
 
   export function engagedWith(battle: Battle, whom: BattleCreature, includeDead = false): BattleCreature[] {
     const board = BATTLE_BOARDS[battle.terrain]
-    const hex = BATTLE_PHASE_TYPES[battle.phase] === BattlePhaseType.MOVE ? whom.initialHex : whom.hex
-    const adjacencies = BATTLE_BOARD_ADJACENCIES[hex]
+    const adjacencies = BATTLE_BOARD_ADJACENCIES[whom.hex]
     return battle.creatures.filter(
       creature =>
         creature.player !== whom.player &&
@@ -216,7 +213,7 @@ export namespace Battle {
   //       This is very annoying, as it breaks the majority of the assumptions in this function
   export function rangestrikeTargets(battle: Battle, creature: BattleCreature): RangestrikeTarget[] {
     const creatureStats = CREATURE_DATA[creature.type]
-    if (creature.initialHex === 0 || !creatureStats.canRangestrike || engagedWith(battle, creature, true).length > 0) {
+    if (creature.hex === 0 || !creatureStats.canRangestrike || engagedWith(battle, creature, true).length > 0) {
       return []
     }
     // Distance = 2
@@ -489,12 +486,20 @@ export namespace Battle {
 
   // Actions
 
-  export function moveCreature(battle: Battle, payload: BattleMovePayload): void {
-    const creature = battle.creatures.find(c => c.id === payload.creature)
-    assert(creature !== undefined, "Unexpected creature")
+  export function finalizeMoves(battle: Battle, moves: StagedMoves): void {
     assert(BATTLE_PHASE_TYPES[battle.phase] === BattlePhaseType.MOVE, "Not in movement phase")
-    assert(creature.player === battle.activePlayer, "Incorrect player")
-    creature.hex = payload.hex
+    moves.forEach((_, ref) => {
+      const creature = battle.creatures.find(c => c.id === ref)
+      assert(creature !== undefined, "Unexpected creature")
+      assert(creature.player === battle.activePlayer, "Incorrect player")
+    })
+    getActiveCreatures(battle).forEach(creature => {
+      creature.hex = moves.get(creature.id) ?? creature.hex
+      if (creature.hex >= 36) {
+        creature.hex = 0
+      }
+    })
+    advancePhase(battle)
   }
 
   export function attackCreature(battle: Battle, { attacker, target, rolls, optionalToHit }: AttackPayload): void {
@@ -579,26 +584,23 @@ export namespace Battle {
   }
 
   export function nextPhase(battle: Battle): void {
-    if (BATTLE_PHASE_TYPES[battle.phase] === BattlePhaseType.MOVE) {
-      getActiveCreatures(battle).forEach(creature => {
-        if (creature.hex >= 36) {
+    assert(
+      BATTLE_PHASE_TYPES[battle.phase] !== BattlePhaseType.MOVE,
+      "The move phase ends through finalizeMoves, which carries the moves",
+    )
+    assert(getPendingStrikes(battle).length === 0, "All eligible creatures must strike")
+    battle.activeStrike = undefined
+    if (BATTLE_PHASE_TYPES[battle.phase] === BattlePhaseType.STRIKEBACK) {
+      battle.creatures.forEach(creature => {
+        if (creature.wounds >= creature.strength) {
           creature.hex = 0
         }
       })
-    } else if (
-      BATTLE_PHASE_TYPES[battle.phase] === BattlePhaseType.STRIKE ||
-      BATTLE_PHASE_TYPES[battle.phase] === BattlePhaseType.STRIKEBACK
-    ) {
-      assert(getPendingStrikes(battle).length === 0, "All eligible creatures must strike")
-      battle.activeStrike = undefined
-      if (BATTLE_PHASE_TYPES[battle.phase] === BattlePhaseType.STRIKEBACK) {
-        battle.creatures.forEach(creature => {
-          if (creature.wounds >= creature.strength) {
-            creature.hex = 0
-          }
-        })
-      }
     }
+    advancePhase(battle)
+  }
+
+  function advancePhase(battle: Battle): void {
     if (battle.phase === BattlePhase.DEFENDER_STRIKEBACK) {
       battle.round += 1
       battle.phase = BattlePhase.DEFENDER_MOVE
@@ -617,11 +619,7 @@ export namespace Battle {
         battle.activePlayer = battle.attacker
         break
     }
-    if (BATTLE_PHASE_TYPES[battle.phase] === BattlePhaseType.MOVE) {
-      getActiveCreatures(battle).forEach(creature => {
-        creature.initialHex = creature.hex
-      })
-    } else if (BATTLE_PHASE_TYPES[battle.phase] === BattlePhaseType.STRIKE) {
+    if (BATTLE_PHASE_TYPES[battle.phase] === BattlePhaseType.STRIKE) {
       phaseEnterStrike(battle)
     }
 

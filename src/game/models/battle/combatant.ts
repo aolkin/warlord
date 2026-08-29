@@ -3,15 +3,16 @@ import { PlayerId } from "../player"
 
 let battleCreatureIdCounter = 0
 
+export type CreatureRef = number
+
 export interface BattleCreature {
   readonly type: CreatureType
   readonly player: PlayerId
-  readonly id: number
+  readonly id: CreatureRef
   readonly name: string
   readonly strength: number
 
   hex: number
-  initialHex: number
   wounds: number
   hasStruck: boolean
 }
@@ -30,7 +31,6 @@ export namespace BattleCreature {
       strength: data.getStrength(options.playerScore),
       hex: options.hex,
       wounds: 0,
-      initialHex: options.hex,
       hasStruck: false,
     }
   }

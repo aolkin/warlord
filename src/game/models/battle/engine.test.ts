@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest"
 import { CREATURE_DATA, CreatureType } from "@/models/creature"
 import { HexEdge, Terrain } from "@/models/masterboard"
 import { PlayerId } from "@/models/player"
-import { UNATTAINABLE_MOVEMENT_COST } from "./board"
 import { BattleCreature } from "./combatant"
 import { Battle, BattleSide } from "./engine"
 import { BattlePhase } from "./phase"
@@ -31,11 +30,6 @@ function setupBattle(
   return { battle, offense: getOffense(battle), defense: getDefense(battle) }
 }
 
-function place(creature: BattleCreature, hex: number): void {
-  creature.hex = hex
-  creature.initialHex = hex
-}
-
 describe("Battle engagement", () => {
   it("moves into contact, resolves a strike, and inflicts casualties", () => {
     const { battle, offense, defense } = setupBattle(Terrain.PLAINS, [CreatureType.LION], [CreatureType.CENTAUR])
@@ -45,15 +39,13 @@ describe("Battle engagement", () => {
     // Defender moves first each round; hex 7 is within the Centaur's reach from its
     // entrance and adjacent to hex 8, which the Lion can reach on its own move.
     expect(Battle.movementFor(battle, centaur).has(7)).toBe(true)
-    centaur.hex = 7
     // Nothing is on the board to engage yet, so strike/strikeback for both sides
     // are auto-skipped straight through to the attacker's move.
-    Battle.nextPhase(battle)
+    Battle.finalizeMoves(battle, new Map([[centaur.id, 7]]))
     expect(battle.phase).toBe(BattlePhase.ATTACKER_MOVE)
 
     expect(Battle.movementFor(battle, lion).has(8)).toBe(true)
-    lion.hex = 8
-    Battle.nextPhase(battle)
+    Battle.finalizeMoves(battle, new Map([[lion.id, 8]]))
     expect(battle.phase).toBe(BattlePhase.ATTACKER_STRIKE)
     expect(Battle.engagedWith(battle, lion)).toEqual([centaur])
     expect(Battle.getPendingStrikes(battle)).toEqual([lion])
@@ -84,8 +76,8 @@ describe("Rangestrike targets", () => {
     battle.activePlayer = battle.attacker
     const [attacker] = offense
     const [target] = defense
-    place(attacker, 8)
-    place(target, targetHex)
+    attacker.hex = 8
+    target.hex = targetHex
     return { battle, attacker, target }
   }
 
@@ -161,9 +153,7 @@ describe("Rangestrike targets", () => {
     const dragon = getOffense(battle)[0]
     const centaur = getDefense(battle)[0]
     dragon.hex = 15
-    dragon.initialHex = 15
     centaur.hex = 4
-    centaur.initialHex = 4
 
     const targets = Battle.rangestrikeTargets(battle, dragon)
     expect(targets).toHaveLength(1)
@@ -183,9 +173,7 @@ describe("Rangestrike targets", () => {
     const ranger = getOffense(battle)[0]
     const gargoyle = getDefense(battle)[0]
     ranger.hex = 8
-    ranger.initialHex = 8
     gargoyle.hex = 16
-    gargoyle.initialHex = 16
 
     const targets = Battle.rangestrikeTargets(battle, ranger)
     expect(targets).toHaveLength(1)
@@ -203,9 +191,7 @@ describe("Rangestrike targets", () => {
     const ranger = getOffense(battle)[0]
     const dragon = getDefense(battle)[0]
     ranger.hex = 2
-    ranger.initialHex = 2
     dragon.hex = 15
-    dragon.initialHex = 15
 
     const targets = Battle.rangestrikeTargets(battle, ranger)
     expect(targets).toHaveLength(1)
@@ -225,9 +211,7 @@ describe("Rangestrike targets", () => {
     const ranger = getOffense(battle)[0]
     const centaur = getDefense(battle)[0]
     ranger.hex = 8
-    ranger.initialHex = 8
     centaur.hex = 27
-    centaur.initialHex = 27
 
     const targets = Battle.rangestrikeTargets(battle, ranger)
     expect(targets).toHaveLength(1)
@@ -247,9 +231,7 @@ describe("Rangestrike targets", () => {
     const ranger = getOffense(battle)[0]
     const centaur = getDefense(battle)[0]
     ranger.hex = 13
-    ranger.initialHex = 13
     centaur.hex = 8
-    centaur.initialHex = 8
 
     const targets = Battle.rangestrikeTargets(battle, ranger)
     expect(targets).toHaveLength(1)
@@ -277,12 +259,9 @@ describe("Carryover", () => {
     const lion = getOffense(battle)[0]
     const [centaur1, centaur2] = getDefense(battle)
     lion.hex = 8
-    lion.initialHex = 8
     // Both 7 and 9 are adjacent to hex 8 (see BATTLE_BOARD_ADJACENCIES).
     centaur1.hex = 7
-    centaur1.initialHex = 7
     centaur2.hex = 9
-    centaur2.initialHex = 9
     return { battle, lion, centaur1, centaur2 }
   }
 
@@ -323,8 +302,8 @@ describe("Battle board movement cost", () => {
     const troll = getOffense(battle)[0]
     const centaur = getDefense(battle)[0]
 
-    expect(Battle.creatureMovementCost(battle, 8, 2, troll)).toBe(1)
-    expect(Battle.creatureMovementCost(battle, 8, 2, centaur)).toBe(UNATTAINABLE_MOVEMENT_COST)
+    expect(Battle.creatureMovementCost(battle, 8, 2, troll).cost).toBe(1)
+    expect(Battle.creatureMovementCost(battle, 8, 2, centaur).cost).toBeUndefined()
   })
 
   it("blocks a volcano hazard for non-native creatures even if they can fly", () => {
@@ -337,7 +316,7 @@ describe("Battle board movement cost", () => {
     const griffon = getOffense(battle)[0]
 
     expect(CREATURE_DATA[CreatureType.GRIFFON].canFly).toBe(true)
-    expect(Battle.creatureMovementCost(battle, 15, 9, griffon)).toBe(UNATTAINABLE_MOVEMENT_COST)
+    expect(Battle.creatureMovementCost(battle, 15, 9, griffon).cost).toBeUndefined()
   })
 
   it("lets a flying creature cross a tree hex without stopping, but never land in it", () => {
@@ -350,9 +329,10 @@ describe("Battle board movement cost", () => {
     const griffon = getOffense(battle)[0]
     const centaur = getDefense(battle)[0]
 
-    expect(Battle.creatureMovementCost(battle, 3, 2, griffon)).toBe(1)
-    expect(Battle.creatureCanLand(battle, 3, griffon)).toBe(false)
-    expect(Battle.creatureMovementCost(battle, 3, 2, centaur)).toBe(UNATTAINABLE_MOVEMENT_COST)
+    const griffonResult = Battle.creatureMovementCost(battle, 3, 2, griffon)
+    expect(griffonResult.cost).toBe(1)
+    expect(griffonResult.canLand).toBe(false)
+    expect(Battle.creatureMovementCost(battle, 3, 2, centaur).cost).toBeUndefined()
   })
 
   it("charges an extra movement point to cross a slope uphill unless edge-native, but never downhill", () => {
@@ -364,9 +344,9 @@ describe("Battle board movement cost", () => {
     const ogre = getOffense(battle)[0]
     const centaur = getDefense(battle)[0]
 
-    expect(Battle.creatureMovementCost(battle, 2, 3, ogre)).toBe(1) // uphill, native: no penalty
-    expect(Battle.creatureMovementCost(battle, 2, 3, centaur)).toBe(2) // uphill, non-native: +1
-    expect(Battle.creatureMovementCost(battle, 3, 2, centaur)).toBe(1) // downhill: no penalty regardless
+    expect(Battle.creatureMovementCost(battle, 2, 3, ogre).cost).toBe(1) // uphill, native: no penalty
+    expect(Battle.creatureMovementCost(battle, 2, 3, centaur).cost).toBe(2) // uphill, non-native: +1
+    expect(Battle.creatureMovementCost(battle, 3, 2, centaur).cost).toBe(1) // downhill: no penalty regardless
   })
 
   it("charges an extra movement point to cross a wall in one direction only, regardless of native status", () => {
@@ -378,8 +358,8 @@ describe("Battle board movement cost", () => {
     const battle = Battle.create({ terrain: Terrain.TOWER, edge: HexEdge.FIRST, attacking, defending })
     const centaur = getOffense(battle)[0]
 
-    expect(Battle.creatureMovementCost(battle, 8, 2, centaur)).toBe(2) // upward, across the wall
-    expect(Battle.creatureMovementCost(battle, 2, 8, centaur)).toBe(1) // downward: no penalty
+    expect(Battle.creatureMovementCost(battle, 8, 2, centaur).cost).toBe(2) // upward, across the wall
+    expect(Battle.creatureMovementCost(battle, 2, 8, centaur).cost).toBe(1) // downward: no penalty
   })
 
   it("makes a cliff edge impassable in both directions, unlike walls and slopes", () => {
@@ -389,8 +369,8 @@ describe("Battle board movement cost", () => {
     const battle = Battle.create({ terrain: Terrain.DESERT, edge: HexEdge.FIRST, attacking, defending })
     const centaur = getOffense(battle)[0]
 
-    expect(Battle.creatureMovementCost(battle, 15, 20, centaur)).toBe(UNATTAINABLE_MOVEMENT_COST)
-    expect(Battle.creatureMovementCost(battle, 20, 15, centaur)).toBe(UNATTAINABLE_MOVEMENT_COST)
+    expect(Battle.creatureMovementCost(battle, 15, 20, centaur).cost).toBeUndefined()
+    expect(Battle.creatureMovementCost(battle, 20, 15, centaur).cost).toBeUndefined()
   })
 })
 
@@ -398,7 +378,7 @@ describe("Movement legality (movementFor)", () => {
   it("returns an empty set for a creature that is not on the board", () => {
     const { battle, offense } = setupBattle(Terrain.PLAINS, [CreatureType.LION], [CreatureType.CENTAUR])
     const [lion] = offense
-    lion.initialHex = 0
+    lion.hex = 0
 
     expect(Battle.movementFor(battle, lion)).toEqual(new Set())
   })
@@ -407,28 +387,30 @@ describe("Movement legality (movementFor)", () => {
     // Ogre (skill 2) entering from battle-hex 37 (the attacker's entrance zone on
     // HexEdge.FIRST), on hazard-free Plains: every hex within 2 movement points.
     const { battle, offense } = setupBattle(Terrain.PLAINS, [CreatureType.OGRE], [CreatureType.CENTAUR])
-    Battle.nextPhase(battle) // nobody engaged yet, so this auto-skips straight to ATTACKER_MOVE
+    Battle.finalizeMoves(battle, new Map()) // nobody engaged yet, so this auto-skips straight to ATTACKER_MOVE
     const [ogre] = offense
-    expect(ogre.initialHex).toBe(37)
+    expect(ogre.hex).toBe(37)
 
     expect(Battle.movementFor(battle, ogre)).toEqual(new Set([3, 4, 9, 10, 16, 17, 22, 23, 29]))
   })
 
   it("cannot land a stack on a hex already occupied by another creature (friend or foe)", () => {
-    const { battle, offense, defense } = setupBattle(Terrain.PLAINS, [CreatureType.LION], [CreatureType.CENTAUR])
-    Battle.nextPhase(battle) // nobody engaged yet, so this auto-skips straight to ATTACKER_MOVE
-    const [lion] = offense
-    const [centaur] = defense
-    place(centaur, 4)
+    const { battle, offense } = setupBattle(
+      Terrain.PLAINS,
+      [CreatureType.LION, CreatureType.CENTAUR],
+      [CreatureType.OGRE],
+    )
+    Battle.finalizeMoves(battle, new Map()) // nobody engaged yet, so this auto-skips straight to ATTACKER_MOVE
+    const [lion, centaur] = offense
+    centaur.hex = 4
 
     expect(Battle.movementFor(battle, lion).has(4)).toBe(false)
 
-    // moveCreature mutates hex directly and doesn't call nextPhase(), so a recomputed
-    // movementFor within the same move phase must use the centaur's new position, not
-    // whatever occupancy applied to the earlier call.
-    centaur.hex = 10
-    expect(Battle.movementFor(battle, lion).has(4)).toBe(true)
-    expect(Battle.movementFor(battle, lion).has(10)).toBe(false)
+    // A staged move frees the hex it leaves and blocks the one it enters, so a later move
+    // in the same phase must be judged against it.
+    const moves = new Map([[centaur.id, 10]])
+    expect(Battle.movementFor(battle, lion, moves).has(4)).toBe(true)
+    expect(Battle.movementFor(battle, lion, moves).has(10)).toBe(false)
   })
 
   it("lets a flying creature path through hexes blocked for grounded creatures, reaching further", () => {
@@ -444,12 +426,12 @@ describe("Movement legality (movementFor)", () => {
       [CreatureType.CENTAUR, CreatureType.GRIFFON, CreatureType.LION, CreatureType.LION],
       [CreatureType.CENTAUR],
     )
-    Battle.nextPhase(battle) // nobody engaged yet, so this auto-skips straight to ATTACKER_MOVE
+    Battle.finalizeMoves(battle, new Map()) // nobody engaged yet, so this auto-skips straight to ATTACKER_MOVE
     const [centaur, griffon, blocker1, blocker2] = offense
-    place(centaur, 2)
-    place(griffon, 2)
-    place(blocker1, 7)
-    place(blocker2, 8)
+    centaur.hex = 2
+    griffon.hex = 2
+    blocker1.hex = 7
+    blocker2.hex = 8
 
     const centaurReach = Battle.movementFor(battle, centaur)
     const griffonReach = Battle.movementFor(battle, griffon)
@@ -469,8 +451,8 @@ describe("Engagement edge cases", () => {
     battle.activePlayer = battle.attacker
     const [centaur] = offense
     const [lion] = defense
-    place(centaur, 15) // atop the cliff
-    place(lion, 20) // below the cliff
+    centaur.hex = 15 // atop the cliff
+    lion.hex = 20 // below the cliff
 
     expect(Battle.engagedWith(battle, lion)).toEqual([])
   })
@@ -485,23 +467,9 @@ describe("Engagement edge cases", () => {
     battle.activePlayer = battle.attacker
     const [centaur] = offense
     const [lion] = defense
-    place(centaur, 15) // atop the cliff
-    place(lion, 20) // below the cliff
+    centaur.hex = 15 // atop the cliff
+    lion.hex = 20 // below the cliff
 
-    expect(Battle.engagedWith(battle, centaur)).toEqual([])
-  })
-
-  it("checks engagement using the pre-move position while still in a move phase", () => {
-    const { battle, offense, defense } = setupBattle(Terrain.PLAINS, [CreatureType.LION], [CreatureType.CENTAUR])
-    const [lion] = offense
-    const [centaur] = defense
-
-    expect(battle.phase).toBe(BattlePhase.DEFENDER_MOVE)
-    centaur.hex = 7 // now adjacent to where the Lion will eventually stand (hex 8)
-    lion.hex = 8 // adjacent to centaur.hex (7), but not to centaur.initialHex (36)
-    // Still using centaur.initialHex (the entrance zone) for the engagement check, since we
-    // haven't left the move phase - if it used centaur.hex instead, the Lion at hex 8 (adjacent
-    // to hex 7) would show up as engaged here.
     expect(Battle.engagedWith(battle, centaur)).toEqual([])
   })
 
@@ -517,10 +485,10 @@ describe("Engagement edge cases", () => {
     battle.activePlayer = battle.attacker
     const [lion] = offense
     const [primary, included, excluded] = defense
-    place(lion, 2)
-    place(primary, 7) // toHit 5, no hazard - struck directly, overkilled
-    place(included, 3) // toHit 5, no hazard - matches the rolled toHit, so carryover-eligible
-    place(excluded, 8) // toHit 6, raised by the wall - harder than the rolled toHit
+    lion.hex = 2
+    primary.hex = 7 // toHit 5, no hazard - struck directly, overkilled
+    included.hex = 3 // toHit 5, no hazard - matches the rolled toHit, so carryover-eligible
+    excluded.hex = 8 // toHit 6, raised by the wall - harder than the rolled toHit
 
     Battle.attackCreature(battle, { attacker: lion.id, target: primary.id, rolls: [6, 6, 6, 6, 6] })
     expect(primary.strength - primary.wounds).toBe(0) // overkilled, so it drops out of engagedWith too
@@ -533,8 +501,8 @@ describe("Engagement edge cases", () => {
     battle.activePlayer = battle.attacker
     const [lion] = offense
     const [centaur] = defense
-    place(lion, 8)
-    place(centaur, 7)
+    lion.hex = 8
+    centaur.hex = 7
 
     const computedToHit = Battle.toHitAdjusted(battle, lion, centaur)
     expect(computedToHit).toBe(5)
@@ -564,8 +532,8 @@ describe("Engagement edge cases", () => {
     battle.activePlayer = battle.attacker
     const [ranger] = offense
     const [centaur] = defense
-    place(ranger, 8)
-    place(centaur, 20)
+    ranger.hex = 8
+    centaur.hex = 20
 
     const targets = Battle.rangestrikeTargets(battle, ranger)
     expect(targets).toHaveLength(1)
@@ -594,9 +562,7 @@ describe("Battle phase transitions", () => {
     const lion = getOffense(battle)[0]
     const centaur = getDefense(battle)[0]
     centaur.hex = 7
-    centaur.initialHex = 7
     lion.hex = 8
-    lion.initialHex = 8
 
     const expectPhase = (phase: BattlePhase, round: number): void => {
       expect(battle.phase).toBe(phase)
@@ -604,7 +570,7 @@ describe("Battle phase transitions", () => {
     }
     expectPhase(BattlePhase.DEFENDER_MOVE, 0)
 
-    Battle.nextPhase(battle)
+    Battle.finalizeMoves(battle, new Map())
     expectPhase(BattlePhase.DEFENDER_STRIKE, 0)
     centaur.hasStruck = true // stand in for an actual strike() call - only hasStruck matters here
 
@@ -615,7 +581,7 @@ describe("Battle phase transitions", () => {
     Battle.nextPhase(battle)
     expectPhase(BattlePhase.ATTACKER_MOVE, 0)
 
-    Battle.nextPhase(battle)
+    Battle.finalizeMoves(battle, new Map())
     expectPhase(BattlePhase.ATTACKER_STRIKE, 0)
     lion.hasStruck = true
 
@@ -631,9 +597,9 @@ describe("Battle phase transitions", () => {
     const { battle } = setupBattle(Terrain.PLAINS, [CreatureType.LION], [CreatureType.CENTAUR])
 
     expect(battle.phase).toBe(BattlePhase.DEFENDER_MOVE)
-    Battle.nextPhase(battle) // no engagement -> DEFENDER_STRIKE, ATTACKER_STRIKEBACK both skipped
+    Battle.finalizeMoves(battle, new Map()) // no engagement -> DEFENDER_STRIKE, ATTACKER_STRIKEBACK both skipped
     expect(battle.phase).toBe(BattlePhase.ATTACKER_MOVE)
-    Battle.nextPhase(battle) // -> ATTACKER_STRIKE, DEFENDER_STRIKEBACK both skipped, round increments
+    Battle.finalizeMoves(battle, new Map()) // -> ATTACKER_STRIKE, DEFENDER_STRIKEBACK both skipped, round increments
     expect(battle.phase).toBe(BattlePhase.DEFENDER_MOVE)
     expect(battle.round).toBe(1)
   })
@@ -642,10 +608,10 @@ describe("Battle phase transitions", () => {
     const { battle, offense, defense } = setupBattle(Terrain.PLAINS, [CreatureType.LION], [CreatureType.CENTAUR])
     const [lion] = offense
     const [centaur] = defense
-    place(centaur, 7)
-    place(lion, 8)
+    centaur.hex = 7
+    lion.hex = 8
 
-    Battle.nextPhase(battle) // -> DEFENDER_STRIKE, Centaur is now pending and never strikes
+    Battle.finalizeMoves(battle, new Map()) // -> DEFENDER_STRIKE, Centaur is now pending and never strikes
     expect(Battle.getPendingStrikes(battle)).toEqual([centaur])
     expect(() => Battle.nextPhase(battle)).toThrow("All eligible creatures must strike")
   })
@@ -671,9 +637,8 @@ describe("Battle phase transitions", () => {
     )
     const [unmoved, moved] = defense
     expect(unmoved.hex).toBe(36) // the defender's entrance zone for HexEdge.FIRST
-    moved.hex = 7
 
-    Battle.nextPhase(battle)
+    Battle.finalizeMoves(battle, new Map([[moved.id, 7]]))
 
     expect(unmoved.hex).toBe(0)
     expect(moved.hex).toBe(7)
@@ -686,7 +651,7 @@ describe("Battle phase transitions", () => {
     // the same round is wounded twice.
     const { battle, defense } = setupBattle(Terrain.TUNDRA, [CreatureType.LION], [CreatureType.CENTAUR])
     const [centaur] = defense
-    place(centaur, 7)
+    centaur.hex = 7
 
     expect(centaur.wounds).toBe(0)
     battle.phase = BattlePhase.DEFENDER_STRIKE
