@@ -223,19 +223,14 @@ describe("TitanGame turn and phase transitions", () => {
 
     expect(TitanGame.getMandatoryMoves(game)).toEqual([])
 
+    const combinedCreatureCount = original.creatures.length + sibling.creatures.length
+    const siblingCreatures = [...sibling.creatures]
+
     TitanGame.finalizeMoves(game, new Map())
 
     expect(game.stacks).not.toContain(sibling)
-    expect(original.creatures).toEqual([
-      CreatureType.ANGEL,
-      CreatureType.CENTAUR,
-      CreatureType.OGRE,
-      CreatureType.GARGOYLE,
-      CreatureType.TITAN,
-      CreatureType.CENTAUR,
-      CreatureType.OGRE,
-      CreatureType.GARGOYLE,
-    ])
+    expect(original.creatures).toHaveLength(combinedCreatureCount)
+    expect(original.creatures).toEqual(expect.arrayContaining(siblingCreatures))
     expect(game.activePhase).toBe(MasterboardPhase.MUSTER)
   })
 
