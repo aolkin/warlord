@@ -310,13 +310,13 @@ export namespace TitanGame {
     })
     game.activeRoll = undefined
     getStacksForPlayer(game)
-      .filter(stack => !stack.hasMoved)
-      .forEach(stack => {
-        const splitOff = getStacksForPlayer(game).find(
-          candidate => candidate.hex === stack.hex && candidate.id > stack.id && !candidate.hasMoved,
+      .filter(stack => !stack.hasMoved && stack.sourceStack !== undefined)
+      .forEach(splitOff => {
+        const original = getStacksForPlayer(game).find(
+          candidate => candidate.id === splitOff.sourceStack && !candidate.hasMoved,
         )
-        if (splitOff !== undefined) {
-          Stack.recombine(stack, splitOff)
+        if (original !== undefined) {
+          Stack.recombine(original, splitOff)
           remove(game.stacks, candidate => candidate === splitOff)
         }
       })
@@ -368,6 +368,7 @@ function startPlayerTurn(stack: Stack): void {
   stack.hasMoved = false
   stack.attackEdge = undefined
   stack.latestMuster = undefined
+  stack.sourceStack = undefined
 }
 
 function advancePhase(game: TitanGame): void {
