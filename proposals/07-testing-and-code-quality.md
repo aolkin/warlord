@@ -1,6 +1,6 @@
 # Testing & Code Quality
 
-Vitest unit tests, `vue-tsc` typechecking, lint, and Playwright e2e tests all run in CI (`.github/workflows/build.yml` and `.github/workflows/e2e.yml`) on every PR.
+Vitest unit tests, `vue-tsc` typechecking, and lint run in `.github/workflows/build.yml` on every PR. Playwright e2e tests run in their own `.github/workflows/e2e.yml`, gated behind the `e2e` label rather than running on every PR.
 
 ## Unit tests for the game engine (highest value, done)
 
@@ -40,7 +40,7 @@ One scenario exists for each masterboard phase and battle-phase type that has UI
 
 ### CI (done)
 
-The e2e suite runs in its own `.github/workflows/e2e.yml`, separate from `build.yml`'s Lint/Typecheck/Test/Build job so a flaky or failed run doesn't force retrying that whole job. It installs with `pnpm exec playwright install --with-deps chromium` and runs `pnpm test:e2e` on every `pull_request`.
+The e2e suite runs in its own `.github/workflows/e2e.yml`, separate from `build.yml`'s Lint/Typecheck/Test/Build job so a flaky or failed run doesn't force retrying that whole job. It installs with `pnpm exec playwright install --with-deps chromium` and runs `pnpm test:e2e`, gated by `if: contains(github.event.pull_request.labels.*.name, 'e2e')` so it only runs on PRs that opt in rather than on every `pull_request`.
 
 ## Cleanup items observed in passing (done)
 

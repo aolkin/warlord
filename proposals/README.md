@@ -7,7 +7,7 @@ Written July 2026. The last feature commit landed January 2023, the last depende
 - Vue 3.5.41 (a direct dependency), `<script setup>` components
 - Pinia for state management, wrapping plain-interface-plus-free-function TypeScript models
 - Vuetify 4.1, Vite 8.1, TypeScript 6.0, ESLint 10 with flat config, pnpm
-- CI runs lint, typecheck, unit tests, e2e tests, and build on every PR on Node 24, then deploys to Cloudflare Workers (custom domain, opt-in per-PR preview URLs)
+- CI runs lint, typecheck, unit tests, and build on every PR on Node 24, then deploys to Cloudflare Workers (custom domain, opt-in per-PR preview URLs); e2e tests run in a separate workflow, opt-in per PR via the `e2e` label
 - Vitest unit tests over the model layer, Playwright e2e tests over the masterboard and battle-board UI
 - Rendering is SVG generated from Vue templates; game state persists to localStorage as JSON
 
