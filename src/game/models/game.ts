@@ -309,21 +309,25 @@ export namespace TitanGame {
       movingStack.hasMoved = true
     })
     game.activeRoll = undefined
-    getStacksForPlayer(game)
-      .filter(stack => !stack.hasMoved && stack.sourceStack !== undefined)
-      .forEach(splitOff => {
-        const original = getStacksForPlayer(game).find(
-          candidate => candidate.id === splitOff.sourceStack && !candidate.hasMoved,
-        )
-        if (original !== undefined) {
-          Stack.recombine(original, splitOff)
-          remove(game.stacks, candidate => candidate === splitOff)
-        }
-      })
+    abortFailedSplits(game)
     advancePhase(game)
     if (getEngagedStacks(game).length === 0) {
       advancePhase(game)
     }
+  }
+
+  export function abortFailedSplits(game: TitanGame): void {
+    const recombinedIds: StackRef[] = []
+    getStacksForPlayer(game)
+      .filter(stack => !stack.hasMoved && stack.sourceStack !== undefined)
+      .forEach(splitOff => {
+        const original = game.stacks.find(candidate => candidate.id === splitOff.sourceStack && !candidate.hasMoved)
+        if (original !== undefined) {
+          Stack.recombine(original, splitOff)
+          recombinedIds.push(splitOff.id)
+        }
+      })
+    remove(game.stacks, stack => recombinedIds.includes(stack.id))
   }
 
   export function finalizeMusters(game: TitanGame, musters: MusterPayload[]): void {
