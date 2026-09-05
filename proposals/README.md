@@ -1,15 +1,14 @@
 # Modernization Proposals
 
-Written July 2026. The last feature commit landed January 2023 and the last dependency bump July 2023, so essentially every layer of the toolchain is two or more major versions behind. Each document in this folder covers one category, lists concrete proposals, and notes trade-offs and alternatives. Version claims were checked against npm, the Node.js release schedule, and upstream release pages in July 2026.
+Written July 2026. The last feature commit landed January 2023, the last dependency bump July 2023 — every layer of the toolchain is two or more major versions behind. Each doc here covers one category: concrete proposals, trade-offs, alternatives. Version claims checked against npm, Node's release schedule, and upstream release pages in July 2026.
 
 ## Current state, briefly
 
-- Vue 3.2.45 (transitive only — `vue` is not even a direct dependency), Options API components
+- Vue 3.5.41 (a direct dependency), `<script setup>` components
 - Pinia for state management, wrapping plain-interface-plus-free-function TypeScript models
 - Vuetify 4.1, Vite 8.1, TypeScript 6.0, ESLint 10 with flat config, pnpm
-- Vestigial Nuxt 3 RC and Vue CLI dependencies that are not part of the actual build
-- CI runs lint, typecheck, test, and build on every PR on Node 24, then deploys to Cloudflare Workers (custom domain, opt-in per-PR preview URLs)
-- No tests of any kind
+- CI runs lint, typecheck, unit tests, and build on every PR on Node 24, then deploys to Cloudflare Workers (custom domain, opt-in per-PR preview URLs); e2e tests run in a separate workflow, opt-in per PR via the `e2e` label
+- Vitest unit tests over the model layer, Playwright e2e tests over the masterboard and battle-board UI
 - Rendering is SVG generated from Vue templates; game state persists to localStorage as JSON
 
 ## Documents
@@ -33,13 +32,14 @@ Written July 2026. The last feature commit landed January 2023 and the last depe
 4. **Multiplayer groundwork** (docs 05 and 09): engine extraction behind a local-server interface while touching the store anyway. Doc 09 classifies the mutations that interface carries.
 5. **Rendering** (doc 03): measure once the store refactor has landed, then decide on Vapor/canvas.
 
-Status by doc:
+## Status by doc
 
-- **Doc 01 (toolchain):** fully done — pnpm updated to 11.22.0.
-- **Doc 02 (CI and deployment):** fully landed; the doc has been removed.
-- **Doc 03 (framework and rendering):** fully resolved — the Vue upgrade, the `<script setup>` migration, and the rendering-performance measurement (doc 11) are all done, and doc 11's numbers don't justify Vapor, Svelte, or canvas.
-- **Doc 04 (state management):** done — `Stack`, `BattleCreature`, `ActiveStrike`, `Battle`, and `TitanGame` are all plain interfaces plus free functions now, with no classes left in the model layer.
-- **Doc 05 (multiplayer groundwork):** partially landed — persistence has moved out of the engine and the old `do*`/`m*` method split has collapsed, but the action-union/single-dispatch entry point, the workspace-package extraction, and the hidden-information audit are still pending.
-- **Doc 06 (UI chrome):** fully landed; the doc has been removed.
-- **Doc 08 (bundle size):** resolved except one open item — a Vite/Rolldown chunk-duplication bug in dice-box's `world.offscreen.js` build output, non-urgent since lazy-loading already keeps that chunk off the critical path.
-- **Doc 09 (mutation classification):** entirely unbuilt and written to be argued with first; its first step gates doc 05's pending dispatch entry point.
+- **Doc 01 (toolchain):** done.
+- **Doc 02 (CI and deployment):** done; the doc has been removed.
+- **Doc 03 (framework and rendering):** resolved — the Vue upgrade, `<script setup>` migration, and doc 11's performance measurement are all done, and the numbers don't justify Vapor, Svelte, or canvas.
+- **Doc 04 (state management):** done — the model layer is plain interfaces plus free functions, no classes left.
+- **Doc 05 (multiplayer groundwork):** partial — persistence is out of the engine and the old `do*`/`m*` split is gone, but the action-union/dispatch entry point, the workspace-package extraction, and the hidden-information audit are still pending.
+- **Doc 06 (UI chrome):** done; the doc has been removed.
+- **Doc 07 (testing and code quality):** done.
+- **Doc 08 (bundle size):** resolved except one open item — a Vite/Rolldown chunk-duplication bug in dice-box's `world.offscreen.js` output, non-urgent since lazy-loading already keeps that chunk off the critical path.
+- **Doc 09 (mutation classification):** steps 3–4 (moving split/muster/move staging into UI stores) are merged (#244–#247, #256). Steps 1, 2, and 5 (the dispatch entry point, the `GameAction` union, and the carryover collapse) are open in #241/#242. Step 6 (workspace-package extraction) hasn't started.
