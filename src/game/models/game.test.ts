@@ -210,6 +210,45 @@ describe("TitanGame turn and phase transitions", () => {
     expect(game.mulliganTaken).toBe(false)
   })
 
+  it("recombines a split that fails to move because every exit is blocked by a friendly stack", () => {
+    const game = newGame()
+    const original = game.stacks[0]
+
+    TitanGame.finalizeSplits(game, [{ stack: original.id, creatures: [0, 2, 4, 6] }], noShuffleRandom)
+    const sibling = game.stacks.find(s => s !== original && s.owner === original.owner)!
+
+    ;[3, 41, 101].forEach((hex, index) =>
+      game.stacks.push(Stack.create({ owner: original.owner, hex, marker: 2 + index, createdRound: game.round })),
+    )
+
+    expect(TitanGame.getMandatoryMoves(game)).toEqual([])
+
+    const combinedCreatureCount = original.creatures.length + sibling.creatures.length
+    const siblingCreatures = [...sibling.creatures]
+
+    TitanGame.finalizeMoves(game, new Map())
+
+    expect(game.stacks).not.toContain(sibling)
+    expect(original.creatures).toHaveLength(combinedCreatureCount)
+    expect(original.creatures).toEqual(expect.arrayContaining(siblingCreatures))
+    expect(game.activePhase).toBe(MasterboardPhase.MUSTER)
+  })
+
+  it("leaves a split intact when the original stack moves away and the split-off stays put", () => {
+    const game = newGame()
+    const original = game.stacks[0]
+
+    TitanGame.finalizeSplits(game, [{ stack: original.id, creatures: [0, 2, 4, 6] }], noShuffleRandom)
+    const sibling = game.stacks.find(s => s !== original && s.owner === original.owner)!
+
+    TitanGame.finalizeMoves(game, new Map([[original.id, { hex: 3 }]]))
+
+    expect(game.stacks).toContain(sibling)
+    expect(sibling.hex).toBe(100)
+    expect(sibling.hasMoved).toBe(false)
+    expect(original.hex).toBe(3)
+  })
+
   it("skips an empty battle phase and goes straight to muster when nobody is engaged", () => {
     const game = newGame() // BLUE at 100, GREEN at 400: never in contact
     game.activePhase = MasterboardPhase.MOVE

@@ -36,10 +36,11 @@ export interface Stack {
   hasMoved: boolean
   attackEdge: HexEdge | undefined
   latestMuster: MusterChoice | undefined
+  sourceStack: StackRef | undefined
 }
 
 export type CreateStackOptions = Pick<Stack, "owner" | "marker" | "createdRound" | "hex"> &
-  Partial<Pick<Stack, "creatures">>
+  Partial<Pick<Stack, "creatures" | "sourceStack">>
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
 export namespace Stack {
@@ -65,6 +66,7 @@ export namespace Stack {
       hasMoved: false,
       attackEdge: undefined,
       latestMuster: undefined,
+      sourceStack: options.sourceStack,
     }
   }
 
@@ -154,6 +156,10 @@ export namespace Stack {
     assert(marker >= 0, "Invalid marker")
     const creatures = getSplittingCreatures(stack, splitting)
     remove(stack.creatures, (_, index) => splitting.includes(index))
-    return create({ owner: stack.owner, hex: stack.hex, marker, createdRound: round, creatures })
+    return create({ owner: stack.owner, hex: stack.hex, marker, createdRound: round, creatures, sourceStack: stack.id })
+  }
+
+  export function recombine(original: Stack, splitOff: Stack): void {
+    original.creatures.push(...splitOff.creatures)
   }
 }

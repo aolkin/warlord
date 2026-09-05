@@ -1,5 +1,5 @@
 import { assert } from "@/utils/assert"
-import { range } from "lodash-es"
+import { range, remove } from "lodash-es"
 import { Battle, BattleSide } from "./battle"
 import { CREATURE_DATA, CREATURE_LIST, CreatureType } from "./creature"
 import masterboard, { HexEdge, MasterboardHex } from "./masterboard"
@@ -309,11 +309,25 @@ export namespace TitanGame {
       movingStack.hasMoved = true
     })
     game.activeRoll = undefined
-    // TODO: recombine splits that failed to move
+    abortFailedSplits(game)
     advancePhase(game)
     if (getEngagedStacks(game).length === 0) {
       advancePhase(game)
     }
+  }
+
+  export function abortFailedSplits(game: TitanGame): void {
+    const recombinedIds: StackRef[] = []
+    getStacksForPlayer(game)
+      .filter(stack => !stack.hasMoved && stack.sourceStack !== undefined)
+      .forEach(splitOff => {
+        const original = game.stacks.find(candidate => candidate.id === splitOff.sourceStack && !candidate.hasMoved)
+        if (original !== undefined) {
+          Stack.recombine(original, splitOff)
+          recombinedIds.push(splitOff.id)
+        }
+      })
+    remove(game.stacks, stack => recombinedIds.includes(stack.id))
   }
 
   export function finalizeMusters(game: TitanGame, musters: MusterPayload[]): void {
@@ -358,6 +372,7 @@ function startPlayerTurn(stack: Stack): void {
   stack.hasMoved = false
   stack.attackEdge = undefined
   stack.latestMuster = undefined
+  stack.sourceStack = undefined
 }
 
 function advancePhase(game: TitanGame): void {
