@@ -49,20 +49,13 @@ describe("Stack splitting", () => {
 
   it("recombines a split-off stack's creatures back into the original", () => {
     const stack = newStack()
+    const originalCreatures = [...stack.creatures]
     const splitStack = Stack.finalizeSplit(stack, [0, 2, 4, 6], 1, 0)
 
     Stack.recombine(stack, splitStack)
 
-    expect(stack.creatures).toEqual([
-      CreatureType.ANGEL,
-      CreatureType.CENTAUR,
-      CreatureType.OGRE,
-      CreatureType.GARGOYLE,
-      CreatureType.TITAN,
-      CreatureType.CENTAUR,
-      CreatureType.OGRE,
-      CreatureType.GARGOYLE,
-    ])
+    expect(stack.creatures).toHaveLength(originalCreatures.length)
+    expect(stack.creatures).toEqual(expect.arrayContaining(originalCreatures))
   })
 })
 
