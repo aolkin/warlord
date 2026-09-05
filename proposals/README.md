@@ -22,6 +22,7 @@ Written July 2026. The last feature commit landed January 2023, the last depende
 | [07-testing-and-code-quality.md](07-testing-and-code-quality.md) | Test infrastructure, type strictness, cleanup |
 | [08-bundle-size.md](08-bundle-size.md) | Production bundle size: dice-box chunking, lazy-loading, Vuetify/icon tree-shaking |
 | [09-mutation-classification.md](09-mutation-classification.md) | Which mutations a server must commit and order, and which stay on the client |
+| [10-hidden-information-audit.md](10-hidden-information-audit.md) | Which `TitanGame`/`Stack`/`Battle` state must stay hidden from other players once a server sits between clients |
 | [11-rendering-performance-findings.md](11-rendering-performance-findings.md) | Measured findings for doc 03's rendering performance question |
 
 ## Suggested sequencing
@@ -32,13 +33,15 @@ Written July 2026. The last feature commit landed January 2023, the last depende
 4. **Multiplayer groundwork** (docs 05 and 09): engine extraction behind a local-server interface while touching the store anyway. Doc 09 classifies the mutations that interface carries.
 5. **Rendering** (doc 03): measure once the store refactor has landed, then decide on Vapor/canvas.
 
+**Hidden-information audit** (doc 10) is a companion to doc 05 rather than a step in this ordering: it fills in doc 05's groundwork slice 4 (which state a server must redact per player) and only becomes actionable once doc 05's slice 3 (the `GameServer` interface) exists to attach the redaction to.
+
 ## Status by doc
 
 - **Doc 01 (toolchain):** done.
 - **Doc 02 (CI and deployment):** done; the doc has been removed.
 - **Doc 03 (framework and rendering):** resolved — the Vue upgrade, `<script setup>` migration, and doc 11's performance measurement are all done, and the numbers don't justify Vapor, Svelte, or canvas.
 - **Doc 04 (state management):** done — the model layer is plain interfaces plus free functions, no classes left.
-- **Doc 05 (multiplayer groundwork):** partial — persistence is out of the engine and the old `do*`/`m*` split is gone, but the action-union/dispatch entry point, the workspace-package extraction, and the hidden-information audit are still pending.
+- **Doc 05 (multiplayer groundwork):** partial — persistence is out of the engine and the old `do*`/`m*` split is gone, but the action-union/dispatch entry point, the workspace-package extraction, and the hidden-information audit (doc 10) are still pending.
 - **Doc 06 (UI chrome):** done; the doc has been removed.
 - **Doc 07 (testing and code quality):** done.
 - **Doc 08 (bundle size):** resolved except one open item — a Vite/Rolldown chunk-duplication bug in dice-box's `world.offscreen.js` output, non-urgent since lazy-loading already keeps that chunk off the critical path.
